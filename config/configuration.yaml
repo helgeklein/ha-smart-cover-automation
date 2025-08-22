@@ -9,4 +9,4 @@ homeassistant:
 logger:
   default: info
   logs:
-    custom_components.smart-cover-automation: debug
+    custom_components.smart_cover_automation: debug

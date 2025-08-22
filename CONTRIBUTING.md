@@ -48,7 +48,7 @@ Use [black](https://github.com/ambv/black) to make sure the code follows the sty
 
 ## Test your code modification
 
-This custom component is based on [smart-cover-automation template](https://github.com/helgeklein/ha-smart-cover-automation).
+This custom component is based on [smart_cover_automation template](https://github.com/helgeklein/ha-smart_cover_automation).
 
 It comes with development environment in a container, easy to launch
 if you use Visual Studio Code. With this container you will have a stand alone

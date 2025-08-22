@@ -1,4 +1,4 @@
-"""Custom types for smart-cover-automation."""
+"""Custom types for smart_cover_automation."""
 
 from __future__ import annotations
 

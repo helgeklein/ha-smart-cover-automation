@@ -1,8 +1,8 @@
 """
-Custom integration to integrate smart-cover-automation with Home Assistant.
+Custom integration to integrate smart_cover_automation with Home Assistant.
 
 For more details about this integration, please refer to
-https://github.com/helgeklein/ha-smart-cover-automation
+https://github.com/helgeklein/ha-smart_cover_automation
 """
 
 from __future__ import annotations

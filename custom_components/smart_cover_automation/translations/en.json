@@ -2,7 +2,7 @@
     "config": {
         "step": {
             "user": {
-                "description": "If you need help with the configuration have a look here: https://github.com/helgeklein/ha-smart-cover-automation",
+                "description": "If you need help with the configuration have a look here: https://github.com/helgeklein/ha-smart_cover_automation",
                 "data": {
                     "username": "Username",
                     "password": "Password"

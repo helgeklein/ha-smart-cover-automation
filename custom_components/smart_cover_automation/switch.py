@@ -1,4 +1,4 @@
-"""Switch platform for smart-cover-automation."""
+"""Switch platform for smart_cover_automation."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 ENTITY_DESCRIPTIONS = (
     SwitchEntityDescription(
-        key="smart-cover-automation",
+        key="smart_cover_automation",
         name="Integration Switch",
         icon="mdi:format-quote-close",
     ),
@@ -40,7 +40,7 @@ async def async_setup_entry(
 
 
 class IntegrationBlueprintSwitch(IntegrationBlueprintEntity, SwitchEntity):
-    """smart-cover-automation switch class."""
+    """smart_cover_automation switch class."""
 
     def __init__(
         self,

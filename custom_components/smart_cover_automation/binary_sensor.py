@@ -1,10 +1,14 @@
-"""Sensor platform for smart-cover-automation."""
+"""Binary sensor platform for smart_cover_automation."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+    BinarySensorEntityDescription,
+)
 
 from .entity import IntegrationBlueprintEntity
 
@@ -16,10 +20,10 @@ if TYPE_CHECKING:
     from .data import IntegrationBlueprintConfigEntry
 
 ENTITY_DESCRIPTIONS = (
-    SensorEntityDescription(
-        key="smart-cover-automation",
-        name="Integration Sensor",
-        icon="mdi:format-quote-close",
+    BinarySensorEntityDescription(
+        key="smart_cover_automation",
+        name="Smart cover automation binary sensor",
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
     ),
 )
 
@@ -29,9 +33,9 @@ async def async_setup_entry(
     entry: IntegrationBlueprintConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the sensor platform."""
+    """Set up the binary_sensor platform."""
     async_add_entities(
-        IntegrationBlueprintSensor(
+        IntegrationBlueprintBinarySensor(
             coordinator=entry.runtime_data.coordinator,
             entity_description=entity_description,
         )
@@ -39,19 +43,19 @@ async def async_setup_entry(
     )
 
 
-class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
-    """smart-cover-automation Sensor class."""
+class IntegrationBlueprintBinarySensor(IntegrationBlueprintEntity, BinarySensorEntity):
+    """smart_cover_automation binary_sensor class."""
 
     def __init__(
         self,
         coordinator: BlueprintDataUpdateCoordinator,
-        entity_description: SensorEntityDescription,
+        entity_description: BinarySensorEntityDescription,
     ) -> None:
-        """Initialize the sensor class."""
+        """Initialize the binary_sensor class."""
         super().__init__(coordinator)
         self.entity_description = entity_description
 
     @property
-    def native_value(self) -> str | None:
-        """Return the native value of the sensor."""
-        return self.coordinator.data.get("body")
+    def is_on(self) -> bool:
+        """Return true if the binary_sensor is on."""
+        return self.coordinator.data.get("title", "") == "foo"
