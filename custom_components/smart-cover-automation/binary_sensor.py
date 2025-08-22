@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 ENTITY_DESCRIPTIONS = (
     BinarySensorEntityDescription(
         key="smart-cover-automation",
-        name="Integration Blueprint Binary Sensor",
+        name="Smart cover automation binary sensor",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
     ),
 )
