@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+# Install test dependencies
+echo "Installing test dependencies..."
+python3 -m pip install -r requirements-test.txt
+
+# Run the tests
+echo "Running tests..."
+python3 -m pytest tests/ -v --cov=custom_components.smart_cover_automation --cov-report=term-missing
+
+echo "Test run completed!"
