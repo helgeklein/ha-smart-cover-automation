@@ -44,12 +44,6 @@
             }
         }
     },
-    "state": {
-        "automation_type": {
-            "temperature": "Temperature Control",
-            "sun": "Sun Position"
-        }
-    },
     "entity": {
         "binary_sensor": {
             "automation_active": {
@@ -63,6 +57,15 @@
         "switch": {
             "automation_enabled": {
                 "name": "Enable Automation"
+            }
+        },
+        "sensor": {
+            "automation_type": {
+                "name": "Automation Type",
+                "state": {
+                    "temperature": "Temperature Control",
+                    "sun": "Sun Position"
+                }
             }
         }
     }
