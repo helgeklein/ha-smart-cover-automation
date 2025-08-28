@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation import (
@@ -13,7 +11,6 @@ from custom_components.smart_cover_automation import (
     async_setup_entry,
     async_unload_entry,
 )
-from custom_components.smart_cover_automation.const import DOMAIN
 
 from .conftest import MockConfigEntry, create_temperature_config
 
@@ -32,7 +29,7 @@ class TestIntegrationSetup:
         with (
             patch(
                 "custom_components.smart_cover_automation.async_get_loaded_integration"
-            ) as mock_integration,
+            ),
             patch(
                 "custom_components.smart_cover_automation.DataUpdateCoordinator"
             ) as mock_coordinator_class,

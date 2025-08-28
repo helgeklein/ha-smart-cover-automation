@@ -1,8 +1,7 @@
 # Test-specific ruff configuration
-[tool.ruff]
 target-version = "py313"
 
-[tool.ruff.lint]
+[lint]
 select = [
     "E",    # pycodestyle errors
     "W",    # pycodestyle warnings
@@ -22,9 +21,13 @@ ignore = [
     "TRY003", # Avoid specifying long messages outside exception class
     "EM",     # Error message string literals
     "PT011",  # pytest.raises should specify expected exception
+    "SLF001", # Private member access OK in tests
+    "TRY301", # Abstract raise to inner function
+    "SIM102", # Use single if instead of nested
+    "B023",   # Function definition does not bind loop variable
 ]
 
-[tool.ruff.lint.per-file-ignores]
+[lint.per-file-ignores]
 "tests/*" = [
     "S101",    # asserts allowed in tests
     "PLR2004", # Magic values OK in tests
@@ -32,4 +35,6 @@ ignore = [
     "TRY003",  # Long exception messages OK in tests
     "EM101",   # String literals in exceptions OK
     "EM102",   # f-string literals in exceptions OK
+    "TRY301",  # Abstract raise to inner function OK in tests
+    "B023",    # Loop variable binding OK in tests
 ]

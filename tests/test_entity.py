@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from custom_components.smart_cover_automation.entity import IntegrationEntity
 from custom_components.smart_cover_automation.const import DOMAIN
+from custom_components.smart_cover_automation.entity import IntegrationEntity
 
 from .conftest import MockConfigEntry, create_temperature_config
 

@@ -2,24 +2,22 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
+from custom_components.smart_cover_automation.const import (
+    CONF_AUTOMATION_TYPE,
+    CONF_COVERS,
+)
 from custom_components.smart_cover_automation.coordinator import (
     ConfigurationError,
     DataUpdateCoordinator,
     EntityUnavailableError,
     InvalidSensorReadingError,
     SensorNotFoundError,
-)
-from custom_components.smart_cover_automation.const import (
-    AUTOMATION_TYPE_SUN,
-    AUTOMATION_TYPE_TEMPERATURE,
-    CONF_AUTOMATION_TYPE,
-    CONF_COVERS,
 )
 
 from .conftest import (

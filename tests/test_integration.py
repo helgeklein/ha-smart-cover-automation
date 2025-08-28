@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from custom_components.smart_cover_automation.coordinator import (
     ConfigurationError,
     DataUpdateCoordinator,
-    EntityUnavailableError,
     InvalidSensorReadingError,
     SensorNotFoundError,
 )
@@ -39,7 +38,7 @@ class TestIntegrationScenarios:
         expected_positions = [0, 0, 100]  # Close -> Maintain -> Open
 
         for i, (temp, current_pos, expected_pos) in enumerate(
-            zip(temp_states, cover_positions, expected_positions)
+            zip(temp_states, cover_positions, expected_positions, strict=False)
         ):
             # Setup states
             temp_state = MagicMock()
@@ -80,11 +79,10 @@ class TestIntegrationScenarios:
                         raise AssertionError(
                             f"Cycle {i}: Service should have been called"
                         )
-                else:
-                    if hass.services.async_call.called:
-                        raise AssertionError(
-                            f"Cycle {i}: Service should not have been called"
-                        )
+                elif hass.services.async_call.called:
+                    raise AssertionError(
+                        f"Cycle {i}: Service should not have been called"
+                    )
 
             except Exception as e:
                 raise AssertionError(f"Automation failed in cycle {i}: {e}") from e
