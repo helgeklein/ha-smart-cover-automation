@@ -98,3 +98,137 @@ The automation maintains comfort by:
    - Optionally adjust the elevation threshold
 
 The integration will handle the rest automatically!
+
+## Troubleshooting & Monitoring
+
+### Enabling Verbose Logging
+
+To understand exactly why covers move to specific positions and troubleshoot issues, enable detailed logging:
+
+```yaml
+# Add to configuration.yaml
+logger:
+  logs:
+    custom_components.smart_cover_automation: debug
+```
+
+**Log Levels:**
+- `debug`: Detailed calculations, cover states, service calls
+- `info`: Automation decisions, cover movements, temperature/sun readings
+- `warning`: Configuration issues, missing entities
+- `error`: System failures, invalid sensors
+
+### What You'll See in the Logs
+
+#### Integration Lifecycle
+```
+[INFO] Setting up Smart Cover Automation integration
+[INFO] Initializing Smart Cover Automation coordinator: type=sun, covers=['cover.bedroom', 'cover.living_room']
+[DEBUG] Starting initial coordinator refresh
+[INFO] Smart Cover Automation integration setup completed
+```
+
+#### Temperature Automation Decisions
+```
+[INFO] Temperature automation: current=25.3°C, range=21.0-24.0°C
+[INFO] Cover cover.bedroom: Too hot (25.3°C > 24.0°C) - closing to block heat (current: 50 → desired: 0)
+[INFO] Setting cover cover.bedroom position from 50 to 0
+[DEBUG] Setting cover cover.bedroom to position 0 using set_cover_position service
+```
+
+#### Sun Automation Decisions
+```
+[INFO] Sun automation: elevation=35.2°, azimuth=180.1°, threshold=20.0°
+[DEBUG] Cover cover.south_window: direction=south (180°), current_pos=100
+[INFO] Cover cover.south_window: Sun hitting window (angle=0.1° ≤ 45°) - partial closure factor=1.00, position=10
+[INFO] Setting cover cover.south_window position from 100 to 10
+```
+
+#### Common Log Messages
+
+**Normal Operation:**
+- `"Starting cover automation update"` - Automation cycle begins
+- `"Temperature comfortable (...) - maintaining position"` - No change needed
+- `"Sun low (...) - opening fully"` - Morning/evening behavior
+- `"Sun not hitting window (...) - opening fully"` - Window not in direct sun
+
+**Configuration Issues:**
+- `"Cover ... is unavailable"` - Cover entity not responding
+- `"Temperature sensor 'sensor.temperature' not found"` - Missing temperature sensor
+- `"Cover ...: no direction configured"` - Window direction not set for sun automation
+- `"Cover ...: invalid direction '...'"` - Invalid direction value
+
+**System Problems:**
+- `"Sun integration not available"` - Sun integration disabled
+- `"Invalid temperature reading"` - Sensor data corrupted
+- `"Cannot set cover ... position"` - Cover doesn't support position control
+
+### Debugging Common Issues
+
+#### Covers Not Moving
+1. **Check entity availability:**
+   ```
+   [WARNING] Cover cover.bedroom is unavailable
+   ```
+   - Verify cover entity exists and is responsive
+   - Check cover device/integration status
+
+2. **Check automation decisions:**
+   ```
+   [DEBUG] Cover cover.bedroom: no position change needed
+   ```
+   - Covers already in correct position
+   - Temperature/sun conditions don't require changes
+
+#### Temperature Automation Not Working
+1. **Verify temperature sensor:**
+   ```
+   [ERROR] Temperature sensor 'sensor.temperature' not found
+   ```
+   - Create or configure a temperature sensor entity
+   - Ensure it's named `sensor.temperature` or update the code
+
+2. **Check temperature thresholds:**
+   ```
+   [INFO] Temperature comfortable (22.1°C in range 21-24°C) - maintaining position
+   ```
+   - Temperature is within comfort range
+   - Adjust min/max thresholds if needed
+
+#### Sun Automation Not Working
+1. **Check sun integration:**
+   ```
+   [ERROR] Sun integration not available - sun.sun entity not found
+   ```
+   - Enable the built-in Sun integration
+   - Verify location is configured in Home Assistant
+
+2. **Verify window directions:**
+   ```
+   [WARNING] Cover ...: no direction configured, skipping sun automation
+   ```
+   - Configure direction for each cover in the integration settings
+
+3. **Check sun elevation:**
+   ```
+   [INFO] Cover ...: Sun low (15.2° < 20°) - opening fully
+   ```
+   - Sun is below threshold - covers open for light
+   - Normal behavior during early morning/evening
+
+### Performance Monitoring
+
+The integration updates every 60 seconds by default. Monitor logs to ensure:
+- Updates complete successfully
+- No error messages appear repeatedly
+- Cover movements are reasonable and not excessive
+
+### Getting Support
+
+When reporting issues, please include:
+1. Full error messages from logs
+2. Your automation configuration
+3. Relevant entity states (covers, temperature sensor, sun)
+4. Home Assistant version and integration version
+
+Enable debug logging and capture several automation cycles to help diagnose problems.

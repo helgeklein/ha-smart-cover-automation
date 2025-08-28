@@ -1,4 +1,17 @@
-"""Constants for smart_cover_automation."""
+"""
+Constants for smart_cover_automation.
+
+Logging Information:
+- Set log level to DEBUG for detailed cover position calculations
+- Set log level to INFO for automation decisions and cover actions
+- Set log level to WARNING for configuration issues
+- Set log level to ERROR for system failures
+
+To enable verbose logging, add this to your configuration.yaml:
+logger:
+  logs:
+    custom_components.smart_cover_automation: debug
+"""
 
 from logging import Logger, getLogger
 

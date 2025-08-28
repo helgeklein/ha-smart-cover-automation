@@ -7,13 +7,12 @@ https://github.com/helgeklein/ha-smart_cover_automation
 
 from __future__ import annotations
 
-from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
 from homeassistant.loader import async_get_loaded_integration
 
-from .const import DOMAIN, LOGGER
+from .const import LOGGER
 from .coordinator import DataUpdateCoordinator
 from .data import IntegrationData
 
@@ -34,24 +33,25 @@ async def async_setup_entry(
     entry: IntegrationConfigEntry,
 ) -> bool:
     """Set up this integration using the UI."""
-    coordinator = DataUpdateCoordinator(
-        hass=hass,
-        logger=LOGGER,
-        name=DOMAIN,
-        update_interval=timedelta(minutes=5),  # Check conditions every 5 minutes
-    )
+    LOGGER.info("Setting up Smart Cover Automation integration")
+
+    coordinator = DataUpdateCoordinator(hass, entry)
+
     entry.runtime_data = IntegrationData(
         integration=async_get_loaded_integration(hass, entry.domain),
         coordinator=coordinator,
-        config=entry.data,
+        config=dict(entry.data),
     )
 
+    LOGGER.debug("Starting initial coordinator refresh")
     # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
     await coordinator.async_config_entry_first_refresh()
 
+    LOGGER.debug("Setting up platforms: %s", PLATFORMS)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
+    LOGGER.info("Smart Cover Automation integration setup completed")
     return True
 
 
@@ -60,6 +60,7 @@ async def async_unload_entry(
     entry: IntegrationConfigEntry,
 ) -> bool:
     """Handle removal of an entry."""
+    LOGGER.info("Unloading Smart Cover Automation integration")
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
@@ -68,4 +69,5 @@ async def async_reload_entry(
     entry: IntegrationConfigEntry,
 ) -> None:
     """Reload config entry."""
+    LOGGER.info("Reloading Smart Cover Automation integration")
     await hass.config_entries.async_reload(entry.entry_id)
