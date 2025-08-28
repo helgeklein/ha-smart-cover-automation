@@ -19,6 +19,7 @@ from .data import IntegrationData
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+
     from .data import IntegrationConfigEntry
 
 PLATFORMS: list[Platform] = [

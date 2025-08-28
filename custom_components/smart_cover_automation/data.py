@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.loader import Integration
+
     from .coordinator import DataUpdateCoordinator
 
 
