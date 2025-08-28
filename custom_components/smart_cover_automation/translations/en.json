@@ -2,20 +2,68 @@
     "config": {
         "step": {
             "user": {
-                "description": "If you need help with the configuration have a look here: https://github.com/helgeklein/ha-smart_cover_automation",
+                "title": "Smart Cover Automation",
+                "description": "Configure automatic cover control based on temperature or sun position. For detailed help, see: https://github.com/helgeklein/ha-smart_cover_automation",
                 "data": {
-                    "username": "Username",
-                    "password": "Password"
+                    "automation_type": "Automation Type",
+                    "covers": "Covers to automate",
+                    "max_temperature": "Maximum temperature (when to close covers)",
+                    "min_temperature": "Minimum temperature (when to open covers)",
+                    "sun_elevation_threshold": "Sun elevation threshold (degrees)",
+                    "cover_direction": "Window direction"
                 }
             }
         },
         "error": {
-            "auth": "Username/Password is wrong.",
-            "connection": "Unable to connect to the server.",
-            "unknown": "Unknown error occurred."
+            "invalid_cover": "One or more selected covers are not available",
+            "no_direction": "Window direction must be set for sun-based automation"
         },
         "abort": {
-            "already_configured": "This entry is already configured."
+            "already_configured": "These covers are already configured in another automation"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Smart Cover Configuration",
+                "description": "Adjust automation settings",
+                "data": {
+                    "automation_type": "Automation Type",
+                    "max_temperature": "Maximum temperature",
+                    "min_temperature": "Minimum temperature",
+                    "sun_elevation_threshold": "Sun elevation threshold"
+                }
+            }
+        }
+    },
+    "selector": {
+        "automation_type": {
+            "options": {
+                "temperature": "Temperature-based",
+                "sun": "Sun-based"
+            }
+        }
+    },
+    "state": {
+        "automation_type": {
+            "temperature": "Temperature Control",
+            "sun": "Sun Position"
+        }
+    },
+    "entity": {
+        "binary_sensor": {
+            "automation_active": {
+                "name": "Automation Active",
+                "state": {
+                    "on": "Active",
+                    "off": "Inactive"
+                }
+            }
+        },
+        "switch": {
+            "automation_enabled": {
+                "name": "Enable Automation"
+            }
         }
     }
 }

@@ -1,0 +1,100 @@
+# Smart Cover Automation for Home Assistant
+
+A Home Assistant integration that intelligently automates your window covers based on temperature or sun position.
+
+## Features
+
+- Temperature-based automation: Controls covers based on indoor temperature
+- Sun-based automation: Automatically manages covers based on sun position
+- Supports multiple covers with different orientations
+- Works with any cover entity that supports open/close or position control
+
+## Installation
+
+1. Add this repository to HACS
+2. Install the "Smart Cover Automation" integration
+3. Restart Home Assistant
+4. Add the integration from the HA integrations page
+
+## Configuration
+
+### Temperature-based Automation
+
+Configure temperature thresholds to automatically manage covers:
+- When temperature exceeds maximum: Covers close to block heat
+- When temperature falls below minimum: Covers open to allow heat
+- When temperature is in range: Maintains current position
+
+### Sun-based Automation
+
+Intelligently manages covers based on sun position relative to each window:
+
+#### How it Works
+
+1. **Configuration**:
+   - Specify which direction each cover/window faces (N, NE, E, SE, S, SW, W, NW)
+   - Set sun elevation threshold (default 20°) that determines when covers respond
+   - System uses 45° tolerance to determine if sun is hitting a window
+   - Maximum closure is 90% to maintain some natural light
+
+2. **Automation Logic**:
+   ```
+   If sun elevation < threshold:
+       Open covers fully (let in light when sun is low)
+   Else:
+       Calculate angle between sun and window direction
+       If angle ≤ 45°:
+           Close proportionally to how directly sun hits
+           (direct hit = 90% closed, glancing = minimal closure)
+       Else:
+           Open fully (sun not hitting this window)
+   ```
+
+3. **Direction Angles**:
+   ```
+   North = 0°
+   Northeast = 45°
+   East = 90°
+   Southeast = 135°
+   South = 180°
+   Southwest = 225°
+   West = 270°
+   Northwest = 315°
+   ```
+
+#### Example Scenarios
+
+- **South-facing window at noon**:
+  - Sun is directly south (180°)
+  - Cover closes to 90% to block direct sunlight
+
+- **South window in morning**:
+  - Sun is east (~90°)
+  - Cover opens fully as sun isn't hitting window
+
+- **East-facing window**:
+  - Morning: Closes as sun shines directly
+  - Afternoon: Opens as sun moves west
+
+- **Any window at dawn/dusk**:
+  - Sun elevation is low
+  - Cover opens fully to maximize natural light
+
+The automation maintains comfort by:
+1. Letting in light when sun is low
+2. Blocking direct sunlight to prevent heat gain
+3. Allowing indirect light through partially closed covers
+4. Opening covers when sun moves away from window
+
+## Usage
+
+1. Install and add the integration
+2. Choose automation type (temperature or sun-based)
+3. Select covers to automate
+4. For temperature automation:
+   - Set minimum and maximum temperature thresholds
+5. For sun-based automation:
+   - Configure which direction each cover faces
+   - Optionally adjust the elevation threshold
+
+The integration will handle the rest automatically!

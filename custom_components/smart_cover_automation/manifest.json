@@ -4,9 +4,14 @@
     "codeowners": [
         "@helgeklein"
     ],
+    "integration_type": "helper",
+    "iot_class": "calculated",
+    "dependencies": [
+        "sun",
+        "weather"
+    ],
     "config_flow": true,
     "documentation": "https://github.com/helgeklein/ha-smart_cover_automation",
-    "iot_class": "cloud_polling",
     "issue_tracker": "https://github.com/helgeklein/ha-smart_cover_automation/issues",
     "version": "0.1.0"
 }
