@@ -22,6 +22,17 @@ from .conftest import (
     create_temperature_config,
 )
 
+# Constants for magic numbers
+HOT_TEMP = "26.0"
+COMFORTABLE_TEMP = "22.0"
+COLD_TEMP = "18.0"
+COVER_OPEN = 100
+COVER_CLOSED = 0
+LOW_SUN_ELEVATION = 20.0
+DIRECT_SUN_AZIMUTH = 180.0
+NUM_COVERS = 3
+MIN_SERVICE_CALLS = 2
+
 
 class TestIntegrationScenarios:
     """Test real-world integration scenarios."""
@@ -33,9 +44,9 @@ class TestIntegrationScenarios:
         coordinator = DataUpdateCoordinator(hass, config_entry)
 
         # Mock states for full cycle test
-        temp_states = ["26.0", "22.0", "18.0"]  # Hot -> Comfortable -> Cold
-        cover_positions = [100, 0, 0]  # Open -> Closed -> Closed
-        expected_positions = [0, 0, 100]  # Close -> Maintain -> Open
+        temp_states = [HOT_TEMP, COMFORTABLE_TEMP, COLD_TEMP]
+        cover_positions = [COVER_OPEN, COVER_CLOSED, COVER_CLOSED]
+        expected_positions = [COVER_CLOSED, COVER_CLOSED, COVER_OPEN]
 
         for i, (temp, current_pos, expected_pos) in enumerate(
             zip(temp_states, cover_positions, expected_positions, strict=False)
@@ -51,41 +62,42 @@ class TestIntegrationScenarios:
                 "supported_features": 15,
             }
 
-            hass.states.get.side_effect = lambda entity_id: {
-                MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
-                MOCK_COVER_ENTITY_ID: cover_state,
-            }.get(entity_id)
+            hass.states.get.side_effect = (
+                lambda entity_id, ts=temp_state, cs=cover_state: {
+                    MOCK_TEMP_SENSOR_ENTITY_ID: ts,
+                    MOCK_COVER_ENTITY_ID: cs,
+                }.get(entity_id)
+            )
 
             hass.services.async_call.reset_mock()
 
             # Execute automation
             try:
-                result = await coordinator._async_update_data()
+                await coordinator.async_refresh()
+                result = coordinator.data
 
                 # Verify result structure
-                if not result or "covers" not in result:
-                    raise AssertionError(f"Invalid result structure in cycle {i}")
+                assert result is not None, f"Result is None in cycle {i}"
+                assert "covers" in result, f"Invalid result structure in cycle {i}"
 
                 cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
-                if cover_data["desired_position"] != expected_pos:
-                    raise AssertionError(
-                        f"Cycle {i}: Expected position {expected_pos}, "
-                        f"got {cover_data['desired_position']}"
-                    )
+                assert cover_data["desired_position"] == expected_pos, (
+                    f"Cycle {i}: Expected position {expected_pos}, "
+                    f"got {cover_data['desired_position']}"
+                )
 
                 # Check service calls only when position changes
                 if current_pos != expected_pos:
-                    if not hass.services.async_call.called:
-                        raise AssertionError(
-                            f"Cycle {i}: Service should have been called"
-                        )
-                elif hass.services.async_call.called:
-                    raise AssertionError(
+                    assert hass.services.async_call.called, (
+                        f"Cycle {i}: Service should have been called"
+                    )
+                else:
+                    assert not hass.services.async_call.called, (
                         f"Cycle {i}: Service should not have been called"
                     )
 
             except Exception as e:
-                raise AssertionError(f"Automation failed in cycle {i}: {e}") from e
+                pytest.fail(f"Automation failed in cycle {i}: {e}")
 
     async def test_sun_automation_daily_cycle(self) -> None:
         """Test sun automation through daily cycle."""
@@ -107,31 +119,37 @@ class TestIntegrationScenarios:
             sun_state.attributes = {"elevation": elevation, "azimuth": azimuth}
 
             cover_state = MagicMock()
-            cover_state.attributes = {"current_position": 100, "supported_features": 15}
+            cover_state.attributes = {
+                "current_position": COVER_OPEN,
+                "supported_features": 15,
+            }
 
-            hass.states.get.side_effect = lambda entity_id: {
-                MOCK_SUN_ENTITY_ID: sun_state,
-                MOCK_COVER_ENTITY_ID: cover_state,
-            }.get(entity_id)
+            hass.states.get.side_effect = (
+                lambda entity_id, ss=sun_state, cs=cover_state: {
+                    MOCK_SUN_ENTITY_ID: ss,
+                    MOCK_COVER_ENTITY_ID: cs,
+                }.get(entity_id)
+            )
 
-            result = await coordinator._async_update_data()
+            await coordinator.async_refresh()
+            result = coordinator.data
 
-            if not result or "covers" not in result:
-                raise AssertionError(
-                    f"Invalid result for sun position {elevation}°, {azimuth}°"
-                )
+            assert result is not None, "Result is None"
+            assert "covers" in result, (
+                f"Invalid result for sun position {elevation}°, {azimuth}°"
+            )
 
             cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
 
             # Verify logical sun behavior
-            if elevation < 20:  # Low sun
-                if cover_data["desired_position"] != 100:
-                    raise AssertionError(f"Low sun should open covers: {elevation}°")
-            elif elevation >= 20 and azimuth == 180.0:  # High sun, direct south
-                if cover_data["desired_position"] == 100:
-                    raise AssertionError(
-                        f"Direct sun should close covers: {elevation}°, {azimuth}°"
-                    )
+            if elevation < LOW_SUN_ELEVATION:  # Low sun
+                assert cover_data["desired_position"] == COVER_OPEN, (
+                    f"Low sun should open covers: {elevation}°"
+                )
+            elif elevation >= LOW_SUN_ELEVATION and azimuth == DIRECT_SUN_AZIMUTH:
+                assert cover_data["desired_position"] != COVER_OPEN, (
+                    f"Direct sun should close covers: {elevation}°, {azimuth}°"
+                )
 
     async def test_error_recovery_scenarios(self) -> None:
         """Test error handling and recovery scenarios."""
@@ -143,7 +161,7 @@ class TestIntegrationScenarios:
         hass.states.get.return_value = None
 
         with pytest.raises(SensorNotFoundError):
-            await coordinator._async_update_data()
+            await coordinator.async_refresh()
 
         # Test 2: Invalid temperature reading with recovery
         temp_state = MagicMock()
@@ -153,12 +171,15 @@ class TestIntegrationScenarios:
         hass.states.get.return_value = temp_state
 
         with pytest.raises(InvalidSensorReadingError):
-            await coordinator._async_update_data()
+            await coordinator.async_refresh()
 
         # Test 3: Service call failure handling
-        temp_state.state = "26.0"  # Valid hot temperature
+        temp_state.state = HOT_TEMP  # Valid hot temperature
         cover_state = MagicMock()
-        cover_state.attributes = {"current_position": 100, "supported_features": 15}
+        cover_state.attributes = {
+            "current_position": COVER_OPEN,
+            "supported_features": 15,
+        }
 
         hass.states.get.side_effect = lambda entity_id: {
             MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
@@ -169,9 +190,10 @@ class TestIntegrationScenarios:
         hass.services.async_call.side_effect = OSError("Service failed")
 
         # Should not raise exception, just log error
-        result = await coordinator._async_update_data()
-        if not result or "covers" not in result:
-            raise AssertionError("Automation should continue despite service failure")
+        await coordinator.async_refresh()
+        result = coordinator.data
+        assert result is not None, "Automation should continue despite service failure"
+        assert "covers" in result, "Automation should continue despite service failure"
 
     async def test_configuration_validation(self) -> None:
         """Test configuration validation scenarios."""
@@ -184,7 +206,7 @@ class TestIntegrationScenarios:
         coordinator = DataUpdateCoordinator(hass, config_entry)
 
         with pytest.raises(ConfigurationError):
-            await coordinator._async_update_data()
+            await coordinator.async_refresh()
 
         # Test invalid automation type
         config = create_temperature_config()
@@ -193,7 +215,7 @@ class TestIntegrationScenarios:
         coordinator = DataUpdateCoordinator(hass, config_entry)
 
         with pytest.raises(ConfigurationError):
-            await coordinator._async_update_data()
+            await coordinator.async_refresh()
 
     async def test_concurrent_cover_control(self) -> None:
         """Test controlling multiple covers simultaneously."""
@@ -205,7 +227,7 @@ class TestIntegrationScenarios:
 
         # Setup hot temperature scenario
         temp_state = MagicMock()
-        temp_state.state = "26.0"
+        temp_state.state = HOT_TEMP
         temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
 
         # Create different cover states
@@ -226,21 +248,23 @@ class TestIntegrationScenarios:
         hass.states.get.side_effect = get_state
         hass.services.async_call.reset_mock()
 
-        result = await coordinator._async_update_data()
+        await coordinator.async_refresh()
+        result = coordinator.data
 
         # Verify all covers were processed
-        if len(result["covers"]) != 3:
-            raise AssertionError(f"Expected 3 covers, got {len(result['covers'])}")
+        assert len(result["covers"]) == NUM_COVERS, (
+            f"Expected {NUM_COVERS} covers, got {len(result['covers'])}"
+        )
 
         # Verify all covers should close (position 0) due to hot temperature
         for cover_id in config["covers"]:
-            if result["covers"][cover_id]["desired_position"] != 0:
-                raise AssertionError(f"Cover {cover_id} should close in hot weather")
+            assert result["covers"][cover_id]["desired_position"] == COVER_CLOSED, (
+                f"Cover {cover_id} should close in hot weather"
+            )
 
         # Verify service calls were made for covers that needed to move
         call_count = hass.services.async_call.call_count
-        if call_count == 0:
-            raise AssertionError("No service calls made for cover control")
+        assert call_count > 0, "No service calls made for cover control"
 
     async def test_mixed_cover_capabilities(self) -> None:
         """Test handling covers with different capabilities."""
@@ -252,16 +276,22 @@ class TestIntegrationScenarios:
 
         # Setup cold temperature to open covers
         temp_state = MagicMock()
-        temp_state.state = "18.0"
+        temp_state.state = COLD_TEMP
         temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
 
         # Smart cover with position support
         smart_cover = MagicMock()
-        smart_cover.attributes = {"current_position": 0, "supported_features": 15}
+        smart_cover.attributes = {
+            "current_position": COVER_CLOSED,
+            "supported_features": 15,
+        }
 
         # Basic cover with only open/close
         basic_cover = MagicMock()
-        basic_cover.attributes = {"current_position": 0, "supported_features": 3}
+        basic_cover.attributes = {
+            "current_position": COVER_CLOSED,
+            "supported_features": 3,
+        }
 
         hass.states.get.side_effect = lambda entity_id: {
             MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
@@ -269,25 +299,28 @@ class TestIntegrationScenarios:
             "cover.basic": basic_cover,
         }.get(entity_id)
 
-        await coordinator._async_update_data()
+        await coordinator.async_refresh()
 
         # Check that appropriate services were called
         calls = [call.args for call in hass.services.async_call.call_args_list]
 
         # Should have calls for both covers
-        if len(calls) < 2:
-            raise AssertionError(f"Expected at least 2 service calls, got {len(calls)}")
+        assert len(calls) >= MIN_SERVICE_CALLS, (
+            f"Expected at least {MIN_SERVICE_CALLS} service calls, got {len(calls)}"
+        )
 
         # Smart cover should use set_cover_position
         smart_call = next(
             (call for call in calls if call[2]["entity_id"] == "cover.smart"), None
         )
-        if not smart_call or smart_call[1] != "set_cover_position":
-            raise AssertionError("Smart cover should use set_cover_position")
+        assert smart_call is not None, "No call found for smart cover"
+        assert smart_call[1] == "set_cover_position", (
+            "Smart cover should use set_cover_position"
+        )
 
         # Basic cover should use open_cover
         basic_call = next(
             (call for call in calls if call[2]["entity_id"] == "cover.basic"), None
         )
-        if not basic_call or basic_call[1] != "open_cover":
-            raise AssertionError("Basic cover should use open_cover")
+        assert basic_call is not None, "No call found for basic cover"
+        assert basic_call[1] == "open_cover", "Basic cover should use open_cover"

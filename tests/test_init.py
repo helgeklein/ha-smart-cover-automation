@@ -181,7 +181,7 @@ class TestIntegrationSetup:
             )
 
             # Check that runtime_data was set
-            assert config_entry.runtime_data == mock_data_class.return_value
+            assert config_entry.runtime_data is mock_data_class.return_value
 
     async def test_update_listener_setup(self) -> None:
         """Test that update listener is properly configured."""

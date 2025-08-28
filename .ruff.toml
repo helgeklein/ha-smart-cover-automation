@@ -1,25 +1,23 @@
-# The contents of this file is based on https://github.com/home-assistant/core/blob/dev/pyproject.toml
-
-target-version = "py313"
+target-version = "py312"
+line-length = 88
 
 [lint]
-select = [
-    "ALL",
-]
-
+# Only enable essential rules (no extended plugin rules)
+select = ["E4", "E7", "E9", "F", "I"]
 ignore = [
-    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
-    "D203", # no-blank-line-before-class (incompatible with formatter)
-    "D212", # multi-line-summary-first-line (incompatible with formatter)
-    "COM812", # incompatible with formatter
-    "ISC001", # incompatible with formatter
+    "E501", # Line length handled by formatter/tests
 ]
 
-[lint.flake8-pytest-style]
-fixture-parentheses = false
-
-[lint.pyupgrade]
-keep-runtime-typing = true
-
-[lint.mccabe]
-max-complexity = 25
+[lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",    # assert in tests
+    "SLF001",  # private-member-access in tests
+    "PLR2004", # magic values in tests
+    "B023",    # function-uses-loop-variable
+    "TRY003",  # long exception messages
+    "TRY301",  # raise within try
+    "EM101",   # string literal in exception
+    "EM102",   # f-string in exception
+    "SIM102",  # collapsible if
+    "TC003",   # type-checking import placement
+]

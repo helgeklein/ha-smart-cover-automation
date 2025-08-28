@@ -1,0 +1,22 @@
+# Ruff configuration file
+
+# Basic settings
+target-version = "py311"
+line-length = 88
+
+# Enable specific rules
+select = ["F", "E4", "E7", "E9", "I"]
+
+# Per-file ignores for test files
+[per-file-ignores]
+"tests/*.py" = [
+    "S101",    # assert
+    "SLF001",  # private-member-access
+    "PLR2004", # magic-value-comparison
+    "B023",    # function-uses-loop-variable
+    "TRY003",  # raise-vanilla-args
+    "TRY301",  # raise-within-try
+    "EM101",   # raw-string-in-exception
+    "EM102",   # f-string-in-exception
+    "SIM102",  # collapsible-if
+]

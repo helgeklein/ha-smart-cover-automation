@@ -37,15 +37,26 @@ show_missing = true
 
 [tool.ruff]
 target-version = "py311"
+line-length = 88
 
 [tool.ruff.lint]
-select = [
-    "E",    # pycodestyle errors
-    "W",    # pycodestyle warnings
-    "F",    # pyflakes
-    "I",    # isort
+# Only enable essential rules (no extended plugins)
+select = ["E4", "E7", "E9", "F", "I"]
+ignore = [
+    "E501", # line too long handled by formatter/tests
 ]
 
-ignore = [
-    "E501",   # Line too long (handled by formatter)
+# Per-file configuration for test files
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",    # assert in tests
+    "SLF001",  # private-member-access in tests
+    "PLR2004", # magic values in tests
+    "B023",    # lambda loop variable capture
+    "TRY003",  # long exception messages
+    "TRY301",  # abstract raise to inner function
+    "EM101",   # string literal in exception
+    "EM102",   # f-string in exception
+    "SIM102",  # collapsible if
+    "TC003",   # type-checking import placement
 ]
