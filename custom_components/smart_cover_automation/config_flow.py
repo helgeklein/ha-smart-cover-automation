@@ -17,6 +17,7 @@ from .const import (
     DEFAULT_MAX_TEMP,
     DEFAULT_MIN_TEMP,
     DOMAIN,
+    LOGGER,
 )
 
 
@@ -33,22 +34,58 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
-            # Validate cover entities exist
-            for cover in user_input[CONF_COVERS]:
-                if not self.hass.states.async_available(cover):
+            try:
+                # Validate covers exist and are available
+                invalid_covers = []
+                for cover in user_input[CONF_COVERS]:
+                    state = self.hass.states.get(cover)
+                    if not state:
+                        invalid_covers.append(cover)
+                    elif state.state == "unavailable":
+                        LOGGER.warning(
+                            "Cover %s is currently unavailable but will be configured",
+                            cover,
+                        )
+
+                if invalid_covers:
                     errors["base"] = "invalid_cover"
-                    break
+                    LOGGER.error(
+                        "Invalid covers selected: %s",
+                        invalid_covers,
+                    )
 
-            if not errors:
-                # Create unique ID based on the covers being automated
-                unique_id = "_".join(sorted(user_input[CONF_COVERS]))
-                await self.async_set_unique_id(unique_id)
-                self._abort_if_unique_id_configured()
+                # Validate temperature ranges if temperature automation
+                if (
+                    user_input[CONF_AUTOMATION_TYPE] == AUTOMATION_TYPE_TEMPERATURE
+                    and CONF_MAX_TEMP in user_input
+                    and CONF_MIN_TEMP in user_input
+                ):
+                    max_temp = user_input[CONF_MAX_TEMP]
+                    min_temp = user_input[CONF_MIN_TEMP]
+                    if max_temp <= min_temp:
+                        errors["base"] = "invalid_temperature_range"
+                        LOGGER.error(
+                            "Invalid temperature range: max=%s <= min=%s",
+                            max_temp,
+                            min_temp,
+                        )
 
-                return self.async_create_entry(
-                    title=f"Cover Automation ({len(user_input[CONF_COVERS])} covers)",
-                    data=user_input,
-                )
+                if not errors:
+                    # Create unique ID based on the covers being automated
+                    unique_id = "_".join(sorted(user_input[CONF_COVERS]))
+                    await self.async_set_unique_id(unique_id)
+                    self._abort_if_unique_id_configured()
+
+                    return self.async_create_entry(
+                        title=(
+                            f"Cover Automation ({len(user_input[CONF_COVERS])} covers)"
+                        ),
+                        data=user_input,
+                    )
+
+            except (KeyError, ValueError, TypeError) as err:
+                LOGGER.exception("Configuration validation error: %s", err)
+                errors["base"] = "invalid_config"
 
         return self.async_show_form(
             step_id="user",

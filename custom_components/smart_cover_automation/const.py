@@ -11,6 +11,19 @@ To enable verbose logging, add this to your configuration.yaml:
 logger:
   logs:
     custom_components.smart_cover_automation: debug
+
+Error Handling:
+- The integration includes comprehensive error handling for:
+  * Missing or invalid temperature sensors
+  * Sun integration availability issues
+  * Cover entity unavailability
+  * Service call failures (cover control)
+  * Configuration validation errors
+  * Integration setup/teardown failures
+- Errors are logged with appropriate detail levels
+- Critical errors will prevent automation but allow integration to continue
+- Service call failures are logged but don't stop other covers from operating
+- All custom exceptions inherit from UpdateFailed for proper coordinator handling
 """
 
 from logging import Logger, getLogger

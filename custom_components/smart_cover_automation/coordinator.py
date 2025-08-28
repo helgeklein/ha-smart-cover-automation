@@ -57,6 +57,9 @@ ERR_NO_TEMP_SENSOR = "Temperature sensor not found"
 ERR_INVALID_TEMP = "Invalid temperature reading"
 ERR_NO_SUN = "Sun integration not found"
 ERR_INVALID_SUN = "Invalid sun position data"
+ERR_SERVICE_CALL = "Service call failed"
+ERR_ENTITY_UNAVAILABLE = "Entity is unavailable"
+ERR_INVALID_CONFIG = "Invalid configuration"
 
 # Direction to azimuth mapping
 DIRECTION_TO_AZIMUTH = {
@@ -78,17 +81,49 @@ class SmartCoverError(UpdateFailed):
 class SensorNotFoundError(SmartCoverError):
     """Temperature sensor could not be found."""
 
-    def __init__(self) -> None:
+    def __init__(self, sensor_name: str = "sensor.temperature") -> None:
         """Initialize sensor not found error."""
-        super().__init__(ERR_NO_TEMP_SENSOR)
+        super().__init__(f"Temperature sensor '{sensor_name}' not found")
+        self.sensor_name = sensor_name
 
 
 class InvalidSensorReadingError(SmartCoverError):
     """Invalid sensor reading received."""
 
-    def __init__(self) -> None:
+    def __init__(self, sensor_name: str, value: str) -> None:
         """Initialize invalid sensor reading error."""
-        super().__init__(ERR_INVALID_TEMP)
+        super().__init__(f"Invalid reading from '{sensor_name}': {value}")
+        self.sensor_name = sensor_name
+        self.value = value
+
+
+class ServiceCallError(SmartCoverError):
+    """Service call failed."""
+
+    def __init__(self, service: str, entity_id: str, error: str) -> None:
+        """Initialize service call error."""
+        super().__init__(f"Failed to call {service} for {entity_id}: {error}")
+        self.service = service
+        self.entity_id = entity_id
+        self.error = error
+
+
+class EntityUnavailableError(SmartCoverError):
+    """Entity is unavailable."""
+
+    def __init__(self, entity_id: str) -> None:
+        """Initialize entity unavailable error."""
+        super().__init__(f"Entity '{entity_id}' is unavailable")
+        self.entity_id = entity_id
+
+
+class ConfigurationError(SmartCoverError):
+    """Configuration is invalid."""
+
+    def __init__(self, message: str) -> None:
+        """Initialize configuration error."""
+        super().__init__(f"Configuration error: {message}")
+        self.message = message
 
 
 class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
@@ -119,42 +154,72 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update automation state and control covers."""
-        config = self.config_entry.runtime_data.config
-        automation_type = config[CONF_AUTOMATION_TYPE]
-        covers = config[CONF_COVERS]
+        try:
+            config = self.config_entry.runtime_data.config
+            automation_type = config[CONF_AUTOMATION_TYPE]
+            covers = config[CONF_COVERS]
 
-        LOGGER.info(
-            "Starting cover automation update: type=%s, covers=%s",
-            automation_type,
-            covers,
-        )
+            LOGGER.info(
+                "Starting cover automation update: type=%s, covers=%s",
+                automation_type,
+                covers,
+            )
 
-        # Get current states
-        states = {entity_id: self.hass.states.get(entity_id) for entity_id in covers}
+            # Validate configuration
+            if not covers:
+                error_msg = "No covers configured for automation"
+                raise ConfigurationError(error_msg)
 
-        # Log current cover states
-        for entity_id, state in states.items():
-            if state:
-                current_pos = state.attributes.get("current_position")
-                LOGGER.debug(
-                    "Cover %s current state: position=%s, state=%s",
-                    entity_id,
-                    current_pos,
-                    state.state,
-                )
-            else:
-                LOGGER.warning("Cover %s is unavailable", entity_id)
+            # Get current states
+            states = {
+                entity_id: self.hass.states.get(entity_id) for entity_id in covers
+            }
 
-        if automation_type == AUTOMATION_TYPE_TEMPERATURE:
-            LOGGER.debug("Using temperature-based automation")
-            return await self._handle_temperature_automation(states, config)
+            # Log current cover states and check availability
+            available_covers = 0
+            for entity_id, state in states.items():
+                if state:
+                    current_pos = state.attributes.get("current_position")
+                    LOGGER.debug(
+                        "Cover %s current state: position=%s, state=%s",
+                        entity_id,
+                        current_pos,
+                        state.state,
+                    )
+                    available_covers += 1
+                else:
+                    LOGGER.warning("Cover %s is unavailable", entity_id)
 
-        if automation_type == AUTOMATION_TYPE_SUN:
-            LOGGER.debug("Using sun-based automation")
-            return await self._handle_sun_automation(states)
+            # Ensure at least one cover is available
+            if available_covers == 0:
+                error_msg = "All configured covers are unavailable"
+                LOGGER.error(error_msg)
+                all_covers_entity = "all_covers"
+                raise EntityUnavailableError(all_covers_entity)
 
-        LOGGER.error("Unknown automation type: %s", automation_type)
-        return {"error": "Unknown automation type"}
+            if automation_type == AUTOMATION_TYPE_TEMPERATURE:
+                LOGGER.debug("Using temperature-based automation")
+                return await self._handle_temperature_automation(states, config)
+
+            if automation_type == AUTOMATION_TYPE_SUN:
+                LOGGER.debug("Using sun-based automation")
+                return await self._handle_sun_automation(states)
+
+            LOGGER.error("Unknown automation type: %s", automation_type)
+            error_msg = f"Unknown automation type: {automation_type}"
+            raise ConfigurationError(error_msg)
+
+        except SmartCoverError:
+            # Re-raise our custom errors
+            raise
+        except (KeyError, AttributeError) as err:
+            error_msg = f"Configuration error: {err}"
+            LOGGER.error("Configuration validation failed: %s", error_msg)
+            raise ConfigurationError(str(err)) from err
+        except (OSError, ValueError, TypeError) as err:
+            error_msg = f"System error during automation update: {err}"
+            LOGGER.error(error_msg)
+            raise UpdateFailed(error_msg) from err
 
     async def _handle_temperature_automation(
         self,
@@ -168,7 +233,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         temp_sensor = self.hass.states.get("sensor.temperature")  # Configure this
         if not temp_sensor:
             LOGGER.error("Temperature sensor 'sensor.temperature' not found")
-            raise SensorNotFoundError from None
+            sensor_name = "sensor.temperature"
+            raise SensorNotFoundError(sensor_name) from None
 
         try:
             current_temp = float(temp_sensor.state)
@@ -178,7 +244,9 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 temp_sensor.entity_id,
                 temp_sensor.state,
             )
-            raise InvalidSensorReadingError from err
+            raise InvalidSensorReadingError(
+                temp_sensor.entity_id, str(temp_sensor.state)
+            ) from err
 
         max_temp = config[CONF_MAX_TEMP]
         min_temp = config[CONF_MIN_TEMP]
@@ -251,44 +319,56 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         self, entity_id: str, desired_pos: int, features: int
     ) -> None:
         """Set cover position using best available method."""
-        if features & CoverEntityFeature.SET_POSITION:
-            LOGGER.debug(
-                "Setting cover %s to position %d using set_cover_position service",
+        try:
+            if features & CoverEntityFeature.SET_POSITION:
+                LOGGER.debug(
+                    "Setting cover %s to position %d using set_cover_position service",
+                    entity_id,
+                    desired_pos,
+                )
+                await self.hass.services.async_call(
+                    "cover",
+                    "set_cover_position",
+                    {"entity_id": entity_id, "position": desired_pos},
+                )
+            elif desired_pos == COVER_FULLY_CLOSED:
+                LOGGER.debug(
+                    "Closing cover %s using close_cover service (no position support)",
+                    entity_id,
+                )
+                await self.hass.services.async_call(
+                    "cover",
+                    "close_cover",
+                    {"entity_id": entity_id},
+                )
+            elif desired_pos == COVER_FULLY_OPEN:
+                LOGGER.debug(
+                    "Opening cover %s using open_cover service (no position support)",
+                    entity_id,
+                )
+                await self.hass.services.async_call(
+                    "cover",
+                    "open_cover",
+                    {"entity_id": entity_id},
+                )
+            else:
+                LOGGER.warning(
+                    "Cannot set cover %s position: desired=%d, features=%d",
+                    entity_id,
+                    desired_pos,
+                    features,
+                )
+        except (OSError, ValueError, TypeError, RuntimeError) as err:
+            error_msg = f"Service call failed: {err}"
+            LOGGER.error(
+                "Failed to control cover %s: %s (desired_pos=%d, features=%d)",
                 entity_id,
-                desired_pos,
-            )
-            await self.hass.services.async_call(
-                "cover",
-                "set_cover_position",
-                {"entity_id": entity_id, "position": desired_pos},
-            )
-        elif desired_pos == COVER_FULLY_CLOSED:
-            LOGGER.debug(
-                "Closing cover %s using close_cover service (no position support)",
-                entity_id,
-            )
-            await self.hass.services.async_call(
-                "cover",
-                "close_cover",
-                {"entity_id": entity_id},
-            )
-        elif desired_pos == COVER_FULLY_OPEN:
-            LOGGER.debug(
-                "Opening cover %s using open_cover service (no position support)",
-                entity_id,
-            )
-            await self.hass.services.async_call(
-                "cover",
-                "open_cover",
-                {"entity_id": entity_id},
-            )
-        else:
-            LOGGER.warning(
-                "Cannot set cover %s position: desired=%d, features=%d",
-                entity_id,
+                error_msg,
                 desired_pos,
                 features,
             )
+            # Don't raise - continue with other covers
+            # We just log the error for debugging
 
     def _calculate_angle_difference(
         self, azimuth: float, direction_azimuth: float

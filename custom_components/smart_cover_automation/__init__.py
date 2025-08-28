@@ -35,24 +35,38 @@ async def async_setup_entry(
     """Set up this integration using the UI."""
     LOGGER.info("Setting up Smart Cover Automation integration")
 
-    coordinator = DataUpdateCoordinator(hass, entry)
+    try:
+        coordinator = DataUpdateCoordinator(hass, entry)
 
-    entry.runtime_data = IntegrationData(
-        integration=async_get_loaded_integration(hass, entry.domain),
-        coordinator=coordinator,
-        config=dict(entry.data),
-    )
+        entry.runtime_data = IntegrationData(
+            integration=async_get_loaded_integration(hass, entry.domain),
+            coordinator=coordinator,
+            config=dict(entry.data),
+        )
 
-    LOGGER.debug("Starting initial coordinator refresh")
-    # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
-    await coordinator.async_config_entry_first_refresh()
+        LOGGER.debug("Starting initial coordinator refresh")
+        # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
+        await coordinator.async_config_entry_first_refresh()
 
-    LOGGER.debug("Setting up platforms: %s", PLATFORMS)
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+        LOGGER.debug("Setting up platforms: %s", PLATFORMS)
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-    LOGGER.info("Smart Cover Automation integration setup completed")
-    return True
+    except (OSError, ValueError, TypeError) as err:
+        LOGGER.error(
+            "Failed to set up Smart Cover Automation integration: %s",
+            err,
+        )
+        return False
+    except (ImportError, AttributeError, KeyError) as err:
+        LOGGER.exception(
+            "Configuration error during Smart Cover Automation setup: %s",
+            err,
+        )
+        return False
+    else:
+        LOGGER.info("Smart Cover Automation integration setup completed")
+        return True
 
 
 async def async_unload_entry(
@@ -61,7 +75,14 @@ async def async_unload_entry(
 ) -> bool:
     """Handle removal of an entry."""
     LOGGER.info("Unloading Smart Cover Automation integration")
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    try:
+        return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    except (OSError, ValueError, TypeError) as err:
+        LOGGER.error(
+            "Error unloading Smart Cover Automation integration: %s",
+            err,
+        )
+        return False
 
 
 async def async_reload_entry(
