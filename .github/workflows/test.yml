@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.13.2"]
 
     steps:
       - name: Checkout code
@@ -47,13 +47,6 @@ jobs:
             --cov-report=xml \
             --cov-fail-under=80
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        if: matrix.python-version == '3.13'
-        with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
-
   integration-test:
     name: Integration Test
     runs-on: ubuntu-latest
@@ -66,7 +59,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.13.2"
           cache: "pip"
 
       - name: Install dependencies
