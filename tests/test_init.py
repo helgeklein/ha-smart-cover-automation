@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.core import HomeAssistant
@@ -11,6 +12,7 @@ from custom_components.smart_cover_automation import (
     async_setup_entry,
     async_unload_entry,
 )
+from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
 from .conftest import MockConfigEntry, create_temperature_config
 
@@ -38,7 +40,9 @@ class TestIntegrationSetup:
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator_class.return_value = mock_coordinator
 
-            result = await async_setup_entry(hass, config_entry)
+            result = await async_setup_entry(
+                hass, cast(IntegrationConfigEntry, config_entry)
+            )
 
         assert result is True
         mock_coordinator.async_config_entry_first_refresh.assert_called_once()
@@ -53,7 +57,9 @@ class TestIntegrationSetup:
             "custom_components.smart_cover_automation.DataUpdateCoordinator",
             side_effect=ValueError("Coordinator init failed"),
         ):
-            result = await async_setup_entry(hass, config_entry)
+            result = await async_setup_entry(
+                hass, cast(IntegrationConfigEntry, config_entry)
+            )
 
         assert result is False
 
@@ -76,7 +82,9 @@ class TestIntegrationSetup:
             )
             mock_coordinator_class.return_value = mock_coordinator
 
-            result = await async_setup_entry(hass, config_entry)
+            result = await async_setup_entry(
+                hass, cast(IntegrationConfigEntry, config_entry)
+            )
 
         assert result is False
 
@@ -102,7 +110,9 @@ class TestIntegrationSetup:
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator_class.return_value = mock_coordinator
 
-            result = await async_setup_entry(hass, config_entry)
+            result = await async_setup_entry(
+                hass, cast(IntegrationConfigEntry, config_entry)
+            )
 
         assert result is False
 
@@ -114,7 +124,9 @@ class TestIntegrationSetup:
 
         config_entry = MockConfigEntry(create_temperature_config())
 
-        result = await async_unload_entry(hass, config_entry)
+        result = await async_unload_entry(
+            hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
         assert result is True
         hass.config_entries.async_unload_platforms.assert_called_once()
@@ -129,7 +141,9 @@ class TestIntegrationSetup:
 
         config_entry = MockConfigEntry(create_temperature_config())
 
-        result = await async_unload_entry(hass, config_entry)
+        result = await async_unload_entry(
+            hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
         assert result is False
 
@@ -140,8 +154,7 @@ class TestIntegrationSetup:
         hass.config_entries.async_reload = AsyncMock()
 
         config_entry = MockConfigEntry(create_temperature_config())
-
-        await async_reload_entry(hass, config_entry)
+        await async_reload_entry(hass, cast(IntegrationConfigEntry, config_entry))
 
         hass.config_entries.async_reload.assert_called_once_with(config_entry.entry_id)
 
@@ -171,7 +184,7 @@ class TestIntegrationSetup:
             mock_integration = MagicMock()
             mock_get_integration.return_value = mock_integration
 
-            await async_setup_entry(hass, config_entry)
+            await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
 
             # Check that IntegrationData was created with correct parameters
             mock_data_class.assert_called_once_with(
@@ -203,7 +216,7 @@ class TestIntegrationSetup:
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator_class.return_value = mock_coordinator
 
-            await async_setup_entry(hass, config_entry)
+            await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
 
             # Check that update listener was added
             config_entry.add_update_listener.assert_called_once()

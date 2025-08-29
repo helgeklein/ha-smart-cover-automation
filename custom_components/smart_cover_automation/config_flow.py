@@ -25,6 +25,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for the integration."""
 
     VERSION = 1
+    # Provide explicit domain attribute for tests referencing FlowHandler.domain
+    domain = DOMAIN
 
     async def async_step_user(
         self,

@@ -1,7 +1,13 @@
-"""Switch platform for smart_cover_automation."""
+"""Switch platform for smart_cover_automation.
+
+Controls an integration switch backed by the DataUpdateCoordinator. Turning the
+switch on/off optionally uses a client from runtime_data and requests a
+coordinator refresh to propagate state.
+"""
 
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
@@ -51,17 +57,26 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
         super().__init__(coordinator)
         self.entity_description = entity_description
 
-    @property
-    def is_on(self) -> bool:
+    @cached_property
+    def available(self) -> bool | None:  # type: ignore[override]
+        """Return availability; unify base class types for type checkers."""
+        return super().available
+
+    @cached_property
+    def is_on(self) -> bool | None:  # type: ignore[override]
         """Return true if the switch is on."""
         return self.coordinator.data.get("title", "") == "foo"
 
     async def async_turn_on(self, **_: Any) -> None:
         """Turn on the switch."""
-        await self.coordinator.config_entry.runtime_data.client.async_set_title("bar")
+        client = self.coordinator.config_entry.runtime_data.client
+        if client is not None:
+            await client.async_set_title("bar")
         await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **_: Any) -> None:
         """Turn off the switch."""
-        await self.coordinator.config_entry.runtime_data.client.async_set_title("foo")
+        client = self.coordinator.config_entry.runtime_data.client
+        if client is not None:
+            await client.async_set_title("foo")
         await self.coordinator.async_request_refresh()

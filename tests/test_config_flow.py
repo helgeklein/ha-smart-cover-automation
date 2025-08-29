@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -25,6 +26,11 @@ from .conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2
 
 class TestConfigFlow:
     """Test config flow."""
+
+    @staticmethod
+    def _as_dict(result: object) -> dict[str, Any]:
+        """Loosen HA's ConfigFlowResult typing for test assertions."""
+        return cast(dict[str, Any], result)
 
     @pytest.fixture
     def flow_handler(self) -> FlowHandler:
@@ -60,6 +66,7 @@ class TestConfigFlow:
             patch.object(flow_handler, "_abort_if_unique_id_configured"),
         ):
             result = await flow_handler.async_step_user(user_input)
+            result = self._as_dict(result)
 
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"] == user_input
@@ -85,6 +92,7 @@ class TestConfigFlow:
             patch.object(flow_handler, "_abort_if_unique_id_configured"),
         ):
             result = await flow_handler.async_step_user(user_input)
+            result = self._as_dict(result)
 
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"] == user_input
@@ -104,6 +112,7 @@ class TestConfigFlow:
         }
 
         result = await flow_handler.async_step_user(user_input)
+        result = self._as_dict(result)
 
         assert result["type"] == FlowResultType.FORM
         assert result["errors"]["base"] == "invalid_cover"
@@ -124,6 +133,7 @@ class TestConfigFlow:
         }
 
         result = await flow_handler.async_step_user(user_input)
+        result = self._as_dict(result)
 
         assert result["type"] == FlowResultType.FORM
         assert result["errors"]["base"] == "invalid_temperature_range"
@@ -151,6 +161,7 @@ class TestConfigFlow:
             patch.object(flow_handler, "_abort_if_unique_id_configured"),
         ):
             result = await flow_handler.async_step_user(user_input)
+            result = self._as_dict(result)
 
         # Should still succeed but log warning
         assert result["type"] == FlowResultType.CREATE_ENTRY
@@ -161,6 +172,7 @@ class TestConfigFlow:
     ) -> None:
         """Test showing form when no input provided."""
         result = await flow_handler.async_step_user(None)
+        result = self._as_dict(result)
 
         assert result["type"] == FlowResultType.FORM
         assert result["step_id"] == "user"
@@ -182,6 +194,7 @@ class TestConfigFlow:
         }
 
         result = await flow_handler.async_step_user(user_input)
+        result = self._as_dict(result)
 
         assert result["type"] == FlowResultType.FORM
         assert result["errors"]["base"] == "invalid_config"

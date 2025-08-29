@@ -7,16 +7,16 @@ Contributing to this project should be as easy and transparent as possible, whet
 - Submitting a fix
 - Proposing new features
 
-## Github is used for everything
+## GitHub is used for everything
 
-Github is used to host code, to track issues and feature requests, as well as accept pull requests.
+GitHub is used to host code, to track issues and feature requests, as well as accept pull requests.
 
 Pull requests are the best way to propose changes to the codebase.
 
 1. Fork the repo and create your branch from `main`.
 2. If you've changed something, update the documentation.
 3. Make sure your code lints (using `scripts/lint`).
-4. Test you contribution.
+4. Test your contribution.
 5. Issue that pull request!
 
 ## Any contributions you make will be under the MIT Software License
@@ -44,7 +44,15 @@ People *love* thorough bug reports. I'm not even kidding.
 
 ## Use a Consistent Coding Style
 
-Use [black](https://github.com/ambv/black) to make sure the code follows the style.
+This repository uses [Ruff](https://docs.astral.sh/ruff/) for formatting and linting.
+
+- Format and lint locally with:
+
+  ```bash
+  ./scripts/lint
+  ```
+
+- The linter enforces import sorting and common correctness/style rules.
 
 ## Test your code modification
 

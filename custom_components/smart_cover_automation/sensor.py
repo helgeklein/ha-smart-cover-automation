@@ -1,7 +1,12 @@
-"""Sensor platform for smart_cover_automation."""
+"""Sensor platform for smart_cover_automation.
+
+Reports values from the DataUpdateCoordinator. Availability and native_value
+are provided via cached properties to align with modern HA entity patterns.
+"""
 
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
@@ -51,7 +56,12 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):
         super().__init__(coordinator)
         self.entity_description = entity_description
 
-    @property
-    def native_value(self) -> str | None:
+    @cached_property
+    def available(self) -> bool | None:  # type: ignore[override]
+        """Return availability; unify base class types for type checkers."""
+        return super().available
+
+    @cached_property
+    def native_value(self) -> str | None:  # type: ignore[override]
         """Return the native value of the sensor."""
         return self.coordinator.data.get("body")

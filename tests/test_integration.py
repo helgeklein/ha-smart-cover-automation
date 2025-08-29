@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,6 +13,7 @@ from custom_components.smart_cover_automation.coordinator import (
     InvalidSensorReadingError,
     SensorNotFoundError,
 )
+from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
 from .conftest import (
     MOCK_COVER_ENTITY_ID,
@@ -41,7 +43,9 @@ class TestIntegrationScenarios:
         """Test complete temperature automation cycle."""
         hass = MagicMock()
         config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, config_entry)
+        coordinator = DataUpdateCoordinator(
+            hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
         # Mock states for full cycle test
         temp_states = [HOT_TEMP, COMFORTABLE_TEMP, COLD_TEMP]
@@ -103,7 +107,9 @@ class TestIntegrationScenarios:
         """Test sun automation through daily cycle."""
         hass = MagicMock()
         config_entry = MockConfigEntry(create_sun_config())
-        coordinator = DataUpdateCoordinator(hass, config_entry)
+        coordinator = DataUpdateCoordinator(
+            hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
         # Simulate sun positions throughout day
         sun_positions = [
@@ -155,23 +161,37 @@ class TestIntegrationScenarios:
         """Test error handling and recovery scenarios."""
         hass = MagicMock()
         config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, config_entry)
+        coordinator = DataUpdateCoordinator(
+            hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
         # Test 1: Temperature sensor temporarily unavailable
-        hass.states.get.return_value = None
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            "current_position": COVER_OPEN,
+            "supported_features": 15,
+        }
+        # Return None for temp sensor but a valid cover state
+        hass.states.get.side_effect = lambda entity_id, cs=cover_state: {
+            MOCK_TEMP_SENSOR_ENTITY_ID: None,
+            MOCK_COVER_ENTITY_ID: cs,
+        }.get(entity_id)
 
-        with pytest.raises(SensorNotFoundError):
-            await coordinator.async_refresh()
+        await coordinator.async_refresh()
+        assert isinstance(coordinator.last_exception, SensorNotFoundError)
 
         # Test 2: Invalid temperature reading with recovery
         temp_state = MagicMock()
         temp_state.state = "invalid"
         temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+        # Keep cover available but provide invalid temp
+        hass.states.get.side_effect = lambda entity_id, ts=temp_state, cs=cover_state: {
+            MOCK_TEMP_SENSOR_ENTITY_ID: ts,
+            MOCK_COVER_ENTITY_ID: cs,
+        }.get(entity_id)
 
-        hass.states.get.return_value = temp_state
-
-        with pytest.raises(InvalidSensorReadingError):
-            await coordinator.async_refresh()
+        await coordinator.async_refresh()
+        assert isinstance(coordinator.last_exception, InvalidSensorReadingError)
 
         # Test 3: Service call failure handling
         temp_state.state = HOT_TEMP  # Valid hot temperature
@@ -203,19 +223,23 @@ class TestIntegrationScenarios:
         config = create_temperature_config()
         config["covers"] = []
         config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(hass, config_entry)
+        coordinator = DataUpdateCoordinator(
+            hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
-        with pytest.raises(ConfigurationError):
-            await coordinator.async_refresh()
+        await coordinator.async_refresh()
+        assert isinstance(coordinator.last_exception, ConfigurationError)
 
         # Test invalid automation type
         config = create_temperature_config()
         config["automation_type"] = "invalid"
         config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(hass, config_entry)
+        coordinator = DataUpdateCoordinator(
+            hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
-        with pytest.raises(ConfigurationError):
-            await coordinator.async_refresh()
+        await coordinator.async_refresh()
+        assert isinstance(coordinator.last_exception, ConfigurationError)
 
     async def test_concurrent_cover_control(self) -> None:
         """Test controlling multiple covers simultaneously."""
@@ -223,7 +247,9 @@ class TestIntegrationScenarios:
         config = create_temperature_config()
         config["covers"] = ["cover.living_room", "cover.bedroom", "cover.kitchen"]
         config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(hass, config_entry)
+        coordinator = DataUpdateCoordinator(
+            hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
         # Setup hot temperature scenario
         temp_state = MagicMock()
@@ -272,7 +298,9 @@ class TestIntegrationScenarios:
         config = create_temperature_config()
         config["covers"] = ["cover.smart", "cover.basic"]
         config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(hass, config_entry)
+        coordinator = DataUpdateCoordinator(
+            hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
         # Setup cold temperature to open covers
         temp_state = MagicMock()

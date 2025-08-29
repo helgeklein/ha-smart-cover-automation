@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -18,7 +19,9 @@ from custom_components.smart_cover_automation.coordinator import (
     EntityUnavailableError,
     InvalidSensorReadingError,
     SensorNotFoundError,
+    ServiceCallError,
 )
+from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
 from .conftest import (
     MOCK_COVER_ENTITY_ID,
@@ -53,19 +56,26 @@ class TestDataUpdateCoordinator:
     def coordinator(self, mock_hass: MagicMock) -> DataUpdateCoordinator:
         """Create a coordinator instance."""
         config_entry = MockConfigEntry(create_temperature_config())
-        return DataUpdateCoordinator(mock_hass, config_entry)
+        return DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
     @pytest.fixture
     def sun_coordinator(self, mock_hass: MagicMock) -> DataUpdateCoordinator:
         """Create a sun coordinator instance."""
         config_entry = MockConfigEntry(create_sun_config())
-        return DataUpdateCoordinator(mock_hass, config_entry)
+        return DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
     async def test_init(self, coordinator: DataUpdateCoordinator) -> None:
         """Test coordinator initialization."""
-        assert coordinator.name == "smart_cover_automation"
-        assert coordinator.config_entry is not None
-        assert coordinator.update_interval.total_seconds() == 60
+        coor = cast(DataUpdateCoordinator, coordinator)
+        assert coor.name == "smart_cover_automation"
+        assert coor.config_entry is not None
+        # Guard against Optional[timedelta] in typing
+        assert coor.update_interval is not None
+        assert coor.update_interval.total_seconds() == 60
 
     async def test_temperature_automation_hot(
         self,
@@ -179,12 +189,20 @@ class TestDataUpdateCoordinator:
         mock_hass: MagicMock,
     ) -> None:
         """Test error when temperature sensor not found."""
-        mock_hass.states.get.return_value = None
-
-        with pytest.raises(SensorNotFoundError) as exc_info:
-            await coordinator.async_refresh()
-
-        assert "sensor.temperature" in str(exc_info.value)
+        # Ensure cover is available so sensor error is evaluated
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_TEMP_SENSOR_ENTITY_ID: None,  # Sensor missing
+            MOCK_COVER_ENTITY_ID: cover_state,  # Cover available
+        }.get(entity_id)
+        await coordinator.async_refresh()
+        # DataUpdateCoordinator captures exceptions; verify last_exception
+        assert isinstance(coordinator.last_exception, SensorNotFoundError)
+        assert "sensor.temperature" in str(coordinator.last_exception)
 
     async def test_temperature_sensor_invalid_reading(
         self,
@@ -195,11 +213,9 @@ class TestDataUpdateCoordinator:
         """Test error when temperature sensor has invalid reading."""
         mock_temperature_state.state = "invalid"
         mock_hass.states.get.return_value = mock_temperature_state
-
-        with pytest.raises(InvalidSensorReadingError) as exc_info:
-            await coordinator.async_refresh()
-
-        assert "invalid" in str(exc_info.value)
+        await coordinator.async_refresh()
+        assert isinstance(coordinator.last_exception, InvalidSensorReadingError)
+        assert "invalid" in str(coordinator.last_exception)
 
     async def test_sun_automation_direct_sun(
         self,
@@ -263,18 +279,59 @@ class TestDataUpdateCoordinator:
         cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == OPEN_POSITION  # Should open fully
 
+    async def test_sun_automation_not_hitting_window_above_threshold(
+        self,
+        mock_hass: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """Sun above threshold but not hitting window should open fully (with logging path)."""
+        config = create_sun_config()
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        # Sun above threshold but azimuth far from south direction (window south)
+        mock_sun_state.attributes = {
+            "elevation": HIGH_ELEVATION,
+            "azimuth": INDIRECT_AZIMUTH,  # 90° vs south 180° => angle 90° > tolerance
+        }
+
+        # Cover is partially closed to force potential change to OPEN
+        mock_cover_state.attributes["current_position"] = PARTIAL_POSITION
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: mock_cover_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        result = coordinator.data
+        cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+        assert cover_data["desired_position"] == OPEN_POSITION
+        # angle_difference should be computed when elevation >= threshold
+        assert cover_data["angle_difference"] is not None
+
     async def test_sun_automation_no_sun_entity(
         self,
         sun_coordinator: DataUpdateCoordinator,
         mock_hass: MagicMock,
     ) -> None:
         """Test error when sun entity not found."""
-        mock_hass.states.get.return_value = None
-
-        with pytest.raises(UpdateFailed) as exc_info:
-            await sun_coordinator.async_refresh()
-
-        assert "Sun integration not found" in str(exc_info.value)
+        # Ensure cover is available so sun entity error is evaluated
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: None,  # Sun entity missing
+            MOCK_COVER_ENTITY_ID: cover_state,  # Cover available
+        }.get(entity_id)
+        await sun_coordinator.async_refresh()
+        assert isinstance(sun_coordinator.last_exception, UpdateFailed)
+        assert "Sun integration not found" in str(sun_coordinator.last_exception)
 
     async def test_sun_automation_invalid_data(
         self,
@@ -285,11 +342,43 @@ class TestDataUpdateCoordinator:
         """Test error when sun data is invalid."""
         mock_sun_state.attributes = {"elevation": "invalid", "azimuth": DIRECT_AZIMUTH}
         mock_hass.states.get.return_value = mock_sun_state
+        await sun_coordinator.async_refresh()
+        assert isinstance(sun_coordinator.last_exception, UpdateFailed)
+        assert "Invalid sun position data" in str(sun_coordinator.last_exception)
 
-        with pytest.raises(UpdateFailed) as exc_info:
-            await sun_coordinator.async_refresh()
+    async def test_sun_automation_skips_unavailable_cover(
+        self,
+        mock_hass: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """One unavailable cover should be skipped inside sun automation loop."""
+        # Two covers configured; make second unavailable in the states mapping
+        config = create_sun_config(
+            covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
+        )
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
-        assert "Invalid sun position data" in str(exc_info.value)
+        mock_sun_state.attributes = {
+            "elevation": HIGH_ELEVATION,
+            "azimuth": DIRECT_AZIMUTH,
+        }
+        mock_cover_state.attributes["current_position"] = OPEN_POSITION
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: mock_cover_state,
+            MOCK_COVER_ENTITY_ID_2: None,  # Unavailable
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        result = coordinator.data
+        # Only first cover should appear
+        assert MOCK_COVER_ENTITY_ID in result["covers"]
+        assert MOCK_COVER_ENTITY_ID_2 not in result["covers"]
 
     async def test_cover_unavailable(
         self,
@@ -303,9 +392,8 @@ class TestDataUpdateCoordinator:
             MOCK_COVER_ENTITY_ID: None,
             MOCK_COVER_ENTITY_ID_2: None,
         }.get(entity_id)
-
-        with pytest.raises(EntityUnavailableError):
-            await coordinator.async_refresh()
+        await coordinator.async_refresh()
+        assert isinstance(coordinator.last_exception, EntityUnavailableError)
 
     async def test_service_call_failure(
         self,
@@ -377,12 +465,12 @@ class TestDataUpdateCoordinator:
         config[CONF_AUTOMATION_TYPE] = "invalid_type"
         config_entry = MockConfigEntry(config)
 
-        coordinator = DataUpdateCoordinator(mock_hass, config_entry)
-
-        with pytest.raises(ConfigurationError) as exc_info:
-            await coordinator.async_refresh()
-
-        assert "Unknown automation type" in str(exc_info.value)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+        await coordinator.async_refresh()
+        assert isinstance(coordinator.last_exception, ConfigurationError)
+        assert "Unknown automation type" in str(coordinator.last_exception)
 
     async def test_no_covers_configured(
         self,
@@ -393,12 +481,12 @@ class TestDataUpdateCoordinator:
         config[CONF_COVERS] = []
         config_entry = MockConfigEntry(config)
 
-        coordinator = DataUpdateCoordinator(mock_hass, config_entry)
-
-        with pytest.raises(ConfigurationError) as exc_info:
-            await coordinator.async_refresh()
-
-        assert "No covers configured" in str(exc_info.value)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+        await coordinator.async_refresh()
+        assert isinstance(coordinator.last_exception, ConfigurationError)
+        assert "No covers configured" in str(coordinator.last_exception)
 
     async def test_angle_calculation(
         self,
@@ -430,14 +518,152 @@ class TestDataUpdateCoordinator:
         )
         assert pos == OPEN_POSITION  # Fully open
 
-        # Test direct sun hit
-        pos = sun_coordinator._calculate_desired_position(
-            HIGH_ELEVATION, DIRECT_AZIMUTH, TILT_ANGLE, DIRECT_AZIMUTH
+    async def test_sun_missing_cover_direction_skips_cover(
+        self,
+        mock_hass: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """If a cover has no direction configured, it should be skipped."""
+        # Build a sun config for two covers, remove direction for second cover
+        config = create_sun_config(
+            covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
         )
-        assert pos == CLOSED_TILT_POSITION  # 90% closed
+        # Remove direction for cover 2 to trigger skip
+        config.pop(f"{MOCK_COVER_ENTITY_ID_2}_cover_direction", None)
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
 
-        # Test sun not hitting window
-        pos = sun_coordinator._calculate_desired_position(
-            HIGH_ELEVATION, DIRECT_AZIMUTH, TILT_ANGLE, INDIRECT_AZIMUTH
+        # Sun above threshold, direct hit
+        mock_sun_state.attributes = {
+            "elevation": HIGH_ELEVATION,
+            "azimuth": DIRECT_AZIMUTH,
+        }
+
+        # Both covers available
+        cover2_state = MagicMock()
+        cover2_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+
+        mock_cover_state.attributes["current_position"] = OPEN_POSITION
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: mock_cover_state,
+            MOCK_COVER_ENTITY_ID_2: cover2_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        result = coordinator.data
+
+        # Only the properly configured cover should be in results
+        assert MOCK_COVER_ENTITY_ID in result["covers"]
+        assert MOCK_COVER_ENTITY_ID_2 not in result["covers"]
+
+    async def test_sun_invalid_cover_direction_skips_cover(
+        self,
+        mock_hass: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """If a cover has an invalid direction, it should be skipped."""
+        config = create_sun_config(
+            covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
         )
-        assert pos == OPEN_POSITION  # Fully open
+        # Set an invalid direction string for cover 2
+        config[f"{MOCK_COVER_ENTITY_ID_2}_cover_direction"] = "upwards"
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        mock_sun_state.attributes = {
+            "elevation": HIGH_ELEVATION,
+            "azimuth": DIRECT_AZIMUTH,
+        }
+
+        cover2_state = MagicMock()
+        cover2_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+        mock_cover_state.attributes["current_position"] = OPEN_POSITION
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: mock_cover_state,
+            MOCK_COVER_ENTITY_ID_2: cover2_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        result = coordinator.data
+
+        # Only the valid-direction cover should be present
+        assert MOCK_COVER_ENTITY_ID in result["covers"]
+        assert MOCK_COVER_ENTITY_ID_2 not in result["covers"]
+
+    async def test_set_cover_position_warning_branch_no_features_partial(
+        self,
+        mock_hass: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """When cover lacks position and open/close for partial desired, no service is called."""
+        config = create_sun_config()
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        # Sun conditions to produce a partial desired position (10)
+        mock_sun_state.attributes = {
+            "elevation": HIGH_ELEVATION,
+            "azimuth": DIRECT_AZIMUTH,
+        }
+
+        # Cover with no supported features
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            "current_position": OPEN_POSITION,  # 100
+            "supported_features": 0,
+        }
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        result = coordinator.data
+
+        # Desired should be partial (10) but no service should be called
+        assert result["covers"][MOCK_COVER_ENTITY_ID]["desired_position"] not in (
+            OPEN_POSITION,
+            CLOSED_POSITION,
+        )
+        mock_hass.services.async_call.assert_not_called()
+
+    async def test_missing_config_keys_raise_configuration_error(
+        self,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Missing required keys in config should raise ConfigurationError."""
+        # Build a config missing the automation type key entirely
+        config = {CONF_COVERS: [MOCK_COVER_ENTITY_ID]}
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        await coordinator.async_refresh()
+        assert isinstance(coordinator.last_exception, ConfigurationError)
+
+    async def test_service_call_error_class_init(self) -> None:
+        """Construct ServiceCallError to cover its initializer."""
+        err = ServiceCallError("cover.set_cover_position", "cover.test", "boom")
+        assert "Failed to call" in str(err)
+        assert err.service == "cover.set_cover_position"
+        assert err.entity_id == "cover.test"

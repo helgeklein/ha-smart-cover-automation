@@ -8,6 +8,8 @@ A Home Assistant integration that intelligently automates your window covers bas
 - Sun-based automation: Automatically manages covers based on sun position
 - Supports multiple covers with different orientations
 - Works with any cover entity that supports open/close or position control
+   - If a cover supports position (set_cover_position), partial closure is used
+   - If it supports only open/close, actions fall back to those services
 
 ## Installation
 
@@ -25,6 +27,10 @@ Configure temperature thresholds to automatically manage covers:
 - When temperature falls below minimum: Covers open to allow heat
 - When temperature is in range: Maintains current position
 
+Notes:
+- The coordinator reads the temperature from the `sensor.temperature` entity by default.
+   You can adapt this in code or template that sensor in HA to your preferred device.
+
 ### Sun-based Automation
 
 Intelligently manages covers based on sun position relative to each window:
@@ -36,6 +42,7 @@ Intelligently manages covers based on sun position relative to each window:
    - Set sun elevation threshold (default 20°) that determines when covers respond
    - System uses 45° tolerance to determine if sun is hitting a window
    - Maximum closure is 90% to maintain some natural light
+   - Direction keys are stored per cover as `<cover_entity_id>_cover_direction`
 
 2. **Automation Logic**:
    ```
@@ -118,6 +125,9 @@ logger:
 - `warning`: Configuration issues, missing entities
 - `error`: System failures, invalid sensors
 
+Update cadence: The coordinator runs every 60 seconds by default.
+Coordinator semantics: Exceptions are captured and exposed on `coordinator.last_exception`; they do not propagate to callers of `async_refresh()`.
+
 ### What You'll See in the Logs
 
 #### Integration Lifecycle
@@ -162,6 +172,7 @@ logger:
 - `"Sun integration not available"` - Sun integration disabled
 - `"Invalid temperature reading"` - Sensor data corrupted
 - `"Cannot set cover ... position"` - Cover doesn't support position control
+ - Service call failures (e.g., `close_cover`) are logged and the cycle continues; other covers still operate.
 
 ### Debugging Common Issues
 

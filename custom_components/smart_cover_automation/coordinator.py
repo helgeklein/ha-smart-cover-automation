@@ -2,7 +2,17 @@
 Smart cover automation coordinator.
 
 This module provides automation logic for controlling covers based on
-temperature and sun position.
+temperature and sun position. It runs on a 60-second interval and handles
+errors gracefully by logging them and exposing the last exception via
+``DataUpdateCoordinator.last_exception``.
+
+Behavior overview:
+- Temperature automation reads from the ``sensor.temperature`` entity by default.
+- Sun automation requires per-cover direction configured as
+    ``<cover_entity_id>_cover_direction``.
+- If a cover supports position control, proportional partial closure is used; if
+    it supports only open/close, services fall back accordingly. Partial positions
+    are skipped when a cover lacks both position and open/close features.
 """
 
 from __future__ import annotations
@@ -140,6 +150,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             LOGGER,
             name=DOMAIN,
             update_interval=UPDATE_INTERVAL,
+            # Pass the config entry explicitly to satisfy HA's frame helper
+            config_entry=config_entry,
         )
         self.config_entry = config_entry
 

@@ -1,7 +1,13 @@
-"""Binary sensor platform for smart_cover_automation."""
+"""Binary sensor platform for smart_cover_automation.
+
+Exposes a connectivity-style binary sensor backed by the integration's
+DataUpdateCoordinator. Availability and state are derived from the coordinator
+using cached properties for consistency with HA base classes.
+"""
 
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 from homeassistant.components.binary_sensor import (
@@ -55,7 +61,13 @@ class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):
         super().__init__(coordinator)
         self.entity_description = entity_description
 
-    @property
-    def is_on(self) -> bool:
+    @cached_property
+    def available(self) -> bool | None:  # type: ignore[override]
+        """Return availability; unify base class types for type checkers."""
+        # Delegate to MRO-provided implementation
+        return super().available
+
+    @cached_property
+    def is_on(self) -> bool | None:  # type: ignore[override]
         """Return true if the binary_sensor is on."""
         return self.coordinator.data.get("title", "") == "foo"
