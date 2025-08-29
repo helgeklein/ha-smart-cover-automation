@@ -57,14 +57,21 @@ jobs:
           cache: pip
 
       - name: Test integration loading
+        shell: bash
         run: |
-          python -c "
-          import sys
-          sys.path.insert(0, 'custom_components')
-          from smart_cover_automation import const
-          print(f'Integration {const.DOMAIN} module loaded successfully')
-          print(f'Logger: {const.LOGGER.name}')
-          "
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+
+          const_path = Path('custom_components/smart_cover_automation/const.py')
+          spec = importlib.util.spec_from_file_location('sca_const', const_path)
+          const = importlib.util.module_from_spec(spec)
+          assert spec and spec.loader
+          spec.loader.exec_module(const)
+
+          print(f"Integration {const.DOMAIN} module loaded successfully")
+          print(f"Logger: {const.LOGGER.name}")
+          PY
 
       - name: Validate manifest
         run: |
