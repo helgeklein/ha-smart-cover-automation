@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from homeassistant.const import Platform
 from homeassistant.loader import async_get_loaded_integration
 
-from .const import LOGGER
+from .const import DOMAIN, LOGGER
 from .coordinator import DataUpdateCoordinator
 from .data import IntegrationData
 
@@ -92,3 +92,13 @@ async def async_reload_entry(
     """Reload config entry."""
     LOGGER.info("Reloading Smart Cover Automation integration")
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+# Re-export common package-level symbols for convenience imports in tooling/tests
+__all__ = [
+    "DOMAIN",
+    "PLATFORMS",
+    "async_setup_entry",
+    "async_unload_entry",
+    "async_reload_entry",
+]
