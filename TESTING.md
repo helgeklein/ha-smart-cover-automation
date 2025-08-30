@@ -116,11 +116,7 @@ python3 -m pytest tests/ --cov=custom_components.smart_cover_automation --cov-re
 
 ### Test Requirements
 
-Tests require the following packages (see `requirements-test.txt`):
-- `pytest>=8.0.0` - Test framework
-- `pytest-asyncio>=0.21.0` - Async test support
-- `pytest-cov>=4.0.0` - Coverage reporting
-- `pytest-homeassistant-custom-component>=0.13.0` - HA test utilities
+Tests require the packages listed in `requirements-test.txt`.
 
 ## Test Best Practices
 
