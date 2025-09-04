@@ -35,10 +35,13 @@ from .const import (
     CONF_AUTOMATION_TYPE,
     CONF_COVER_DIRECTION,
     CONF_COVERS,
+    CONF_ENABLED,
     CONF_MAX_TEMP,
     CONF_MIN_TEMP,
     CONF_SUN_ELEVATION_THRESHOLD,
+    CONF_TEMP_SENSOR,
     DEFAULT_SUN_ELEVATION_THRESHOLD,
+    DEFAULT_TEMP_SENSOR,
     DIRECTION_EAST,
     DIRECTION_NORTH,
     DIRECTION_NORTHEAST,
@@ -50,6 +53,8 @@ from .const import (
     DOMAIN,
     LOGGER,
     MAX_CLOSURE,
+    MIN_POSITION_DELTA,
+    TEMP_HYSTERESIS,
 )
 
 if TYPE_CHECKING:
@@ -182,6 +187,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 error_msg = "No covers configured for automation"
                 raise ConfigurationError(error_msg)
 
+            # Optional: global enable/disable
+            if config.get(CONF_ENABLED) is False:
+                LOGGER.info("Automation disabled via configuration; skipping actions")
+                return {"covers": {}}
+
             # Get current states
             states = {
                 entity_id: self.hass.states.get(entity_id) for entity_id in covers
@@ -241,11 +251,12 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         """Handle temperature-based automation."""
         result = {"covers": {}}
 
-        # Get temperature from climate entity or sensor
-        temp_sensor = self.hass.states.get("sensor.temperature")  # Configure this
+        # Get temperature from configured sensor
+        sensor_entity_id = config.get(CONF_TEMP_SENSOR, DEFAULT_TEMP_SENSOR)
+        temp_sensor = self.hass.states.get(sensor_entity_id)
         if not temp_sensor:
-            LOGGER.error("Temperature sensor 'sensor.temperature' not found")
-            sensor_name = "sensor.temperature"
+            LOGGER.error("Temperature sensor '%s' not found", sensor_entity_id)
+            sensor_name = sensor_entity_id
             raise SensorNotFoundError(sensor_name) from None
 
         try:
@@ -260,8 +271,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 temp_sensor.entity_id, str(temp_sensor.state)
             ) from err
 
-        max_temp = config[CONF_MAX_TEMP]
-        min_temp = config[CONF_MIN_TEMP]
+        max_temp = float(config[CONF_MAX_TEMP])
+        min_temp = float(config[CONF_MIN_TEMP])
 
         LOGGER.info(
             "Temperature automation: current=%.1f°C, range=%.1f-%.1f°C",
@@ -278,17 +289,17 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             features = state.attributes.get("supported_features", 0)
             current_pos = state.attributes.get("current_position", None)
 
-            # Determine desired position based on temperature
-            if current_temp > max_temp:
+            # Determine desired position based on temperature with hysteresis
+            if current_temp > max_temp + TEMP_HYSTERESIS:
                 desired_pos = COVER_FULLY_CLOSED  # Close to block heat
                 reason = (
-                    f"Too hot ({current_temp:.1f}°C > {max_temp}°C) - "
+                    f"Too hot ({current_temp:.1f}°C > {max_temp + TEMP_HYSTERESIS:.1f}°C) - "
                     "closing to block heat"
                 )
-            elif current_temp < min_temp:
+            elif current_temp < min_temp - TEMP_HYSTERESIS:
                 desired_pos = COVER_FULLY_OPEN  # Open to allow heat
                 reason = (
-                    f"Too cold ({current_temp:.1f}°C < {min_temp}°C) - "
+                    f"Too cold ({current_temp:.1f}°C < {min_temp - TEMP_HYSTERESIS:.1f}°C) - "
                     "opening to allow heat"
                 )
             else:
@@ -306,7 +317,20 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 desired_pos,
             )
 
-            if desired_pos is not None and desired_pos != current_pos:
+            # Avoid tiny movements
+            if (
+                desired_pos is not None
+                and current_pos is not None
+                and abs(desired_pos - current_pos) < MIN_POSITION_DELTA
+            ):
+                LOGGER.debug(
+                    "Cover %s: change %s→%s below MIN_POSITION_DELTA=%d; skipping",
+                    entity_id,
+                    current_pos,
+                    desired_pos,
+                    MIN_POSITION_DELTA,
+                )
+            elif desired_pos is not None and desired_pos != current_pos:
                 LOGGER.info(
                     "Setting cover %s position from %s to %s",
                     entity_id,

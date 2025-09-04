@@ -39,11 +39,14 @@ CONF_MIN_TEMP = "min_temperature"
 CONF_COVERS = "covers"
 CONF_SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"
 CONF_COVER_DIRECTION = "cover_direction"
+CONF_TEMP_SENSOR = "temperature_sensor"
+CONF_ENABLED = "enabled"
 
 # Defaults
 DEFAULT_MAX_TEMP = 24
 DEFAULT_MIN_TEMP = 21
 DEFAULT_SUN_ELEVATION_THRESHOLD = 20  # degrees
+DEFAULT_TEMP_SENSOR = "sensor.temperature"
 
 # Cover directions (which way the window faces)
 DIRECTION_NORTH = "north"
@@ -77,3 +80,9 @@ AUTOMATION_TYPES = [
 # Sun position thresholds
 AZIMUTH_TOLERANCE = 45  # degrees - window considers sun if within this angle
 MAX_CLOSURE = 90  # Maximum closure percentage when sun is directly at window
+
+# Behavior tuning
+TEMP_HYSTERESIS = 0.5  # degrees Celsius; helps avoid rapid toggling near thresholds
+MIN_POSITION_DELTA = (
+    5  # percentage points; ignore tiny position changes to avoid chatter
+)
