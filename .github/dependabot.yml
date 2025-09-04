@@ -12,9 +12,16 @@ updates:
       interval: "daily"
 
   - package-ecosystem: "pip"
-    directory: "/"
+    directories:
+      - "/" # root-level requirements files
+      - "/requirements" # optional requirements/ folder if introduced later
     schedule:
       interval: "daily"
     ignore:
       # Dependabot should not update Home Assistant as that should match the homeassistant key in hacs.json
       - dependency-name: "homeassistant"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
