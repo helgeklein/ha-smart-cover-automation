@@ -10,6 +10,7 @@ A Home Assistant integration that intelligently automates your window covers bas
 - Works with any cover entity that supports open/close or position control
    - If a cover supports position (set_cover_position), partial closure is used
    - If it supports only open/close, actions fall back to those services
+- Automation Status sensor: Live summary of the current mode and per-cover outcomes
 
 ## Installation
 
@@ -20,6 +21,15 @@ A Home Assistant integration that intelligently automates your window covers bas
 
 ## Configuration
 
+The integration provides an Options flow (in the integration's Configure dialog) so you can tune behavior without editing YAML:
+
+- Enabled: Global on/off switch for all automation logic
+- Temperature sensor: Override the sensor entity used for temperature mode
+- Temperature hysteresis: Degrees C around thresholds to avoid oscillation
+- Minimum position delta: Ignore tiny position changes to reduce chatter
+- Sun elevation threshold: Elevation where sun logic starts acting (defaults to 20°)
+- Per-cover window directions: Cardinal direction each cover/window faces
+
 ### Temperature-based Automation
 
 Configure temperature thresholds to automatically manage covers:
@@ -28,8 +38,8 @@ Configure temperature thresholds to automatically manage covers:
 - When temperature is in range: Maintains current position
 
 Notes:
-- The coordinator reads the temperature from the `sensor.temperature` entity by default.
-   You can adapt this in code or template that sensor in HA to your preferred device.
+- You can set the temperature sensor from the integration's Options.
+- Hysteresis and minimum position delta are configurable to smooth behavior.
 
 ### Sun-based Automation
 
@@ -92,6 +102,20 @@ The automation maintains comfort by:
 2. Blocking direct sunlight to prevent heat gain
 3. Allowing indirect light through partially closed covers
 4. Opening covers when sun moves away from window
+
+### Automation Status Sensor
+
+An additional sensor named "Automation Status" summarizes the current automation mode and recent results, for example:
+
+- Temperature mode: `Temp 22.5°C in [21.0–24.0] • moves 1/2`
+- Sun mode: `Sun elev 35.0°, az 180° • moves 1/2`
+- Disabled: `Disabled`
+
+Attributes include:
+- enabled, automation_type, covers_total, covers_moved
+- temperature_hysteresis, min_position_delta
+- Mode-specific fields: current/min/max temperature; sun elevation/azimuth and threshold
+- A per-cover snapshot of inputs and desired/current positions for visibility
 
 ## Usage
 
