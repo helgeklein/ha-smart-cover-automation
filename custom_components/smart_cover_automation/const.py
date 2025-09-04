@@ -41,6 +41,8 @@ CONF_SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"
 CONF_COVER_DIRECTION = "cover_direction"
 CONF_TEMP_SENSOR = "temperature_sensor"
 CONF_ENABLED = "enabled"
+CONF_TEMP_HYSTERESIS = "temperature_hysteresis"
+CONF_MIN_POSITION_DELTA = "min_position_delta"
 
 # Defaults
 DEFAULT_MAX_TEMP = 24

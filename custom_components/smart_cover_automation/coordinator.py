@@ -37,8 +37,10 @@ from .const import (
     CONF_COVERS,
     CONF_ENABLED,
     CONF_MAX_TEMP,
+    CONF_MIN_POSITION_DELTA,
     CONF_MIN_TEMP,
     CONF_SUN_ELEVATION_THRESHOLD,
+    CONF_TEMP_HYSTERESIS,
     CONF_TEMP_SENSOR,
     DEFAULT_SUN_ELEVATION_THRESHOLD,
     DEFAULT_TEMP_SENSOR,
@@ -282,6 +284,12 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             max_temp,
         )
 
+        # Resolve behavior tuning from config with defaults
+        temp_hysteresis = float(config.get(CONF_TEMP_HYSTERESIS, TEMP_HYSTERESIS))
+        min_position_delta = int(
+            float(config.get(CONF_MIN_POSITION_DELTA, MIN_POSITION_DELTA))
+        )
+
         for entity_id, state in states.items():
             if not state:
                 LOGGER.warning("Skipping unavailable cover: %s", entity_id)
@@ -291,16 +299,16 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             current_pos = state.attributes.get("current_position", None)
 
             # Determine desired position based on temperature with hysteresis
-            if current_temp > max_temp + TEMP_HYSTERESIS:
+            if current_temp > max_temp + temp_hysteresis:
                 desired_pos = COVER_FULLY_CLOSED  # Close to block heat
                 reason = (
-                    f"Too hot ({current_temp:.1f}°C > {max_temp + TEMP_HYSTERESIS:.1f}°C) - "
+                    f"Too hot ({current_temp:.1f}°C > {max_temp + temp_hysteresis:.1f}°C) - "
                     "closing to block heat"
                 )
-            elif current_temp < min_temp - TEMP_HYSTERESIS:
+            elif current_temp < min_temp - temp_hysteresis:
                 desired_pos = COVER_FULLY_OPEN  # Open to allow heat
                 reason = (
-                    f"Too cold ({current_temp:.1f}°C < {min_temp - TEMP_HYSTERESIS:.1f}°C) - "
+                    f"Too cold ({current_temp:.1f}°C < {min_temp - temp_hysteresis:.1f}°C) - "
                     "opening to allow heat"
                 )
             else:
@@ -322,14 +330,14 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             if (
                 desired_pos is not None
                 and current_pos is not None
-                and abs(desired_pos - current_pos) < MIN_POSITION_DELTA
+                and abs(desired_pos - current_pos) < min_position_delta
             ):
                 LOGGER.debug(
                     "Cover %s: change %s→%s below MIN_POSITION_DELTA=%d; skipping",
                     entity_id,
                     current_pos,
                     desired_pos,
-                    MIN_POSITION_DELTA,
+                    min_position_delta,
                 )
             elif desired_pos is not None and desired_pos != current_pos:
                 LOGGER.info(

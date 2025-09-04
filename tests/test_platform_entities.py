@@ -53,6 +53,7 @@ async def test_binary_sensor_entity_properties() -> None:
         add_entities,
     )
 
+    # Binary sensor platform exposes one entity
     assert len(captured) == 1
     entity = captured[0]
 
@@ -88,12 +89,19 @@ async def test_sensor_entity_properties() -> None:
         add_entities,
     )
 
-    assert len(captured) == 1
-    entity = captured[0]
+    # Sensor platform now exposes two sensors (Integration Sensor + Automation Status)
+    assert len(captured) >= 2
+    # Find the Integration Sensor by entity_description.key
+    integration_sensor = next(
+        e
+        for e in captured
+        if getattr(getattr(e, "entity_description"), "key", "")
+        == "smart_cover_automation"
+    )
     # available is delegated from CoordinatorEntity; with last_update_success=True it's truthy
-    assert cast(bool | None, getattr(entity, "available")) in (True, None)
+    assert cast(bool | None, getattr(integration_sensor, "available")) in (True, None)
     # native_value comes from coordinator.data["body"]
-    assert getattr(entity, "native_value") == "hello"
+    assert getattr(integration_sensor, "native_value") == "hello"
 
 
 @pytest.mark.asyncio
