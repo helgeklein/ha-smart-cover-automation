@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from homeassistant.const import Platform
 from homeassistant.loader import async_get_loaded_integration
 
+from .config_flow import OptionsFlowHandler
 from .const import DOMAIN, LOGGER
 from .coordinator import DataUpdateCoordinator
 from .data import IntegrationData
@@ -38,10 +39,16 @@ async def async_setup_entry(
     try:
         coordinator = DataUpdateCoordinator(hass, entry)
 
+        # Merge config entry data with options (options override data)
+        merged_config = {
+            **dict(entry.data),
+            **dict(getattr(entry, "options", {}) or {}),
+        }
+
         entry.runtime_data = IntegrationData(
             integration=async_get_loaded_integration(hass, entry.domain),
             coordinator=coordinator,
-            config=dict(entry.data),
+            config=merged_config,
         )
 
         LOGGER.debug("Starting initial coordinator refresh")
@@ -67,6 +74,11 @@ async def async_setup_entry(
     else:
         LOGGER.info("Smart Cover Automation integration setup completed")
         return True
+
+
+async def async_get_options_flow(entry: IntegrationConfigEntry) -> OptionsFlowHandler:
+    """Return the options flow for this handler."""
+    return OptionsFlowHandler(entry)
 
 
 async def async_unload_entry(

@@ -172,6 +172,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         """Update automation state and control covers."""
         try:
+            # Always read latest merged config (data + options) from runtime_data
             config = self.config_entry.runtime_data.config
             automation_type = config[CONF_AUTOMATION_TYPE]
             covers = config[CONF_COVERS]

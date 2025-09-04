@@ -1,4 +1,4 @@
-"""Config flow for Smart Cover Automation integration."""
+"""Config flow and options flow for Smart Cover Automation integration."""
 
 from __future__ import annotations
 
@@ -12,10 +12,15 @@ from .const import (
     AUTOMATION_TYPES,
     CONF_AUTOMATION_TYPE,
     CONF_COVERS,
+    CONF_ENABLED,
     CONF_MAX_TEMP,
     CONF_MIN_TEMP,
+    CONF_SUN_ELEVATION_THRESHOLD,
+    CONF_TEMP_SENSOR,
+    COVER_DIRECTIONS,
     DEFAULT_MAX_TEMP,
     DEFAULT_MIN_TEMP,
+    DEFAULT_SUN_ELEVATION_THRESHOLD,
     DOMAIN,
     LOGGER,
 )
@@ -133,4 +138,82 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+        )
+
+
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle options for Smart Cover Automation."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Manage the options for the integration."""
+        if user_input is not None:
+            # Persist options; Home Assistant will trigger entry update and reload
+            return self.async_create_entry(title="Options", data=user_input)
+
+        data = dict(self.config_entry.data)
+        options = dict(self.config_entry.options or {})
+
+        # Helper to read current option with fallback to data
+        def opt(key: str, default: object | None = None) -> object | None:
+            if key in options:
+                return options[key]
+            if key in data:
+                return data[key]
+            return default
+
+        covers: list[str] = list(data.get(CONF_COVERS, []))
+
+        # Build dynamic fields for per-cover directions
+        direction_fields: dict[vol.Marker, object] = {}
+        for cover in covers:
+            key = f"{cover}_cover_direction"
+            direction_fields[vol.Optional(key)] = selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=COVER_DIRECTIONS,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            )
+
+        # Compute concrete defaults
+        enabled_default = bool(opt(CONF_ENABLED, True))
+        temp_sensor_default = str(opt(CONF_TEMP_SENSOR, "sensor.temperature"))
+        raw_threshold = opt(
+            CONF_SUN_ELEVATION_THRESHOLD, DEFAULT_SUN_ELEVATION_THRESHOLD
+        )
+        if isinstance(raw_threshold, (int, float, str)):
+            try:
+                threshold_default = float(raw_threshold)
+            except (TypeError, ValueError):
+                threshold_default = float(DEFAULT_SUN_ELEVATION_THRESHOLD)
+        else:
+            threshold_default = float(DEFAULT_SUN_ELEVATION_THRESHOLD)
+
+        schema_dict: dict[vol.Marker, object] = {
+            vol.Optional(
+                CONF_ENABLED, default=enabled_default
+            ): selector.BooleanSelector(),
+            vol.Optional(
+                CONF_TEMP_SENSOR,
+                default=temp_sensor_default,
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
+            vol.Optional(
+                CONF_SUN_ELEVATION_THRESHOLD,
+                default=threshold_default,
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=90, step=1)
+            ),
+        }
+
+        # Add dynamic direction fields at the end
+        schema_dict.update(direction_fields)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(schema_dict),
         )
