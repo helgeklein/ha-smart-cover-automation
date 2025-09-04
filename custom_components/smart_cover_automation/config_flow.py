@@ -145,8 +145,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options for Smart Cover Automation."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
+        """Initialize options flow.
+
+        Avoid assigning to OptionsFlow.config_entry directly to prevent frame-helper
+        warnings in tests; keep a private reference instead.
+        """
+        self._config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict | None = None
@@ -156,8 +160,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Persist options; Home Assistant will trigger entry update and reload
             return self.async_create_entry(title="Options", data=user_input)
 
-        data = dict(self.config_entry.data)
-        options = dict(self.config_entry.options or {})
+        data = dict(self._config_entry.data)
+        options = dict(self._config_entry.options or {})
 
         # Helper to read current option with fallback to data
         def opt(key: str, default: object | None = None) -> object | None:
