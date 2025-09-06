@@ -254,7 +254,7 @@ class TestDataUpdateCoordinator:
         mock_cover_state: MagicMock,
         mock_sun_state: MagicMock,
     ) -> None:
-        """Direct sun should use configured max_closure instead of default 90%."""
+        """Direct sun should use configured max_closure instead of default."""
         config = create_sun_config()
         config["max_closure"] = 60  # cap direct hit to 60%
         config_entry = MockConfigEntry(config)
