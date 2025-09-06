@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -37,8 +37,9 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
     flow = OptionsFlowHandler(_mock_entry(data))
 
     result = await flow.async_step_init()
-    assert result["type"] == "form"
-    schema = result["data_schema"].schema
+    result_dict = cast(dict[str, Any], result)
+    assert result_dict["type"] == "form"
+    schema = result_dict["data_schema"].schema
 
     # Global options exposed
     assert CONF_ENABLED in schema
@@ -67,6 +68,7 @@ async def test_options_flow_submit_creates_entry() -> None:
     }
 
     result = await flow.async_step_init(user_input)
-    assert result["type"] == "create_entry"
-    assert result["title"] == "Options"
-    assert result["data"] == user_input
+    result_dict = cast(dict[str, Any], result)
+    assert result_dict["type"] == "create_entry"
+    assert result_dict["title"] == "Options"
+    assert result_dict["data"] == user_input
