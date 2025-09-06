@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import UnitOfTemperature
@@ -19,7 +21,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
 
     async def async_step_user(
         self,
-        user_input: dict | None = None,
+        user_input: dict[str, Any] | None = None,
     ) -> config_entries.ConfigFlowResult:
         """Handle a flow initialized by the user."""
         errors = {}
@@ -125,7 +127,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_entry = config_entry
 
     async def async_step_init(
-        self, user_input: dict | None = None
+        self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
         """Manage the options for the integration."""
         if user_input is not None:
@@ -136,7 +138,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         options = dict(self._config_entry.options or {})
 
         # Helper to read current option with fallback to data
-        def opt(key: str, default: object | None = None) -> object | None:
+        def opt(key: str, default: Any | None = None) -> Any | None:
             if key in options:
                 return options[key]
             if key in data:
