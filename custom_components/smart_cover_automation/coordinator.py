@@ -49,18 +49,6 @@ ERR_SERVICE_CALL = "Service call failed"
 ERR_ENTITY_UNAVAILABLE = "Entity is unavailable"
 ERR_INVALID_CONFIG = "Invalid configuration"
 
-# Direction to azimuth mapping
-DIRECTION_TO_AZIMUTH = {
-    "north": 0,
-    "northeast": 45,
-    "east": 90,
-    "southeast": 135,
-    "south": 180,
-    "southwest": 225,
-    "west": 270,
-    "northwest": 315,
-}
-
 
 class SmartCoverError(UpdateFailed):
     """Base class for smart cover automation errors."""
@@ -454,7 +442,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 )
                 continue
 
-            # Accept either legacy string directions or numeric azimuth (or numeric string)
+            # Accept numeric azimuth (or numeric string)
             direction_azimuth: float | None = None
             if isinstance(direction, (int, float)):
                 try:
@@ -462,15 +450,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 except (TypeError, ValueError):
                     direction_azimuth = None
             elif isinstance(direction, str):
-                # Legacy named directions
-                if direction in DIRECTION_TO_AZIMUTH:
-                    direction_azimuth = float(DIRECTION_TO_AZIMUTH[direction])
-                else:
-                    # Try parsing numeric string
-                    try:
-                        direction_azimuth = float(direction) % 360
-                    except (TypeError, ValueError):
-                        direction_azimuth = None
+                # Try parsing numeric string
+                try:
+                    direction_azimuth = float(direction) % 360
+                except (TypeError, ValueError):
+                    direction_azimuth = None
 
             if direction_azimuth is None:
                 const.LOGGER.error(

@@ -62,7 +62,8 @@ async def test_options_flow_submit_creates_entry() -> None:
         CONF_TEMP_SENSOR: "sensor.living_room",
         CONF_SUN_ELEVATION_THRESHOLD: 30,
         CONF_MAX_CLOSURE: 75,
-        "cover.one_cover_direction": "south",
+        # Use numeric azimuth instead of legacy cardinal string
+        "cover.one_cover_direction": 180,
     }
 
     result = await flow.async_step_init(user_input)

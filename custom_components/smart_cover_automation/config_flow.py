@@ -162,8 +162,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         direction_fields: dict[vol.Marker, object] = {}
         for cover in covers:
             key = f"{cover}_cover_direction"
-            # Compute default: accept legacy string directions and map to degrees;
-            # accept numeric strings/floats; otherwise leave without default.
+            # Compute default: accept numeric strings/floats; otherwise leave without default.
             raw = options.get(key, data.get(key))
             default_angle: float | None = None
             if isinstance(raw, str):

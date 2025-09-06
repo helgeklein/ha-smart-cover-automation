@@ -704,3 +704,193 @@ class TestDataUpdateCoordinator:
         assert "Failed to call" in str(err)
         assert err.service == "cover.set_cover_position"
         assert err.entity_id == "cover.test"
+
+    @pytest.mark.asyncio
+    async def test_sun_automation_angle_matrix(
+        self,
+        mock_hass: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """Test broad combinations of window and sun azimuths."""
+        # Build config with one cover and numeric window azimuth
+        config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        # Cover supports position and starts fully open
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+
+        for window_azimuth, sun_azimuth, expected in [
+            (180.0, 180.0, CLOSED_POSITION),
+            (180.0, 100.0, CLOSED_POSITION),
+            (180.0, 270.0, OPEN_POSITION),
+            (0.0, 350.0, CLOSED_POSITION),
+            (90.0, 270.0, OPEN_POSITION),
+            (315.0, 44.0, CLOSED_POSITION),
+            (315.0, 45.0, OPEN_POSITION),
+        ]:
+            # Set numeric angle for window
+            config[f"{MOCK_COVER_ENTITY_ID}_cover_direction"] = window_azimuth
+
+            # Sun above threshold with varying azimuth
+            mock_sun_state.attributes = {
+                "elevation": HIGH_ELEVATION,
+                "azimuth": sun_azimuth,
+            }
+
+            mock_hass.services.async_call.reset_mock()
+            mock_hass.states.get.side_effect = lambda entity_id: {
+                MOCK_SUN_ENTITY_ID: mock_sun_state,
+                MOCK_COVER_ENTITY_ID: cover_state,
+            }.get(entity_id)
+
+            await coordinator.async_refresh()
+            cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+            assert cover_data["desired_position"] == expected
+
+    @pytest.mark.asyncio
+    async def test_sun_automation_numeric_string_direction(
+        self,
+        mock_hass: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """Direction as a numeric string should be parsed as azimuth."""
+        config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
+        config[f"{MOCK_COVER_ENTITY_ID}_cover_direction"] = "180"
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+        mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        assert cover_data["desired_position"] == CLOSED_POSITION
+
+    @pytest.mark.asyncio
+    async def test_sun_automation_multiple_covers_varied_angles(
+        self,
+        mock_hass: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """Only covers within tolerance should close when sun hits."""
+        config = create_sun_config(
+            covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
+        )
+        config[f"{MOCK_COVER_ENTITY_ID}_cover_direction"] = 180.0
+        config[f"{MOCK_COVER_ENTITY_ID_2}_cover_direction"] = 90.0
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        cover1_state = MagicMock()
+        cover1_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+        cover2_state = MagicMock()
+        cover2_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+
+        mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: cover1_state,
+            MOCK_COVER_ENTITY_ID_2: cover2_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        covers = coordinator.data["covers"]
+        assert covers[MOCK_COVER_ENTITY_ID]["desired_position"] == CLOSED_POSITION
+        assert covers[MOCK_COVER_ENTITY_ID_2]["desired_position"] == OPEN_POSITION
+
+        # Service called once for the closing cover
+        await assert_service_called(
+            mock_hass.services,
+            "cover",
+            "set_cover_position",
+            MOCK_COVER_ENTITY_ID,
+            position=CLOSED_POSITION,
+        )
+
+    @pytest.mark.asyncio
+    async def test_sun_automation_threshold_equality_uses_closure(
+        self,
+        mock_hass: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """When elevation equals the threshold, closure logic applies (not low sun)."""
+        config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
+        config[f"{MOCK_COVER_ENTITY_ID}_cover_direction"] = 180.0
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+        # Elevation equals threshold (20.0); should treat as above for logic
+        mock_sun_state.attributes = {"elevation": 20.0, "azimuth": 180.0}
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        assert cover_data["desired_position"] == CLOSED_POSITION
+
+    @pytest.mark.asyncio
+    async def test_sun_automation_max_closure_with_numeric_angle(
+        self,
+        mock_hass: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """Numeric angle with max_closure less than 100% results in partial close."""
+        config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
+        config["max_closure"] = 60  # 60% close => desired position 40
+        config[f"{MOCK_COVER_ENTITY_ID}_cover_direction"] = 180.0
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+        mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        assert cover_data["desired_position"] == 40

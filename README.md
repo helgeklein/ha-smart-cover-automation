@@ -30,7 +30,7 @@ The integration provides an Options flow (in the integration's Configure dialog)
 - Minimum position delta: Ignore tiny position changes to reduce chatter
 - Sun elevation threshold: Elevation where sun logic starts acting (defaults to 20°)
 - Maximum closure: Cap on how far to close on direct sun
-- Per-cover window azimuth: 0–359° angle each cover/window faces (legacy cardinal names also accepted)
+- Per-cover window azimuth: 0–359° angle each cover/window faces
 
 ### Temperature-based Automation
 
@@ -50,7 +50,7 @@ Intelligently manages covers based on sun position relative to each window:
 #### How it Works
 
 1. **Configuration**:
-   - Enter the azimuth angle (0–359°) each cover/window faces (e.g., South = 180°). Legacy cardinal names (N, NE, E, SE, S, SW, W, NW) are still accepted.
+   - Enter the azimuth angle (0–359°) each cover/window faces (e.g., South = 180°).
    - Set sun elevation threshold (default 20°) that determines when covers respond
    - System uses a 90° tolerance (strictly less than) to determine if sun is hitting a window
    - Maximum closure is configurable; default is 100% for direct sun

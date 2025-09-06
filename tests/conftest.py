@@ -81,8 +81,9 @@ def mock_config_entry_sun() -> MagicMock:
         CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_SUN,
         CONF_COVERS: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
         CONF_SUN_ELEVATION_THRESHOLD: DEFAULT_SUN_ELEVATION_THRESHOLD,
-        f"{MOCK_COVER_ENTITY_ID}_cover_direction": "south",
-        f"{MOCK_COVER_ENTITY_ID_2}_cover_direction": "north",
+        # Use numeric azimuths (degrees) for directions
+        f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
+        f"{MOCK_COVER_ENTITY_ID_2}_cover_direction": 0.0,
     }
     entry.runtime_data = MagicMock()
     entry.runtime_data.config = entry.data
@@ -187,7 +188,8 @@ def create_sun_config(
     }
     # Add directions for each cover
     for cover in config[CONF_COVERS]:
-        config[f"{cover}_cover_direction"] = "south"
+        # Default to south-facing (180°) as numeric azimuth
+        config[f"{cover}_cover_direction"] = 180.0
     return config
 
 
