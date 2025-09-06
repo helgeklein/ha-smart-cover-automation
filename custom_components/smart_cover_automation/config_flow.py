@@ -204,6 +204,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 const.CONF_ENABLED, default=enabled_default
             ): selector.BooleanSelector(),
             vol.Optional(
+                const.CONF_VERBOSE_LOGGING,
+                default=bool(opt(const.CONF_VERBOSE_LOGGING, False)),
+            ): selector.BooleanSelector(),
+            vol.Optional(
                 const.CONF_TEMP_SENSOR,
                 default=temp_sensor_default,
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),

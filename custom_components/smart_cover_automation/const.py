@@ -2,10 +2,11 @@
 Constants for smart_cover_automation.
 
 Logging Information:
-- Set log level to DEBUG for detailed cover position calculations
-- Set log level to INFO for automation decisions and cover actions
+- INFO includes automation decisions and cover actions
 - Set log level to WARNING for configuration issues
 - Set log level to ERROR for system failures
+
+Note: Detailed cover position/evaluation calculations are not logged by default.
 
 To enable verbose logging, add this to your configuration.yaml:
 logger:
@@ -43,6 +44,7 @@ CONF_ENABLED = "enabled"
 CONF_TEMP_HYSTERESIS = "temperature_hysteresis"
 CONF_MIN_POSITION_DELTA = "min_position_delta"
 CONF_MAX_CLOSURE = "max_closure"
+CONF_VERBOSE_LOGGING = "verbose_logging"
 
 # Defaults
 DEFAULT_MAX_TEMP = 24
