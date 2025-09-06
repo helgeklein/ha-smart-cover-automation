@@ -28,6 +28,7 @@ The integration provides an Options flow (in the integration's Configure dialog)
 - Temperature hysteresis: Degrees C around thresholds to avoid oscillation
 - Minimum position delta: Ignore tiny position changes to reduce chatter
 - Sun elevation threshold: Elevation where sun logic starts acting (defaults to 20°)
+- Maximum closure: Cap on how far to close on direct sun (defaults to 90%)
 - Per-cover window directions: Cardinal direction each cover/window faces
 
 ### Temperature-based Automation
@@ -51,7 +52,7 @@ Intelligently manages covers based on sun position relative to each window:
    - Specify which direction each cover/window faces (N, NE, E, SE, S, SW, W, NW)
    - Set sun elevation threshold (default 20°) that determines when covers respond
    - System uses 45° tolerance to determine if sun is hitting a window
-   - Maximum closure is 90% to maintain some natural light
+   - Maximum closure is configurable (default 90%) to maintain some natural light
    - Direction keys are stored per cover as `<cover_entity_id>_cover_direction`
 
 2. **Automation Logic**:

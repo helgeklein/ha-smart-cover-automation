@@ -11,6 +11,7 @@ from custom_components.smart_cover_automation.config_flow import OptionsFlowHand
 from custom_components.smart_cover_automation.const import (
     CONF_COVERS,
     CONF_ENABLED,
+    CONF_MAX_CLOSURE,
     CONF_SUN_ELEVATION_THRESHOLD,
     CONF_TEMP_SENSOR,
     DEFAULT_SUN_ELEVATION_THRESHOLD,
@@ -43,6 +44,7 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
     assert CONF_ENABLED in schema
     assert CONF_TEMP_SENSOR in schema
     assert CONF_SUN_ELEVATION_THRESHOLD in schema
+    assert CONF_MAX_CLOSURE in schema
 
     # Dynamic per-cover directions
     assert "cover.one_cover_direction" in schema
@@ -59,6 +61,7 @@ async def test_options_flow_submit_creates_entry() -> None:
         CONF_ENABLED: False,
         CONF_TEMP_SENSOR: "sensor.living_room",
         CONF_SUN_ELEVATION_THRESHOLD: 30,
+        CONF_MAX_CLOSURE: 75,
         "cover.one_cover_direction": "south",
     }
 

@@ -246,9 +246,38 @@ class TestDataUpdateCoordinator:
         cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
         assert cover_data["sun_elevation"] == HIGH_ELEVATION
         assert cover_data["sun_azimuth"] == DIRECT_AZIMUTH
-        assert (
-            cover_data["desired_position"] == CLOSED_TILT_POSITION
-        )  # Should close to 90%
+        assert cover_data["desired_position"] == CLOSED_TILT_POSITION  # Should close
+
+    async def test_sun_automation_respects_max_closure_option(
+        self,
+        mock_hass: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """Direct sun should use configured max_closure instead of default 90%."""
+        config = create_sun_config()
+        config["max_closure"] = 60  # cap direct hit to 60%
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        mock_sun_state.attributes = {
+            "elevation": HIGH_ELEVATION,
+            "azimuth": DIRECT_AZIMUTH,
+        }
+        mock_cover_state.attributes["current_position"] = OPEN_POSITION
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: mock_cover_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        result = coordinator.data
+        cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+        # With max_closure=60 and direct hit, desired = 100 - 60 = 40
+        assert cover_data["desired_position"] == 40
 
     async def test_sun_automation_low_sun(
         self,

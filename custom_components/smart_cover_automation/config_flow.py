@@ -13,6 +13,7 @@ from .const import (
     CONF_AUTOMATION_TYPE,
     CONF_COVERS,
     CONF_ENABLED,
+    CONF_MAX_CLOSURE,
     CONF_MAX_TEMP,
     CONF_MIN_TEMP,
     CONF_SUN_ELEVATION_THRESHOLD,
@@ -23,6 +24,7 @@ from .const import (
     DEFAULT_SUN_ELEVATION_THRESHOLD,
     DOMAIN,
     LOGGER,
+    MAX_CLOSURE,
 )
 
 
@@ -213,6 +215,24 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 selector.NumberSelectorConfig(min=0, max=90, step=1)
             ),
         }
+
+        # Compute safe default for max_closure
+        raw_max_closure = opt(CONF_MAX_CLOSURE, MAX_CLOSURE)
+        if isinstance(raw_max_closure, (int, float, str)):
+            try:
+                max_closure_default = int(float(raw_max_closure))
+            except (TypeError, ValueError):
+                max_closure_default = int(MAX_CLOSURE)
+        else:
+            max_closure_default = int(MAX_CLOSURE)
+
+        schema_dict[vol.Optional(CONF_MAX_CLOSURE, default=max_closure_default)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0, max=100, step=1, unit_of_measurement="%"
+                )
+            )
+        )
 
         # Add dynamic direction fields at the end
         schema_dict.update(direction_fields)

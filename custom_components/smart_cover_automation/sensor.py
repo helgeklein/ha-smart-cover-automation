@@ -20,6 +20,7 @@ from .const import (
     AUTOMATION_TYPE_TEMPERATURE,
     CONF_AUTOMATION_TYPE,
     CONF_ENABLED,
+    CONF_MAX_CLOSURE,
     CONF_MAX_TEMP,
     CONF_MIN_POSITION_DELTA,
     CONF_MIN_TEMP,
@@ -27,6 +28,7 @@ from .const import (
     CONF_TEMP_HYSTERESIS,
     CONF_TEMP_SENSOR,
     DEFAULT_SUN_ELEVATION_THRESHOLD,
+    MAX_CLOSURE,
     MIN_POSITION_DELTA,
     TEMP_HYSTERESIS,
 )
@@ -215,6 +217,9 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
                     "sun_azimuth": self._first_cover_value("sun_azimuth"),
                     "elevation_threshold": config.get(
                         CONF_SUN_ELEVATION_THRESHOLD, DEFAULT_SUN_ELEVATION_THRESHOLD
+                    ),
+                    "max_closure": int(
+                        float(config.get(CONF_MAX_CLOSURE, MAX_CLOSURE))
                     ),
                 }
             )

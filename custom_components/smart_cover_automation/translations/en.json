@@ -33,7 +33,8 @@
                     "automation_type": "Automation Type",
                     "max_temperature": "Maximum temperature",
                     "min_temperature": "Minimum temperature",
-                    "sun_elevation_threshold": "Sun elevation threshold"
+                    "sun_elevation_threshold": "Sun elevation threshold",
+                    "max_closure": "Maximum closure (%)"
                 }
             }
         }

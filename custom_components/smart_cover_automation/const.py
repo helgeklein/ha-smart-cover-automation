@@ -43,6 +43,7 @@ CONF_TEMP_SENSOR = "temperature_sensor"
 CONF_ENABLED = "enabled"
 CONF_TEMP_HYSTERESIS = "temperature_hysteresis"
 CONF_MIN_POSITION_DELTA = "min_position_delta"
+CONF_MAX_CLOSURE = "max_closure"
 
 # Defaults
 DEFAULT_MAX_TEMP = 24

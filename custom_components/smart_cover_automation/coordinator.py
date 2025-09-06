@@ -36,6 +36,7 @@ from .const import (
     CONF_COVER_DIRECTION,
     CONF_COVERS,
     CONF_ENABLED,
+    CONF_MAX_CLOSURE,
     CONF_MAX_TEMP,
     CONF_MIN_POSITION_DELTA,
     CONF_MIN_TEMP,
@@ -533,6 +534,14 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 "angle_difference": angle_difference,
                 "current_position": current_pos,
                 "desired_position": desired_pos,
+                # Useful for debugging/tuning visibility
+                "max_closure": int(
+                    float(
+                        self.config_entry.runtime_data.config.get(
+                            CONF_MAX_CLOSURE, MAX_CLOSURE
+                        )
+                    )
+                ),
             }
 
         return result
@@ -546,6 +555,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         entity_id: str,
     ) -> int:
         """Calculate desired cover position with detailed logging."""
+        config = self.config_entry.runtime_data.config
+        try:
+            max_closure = int(float(config.get(CONF_MAX_CLOSURE, MAX_CLOSURE)))
+        except (TypeError, ValueError):
+            max_closure = MAX_CLOSURE
         if elevation < threshold:
             # Sun is low, open covers
             LOGGER.info(
@@ -574,7 +588,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Direct hit (0°) = MAX_CLOSURE
             # AZIMUTH_TOLERANCE° = minimal closure
             factor = 1 - (angle_diff / AZIMUTH_TOLERANCE)
-            desired_pos = COVER_FULLY_OPEN - (MAX_CLOSURE * factor)
+            desired_pos = COVER_FULLY_OPEN - (max_closure * factor)
 
             LOGGER.info(
                 "Cover %s: Sun hitting window (angle=%.1f° ≤ %.1f°) - "
@@ -607,6 +621,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         direction_azimuth: float,
     ) -> int:
         """Calculate desired cover position based on sun position."""
+        config = self.config_entry.runtime_data.config
+        try:
+            max_closure = int(float(config.get(CONF_MAX_CLOSURE, MAX_CLOSURE)))
+        except (TypeError, ValueError):
+            max_closure = MAX_CLOSURE
         if elevation < threshold:
             # Sun is low, open covers
             return COVER_FULLY_OPEN
@@ -619,7 +638,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Direct hit (0°) = MAX_CLOSURE
             # AZIMUTH_TOLERANCE° = minimal closure
             factor = 1 - (angle_diff / AZIMUTH_TOLERANCE)
-            desired_pos = COVER_FULLY_OPEN - (MAX_CLOSURE * factor)
+            desired_pos = COVER_FULLY_OPEN - (max_closure * factor)
         else:
             # Sun not hitting this window
             desired_pos = COVER_FULLY_OPEN
