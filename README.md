@@ -11,6 +11,7 @@ A Home Assistant integration that intelligently automates your window covers bas
    - If a cover supports position (set_cover_position), partial closure is used
    - If it supports only open/close, actions fall back to those services
 - Automation Status sensor: Live summary of the current mode and per-cover outcomes
+ - Per-cover window azimuth: Configure each window's facing as an angle (0–359°)
 
 ## Installation
 
@@ -29,7 +30,7 @@ The integration provides an Options flow (in the integration's Configure dialog)
 - Minimum position delta: Ignore tiny position changes to reduce chatter
 - Sun elevation threshold: Elevation where sun logic starts acting (defaults to 20°)
 - Maximum closure: Cap on how far to close on direct sun
-- Per-cover window directions: Cardinal direction each cover/window faces
+- Per-cover window azimuth: 0–359° angle each cover/window faces (legacy cardinal names also accepted)
 
 ### Temperature-based Automation
 
@@ -49,26 +50,25 @@ Intelligently manages covers based on sun position relative to each window:
 #### How it Works
 
 1. **Configuration**:
-   - Specify which direction each cover/window faces (N, NE, E, SE, S, SW, W, NW)
+   - Enter the azimuth angle (0–359°) each cover/window faces (e.g., South = 180°). Legacy cardinal names (N, NE, E, SE, S, SW, W, NW) are still accepted.
    - Set sun elevation threshold (default 20°) that determines when covers respond
-   - System uses 45° tolerance to determine if sun is hitting a window
+   - System uses a 90° tolerance (strictly less than) to determine if sun is hitting a window
    - Maximum closure is configurable; default is 100% for direct sun
    - Direction keys are stored per cover as `<cover_entity_id>_cover_direction`
 
 2. **Automation Logic**:
    ```
    If sun elevation < threshold:
-       Open covers fully (let in light when sun is low)
+      Open covers fully (let in light when sun is low)
    Else:
-       Calculate angle between sun and window direction
-       If angle ≤ 45°:
-           Close proportionally to how directly sun hits
-           (direct hit = 100% closed by default, glancing = minimal closure)
-       Else:
-           Open fully (sun not hitting this window)
+      Calculate angle between sun azimuth and window azimuth
+      If angle < tolerance (default 90°):
+         Close to position = 100 - max_closure  # 0 if max_closure=100
+      Else:
+         Open fully (sun not hitting this window)
    ```
 
-3. **Direction Angles**:
+3. **Direction Angles (examples)**:
    ```
    North = 0°
    Northeast = 45°
@@ -126,7 +126,7 @@ Attributes include:
 4. For temperature automation:
    - Set minimum and maximum temperature thresholds
 5. For sun-based automation:
-   - Configure which direction each cover faces
+   - Enter the azimuth for each cover (0–359°, e.g., South=180)
    - Optionally adjust the elevation threshold
 
 The integration will handle the rest automatically!
@@ -174,8 +174,8 @@ Coordinator semantics: Exceptions are captured and exposed on `coordinator.last_
 #### Sun Automation Decisions
 ```
 [INFO] Sun automation: elevation=35.2°, azimuth=180.1°, threshold=20.0°
-[DEBUG] Cover cover.south_window: direction=south (180°), current_pos=100
-[INFO] Cover cover.south_window: Sun hitting window (angle=0.1° ≤ 45°) - partial closure factor=1.00, position=0
+[DEBUG] Cover cover.south_window: window_azimuth=180°, current_pos=100
+[INFO] Cover cover.south_window: Sun hitting window (angle=0.1° < 90°) - closing to position=0
 [INFO] Setting cover cover.south_window position from 100 to 0
 ```
 

@@ -10,13 +10,13 @@
                     "max_temperature": "Maximum temperature (when to close covers)",
                     "min_temperature": "Minimum temperature (when to open covers)",
                     "sun_elevation_threshold": "Sun elevation threshold (degrees)",
-                    "cover_direction": "Window direction"
+                    "cover_direction": "Window azimuth (degrees)"
                 }
             }
         },
         "error": {
             "invalid_cover": "One or more selected covers are not available",
-            "no_direction": "Window direction must be set for sun-based automation",
+            "no_direction": "Window azimuth must be set for sun-based automation",
             "invalid_temperature_range": "Maximum temperature must be higher than minimum temperature",
             "invalid_config": "Invalid configuration provided"
         },

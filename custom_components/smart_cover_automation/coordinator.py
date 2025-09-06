@@ -51,14 +51,14 @@ ERR_INVALID_CONFIG = "Invalid configuration"
 
 # Direction to azimuth mapping
 DIRECTION_TO_AZIMUTH = {
-    const.DIRECTION_NORTH: 0,
-    const.DIRECTION_NORTHEAST: 45,
-    const.DIRECTION_EAST: 90,
-    const.DIRECTION_SOUTHEAST: 135,
-    const.DIRECTION_SOUTH: 180,
-    const.DIRECTION_SOUTHWEST: 225,
-    const.DIRECTION_WEST: 270,
-    const.DIRECTION_NORTHWEST: 315,
+    "north": 0,
+    "northeast": 45,
+    "east": 90,
+    "southeast": 135,
+    "south": 180,
+    "southwest": 225,
+    "west": 270,
+    "northwest": 315,
 }
 
 
@@ -454,7 +454,23 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 )
                 continue
 
-            direction_azimuth = DIRECTION_TO_AZIMUTH.get(direction)
+            # Accept either legacy string directions or numeric azimuth (or numeric string)
+            direction_azimuth: float | None = None
+            if isinstance(direction, (int, float)):
+                try:
+                    direction_azimuth = float(direction) % 360
+                except (TypeError, ValueError):
+                    direction_azimuth = None
+            elif isinstance(direction, str):
+                # Legacy named directions
+                if direction in DIRECTION_TO_AZIMUTH:
+                    direction_azimuth = float(DIRECTION_TO_AZIMUTH[direction])
+                else:
+                    # Try parsing numeric string
+                    try:
+                        direction_azimuth = float(direction) % 360
+                    except (TypeError, ValueError):
+                        direction_azimuth = None
 
             if direction_azimuth is None:
                 const.LOGGER.error(
@@ -462,7 +478,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     entity_id,
                     direction,
                 )
-                continue  # Skip if direction not set
+                continue  # Skip if direction invalid
 
             const.LOGGER.debug(
                 "Cover %s: direction=%s (%.0f°), current_pos=%s",
@@ -507,6 +523,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 "sun_azimuth": azimuth,
                 "elevation_threshold": threshold,
                 "window_direction": direction,
+                "window_direction_azimuth": direction_azimuth,
                 "angle_difference": angle_difference,
                 "current_position": current_pos,
                 "desired_position": desired_pos,

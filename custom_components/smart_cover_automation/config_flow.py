@@ -158,16 +158,40 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         covers: list[str] = list(data.get(const.CONF_COVERS, []))
 
-        # Build dynamic fields for per-cover directions
+        # Build dynamic fields for per-cover directions as numeric azimuth angles (0-359)
         direction_fields: dict[vol.Marker, object] = {}
         for cover in covers:
             key = f"{cover}_cover_direction"
-            direction_fields[vol.Optional(key)] = selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=const.COVER_DIRECTIONS,
-                    mode=selector.SelectSelectorMode.DROPDOWN,
+            # Compute default: accept legacy string directions and map to degrees;
+            # accept numeric strings/floats; otherwise leave without default.
+            raw = options.get(key, data.get(key))
+            default_angle: float | None = None
+            if isinstance(raw, str):
+                # Try parse numeric string
+                try:
+                    default_angle = float(raw)
+                except (TypeError, ValueError):
+                    default_angle = None
+            elif isinstance(raw, (int, float)):
+                try:
+                    default_angle = float(raw)
+                except (TypeError, ValueError):
+                    default_angle = None
+
+            if default_angle is not None:
+                direction_fields[vol.Optional(key, default=default_angle)] = (
+                    selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=0, max=359, step=1, unit_of_measurement="°"
+                        )
+                    )
                 )
-            )
+            else:
+                direction_fields[vol.Optional(key)] = selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=0, max=359, step=1, unit_of_measurement="°"
+                    )
+                )
 
         # Compute concrete defaults
         enabled_default = bool(opt(const.CONF_ENABLED, True))

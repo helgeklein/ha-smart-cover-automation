@@ -29,7 +29,7 @@ This document describes the comprehensive test suite for the Smart Cover Automat
   - Direct sunlight scenarios
   - Low sun elevation behavior
   - Sun position calculations
-  - Window direction handling
+  - Window azimuth handling
   - Sun entity error handling
 
 - **Error Handling**:
