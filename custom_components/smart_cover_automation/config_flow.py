@@ -66,9 +66,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     await self.async_set_unique_id(unique_id)
                     self._abort_if_unique_id_configured()
 
-                    # Always set combined automation type on creation
+                    # Persist provided data; single combined mode is implicit
                     data = dict(user_input)
-                    data[const.CONF_AUTOMATION_TYPE] = const.AUTOMATION_TYPE_COMBINED
 
                     return self.async_create_entry(
                         title=(

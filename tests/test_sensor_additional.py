@@ -9,7 +9,6 @@ import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
-from custom_components.smart_cover_automation.const import CONF_AUTOMATION_TYPE
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.sensor import (
@@ -20,8 +19,8 @@ from .conftest import MockConfigEntry, create_temperature_config
 
 
 @pytest.mark.asyncio
-async def test_automation_status_unknown_mode_fallback() -> None:
-    """If automation type is unknown, sensor returns a generic summary."""
+async def test_automation_status_combined_summary_present() -> None:
+    """Automation status should produce a combined-style summary without automation_type."""
     hass = MagicMock(spec=HomeAssistant)
     config_entry = MockConfigEntry(create_temperature_config())
 
@@ -39,8 +38,7 @@ async def test_automation_status_unknown_mode_fallback() -> None:
     coordinator.last_update_success = True  # type: ignore[attr-defined]
     config_entry.runtime_data.coordinator = coordinator
 
-    # Force unknown type
-    config_entry.runtime_data.config[CONF_AUTOMATION_TYPE] = "unknown"
+    # automation_type is no longer used; sensor should still handle gracefully
 
     captured: list[Entity] = []
 
@@ -60,4 +58,4 @@ async def test_automation_status_unknown_mode_fallback() -> None:
     )
 
     summary = cast(str, getattr(status, "native_value"))
-    assert summary.startswith("Unknown mode")
+    assert "moves" in summary and "/" in summary

@@ -10,8 +10,6 @@ from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.smart_cover_automation.config_flow import FlowHandler
 from custom_components.smart_cover_automation.const import (
-    AUTOMATION_TYPE_COMBINED,
-    CONF_AUTOMATION_TYPE,
     CONF_COVERS,
     CONF_MAX_TEMP,
     CONF_MIN_TEMP,
@@ -65,12 +63,9 @@ class TestConfigFlow:
         ):
             result = await flow_handler.async_step_user(user_input)
             result = self._as_dict(result)
-
-        assert result["type"] == FlowResultType.CREATE_ENTRY
-        expected = dict(user_input)
-        expected[CONF_AUTOMATION_TYPE] = AUTOMATION_TYPE_COMBINED
-        assert result["data"] == expected
-        assert "2 covers" in result["title"]
+            assert result["type"] == FlowResultType.CREATE_ENTRY
+            assert result["data"] == user_input
+            assert "2 covers" in result["title"]
 
     async def test_user_step_combined_success_without_temps(
         self,
@@ -92,11 +87,8 @@ class TestConfigFlow:
         ):
             result = await flow_handler.async_step_user(user_input)
             result = self._as_dict(result)
-
-        assert result["type"] == FlowResultType.CREATE_ENTRY
-        expected = dict(user_input)
-        expected[CONF_AUTOMATION_TYPE] = AUTOMATION_TYPE_COMBINED
-        assert result["data"] == expected
+            assert result["type"] == FlowResultType.CREATE_ENTRY
+            assert result["data"] == user_input
 
     async def test_user_step_invalid_cover(
         self,
@@ -175,7 +167,9 @@ class TestConfigFlow:
         assert result["type"] == FlowResultType.FORM
         assert result["step_id"] == "user"
         assert CONF_COVERS in result["data_schema"].schema
-        assert CONF_AUTOMATION_TYPE not in result["data_schema"].schema
+        # No automation type field should be present
+        schema = result["data_schema"].schema
+        assert "automation_type" not in schema
 
     async def test_user_step_configuration_error(
         self,

@@ -33,7 +33,6 @@ LOGGER: Logger = getLogger(__package__)
 DOMAIN = "smart_cover_automation"
 
 # Configuration
-CONF_AUTOMATION_TYPE = "automation_type"
 CONF_MAX_TEMP = "max_temperature"
 CONF_MIN_TEMP = "min_temperature"
 CONF_COVERS = "covers"
@@ -50,10 +49,6 @@ DEFAULT_MAX_TEMP = 24
 DEFAULT_MIN_TEMP = 21
 DEFAULT_SUN_ELEVATION_THRESHOLD = 20  # degrees
 DEFAULT_TEMP_SENSOR = "sensor.temperature"
-
-# Automation types
-AUTOMATION_TYPE_COMBINED = "combined"
-AUTOMATION_TYPES = [AUTOMATION_TYPE_COMBINED]
 
 # Sun position thresholds
 AZIMUTH_TOLERANCE = 90  # Window considers sun if within this angle

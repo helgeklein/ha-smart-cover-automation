@@ -125,8 +125,6 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         enabled = config.get(const.CONF_ENABLED, True)
         if enabled is False:
             return "Disabled"
-
-        automation_type = config.get(const.CONF_AUTOMATION_TYPE)
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
         total = len(covers)
         moved = sum(
@@ -135,43 +133,33 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             if d.get("desired_position") is not None
             and d.get("current_position") != d.get("desired_position")
         )
-
-        # Combined automation summary
-        if automation_type == const.AUTOMATION_TYPE_COMBINED:
-            parts: list[str] = []
-            current_temp = self._first_cover_value("current_temp")
-            if isinstance(current_temp, (int, float)):
-                min_temp = config.get(const.CONF_MIN_TEMP)
-                max_temp = config.get(const.CONF_MAX_TEMP)
-                parts.append(
-                    f"Temp {float(current_temp):.1f}°C"
-                    + (
-                        f" in [{float(min_temp):.1f}–{float(max_temp):.1f}]"
-                        if isinstance(min_temp, (int, float))
-                        and isinstance(max_temp, (int, float))
-                        else ""
-                    )
+        # Combined summary (only supported mode)
+        parts: list[str] = []
+        current_temp = self._first_cover_value("current_temp")
+        if isinstance(current_temp, (int, float)):
+            min_temp = config.get(const.CONF_MIN_TEMP)
+            max_temp = config.get(const.CONF_MAX_TEMP)
+            parts.append(
+                f"Temp {float(current_temp):.1f}°C"
+                + (
+                    f" in [{float(min_temp):.1f}–{float(max_temp):.1f}]"
+                    if isinstance(min_temp, (int, float))
+                    and isinstance(max_temp, (int, float))
+                    else ""
                 )
-            elevation = self._first_cover_value("sun_elevation")
-            azimuth = self._first_cover_value("sun_azimuth")
-            if isinstance(elevation, (int, float)) and isinstance(
-                azimuth, (int, float)
-            ):
-                parts.append(
-                    f"Sun elev {float(elevation):.1f}°, az {float(azimuth):.0f}°"
-                )
-            prefix = " • ".join(parts) if parts else "Combined"
-            return f"{prefix} • moves {moved}/{total}"
-
-        # Fallback
-        return f"Unknown mode • moves {moved}/{total}"
+            )
+        elevation = self._first_cover_value("sun_elevation")
+        azimuth = self._first_cover_value("sun_azimuth")
+        if isinstance(elevation, (int, float)) and isinstance(azimuth, (int, float)):
+            parts.append(f"Sun elev {float(elevation):.1f}°, az {float(azimuth):.0f}°")
+        prefix = " • ".join(parts) if parts else "Combined"
+        return f"{prefix} • moves {moved}/{total}"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:  # type: ignore[override]
         config = self.coordinator.config_entry.runtime_data.config
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
 
-        automation_type = config.get(const.CONF_AUTOMATION_TYPE)
         enabled = bool(config.get(const.CONF_ENABLED, True))
         temp_hyst = float(config.get(const.CONF_TEMP_HYSTERESIS, const.TEMP_HYSTERESIS))
         min_delta = int(
@@ -179,7 +167,6 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         )
         attrs: dict[str, Any] = {
             "enabled": enabled,
-            "automation_type": automation_type,
             "covers_total": len(covers),
             "covers_moved": sum(
                 1
@@ -191,26 +178,26 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             "min_position_delta": min_delta,
         }
 
-        if automation_type == const.AUTOMATION_TYPE_COMBINED:
-            attrs.update(
-                {
-                    # Temperature-related
-                    "temperature_sensor": config.get(const.CONF_TEMP_SENSOR),
-                    "min_temp": config.get(const.CONF_MIN_TEMP),
-                    "max_temp": config.get(const.CONF_MAX_TEMP),
-                    "current_temp": self._first_cover_value("current_temp"),
-                    # Sun-related
-                    "sun_elevation": self._first_cover_value("sun_elevation"),
-                    "sun_azimuth": self._first_cover_value("sun_azimuth"),
-                    "elevation_threshold": config.get(
-                        const.CONF_SUN_ELEVATION_THRESHOLD,
-                        const.DEFAULT_SUN_ELEVATION_THRESHOLD,
-                    ),
-                    "max_closure": int(
-                        float(config.get(const.CONF_MAX_CLOSURE, const.MAX_CLOSURE))
-                    ),
-                }
-            )
+        # Combined-only attributes
+        attrs.update(
+            {
+                # Temperature-related
+                "temperature_sensor": config.get(const.CONF_TEMP_SENSOR),
+                "min_temp": config.get(const.CONF_MIN_TEMP),
+                "max_temp": config.get(const.CONF_MAX_TEMP),
+                "current_temp": self._first_cover_value("current_temp"),
+                # Sun-related
+                "sun_elevation": self._first_cover_value("sun_elevation"),
+                "sun_azimuth": self._first_cover_value("sun_azimuth"),
+                "elevation_threshold": config.get(
+                    const.CONF_SUN_ELEVATION_THRESHOLD,
+                    const.DEFAULT_SUN_ELEVATION_THRESHOLD,
+                ),
+                "max_closure": int(
+                    float(config.get(const.CONF_MAX_CLOSURE, const.MAX_CLOSURE))
+                ),
+            }
+        )
 
         # Include per-cover snapshots for debugging/visibility
         attrs["covers"] = covers

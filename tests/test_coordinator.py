@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -10,8 +10,6 @@ from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.const import (
-    AUTOMATION_TYPE_COMBINED,
-    CONF_AUTOMATION_TYPE,
     CONF_COVERS,
     CONF_MAX_TEMP,
     CONF_MIN_TEMP,
@@ -491,21 +489,7 @@ class TestDataUpdateCoordinator:
             MOCK_COVER_ENTITY_ID,
         )
 
-    async def test_invalid_automation_type(
-        self,
-        mock_hass: MagicMock,
-    ) -> None:
-        """Test error with invalid automation type."""
-        config = create_temperature_config()
-        config[CONF_AUTOMATION_TYPE] = "invalid_type"
-        config_entry = MockConfigEntry(config)
-
-        coordinator = DataUpdateCoordinator(
-            mock_hass, cast(IntegrationConfigEntry, config_entry)
-        )
-        await coordinator.async_refresh()
-        assert isinstance(coordinator.last_exception, ConfigurationError)
-        assert "Unknown automation type" in str(coordinator.last_exception)
+    # Invalid automation type test removed: only combined mode is supported.
 
     async def test_no_covers_configured(
         self,
@@ -692,8 +676,8 @@ class TestDataUpdateCoordinator:
         mock_hass: MagicMock,
     ) -> None:
         """Missing required keys in config should raise ConfigurationError."""
-        # Build a config missing the automation type key entirely
-        config = {CONF_COVERS: [MOCK_COVER_ENTITY_ID]}
+        # Build a config missing the required covers key entirely
+        config: dict[str, Any] = {}
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(
             mock_hass, cast(IntegrationConfigEntry, config_entry)
@@ -909,7 +893,6 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """When hot but sun not hitting, AND logic should not move the cover."""
         config = {
-            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
             CONF_MAX_TEMP: 24.0,
             CONF_MIN_TEMP: 21.0,
@@ -948,7 +931,6 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """When comfortable and direct sun, AND logic should not move the cover."""
         config = {
-            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
             CONF_MAX_TEMP: 24.0,
             CONF_MIN_TEMP: 21.0,
@@ -987,7 +969,6 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Cold with direct sun should not move the cover under AND logic."""
         config = {
-            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
             CONF_MAX_TEMP: 24.0,
             CONF_MIN_TEMP: 21.0,
@@ -1025,7 +1006,6 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """If sun direction missing, combined falls back to temperature input."""
         config = {
-            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
             CONF_MAX_TEMP: 24.0,
             CONF_MIN_TEMP: 21.0,

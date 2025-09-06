@@ -10,8 +10,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.const import (
-    AUTOMATION_TYPE_COMBINED,
-    CONF_AUTOMATION_TYPE,
     CONF_ENABLED,
     CONF_MAX_TEMP,
     CONF_MIN_POSITION_DELTA,
@@ -79,9 +77,7 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
 
     # Simulate coordinator data for two covers (one will move)
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
-    coordinator.config_entry.runtime_data.config[CONF_AUTOMATION_TYPE] = (
-        AUTOMATION_TYPE_COMBINED
-    )
+    # Combined is the only mode; no automation_type key is used anymore.
     coordinator.data = {
         "covers": {
             "cover.one": {
@@ -110,7 +106,7 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     # Attributes
     attrs = cast(dict, getattr(status, "extra_state_attributes"))
     assert attrs["enabled"] is True
-    assert attrs["automation_type"] == AUTOMATION_TYPE_COMBINED
+    assert "automation_type" not in attrs
     assert attrs["covers_total"] == 2
     assert attrs["covers_moved"] == 1
     assert attrs["temp_hysteresis"] == 0.7
@@ -131,9 +127,7 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     status = _get_status_entity(entities)
 
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
-    coordinator.config_entry.runtime_data.config[CONF_AUTOMATION_TYPE] = (
-        AUTOMATION_TYPE_COMBINED
-    )
+    # Combined-only, no automation_type in config
     coordinator.data = {
         "covers": {
             "cover.one": {
@@ -162,7 +156,7 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     # Attributes
     attrs = cast(dict, getattr(status, "extra_state_attributes"))
     assert attrs["enabled"] is True
-    assert attrs["automation_type"] == AUTOMATION_TYPE_COMBINED
+    assert "automation_type" not in attrs
     assert attrs["covers_total"] == 2
     assert attrs["covers_moved"] == 1
     assert attrs["sun_elevation"] == 35.0

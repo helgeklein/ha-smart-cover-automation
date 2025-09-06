@@ -230,16 +230,7 @@ class TestIntegrationScenarios:
         await coordinator.async_refresh()
         assert isinstance(coordinator.last_exception, ConfigurationError)
 
-        # Test invalid automation type
-        config = create_temperature_config()
-        config["automation_type"] = "invalid"
-        config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(
-            hass, cast(IntegrationConfigEntry, config_entry)
-        )
-
-        await coordinator.async_refresh()
-        assert isinstance(coordinator.last_exception, ConfigurationError)
+    # No automation_type concept anymore; invalid type test removed
 
     async def test_concurrent_cover_control(self) -> None:
         """Test controlling multiple covers simultaneously."""

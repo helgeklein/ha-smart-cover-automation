@@ -105,8 +105,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         config = config_entry.runtime_data.config
         const.LOGGER.info(
-            "Initializing Smart Cover Automation coordinator: type=%s, covers=%s, update_interval=%s",
-            config.get(const.CONF_AUTOMATION_TYPE),
+            "Initializing Smart Cover Automation coordinator: mode=combined, covers=%s, update_interval=%s",
             config.get(const.CONF_COVERS, []),
             UPDATE_INTERVAL,
         )
@@ -115,12 +114,10 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         """Update automation state and control covers."""
         try:
             config = self.config_entry.runtime_data.config
-            automation_type = config[const.CONF_AUTOMATION_TYPE]
             covers = config[const.CONF_COVERS]
 
             const.LOGGER.info(
-                "Starting cover automation update: type=%s, covers=%s",
-                automation_type,
+                "Starting cover automation update: mode=combined, covers=%s",
                 covers,
             )
 
@@ -147,10 +144,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             if available_covers == 0:
                 raise EntityUnavailableError("all_covers")
 
-            if automation_type == const.AUTOMATION_TYPE_COMBINED:
-                return await self._handle_combined_automation(states, config)
-
-            raise ConfigurationError(f"Unknown automation type: {automation_type}")
+            return await self._handle_combined_automation(states, config)
 
         except SmartCoverError:
             raise
