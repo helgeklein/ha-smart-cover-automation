@@ -55,20 +55,16 @@ async def async_setup_entry(
         # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
         await coordinator.async_config_entry_first_refresh()
 
-        LOGGER.debug("Setting up platforms: %s", PLATFORMS)
+        LOGGER.debug(f"Setting up platforms: {PLATFORMS}")
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     except (OSError, ValueError, TypeError) as err:
-        LOGGER.error(
-            "Failed to set up Smart Cover Automation integration: %s",
-            err,
-        )
+        LOGGER.error(f"Failed to set up Smart Cover Automation integration: {err}")
         return False
     except (ImportError, AttributeError, KeyError) as err:
         LOGGER.exception(
-            "Configuration error during Smart Cover Automation setup: %s",
-            err,
+            f"Configuration error during Smart Cover Automation setup: {err}"
         )
         return False
     else:
@@ -90,10 +86,7 @@ async def async_unload_entry(
     try:
         return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     except (OSError, ValueError, TypeError) as err:
-        LOGGER.error(
-            "Error unloading Smart Cover Automation integration: %s",
-            err,
-        )
+        LOGGER.error(f"Error unloading Smart Cover Automation integration: {err}")
         return False
 
 

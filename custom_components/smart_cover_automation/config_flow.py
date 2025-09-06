@@ -34,16 +34,12 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                         invalid_covers.append(cover)
                     elif state.state == "unavailable":
                         const.LOGGER.warning(
-                            "Cover %s is currently unavailable but will be configured",
-                            cover,
+                            f"Cover {cover} is currently unavailable but will be configured"
                         )
 
                 if invalid_covers:
                     errors["base"] = "invalid_cover"
-                    const.LOGGER.error(
-                        "Invalid covers selected: %s",
-                        invalid_covers,
-                    )
+                    const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
 
                 # Validate temperature ranges if provided
                 if (
@@ -55,9 +51,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     if max_temp <= min_temp:
                         errors["base"] = "invalid_temperature_range"
                         const.LOGGER.error(
-                            "Invalid temperature range: max=%s <= min=%s",
-                            max_temp,
-                            min_temp,
+                            f"Invalid temperature range: max={max_temp} <= min={min_temp}"
                         )
 
                 if not errors:
@@ -77,7 +71,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     )
 
             except (KeyError, ValueError, TypeError) as err:
-                const.LOGGER.exception("Configuration validation error: %s", err)
+                const.LOGGER.exception(f"Configuration validation error: {err}")
                 errors["base"] = "invalid_config"
 
         return self.async_show_form(

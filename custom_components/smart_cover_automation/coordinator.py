@@ -105,9 +105,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         config = config_entry.runtime_data.config
         const.LOGGER.info(
-            "Initializing Smart Cover Automation coordinator: mode=combined, covers=%s, update_interval=%s",
-            config.get(const.CONF_COVERS, []),
-            UPDATE_INTERVAL,
+            f"Initializing Smart Cover Automation coordinator: mode=combined, covers={config.get(const.CONF_COVERS, [])}, update_interval={UPDATE_INTERVAL}"
         )
         # Adjust logger level per-entry if verbose logging is enabled via options
         try:
@@ -124,8 +122,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             covers = config[const.CONF_COVERS]
 
             const.LOGGER.info(
-                "Starting cover automation update: mode=combined, covers=%s",
-                covers,
+                f"Starting cover automation update: mode=combined, covers={covers}"
             )
 
             if not covers:
@@ -146,7 +143,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 if state:
                     available_covers += 1
                 else:
-                    const.LOGGER.warning("Cover %s is unavailable", entity_id)
+                    const.LOGGER.warning(f"Cover {entity_id} is unavailable")
 
             if available_covers == 0:
                 raise EntityUnavailableError("all_covers")
@@ -167,15 +164,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         try:
             if features & CoverEntityFeature.SET_POSITION:
                 const.LOGGER.info(
-                    "Setting %s via set_cover_position to %d",
-                    entity_id,
-                    desired_pos,
-                )
-                const.LOGGER.info(
-                    "[%s] Using set_cover_position to %d (features=%d)",
-                    entity_id,
-                    desired_pos,
-                    features,
+                    f"[{entity_id}] Using set_cover_position to {desired_pos} (features={features})"
                 )
                 await self.hass.services.async_call(
                     "cover",
@@ -183,24 +172,21 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     {"entity_id": entity_id, "position": desired_pos},
                 )
             elif desired_pos == COVER_FULLY_CLOSED:
-                const.LOGGER.info("[%s] Closing cover", entity_id)
+                const.LOGGER.info(f"[{entity_id}] Closing cover")
                 await self.hass.services.async_call(
                     "cover", "close_cover", {"entity_id": entity_id}
                 )
             elif desired_pos == COVER_FULLY_OPEN:
-                const.LOGGER.info("[%s] Opening cover", entity_id)
+                const.LOGGER.info(f"[{entity_id}] Opening cover")
                 await self.hass.services.async_call(
                     "cover", "open_cover", {"entity_id": entity_id}
                 )
             else:
                 const.LOGGER.warning(
-                    "Cannot set cover %s position: desired=%d, features=%d",
-                    entity_id,
-                    desired_pos,
-                    features,
+                    f"Cannot set cover {entity_id} position: desired={desired_pos}, features={features}"
                 )
         except (OSError, ValueError, TypeError, RuntimeError) as err:
-            const.LOGGER.error("Failed to control cover %s: %s", entity_id, err)
+            const.LOGGER.error(f"Failed to control cover {entity_id}: {err}")
 
     async def _handle_combined_automation(
         self,
@@ -267,7 +253,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Iterate covers
         for entity_id, state in states.items():
             if not state:
-                const.LOGGER.warning("Skipping unavailable cover: %s", entity_id)
+                const.LOGGER.warning(f"Skipping unavailable cover: {entity_id}")
                 continue
 
             features = state.attributes.get("supported_features", 0)
@@ -358,20 +344,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                         }
                     )
                     const.LOGGER.debug(
-                        "Sun eval %s: elev=%.2f(threshold=%.2f) azimuth=%.2f window=%.2f angle_diff=%s hit=%s => desired_from_sun=%s",
-                        entity_id,
-                        elevation,
-                        threshold,
-                        azimuth,
-                        direction_azimuth,
-                        angle_difference,
-                        sun_hitting,
-                        desired_from_sun,
+                        f"Sun eval {entity_id}: elev={elevation:.2f}(threshold={threshold:.2f}) azimuth={azimuth:.2f} window={direction_azimuth:.2f} angle_diff={angle_difference} hit={sun_hitting} => desired_from_sun={desired_from_sun}"
                     )
                 else:
                     const.LOGGER.warning(
-                        "Cover %s: invalid or missing direction for sun logic",
-                        entity_id,
+                        f"Cover {entity_id}: invalid or missing direction for sun logic"
                     )
                     if not temp_enabled:
                         # Only sun configured -> skip this cover entirely
@@ -399,15 +376,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 combined_desired = desired_from_sun
 
             const.LOGGER.debug(
-                "Combine %s: temp_enabled=%s sun_enabled=%s temp_hot=%s sun_hitting=%s desired_temp=%s desired_sun=%s => desired=%s",
-                entity_id,
-                temp_enabled,
-                sun_enabled,
-                temp_hot,
-                sun_hitting,
-                desired_from_temp,
-                desired_from_sun,
-                combined_desired,
+                f"Combine {entity_id}: temp_enabled={temp_enabled} sun_enabled={sun_enabled} temp_hot={temp_hot} sun_hitting={sun_hitting} desired_temp={desired_from_temp} desired_sun={desired_from_sun} => desired={combined_desired}"
             )
 
             # Act with min delta
@@ -418,20 +387,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 and abs(combined_desired - current_pos) < min_position_delta
             ):
                 const.LOGGER.debug(
-                    "Skip small adjust %s: current=%s desired=%s delta=%s < min_delta=%s",
-                    entity_id,
-                    current_pos,
-                    combined_desired,
-                    abs(combined_desired - current_pos),
-                    min_position_delta,
+                    f"Skip small adjust {entity_id}: current={current_pos} desired={combined_desired} delta={abs(combined_desired - current_pos)} < min_delta={min_position_delta}"
                 )
             elif combined_desired is not None and combined_desired != current_pos:
                 const.LOGGER.info(
-                    "[%s] Action: current=%s desired=%s (features=%s)",
-                    entity_id,
-                    current_pos,
-                    combined_desired,
-                    features,
+                    f"[{entity_id}] Action: current={current_pos} desired={combined_desired} (features={features})"
                 )
                 await self._set_cover_position(entity_id, combined_desired, features)
 
@@ -475,11 +435,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         if elevation < threshold:
             # Sun is low, open covers
             const.LOGGER.debug(
-                "Desired %s (sun low): elevation=%.2f<threshold=%.2f => %d",
-                entity_id,
-                elevation,
-                threshold,
-                COVER_FULLY_OPEN,
+                f"Desired {entity_id} (sun low): elevation={elevation:.2f}<threshold={threshold:.2f} => {COVER_FULLY_OPEN}"
             )
             return COVER_FULLY_OPEN
 
@@ -490,12 +446,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         else:
             desired_pos = COVER_FULLY_OPEN
         const.LOGGER.debug(
-            "Desired %s (sun): angle_diff=%.2f tol=%d max_closure=%d => %d",
-            entity_id,
-            angle_diff,
-            const.AZIMUTH_TOLERANCE,
-            max_closure,
-            desired_pos,
+            f"Desired {entity_id} (sun): angle_diff={angle_diff:.2f} tol={const.AZIMUTH_TOLERANCE} max_closure={max_closure} => {desired_pos}"
         )
         return round(desired_pos)
 
