@@ -261,12 +261,15 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
             desired_from_temp: int | None = None
             desired_from_sun: int | None = None
+            temp_hot: bool = False
+            sun_hitting: bool = False
             details: dict[str, Any] = {}
 
             # Temperature contribution
             if temp_enabled and temp_available and current_temp is not None:
                 if current_temp > max_temp + temp_hysteresis:
                     desired_from_temp = COVER_FULLY_CLOSED
+                    temp_hot = True
                 elif current_temp < min_temp - temp_hysteresis:
                     desired_from_temp = COVER_FULLY_OPEN
                 else:
@@ -278,6 +281,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                         "min_temp": min_temp,
                         "temp_hysteresis": temp_hysteresis,
                         "desired_from_temp": desired_from_temp,
+                        "temp_hot": temp_hot,
                     }
                 )
             elif temp_enabled:
@@ -304,14 +308,19 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                         direction_azimuth = None
 
                 if direction_azimuth is not None:
-                    desired_from_sun = self._calculate_desired_position(
-                        elevation, azimuth, threshold, direction_azimuth, entity_id
-                    )
+                    # Compute sun desired position and whether the sun is hitting the window
                     angle_difference = None
                     if elevation >= threshold:
                         angle_difference = self._calculate_angle_difference(
                             azimuth, direction_azimuth
                         )
+                        sun_hitting = angle_difference < const.AZIMUTH_TOLERANCE
+                    else:
+                        sun_hitting = False
+
+                    desired_from_sun = self._calculate_desired_position(
+                        elevation, azimuth, threshold, direction_azimuth, entity_id
+                    )
                     details.update(
                         {
                             "sun_elevation": elevation,
@@ -321,6 +330,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                             "window_direction_azimuth": direction_azimuth,
                             "angle_difference": angle_difference,
                             "desired_from_sun": desired_from_sun,
+                            "sun_hitting": sun_hitting,
                         }
                     )
                 else:
@@ -335,11 +345,23 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             elif sun_enabled:
                 details["sun_unavailable"] = True
 
-            # Combine
-            candidates = [
-                p for p in [desired_from_temp, desired_from_sun] if p is not None
-            ]
-            combined_desired = min(candidates) if candidates else current_pos
+            # Combine with logical AND semantics when both contributors are configured.
+            # - If only temperature is configured: use temperature behavior.
+            # - If only sun is configured: use sun behavior.
+            # - If both are configured: move only when sun is hitting AND temperature is hot.
+            combined_desired = current_pos
+            if temp_enabled and sun_enabled:
+                # Fallback: if sun direction invalid, behave as temperature-only
+                if details.get("sun_direction_invalid"):
+                    combined_desired = desired_from_temp
+                elif temp_hot and sun_hitting and desired_from_sun is not None:
+                    combined_desired = desired_from_sun
+                else:
+                    combined_desired = current_pos
+            elif temp_enabled and not sun_enabled:
+                combined_desired = desired_from_temp
+            elif sun_enabled and not temp_enabled:
+                combined_desired = desired_from_sun
 
             # Act with min delta
             if (
@@ -364,6 +386,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                             )
                         )
                     ),
+                    "combined_strategy": "and",
                 }
             )
 

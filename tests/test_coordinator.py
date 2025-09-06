@@ -900,14 +900,14 @@ class TestDataUpdateCoordinator:
         assert cover_data["desired_position"] == 40
 
     @pytest.mark.asyncio
-    async def test_combined_hot_sun_not_hitting_closes_by_temp(
+    async def test_combined_hot_sun_not_hitting_no_change_with_and_logic(
         self,
         mock_hass: MagicMock,
         mock_cover_state: MagicMock,
         mock_sun_state: MagicMock,
         mock_temperature_state: MagicMock,
     ) -> None:
-        """When hot but sun not hitting, combined should close based on temperature."""
+        """When hot but sun not hitting, AND logic should not move the cover."""
         config = {
             CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
@@ -934,24 +934,19 @@ class TestDataUpdateCoordinator:
 
         await coordinator.async_refresh()
         cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
-        assert cover_data["desired_position"] == CLOSED_POSITION
-        await assert_service_called(
-            mock_hass.services,
-            "cover",
-            "set_cover_position",
-            MOCK_COVER_ENTITY_ID,
-            position=CLOSED_POSITION,
-        )
+        assert cover_data["desired_position"] == OPEN_POSITION
+        # AND semantics: no action when sun not hitting
+        mock_hass.services.async_call.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_combined_comfortable_direct_sun_partial_applies_sun(
+    async def test_combined_comfortable_direct_sun_no_change_with_and_logic(
         self,
         mock_hass: MagicMock,
         mock_sun_state: MagicMock,
         mock_cover_state: MagicMock,
         mock_temperature_state: MagicMock,
     ) -> None:
-        """When comfortable but direct sun, apply sun-based partial closure."""
+        """When comfortable and direct sun, AND logic should not move the cover."""
         config = {
             CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
@@ -978,24 +973,19 @@ class TestDataUpdateCoordinator:
 
         await coordinator.async_refresh()
         cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
-        assert cover_data["desired_position"] == 40
-        await assert_service_called(
-            mock_hass.services,
-            "cover",
-            "set_cover_position",
-            MOCK_COVER_ENTITY_ID,
-            position=40,
-        )
+        assert cover_data["desired_position"] == OPEN_POSITION
+        # AND semantics: no action when temperature is not hot
+        mock_hass.services.async_call.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_combined_cold_direct_sun_prefers_closure(
+    async def test_combined_cold_direct_sun_no_change_with_and_logic(
         self,
         mock_hass: MagicMock,
         mock_sun_state: MagicMock,
         mock_cover_state: MagicMock,
         mock_temperature_state: MagicMock,
     ) -> None:
-        """Cold would open but direct sun closes; closure wins (more conservative)."""
+        """Cold with direct sun should not move the cover under AND logic."""
         config = {
             CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
@@ -1021,14 +1011,9 @@ class TestDataUpdateCoordinator:
 
         await coordinator.async_refresh()
         cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
-        assert cover_data["desired_position"] == CLOSED_POSITION
-        await assert_service_called(
-            mock_hass.services,
-            "cover",
-            "set_cover_position",
-            MOCK_COVER_ENTITY_ID,
-            position=CLOSED_POSITION,
-        )
+        assert cover_data["desired_position"] == OPEN_POSITION
+        # AND semantics: no action when temperature is cold
+        mock_hass.services.async_call.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_combined_missing_direction_uses_temp_only(
