@@ -10,8 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.const import (
-    AUTOMATION_TYPE_SUN,
-    AUTOMATION_TYPE_TEMPERATURE,
+    AUTOMATION_TYPE_COMBINED,
     CONF_AUTOMATION_TYPE,
     CONF_ENABLED,
     CONF_MAX_TEMP,
@@ -66,8 +65,8 @@ def _get_status_entity(entities: list[Entity]) -> Entity:
 
 
 @pytest.mark.asyncio
-async def test_status_sensor_temperature_summary_and_attributes() -> None:
-    """Validate summary and attributes for temperature mode."""
+async def test_status_sensor_combined_summary_and_attributes() -> None:
+    """Validate summary and attributes for combined mode."""
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
     # Add tuning/options to config
@@ -81,7 +80,7 @@ async def test_status_sensor_temperature_summary_and_attributes() -> None:
     # Simulate coordinator data for two covers (one will move)
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
     coordinator.config_entry.runtime_data.config[CONF_AUTOMATION_TYPE] = (
-        AUTOMATION_TYPE_TEMPERATURE
+        AUTOMATION_TYPE_COMBINED
     )
     coordinator.data = {
         "covers": {
@@ -104,14 +103,14 @@ async def test_status_sensor_temperature_summary_and_attributes() -> None:
 
     # Summary string (robust to symbol differences)
     summary = cast(str, getattr(status, "native_value"))
-    assert summary.startswith("Temp ")
+    assert "Temp " in summary
     assert "22.5" in summary
     assert "moves 1/2" in summary
 
     # Attributes
     attrs = cast(dict, getattr(status, "extra_state_attributes"))
     assert attrs["enabled"] is True
-    assert attrs["automation_type"] == AUTOMATION_TYPE_TEMPERATURE
+    assert attrs["automation_type"] == AUTOMATION_TYPE_COMBINED
     assert attrs["covers_total"] == 2
     assert attrs["covers_moved"] == 1
     assert attrs["temp_hysteresis"] == 0.7
@@ -124,8 +123,8 @@ async def test_status_sensor_temperature_summary_and_attributes() -> None:
 
 
 @pytest.mark.asyncio
-async def test_status_sensor_sun_summary_and_attributes() -> None:
-    """Validate summary and attributes for sun mode."""
+async def test_status_sensor_combined_sun_attributes_present() -> None:
+    """Validate sun attributes presence in combined mode."""
     hass = MagicMock(spec=HomeAssistant)
     config = create_sun_config()
     entities = await _capture_entities(hass, config)
@@ -133,7 +132,7 @@ async def test_status_sensor_sun_summary_and_attributes() -> None:
 
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
     coordinator.config_entry.runtime_data.config[CONF_AUTOMATION_TYPE] = (
-        AUTOMATION_TYPE_SUN
+        AUTOMATION_TYPE_COMBINED
     )
     coordinator.data = {
         "covers": {
@@ -156,14 +155,14 @@ async def test_status_sensor_sun_summary_and_attributes() -> None:
 
     # Summary string
     summary = cast(str, getattr(status, "native_value"))
-    assert summary.startswith("Sun elev ")
-    assert "35.0" in summary
+    # Summary should include Sun info when available
+    assert "Sun elev 35.0°" in summary
     assert "moves 1/2" in summary
 
     # Attributes
     attrs = cast(dict, getattr(status, "extra_state_attributes"))
     assert attrs["enabled"] is True
-    assert attrs["automation_type"] == AUTOMATION_TYPE_SUN
+    assert attrs["automation_type"] == AUTOMATION_TYPE_COMBINED
     assert attrs["covers_total"] == 2
     assert attrs["covers_moved"] == 1
     assert attrs["sun_elevation"] == 35.0

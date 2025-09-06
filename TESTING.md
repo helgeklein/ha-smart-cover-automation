@@ -9,45 +9,41 @@ This document describes the comprehensive test suite for the Smart Cover Automat
 ### Test Files
 
 - `tests/conftest.py` - Common fixtures and utilities
-- `tests/test_coordinator.py` - DataUpdateCoordinator tests
+- `tests/test_coordinator.py` - Coordinator logic (combined automation)
+- `tests/test_coordinator_extra.py` - Edge branches (disabled, min-delta skip, open/close fallback)
 - `tests/test_config_flow.py` - Configuration flow tests
+- `tests/test_options_flow.py` - Options flow tests
 - `tests/test_init.py` - Integration setup/teardown tests
+- `tests/test_init_and_switch_enabled.py` - Setup with switch enabled state
 - `tests/test_entity.py` - Entity base class tests
+- `tests/test_platform_entities.py` - Platform entity loading
+- `tests/test_sensor_additional.py` - Status sensor details
 - `tests/test_integration.py` - End-to-end integration tests
 
 ### Test Coverage Areas
 
 #### 1. Coordinator Tests (`test_coordinator.py`)
-- **Temperature Automation**:
-  - Hot weather scenarios (closing covers)
-  - Cold weather scenarios (opening covers)
-  - Comfortable temperature (maintaining position)
-  - Temperature sensor error handling
-  - Invalid temperature readings
-
-- **Sun Automation**:
-  - Direct sunlight scenarios
-  - Low sun elevation behavior
-  - Sun position calculations
-  - Window azimuth handling
-  - Sun entity error handling
+- **Combined Automation**:
+  - Temperature contribution (hot/cold/comfortable, hysteresis)
+  - Sun contribution (elevation threshold, azimuth tolerance, per-cover azimuth)
+  - Final decision (choose more closed, respect min position delta)
+  - Maximum closure cap
 
 - **Error Handling**:
-  - Sensor not found errors
-  - Invalid sensor readings
+  - Missing/invalid temperature sensor readings
+  - Sun entity availability and data issues
   - Service call failures
   - Entity unavailability
-  - Configuration errors
+  - Configuration validation
 
 - **Service Calls**:
   - Position-capable covers
-  - Basic open/close covers
+  - Basic open/close covers (fallback)
   - Service failure recovery
 
-#### 2. Config Flow Tests (`test_config_flow.py`)
+#### 2. Config/Options Flow Tests (`test_config_flow.py`, `test_options_flow.py`)
 - **Successful Configuration**:
-  - Temperature automation setup
-  - Sun automation setup
+  - Combined automation setup
   - Multiple cover selection
   - Unique ID generation
 
@@ -62,7 +58,7 @@ This document describes the comprehensive test suite for the Smart Cover Automat
   - Error display and recovery
   - Input validation
 
-#### 3. Integration Setup Tests (`test_init.py`)
+#### 3. Integration Setup Tests (`test_init.py`, `test_init_and_switch_enabled.py`)
 - **Setup Process**:
   - Successful integration setup
   - Coordinator initialization
@@ -89,8 +85,7 @@ This document describes the comprehensive test suite for the Smart Cover Automat
 
 #### 5. Integration Tests (`test_integration.py`)
 - **Complete Scenarios**:
-  - Full temperature automation cycles
-  - Daily sun automation cycles
+  - Full combined automation cycles (sun + temperature)
   - Multiple cover coordination
   - Mixed cover capabilities
 
@@ -136,24 +131,18 @@ Tests require the packages listed in `requirements-test.txt`.
 ### 3. Assertion Patterns
 
 ```python
-# Test result structure
-assert result is not None
-assert "covers" in result
-assert len(result["covers"]) > 0
-
-# Test service calls
+# Service call verification
 await assert_service_called(
-    mock_services,
-    "cover",
-    "set_cover_position",
-    "cover.test",
-    position=50
+  mock_services,
+  "cover",
+  "set_cover_position",
+  "cover.test",
+  position=50,
 )
 
-# Test error handling
-with pytest.raises(SensorNotFoundError) as exc_info:
-    await coordinator._async_update_data()
-assert "sensor.temperature" in str(exc_info.value)
+# Error handling via coordinator
+await coordinator.async_request_refresh()
+assert coordinator.last_exception is None  # or assert specific error types/messages when set
 ```
 
 ### 4. Error Testing
@@ -169,7 +158,7 @@ Each error condition should be tested:
 
 Target coverage levels:
 - **Overall**: >95%
-- **Critical paths**: 100% (error handling, automation logic)
+- **Coordinator and core logic**: ~100% where feasible (automation decisions, error handling)
 - **Configuration**: >90%
 - **UI components**: >85%
 

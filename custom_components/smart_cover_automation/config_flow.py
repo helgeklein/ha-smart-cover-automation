@@ -45,11 +45,9 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                         invalid_covers,
                     )
 
-                # Validate temperature ranges if temperature automation
+                # Validate temperature ranges if provided
                 if (
-                    user_input[const.CONF_AUTOMATION_TYPE]
-                    == const.AUTOMATION_TYPE_TEMPERATURE
-                    and const.CONF_MAX_TEMP in user_input
+                    const.CONF_MAX_TEMP in user_input
                     and const.CONF_MIN_TEMP in user_input
                 ):
                     max_temp = user_input[const.CONF_MAX_TEMP]
@@ -68,11 +66,15 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     await self.async_set_unique_id(unique_id)
                     self._abort_if_unique_id_configured()
 
+                    # Always set combined automation type on creation
+                    data = dict(user_input)
+                    data[const.CONF_AUTOMATION_TYPE] = const.AUTOMATION_TYPE_COMBINED
+
                     return self.async_create_entry(
                         title=(
                             f"Cover Automation ({len(user_input[const.CONF_COVERS])} covers)"
                         ),
-                        data=user_input,
+                        data=data,
                     )
 
             except (KeyError, ValueError, TypeError) as err:
@@ -89,15 +91,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                             multiple=True,
                         ),
                     ),
-                    vol.Required(
-                        const.CONF_AUTOMATION_TYPE,
-                        default=const.AUTOMATION_TYPE_TEMPERATURE,
-                    ): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            options=const.AUTOMATION_TYPES,
-                            mode=selector.SelectSelectorMode.DROPDOWN,
-                        ),
-                    ),
+                    # Optional temperature thresholds used by combined mode
                     vol.Optional(
                         const.CONF_MAX_TEMP,
                         default=const.DEFAULT_MAX_TEMP,

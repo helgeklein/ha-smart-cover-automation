@@ -10,8 +10,7 @@ from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.const import (
-    AUTOMATION_TYPE_SUN,
-    AUTOMATION_TYPE_TEMPERATURE,
+    AUTOMATION_TYPE_COMBINED,
     CONF_AUTOMATION_TYPE,
     CONF_COVERS,
     CONF_MAX_TEMP,
@@ -61,7 +60,7 @@ def mock_config_entry() -> MagicMock:
     entry.domain = DOMAIN
     entry.entry_id = "test_entry_id"
     entry.data = {
-        CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_TEMPERATURE,
+        CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
         CONF_COVERS: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
         CONF_MAX_TEMP: DEFAULT_MAX_TEMP,
         CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
@@ -78,7 +77,7 @@ def mock_config_entry_sun() -> MagicMock:
     entry.domain = DOMAIN
     entry.entry_id = "test_entry_id_sun"
     entry.data = {
-        CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_SUN,
+        CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
         CONF_COVERS: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
         CONF_SUN_ELEVATION_THRESHOLD: DEFAULT_SUN_ELEVATION_THRESHOLD,
         # Use numeric azimuths (degrees) for directions
@@ -169,7 +168,7 @@ def create_temperature_config(
 ) -> dict[str, Any]:
     """Create temperature automation config."""
     return {
-        CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_TEMPERATURE,
+        CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
         CONF_COVERS: covers or [MOCK_COVER_ENTITY_ID],
         CONF_MAX_TEMP: max_temp,
         CONF_MIN_TEMP: min_temp,
@@ -182,7 +181,7 @@ def create_sun_config(
 ) -> dict[str, Any]:
     """Create sun automation config."""
     config = {
-        CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_SUN,
+        CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
         CONF_COVERS: covers or [MOCK_COVER_ENTITY_ID],
         CONF_SUN_ELEVATION_THRESHOLD: threshold,
     }

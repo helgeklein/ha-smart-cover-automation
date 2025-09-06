@@ -10,8 +10,7 @@ from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.smart_cover_automation.config_flow import FlowHandler
 from custom_components.smart_cover_automation.const import (
-    AUTOMATION_TYPE_SUN,
-    AUTOMATION_TYPE_TEMPERATURE,
+    AUTOMATION_TYPE_COMBINED,
     CONF_AUTOMATION_TYPE,
     CONF_COVERS,
     CONF_MAX_TEMP,
@@ -46,17 +45,16 @@ class TestConfigFlow:
         )
         return hass
 
-    async def test_user_step_temperature_success(
+    async def test_user_step_combined_success_with_temps(
         self,
         flow_handler: FlowHandler,
         mock_hass_with_covers: MagicMock,
     ) -> None:
-        """Test successful temperature automation setup."""
+        """Test successful setup; combined mode is always used."""
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
             CONF_COVERS: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_TEMPERATURE,
             CONF_MAX_TEMP: 25.0,
             CONF_MIN_TEMP: 20.0,
         }
@@ -69,20 +67,21 @@ class TestConfigFlow:
             result = self._as_dict(result)
 
         assert result["type"] == FlowResultType.CREATE_ENTRY
-        assert result["data"] == user_input
+        expected = dict(user_input)
+        expected[CONF_AUTOMATION_TYPE] = AUTOMATION_TYPE_COMBINED
+        assert result["data"] == expected
         assert "2 covers" in result["title"]
 
-    async def test_user_step_sun_success(
+    async def test_user_step_combined_success_without_temps(
         self,
         flow_handler: FlowHandler,
         mock_hass_with_covers: MagicMock,
     ) -> None:
-        """Test successful sun automation setup."""
+        """Test successful setup without temperature fields."""
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_SUN,
             CONF_MAX_TEMP: DEFAULT_MAX_TEMP,
             CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
         }
@@ -95,7 +94,9 @@ class TestConfigFlow:
             result = self._as_dict(result)
 
         assert result["type"] == FlowResultType.CREATE_ENTRY
-        assert result["data"] == user_input
+        expected = dict(user_input)
+        expected[CONF_AUTOMATION_TYPE] = AUTOMATION_TYPE_COMBINED
+        assert result["data"] == expected
 
     async def test_user_step_invalid_cover(
         self,
@@ -108,7 +109,6 @@ class TestConfigFlow:
 
         user_input = {
             CONF_COVERS: ["cover.nonexistent"],
-            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_TEMPERATURE,
         }
 
         result = await flow_handler.async_step_user(user_input)
@@ -127,7 +127,6 @@ class TestConfigFlow:
 
         user_input = {
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_TEMPERATURE,
             CONF_MAX_TEMP: 20.0,  # Less than min_temp
             CONF_MIN_TEMP: 25.0,
         }
@@ -151,7 +150,6 @@ class TestConfigFlow:
 
         user_input = {
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_TEMPERATURE,
             CONF_MAX_TEMP: DEFAULT_MAX_TEMP,
             CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
         }
@@ -177,7 +175,7 @@ class TestConfigFlow:
         assert result["type"] == FlowResultType.FORM
         assert result["step_id"] == "user"
         assert CONF_COVERS in result["data_schema"].schema
-        assert CONF_AUTOMATION_TYPE in result["data_schema"].schema
+        assert CONF_AUTOMATION_TYPE not in result["data_schema"].schema
 
     async def test_user_step_configuration_error(
         self,
@@ -187,11 +185,8 @@ class TestConfigFlow:
         """Test handling of configuration validation errors."""
         flow_handler.hass = mock_hass_with_covers
 
-        # Create malformed input that will cause KeyError
-        user_input = {
-            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            # Missing CONF_AUTOMATION_TYPE intentionally
-        }
+        # Create malformed input that will cause KeyError (missing covers)
+        user_input: dict[str, Any] = {}
 
         result = await flow_handler.async_step_user(user_input)
         result = self._as_dict(result)
@@ -209,7 +204,6 @@ class TestConfigFlow:
 
         user_input = {
             CONF_COVERS: [MOCK_COVER_ENTITY_ID_2, MOCK_COVER_ENTITY_ID],  # Unsorted
-            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_TEMPERATURE,
             CONF_MAX_TEMP: DEFAULT_MAX_TEMP,
             CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
         }
@@ -220,9 +214,9 @@ class TestConfigFlow:
         ):
             await flow_handler.async_step_user(user_input)
 
-            # Should use sorted cover list for unique ID
-            expected_id = "_".join(sorted(user_input[CONF_COVERS]))
-            mock_set_id.assert_called_once_with(expected_id)
+        # Should use sorted cover list for unique ID
+        expected_id = "_".join(sorted(user_input[CONF_COVERS]))
+        mock_set_id.assert_called_once_with(expected_id)
 
     async def test_version_and_domain(
         self,

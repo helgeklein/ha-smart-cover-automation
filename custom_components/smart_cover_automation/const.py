@@ -52,12 +52,8 @@ DEFAULT_SUN_ELEVATION_THRESHOLD = 20  # degrees
 DEFAULT_TEMP_SENSOR = "sensor.temperature"
 
 # Automation types
-AUTOMATION_TYPE_TEMPERATURE = "temperature"
-AUTOMATION_TYPE_SUN = "sun"
-AUTOMATION_TYPES = [
-    AUTOMATION_TYPE_TEMPERATURE,
-    AUTOMATION_TYPE_SUN,
-]
+AUTOMATION_TYPE_COMBINED = "combined"
+AUTOMATION_TYPES = [AUTOMATION_TYPE_COMBINED]
 
 # Sun position thresholds
 AZIMUTH_TOLERANCE = 90  # Window considers sun if within this angle

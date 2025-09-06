@@ -10,8 +10,12 @@ from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.const import (
+    AUTOMATION_TYPE_COMBINED,
     CONF_AUTOMATION_TYPE,
     CONF_COVERS,
+    CONF_MAX_TEMP,
+    CONF_MIN_TEMP,
+    CONF_SUN_ELEVATION_THRESHOLD,
 )
 from custom_components.smart_cover_automation.coordinator import (
     ConfigurationError,
@@ -894,3 +898,170 @@ class TestDataUpdateCoordinator:
         await coordinator.async_refresh()
         cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == 40
+
+    @pytest.mark.asyncio
+    async def test_combined_hot_sun_not_hitting_closes_by_temp(
+        self,
+        mock_hass: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_sun_state: MagicMock,
+        mock_temperature_state: MagicMock,
+    ) -> None:
+        """When hot but sun not hitting, combined should close based on temperature."""
+        config = {
+            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
+            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
+            CONF_MAX_TEMP: 24.0,
+            CONF_MIN_TEMP: 21.0,
+            CONF_SUN_ELEVATION_THRESHOLD: 20.0,
+            f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
+        }
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        # Too hot; sun above threshold but azimuth far from window direction
+        mock_temperature_state.state = HOT_TEMP
+        mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 90.0}
+        mock_cover_state.attributes["current_position"] = OPEN_POSITION
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: mock_cover_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        assert cover_data["desired_position"] == CLOSED_POSITION
+        await assert_service_called(
+            mock_hass.services,
+            "cover",
+            "set_cover_position",
+            MOCK_COVER_ENTITY_ID,
+            position=CLOSED_POSITION,
+        )
+
+    @pytest.mark.asyncio
+    async def test_combined_comfortable_direct_sun_partial_applies_sun(
+        self,
+        mock_hass: MagicMock,
+        mock_sun_state: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_temperature_state: MagicMock,
+    ) -> None:
+        """When comfortable but direct sun, apply sun-based partial closure."""
+        config = {
+            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
+            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
+            CONF_MAX_TEMP: 24.0,
+            CONF_MIN_TEMP: 21.0,
+            CONF_SUN_ELEVATION_THRESHOLD: 20.0,
+            "max_closure": 60,  # partial closure => desired 40
+            f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
+        }
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        mock_temperature_state.state = COMFORTABLE_TEMP
+        mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
+        mock_cover_state.attributes["current_position"] = OPEN_POSITION
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: mock_cover_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        assert cover_data["desired_position"] == 40
+        await assert_service_called(
+            mock_hass.services,
+            "cover",
+            "set_cover_position",
+            MOCK_COVER_ENTITY_ID,
+            position=40,
+        )
+
+    @pytest.mark.asyncio
+    async def test_combined_cold_direct_sun_prefers_closure(
+        self,
+        mock_hass: MagicMock,
+        mock_sun_state: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_temperature_state: MagicMock,
+    ) -> None:
+        """Cold would open but direct sun closes; closure wins (more conservative)."""
+        config = {
+            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
+            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
+            CONF_MAX_TEMP: 24.0,
+            CONF_MIN_TEMP: 21.0,
+            CONF_SUN_ELEVATION_THRESHOLD: 20.0,
+            f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
+        }
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        mock_temperature_state.state = COLD_TEMP
+        mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
+        mock_cover_state.attributes["current_position"] = OPEN_POSITION
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: mock_cover_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        assert cover_data["desired_position"] == CLOSED_POSITION
+        await assert_service_called(
+            mock_hass.services,
+            "cover",
+            "set_cover_position",
+            MOCK_COVER_ENTITY_ID,
+            position=CLOSED_POSITION,
+        )
+
+    @pytest.mark.asyncio
+    async def test_combined_missing_direction_uses_temp_only(
+        self,
+        mock_hass: MagicMock,
+        mock_sun_state: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_temperature_state: MagicMock,
+    ) -> None:
+        """If sun direction missing, combined falls back to temperature input."""
+        config = {
+            CONF_AUTOMATION_TYPE: AUTOMATION_TYPE_COMBINED,
+            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
+            CONF_MAX_TEMP: 24.0,
+            CONF_MIN_TEMP: 21.0,
+            CONF_SUN_ELEVATION_THRESHOLD: 20.0,
+            # Intentionally omit direction key
+        }
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(
+            mock_hass, cast(IntegrationConfigEntry, config_entry)
+        )
+
+        mock_temperature_state.state = HOT_TEMP
+        mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
+        mock_cover_state.attributes["current_position"] = OPEN_POSITION
+
+        mock_hass.states.get.side_effect = lambda entity_id: {
+            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
+            MOCK_SUN_ENTITY_ID: mock_sun_state,
+            MOCK_COVER_ENTITY_ID: mock_cover_state,
+        }.get(entity_id)
+
+        await coordinator.async_refresh()
+        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        assert cover_data["desired_position"] == CLOSED_POSITION

@@ -136,28 +136,32 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             and d.get("current_position") != d.get("desired_position")
         )
 
-        # Temperature automation summary
-        if automation_type == const.AUTOMATION_TYPE_TEMPERATURE:
+        # Combined automation summary
+        if automation_type == const.AUTOMATION_TYPE_COMBINED:
+            parts: list[str] = []
             current_temp = self._first_cover_value("current_temp")
-            min_temp = config.get(const.CONF_MIN_TEMP)
-            max_temp = config.get(const.CONF_MAX_TEMP)
-            if (
-                isinstance(current_temp, (int, float))
-                and min_temp is not None
-                and max_temp is not None
-            ):
-                return f"Temp {float(current_temp):.1f}°C in [{float(min_temp):.1f}–{float(max_temp):.1f}] • moves {moved}/{total}"
-            return f"Temperature mode • moves {moved}/{total}"
-
-        # Sun automation summary
-        if automation_type == const.AUTOMATION_TYPE_SUN:
+            if isinstance(current_temp, (int, float)):
+                min_temp = config.get(const.CONF_MIN_TEMP)
+                max_temp = config.get(const.CONF_MAX_TEMP)
+                parts.append(
+                    f"Temp {float(current_temp):.1f}°C"
+                    + (
+                        f" in [{float(min_temp):.1f}–{float(max_temp):.1f}]"
+                        if isinstance(min_temp, (int, float))
+                        and isinstance(max_temp, (int, float))
+                        else ""
+                    )
+                )
             elevation = self._first_cover_value("sun_elevation")
             azimuth = self._first_cover_value("sun_azimuth")
             if isinstance(elevation, (int, float)) and isinstance(
                 azimuth, (int, float)
             ):
-                return f"Sun elev {float(elevation):.1f}°, az {float(azimuth):.0f}° • moves {moved}/{total}"
-            return f"Sun mode • moves {moved}/{total}"
+                parts.append(
+                    f"Sun elev {float(elevation):.1f}°, az {float(azimuth):.0f}°"
+                )
+            prefix = " • ".join(parts) if parts else "Combined"
+            return f"{prefix} • moves {moved}/{total}"
 
         # Fallback
         return f"Unknown mode • moves {moved}/{total}"
@@ -187,18 +191,15 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             "min_position_delta": min_delta,
         }
 
-        if automation_type == const.AUTOMATION_TYPE_TEMPERATURE:
+        if automation_type == const.AUTOMATION_TYPE_COMBINED:
             attrs.update(
                 {
+                    # Temperature-related
                     "temperature_sensor": config.get(const.CONF_TEMP_SENSOR),
                     "min_temp": config.get(const.CONF_MIN_TEMP),
                     "max_temp": config.get(const.CONF_MAX_TEMP),
                     "current_temp": self._first_cover_value("current_temp"),
-                }
-            )
-        elif automation_type == const.AUTOMATION_TYPE_SUN:
-            attrs.update(
-                {
+                    # Sun-related
                     "sun_elevation": self._first_cover_value("sun_elevation"),
                     "sun_azimuth": self._first_cover_value("sun_azimuth"),
                     "elevation_threshold": config.get(
