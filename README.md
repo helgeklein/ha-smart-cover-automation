@@ -52,7 +52,7 @@ Intelligently manages covers based on sun position relative to each window:
    - Specify which direction each cover/window faces (N, NE, E, SE, S, SW, W, NW)
    - Set sun elevation threshold (default 20°) that determines when covers respond
    - System uses 45° tolerance to determine if sun is hitting a window
-   - Maximum closure is configurable to optionally maintain some natural light
+   - Maximum closure is configurable; default is 100% for direct sun
    - Direction keys are stored per cover as `<cover_entity_id>_cover_direction`
 
 2. **Automation Logic**:
@@ -63,7 +63,7 @@ Intelligently manages covers based on sun position relative to each window:
        Calculate angle between sun and window direction
        If angle ≤ 45°:
            Close proportionally to how directly sun hits
-           (direct hit = 90% closed, glancing = minimal closure)
+           (direct hit = 100% closed by default, glancing = minimal closure)
        Else:
            Open fully (sun not hitting this window)
    ```
@@ -175,8 +175,8 @@ Coordinator semantics: Exceptions are captured and exposed on `coordinator.last_
 ```
 [INFO] Sun automation: elevation=35.2°, azimuth=180.1°, threshold=20.0°
 [DEBUG] Cover cover.south_window: direction=south (180°), current_pos=100
-[INFO] Cover cover.south_window: Sun hitting window (angle=0.1° ≤ 45°) - partial closure factor=1.00, position=10
-[INFO] Setting cover cover.south_window position from 100 to 10
+[INFO] Cover cover.south_window: Sun hitting window (angle=0.1° ≤ 45°) - partial closure factor=1.00, position=0
+[INFO] Setting cover cover.south_window position from 100 to 0
 ```
 
 #### Common Log Messages

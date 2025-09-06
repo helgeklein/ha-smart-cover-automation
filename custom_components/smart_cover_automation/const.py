@@ -82,7 +82,9 @@ AUTOMATION_TYPES = [
 
 # Sun position thresholds
 AZIMUTH_TOLERANCE = 45  # degrees - window considers sun if within this angle
-MAX_CLOSURE = 100  # Maximum closure percentage when sun is directly at window
+# Default maximum closure percentage when sun directly hits the window.
+# 100% means a direct hit will fully close unless overridden in Options.
+MAX_CLOSURE = 100
 
 # Behavior tuning
 TEMP_HYSTERESIS = 0.5  # degrees Celsius; helps avoid rapid toggling near thresholds

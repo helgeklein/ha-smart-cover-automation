@@ -46,7 +46,7 @@ LOW_ELEVATION = 15.0
 DIRECT_AZIMUTH = 180.0
 INDIRECT_AZIMUTH = 90.0
 TILT_ANGLE = 20.0
-CLOSED_TILT_POSITION = 10
+CLOSED_TILT_POSITION = 0
 
 
 class TestDataUpdateCoordinator:
@@ -246,7 +246,9 @@ class TestDataUpdateCoordinator:
         cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
         assert cover_data["sun_elevation"] == HIGH_ELEVATION
         assert cover_data["sun_azimuth"] == DIRECT_AZIMUTH
-        assert cover_data["desired_position"] == CLOSED_TILT_POSITION  # Should close
+        assert (
+            cover_data["desired_position"] == CLOSED_TILT_POSITION
+        )  # Should close fully by default
 
     async def test_sun_automation_respects_max_closure_option(
         self,
@@ -642,6 +644,8 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """When cover lacks position and open/close for partial desired, no service is called."""
         config = create_sun_config()
+        # Ensure direct-sun partial closure is not 100% (so desired != 0)
+        config["max_closure"] = 90
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(
             mock_hass, cast(IntegrationConfigEntry, config_entry)
