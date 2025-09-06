@@ -30,6 +30,19 @@ MOCK_TEMP_SENSOR_ENTITY_ID = "sensor.temperature"
 MOCK_SUN_ENTITY_ID = "sun.sun"
 
 
+@pytest.fixture(autouse=True)
+def _quiet_logs(caplog: pytest.LogCaptureFixture) -> None:
+    """Reduce log noise during tests while keeping logs available for assertions.
+
+    Default to ERROR for our integration and Home Assistant; individual tests can
+    raise levels with caplog.set_level when asserting on INFO/DEBUG messages.
+    """
+    import logging
+
+    caplog.set_level(logging.ERROR, logger="custom_components.smart_cover_automation")
+    caplog.set_level(logging.ERROR, logger="homeassistant")
+
+
 @pytest.fixture
 def mock_hass() -> MagicMock:
     """Create a mock HomeAssistant instance."""

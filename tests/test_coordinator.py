@@ -545,7 +545,11 @@ class TestDataUpdateCoordinator:
         """Test desired position calculation."""
         # Test low elevation
         pos = sun_coordinator._calculate_desired_position(
-            LOW_ELEVATION, DIRECT_AZIMUTH, TILT_ANGLE, DIRECT_AZIMUTH
+            LOW_ELEVATION,
+            DIRECT_AZIMUTH,
+            TILT_ANGLE,
+            DIRECT_AZIMUTH,
+            MOCK_COVER_ENTITY_ID,
         )
         assert pos == OPEN_POSITION  # Fully open
 

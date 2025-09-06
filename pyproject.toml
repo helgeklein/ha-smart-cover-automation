@@ -12,6 +12,8 @@ addopts = [
     "--cov-report=html",
     "--cov-report=xml",
 ]
+log_cli = false
+log_level = "ERROR"
 markers = [
     "asyncio: marks tests as async",
 ]

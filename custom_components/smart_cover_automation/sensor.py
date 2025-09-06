@@ -15,23 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 
-from .const import (
-    AUTOMATION_TYPE_SUN,
-    AUTOMATION_TYPE_TEMPERATURE,
-    CONF_AUTOMATION_TYPE,
-    CONF_ENABLED,
-    CONF_MAX_CLOSURE,
-    CONF_MAX_TEMP,
-    CONF_MIN_POSITION_DELTA,
-    CONF_MIN_TEMP,
-    CONF_SUN_ELEVATION_THRESHOLD,
-    CONF_TEMP_HYSTERESIS,
-    CONF_TEMP_SENSOR,
-    DEFAULT_SUN_ELEVATION_THRESHOLD,
-    MAX_CLOSURE,
-    MIN_POSITION_DELTA,
-    TEMP_HYSTERESIS,
-)
+from . import const
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -138,11 +122,11 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
     @cached_property
     def native_value(self) -> str | None:  # type: ignore[override]
         config = self.coordinator.config_entry.runtime_data.config
-        enabled = config.get(CONF_ENABLED, True)
+        enabled = config.get(const.CONF_ENABLED, True)
         if enabled is False:
             return "Disabled"
 
-        automation_type = config.get(CONF_AUTOMATION_TYPE)
+        automation_type = config.get(const.CONF_AUTOMATION_TYPE)
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
         total = len(covers)
         moved = sum(
@@ -153,10 +137,10 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         )
 
         # Temperature automation summary
-        if automation_type == AUTOMATION_TYPE_TEMPERATURE:
+        if automation_type == const.AUTOMATION_TYPE_TEMPERATURE:
             current_temp = self._first_cover_value("current_temp")
-            min_temp = config.get(CONF_MIN_TEMP)
-            max_temp = config.get(CONF_MAX_TEMP)
+            min_temp = config.get(const.CONF_MIN_TEMP)
+            max_temp = config.get(const.CONF_MAX_TEMP)
             if (
                 isinstance(current_temp, (int, float))
                 and min_temp is not None
@@ -166,7 +150,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             return f"Temperature mode • moves {moved}/{total}"
 
         # Sun automation summary
-        if automation_type == AUTOMATION_TYPE_SUN:
+        if automation_type == const.AUTOMATION_TYPE_SUN:
             elevation = self._first_cover_value("sun_elevation")
             azimuth = self._first_cover_value("sun_azimuth")
             if isinstance(elevation, (int, float)) and isinstance(
@@ -183,10 +167,12 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         config = self.coordinator.config_entry.runtime_data.config
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
 
-        automation_type = config.get(CONF_AUTOMATION_TYPE)
-        enabled = bool(config.get(CONF_ENABLED, True))
-        temp_hyst = float(config.get(CONF_TEMP_HYSTERESIS, TEMP_HYSTERESIS))
-        min_delta = int(float(config.get(CONF_MIN_POSITION_DELTA, MIN_POSITION_DELTA)))
+        automation_type = config.get(const.CONF_AUTOMATION_TYPE)
+        enabled = bool(config.get(const.CONF_ENABLED, True))
+        temp_hyst = float(config.get(const.CONF_TEMP_HYSTERESIS, const.TEMP_HYSTERESIS))
+        min_delta = int(
+            float(config.get(const.CONF_MIN_POSITION_DELTA, const.MIN_POSITION_DELTA))
+        )
         attrs: dict[str, Any] = {
             "enabled": enabled,
             "automation_type": automation_type,
@@ -201,25 +187,26 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             "min_position_delta": min_delta,
         }
 
-        if automation_type == AUTOMATION_TYPE_TEMPERATURE:
+        if automation_type == const.AUTOMATION_TYPE_TEMPERATURE:
             attrs.update(
                 {
-                    "temperature_sensor": config.get(CONF_TEMP_SENSOR),
-                    "min_temp": config.get(CONF_MIN_TEMP),
-                    "max_temp": config.get(CONF_MAX_TEMP),
+                    "temperature_sensor": config.get(const.CONF_TEMP_SENSOR),
+                    "min_temp": config.get(const.CONF_MIN_TEMP),
+                    "max_temp": config.get(const.CONF_MAX_TEMP),
                     "current_temp": self._first_cover_value("current_temp"),
                 }
             )
-        elif automation_type == AUTOMATION_TYPE_SUN:
+        elif automation_type == const.AUTOMATION_TYPE_SUN:
             attrs.update(
                 {
                     "sun_elevation": self._first_cover_value("sun_elevation"),
                     "sun_azimuth": self._first_cover_value("sun_azimuth"),
                     "elevation_threshold": config.get(
-                        CONF_SUN_ELEVATION_THRESHOLD, DEFAULT_SUN_ELEVATION_THRESHOLD
+                        const.CONF_SUN_ELEVATION_THRESHOLD,
+                        const.DEFAULT_SUN_ELEVATION_THRESHOLD,
                     ),
                     "max_closure": int(
-                        float(config.get(CONF_MAX_CLOSURE, MAX_CLOSURE))
+                        float(config.get(const.CONF_MAX_CLOSURE, const.MAX_CLOSURE))
                     ),
                 }
             )

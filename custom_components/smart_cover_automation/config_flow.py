@@ -7,33 +7,15 @@ from homeassistant import config_entries
 from homeassistant.const import UnitOfTemperature
 from homeassistant.helpers import selector
 
-from .const import (
-    AUTOMATION_TYPE_TEMPERATURE,
-    AUTOMATION_TYPES,
-    CONF_AUTOMATION_TYPE,
-    CONF_COVERS,
-    CONF_ENABLED,
-    CONF_MAX_CLOSURE,
-    CONF_MAX_TEMP,
-    CONF_MIN_TEMP,
-    CONF_SUN_ELEVATION_THRESHOLD,
-    CONF_TEMP_SENSOR,
-    COVER_DIRECTIONS,
-    DEFAULT_MAX_TEMP,
-    DEFAULT_MIN_TEMP,
-    DEFAULT_SUN_ELEVATION_THRESHOLD,
-    DOMAIN,
-    LOGGER,
-    MAX_CLOSURE,
-)
+from . import const
 
 
-class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
     """Config flow for the integration."""
 
     VERSION = 1
     # Provide explicit domain attribute for tests referencing FlowHandler.domain
-    domain = DOMAIN
+    domain = const.DOMAIN
 
     async def async_step_user(
         self,
@@ -46,34 +28,35 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 # Validate covers exist and are available
                 invalid_covers = []
-                for cover in user_input[CONF_COVERS]:
+                for cover in user_input[const.CONF_COVERS]:
                     state = self.hass.states.get(cover)
                     if not state:
                         invalid_covers.append(cover)
                     elif state.state == "unavailable":
-                        LOGGER.warning(
+                        const.LOGGER.warning(
                             "Cover %s is currently unavailable but will be configured",
                             cover,
                         )
 
                 if invalid_covers:
                     errors["base"] = "invalid_cover"
-                    LOGGER.error(
+                    const.LOGGER.error(
                         "Invalid covers selected: %s",
                         invalid_covers,
                     )
 
                 # Validate temperature ranges if temperature automation
                 if (
-                    user_input[CONF_AUTOMATION_TYPE] == AUTOMATION_TYPE_TEMPERATURE
-                    and CONF_MAX_TEMP in user_input
-                    and CONF_MIN_TEMP in user_input
+                    user_input[const.CONF_AUTOMATION_TYPE]
+                    == const.AUTOMATION_TYPE_TEMPERATURE
+                    and const.CONF_MAX_TEMP in user_input
+                    and const.CONF_MIN_TEMP in user_input
                 ):
-                    max_temp = user_input[CONF_MAX_TEMP]
-                    min_temp = user_input[CONF_MIN_TEMP]
+                    max_temp = user_input[const.CONF_MAX_TEMP]
+                    min_temp = user_input[const.CONF_MIN_TEMP]
                     if max_temp <= min_temp:
                         errors["base"] = "invalid_temperature_range"
-                        LOGGER.error(
+                        const.LOGGER.error(
                             "Invalid temperature range: max=%s <= min=%s",
                             max_temp,
                             min_temp,
@@ -81,43 +64,43 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
                 if not errors:
                     # Create unique ID based on the covers being automated
-                    unique_id = "_".join(sorted(user_input[CONF_COVERS]))
+                    unique_id = "_".join(sorted(user_input[const.CONF_COVERS]))
                     await self.async_set_unique_id(unique_id)
                     self._abort_if_unique_id_configured()
 
                     return self.async_create_entry(
                         title=(
-                            f"Cover Automation ({len(user_input[CONF_COVERS])} covers)"
+                            f"Cover Automation ({len(user_input[const.CONF_COVERS])} covers)"
                         ),
                         data=user_input,
                     )
 
             except (KeyError, ValueError, TypeError) as err:
-                LOGGER.exception("Configuration validation error: %s", err)
+                const.LOGGER.exception("Configuration validation error: %s", err)
                 errors["base"] = "invalid_config"
 
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_COVERS): selector.EntitySelector(
+                    vol.Required(const.CONF_COVERS): selector.EntitySelector(
                         selector.EntitySelectorConfig(
                             domain="cover",
                             multiple=True,
                         ),
                     ),
                     vol.Required(
-                        CONF_AUTOMATION_TYPE,
-                        default=AUTOMATION_TYPE_TEMPERATURE,
+                        const.CONF_AUTOMATION_TYPE,
+                        default=const.AUTOMATION_TYPE_TEMPERATURE,
                     ): selector.SelectSelector(
                         selector.SelectSelectorConfig(
-                            options=AUTOMATION_TYPES,
+                            options=const.AUTOMATION_TYPES,
                             mode=selector.SelectSelectorMode.DROPDOWN,
                         ),
                     ),
                     vol.Optional(
-                        CONF_MAX_TEMP,
-                        default=DEFAULT_MAX_TEMP,
+                        const.CONF_MAX_TEMP,
+                        default=const.DEFAULT_MAX_TEMP,
                     ): selector.NumberSelector(
                         selector.NumberSelectorConfig(
                             min=0,
@@ -127,8 +110,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         ),
                     ),
                     vol.Optional(
-                        CONF_MIN_TEMP,
-                        default=DEFAULT_MIN_TEMP,
+                        const.CONF_MIN_TEMP,
+                        default=const.DEFAULT_MIN_TEMP,
                     ): selector.NumberSelector(
                         selector.NumberSelectorConfig(
                             min=0,
@@ -173,7 +156,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 return data[key]
             return default
 
-        covers: list[str] = list(data.get(CONF_COVERS, []))
+        covers: list[str] = list(data.get(const.CONF_COVERS, []))
 
         # Build dynamic fields for per-cover directions
         direction_fields: dict[vol.Marker, object] = {}
@@ -181,35 +164,35 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             key = f"{cover}_cover_direction"
             direction_fields[vol.Optional(key)] = selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=COVER_DIRECTIONS,
+                    options=const.COVER_DIRECTIONS,
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             )
 
         # Compute concrete defaults
-        enabled_default = bool(opt(CONF_ENABLED, True))
-        temp_sensor_default = str(opt(CONF_TEMP_SENSOR, "sensor.temperature"))
+        enabled_default = bool(opt(const.CONF_ENABLED, True))
+        temp_sensor_default = str(opt(const.CONF_TEMP_SENSOR, "sensor.temperature"))
         raw_threshold = opt(
-            CONF_SUN_ELEVATION_THRESHOLD, DEFAULT_SUN_ELEVATION_THRESHOLD
+            const.CONF_SUN_ELEVATION_THRESHOLD, const.DEFAULT_SUN_ELEVATION_THRESHOLD
         )
         if isinstance(raw_threshold, (int, float, str)):
             try:
                 threshold_default = float(raw_threshold)
             except (TypeError, ValueError):
-                threshold_default = float(DEFAULT_SUN_ELEVATION_THRESHOLD)
+                threshold_default = float(const.DEFAULT_SUN_ELEVATION_THRESHOLD)
         else:
-            threshold_default = float(DEFAULT_SUN_ELEVATION_THRESHOLD)
+            threshold_default = float(const.DEFAULT_SUN_ELEVATION_THRESHOLD)
 
         schema_dict: dict[vol.Marker, object] = {
             vol.Optional(
-                CONF_ENABLED, default=enabled_default
+                const.CONF_ENABLED, default=enabled_default
             ): selector.BooleanSelector(),
             vol.Optional(
-                CONF_TEMP_SENSOR,
+                const.CONF_TEMP_SENSOR,
                 default=temp_sensor_default,
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
             vol.Optional(
-                CONF_SUN_ELEVATION_THRESHOLD,
+                const.CONF_SUN_ELEVATION_THRESHOLD,
                 default=threshold_default,
             ): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=90, step=1)
@@ -217,20 +200,20 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         }
 
         # Compute safe default for max_closure
-        raw_max_closure = opt(CONF_MAX_CLOSURE, MAX_CLOSURE)
+        raw_max_closure = opt(const.CONF_MAX_CLOSURE, const.MAX_CLOSURE)
         if isinstance(raw_max_closure, (int, float, str)):
             try:
                 max_closure_default = int(float(raw_max_closure))
             except (TypeError, ValueError):
-                max_closure_default = int(MAX_CLOSURE)
+                max_closure_default = int(const.MAX_CLOSURE)
         else:
-            max_closure_default = int(MAX_CLOSURE)
+            max_closure_default = int(const.MAX_CLOSURE)
 
-        schema_dict[vol.Optional(CONF_MAX_CLOSURE, default=max_closure_default)] = (
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0, max=100, step=1, unit_of_measurement="%"
-                )
+        schema_dict[
+            vol.Optional(const.CONF_MAX_CLOSURE, default=max_closure_default)
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0, max=100, step=1, unit_of_measurement="%"
             )
         )
 
