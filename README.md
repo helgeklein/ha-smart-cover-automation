@@ -4,63 +4,70 @@ A Home Assistant integration that intelligently automates your window covers usi
 
 ## Features
 
-- Combined automation: Merges temperature and sun logic and chooses the more closed position
-- Per-cover window azimuth: Configure each window's facing as an angle (0–359°)
-- Configurable behavior: temperature hysteresis, minimum position delta, sun elevation threshold, and maximum closure
-- Supports multiple covers with different orientations
-- Works with any cover entity that supports open/close or position control
-   - If a cover supports position (set_cover_position), partial closure is used
-   - If it supports only open/close, actions fall back to those services
-- Automation Status sensor: Live summary of combined inputs and per-cover outcomes
+- **Temperature + sun:** Moves only when it's too hot and the sun is hitting the window; supports temp-only or sun-only when configured alone.
+- **Exact window direction:** Each window's direction is specified as an angle from north.
+- **Configurable behavior:** Temperature hysteresis, minimum position delta, sun elevation threshold, and maximum closure.
+- Works with any cover entity that supports open/close or position control:
+   - If a cover supports position (`set_cover_position`), partial closure is used.
+   - If it supports only open/close, actions fall back to that.
+- Automation status sensor: Live summary of combined inputs and per-cover outcomes.
 
 ## Installation
 
 1. Add this repository to HACS
-2. Install the "Smart Cover Automation" integration
+2. Install the **Smart Cover Automation** integration
 3. Restart Home Assistant
 4. Add the integration from the HA integrations page
 
-## Configuration
+## Configuration Options
 
-The integration provides an Options flow (in the integration's Configure dialog) so you can tune behavior without editing YAML:
+The integration provides an options flow (in the integration's Configure dialog) so you can tune behavior without editing YAML:
 
-- Enabled: Global on/off switch for all automation logic
-- Minimum temperature: Open when cooler than this
-- Maximum temperature: Close when hotter than this
-- Temperature sensor: Override the sensor entity used for temperature contribution
-- Temperature hysteresis: Degrees C around thresholds to avoid oscillation
-- Minimum position delta: Ignore tiny position changes to reduce chatter
-- Sun elevation threshold: Elevation where sun logic starts acting (defaults to 20°)
-- Maximum closure: Cap on how far to close on direct sun (defaults to 100%)
-- Per-cover window azimuth: 0–359° angle each cover/window faces
+- **Enabled:** Global on/off switch for all automation logic.
+- **Minimum temperature:** Open when cooler than this.
+- **Maximum temperature:** Close when hotter than this.
+- **Temperature sensor:** Override the sensor entity used for temperature contribution.
+- **Temperature hysteresis:** Degrees Celsius around thresholds to avoid oscillation.
+- **Minimum position delta:** Ignore tiny position changes to reduce chatter.
+- **Sun elevation threshold:** Minimum elevation above the horizon where sun logic starts acting (defaults to 20°).
+- **Maximum closure:** Cap on how far to close on direct sun (defaults to 100%).
+- **Per-cover window azimuth:** 0–359° angle each cover/window faces.
 
-### How the combined automation works
+## How the Automation Works
 
-The integration computes a desired position from both temperature and sun, then applies the more closed result (after a minimum-delta guard):
+The integration computes a desired position from both temperature and sun:
 
 1) Temperature contribution
+
 - If current temperature > maximum: close (block heat)
 - If current temperature < minimum: open (allow heat)
 - If current temperature within [min, max]: maintain position
 - A configurable hysteresis band reduces oscillation around thresholds
 
 2) Sun contribution
-- You configure the azimuth (0–359°) each cover/window faces (e.g., South = 180°)
-- Below elevation threshold (default 20°): open fully (let light in)
-- At/above threshold: compute angle between sun azimuth and window azimuth
-   - If angle < tolerance (default 90°, strict): close to `100 - max_closure` (0 if max_closure=100)
-   - Else: open fully (sun not directly hitting this window)
-- Maximum closure is configurable (default 100%)
+
+- You configure each window cover's azimuth from north (e.g., south = 180°).
+- Sun elevation threshold (angle above the horizon):
+    - Below the elevation threshold : open fully (let light in).
+    - Above the elevation threshold: compute angle between sun azimuth and window azimuth:
+        - If angle < tolerance : close to configured maximum closure position.
+        - Else: open fully (sun not directly hitting this window).
 
 3) Final decision
-- The automation takes the most closed of the two contributions
-- If the change is smaller than the minimum position delta, it's ignored to prevent chatter
 
-Notes:
-- Per-cover direction values are numeric azimuths; legacy string directions are not used
-- Sun-only covers with missing/invalid direction are skipped
+- If both temperature and sun are configured: act only when temperature is hot AND sun is hitting; otherwise maintain position.
+- If only temperature is configured: use the temperature decision.
+- If only sun is configured: use the sun decision.
+- If sun is configured but a cover's direction is invalid/missing: fall back to temperature-only for that cover.
+- If the change is smaller than the minimum position delta, it's ignored to prevent chatter.
 
-#### Direction Angles (examples)
+**Notes:**
+
+- Per-cover direction values are numeric azimuths.
+- Sun-only covers with missing/invalid direction are skipped.
+
+### Direction Angles (Examples)
+
 ```
 North = 0°
 Northeast = 45°
@@ -72,42 +79,45 @@ West = 270°
 Northwest = 315°
 ```
 
-#### Example Scenarios
+### Example Scenarios
 
-- **South-facing window at noon**:
-   - Sun is directly south (180°)
-   - Sun contribution closes fully (subject to maximum closure); temperature may reinforce or keep it closed
+- **South-facing window at noon on a cold day**:
+   - The sun is directly south (180°).
+   - The temperature is below the minimum.
+   - The cover remains open to maximize natural light.
 
-- **South window in morning**:
-   - Sun is east (~90°)
-   - Sun contribution opens fully as sun isn't hitting window; temperature contribution may keep it closed if too hot
+- **South-facing window at noon on a hot day**:
+   - The sun is directly south (180°).
+   - The temperature is above the minimum.
+   - The cover closes fully (subject to maximum closure) to block heat.
 
 - **East-facing window**:
-   - Morning: Closes as sun shines directly
-   - Afternoon: Opens as sun moves west
+   - Morning: Closes as sun shines directly if the temperature is above the minimum.
+   - Afternoon: Opens as sun moves west.
 
 - **Any window at dawn/dusk**:
-   - Sun elevation is low
-   - Sun contribution opens fully to maximize natural light
+   - Sun elevation is low.
+   - Sun contribution opens fully to maximize natural light.
 
 The automation maintains comfort by:
-1. Letting in light when sun is low
-2. Blocking direct sunlight to prevent heat gain
-3. Allowing indirect light through partially closed covers
-4. Opening covers when sun moves away from the window
-5. Respecting room temperature limits using hysteresis to avoid flapping
+
+1. Letting in light when sun is low.
+2. Blocking direct sunlight to prevent heat gain if it's hot outside.
+3. Opening covers when sun moves away from the window.
+4. Respecting room temperature limits using hysteresis to avoid flapping.
 
 ### Automation Status Sensor
 
-An additional sensor named "Automation Status" summarizes the current combined inputs and recent results, for example:
+An additional sensor named `Automation Status` summarizes the current combined inputs and recent results, for example:
 
 - Combined: `Temp 22.5°C in [21.0–24.0] • Sun elev 35.0°, az 180° • moves 1/2`
 - Disabled: `Disabled`
 
 Attributes include:
-- enabled, automation_type, covers_total, covers_moved
-- min_temperature, max_temperature, temperature_hysteresis, min_position_delta
-- sun_elevation_threshold, sun elevation/azimuth
+
+- `enabled`, `covers_total`, `covers_moved`, `combined_strategy`
+- `min_temperature`, `max_temperature`, `temperature_hysteresis`, `min_position_delta`
+- `sun_elevation_threshold`, sun elevation/azimuth
 - A per-cover snapshot of inputs and desired/current positions for visibility
 
 ## Usage
@@ -115,16 +125,17 @@ Attributes include:
 1. Install and add the integration
 2. Select covers to automate
 3. Configure minimum and maximum temperature thresholds
-4. Enter the azimuth for each cover (0–359°, e.g., South=180)
+4. Enter the azimuth for each cover (0–359°; e.g., south=180)
 5. Optionally adjust: elevation threshold, maximum closure, hysteresis, and minimum position delta
-
-The integration will handle the combined logic automatically.
 
 ## Troubleshooting & Monitoring
 
 ### Enabling Verbose Logging
 
 To understand exactly why covers move to specific positions and troubleshoot issues, enable detailed logging:
+
+- Recommended: Toggle "Verbose logging" in the integration's options to enable DEBUG logs for this entry.
+- Or enable via YAML globally:
 
 ```yaml
 # Add to configuration.yaml
@@ -134,25 +145,29 @@ logger:
 ```
 
 **Log Levels:**
+
 - `debug`: Detailed calculations, cover states, service calls
 - `info`: Automation decisions, cover movements, temperature/sun readings
 - `warning`: Configuration issues, missing entities
 - `error`: System failures, invalid sensors
 
 Update cadence: The coordinator runs every 60 seconds by default.
+
 Coordinator semantics: Exceptions are captured and exposed on `coordinator.last_exception`; they do not propagate to callers of `async_refresh()`.
 
 ### What You'll See in the Logs
 
 #### Integration Lifecycle
+
 ```
 [INFO] Setting up Smart Cover Automation integration
-[INFO] Initializing Smart Cover Automation coordinator: type=combined, covers=['cover.bedroom', 'cover.living_room']
+[INFO] Initializing Smart Cover Automation coordinator: mode=combined, covers=['cover.bedroom', 'cover.living_room']
 [DEBUG] Starting initial coordinator refresh
 [INFO] Smart Cover Automation integration setup completed
 ```
 
 #### Combined Automation Decisions
+
 ```
 [INFO] Combined: temp=25.3°C (min=21.0, max=24.0), sun elev=35.2°, az=180.1°, threshold=20.0°
 [DEBUG] Cover cover.south_window: window_azimuth=180°, current_pos=100
@@ -163,18 +178,21 @@ Coordinator semantics: Exceptions are captured and exposed on `coordinator.last_
 #### Common Log Messages
 
 **Normal Operation:**
+
 - `"Starting cover automation update"` - Automation cycle begins
 - `"Temperature comfortable (...) - maintaining position"` - No change needed
 - `"Sun low (...) - opening fully"` - Morning/evening behavior
 - `"Sun not hitting window (...) - opening fully"` - Window not in direct sun
 
 **Configuration Issues:**
+
 - `"Cover ... is unavailable"` - Cover entity not responding
 - `"Temperature sensor 'sensor.temperature' not found"` - Missing temperature sensor
 - `"Cover ...: no direction configured"` - Window direction not set for sun automation
 - `"Cover ...: invalid direction '...'"` - Invalid direction value
 
 **System Problems:**
+
 - `"Sun integration not available"` - Sun integration disabled
 - `"Invalid temperature reading"` - Sensor data corrupted
 - `"Cannot set cover ... position"` - Cover doesn't support position control

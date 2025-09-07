@@ -19,6 +19,7 @@ This document describes the comprehensive test suite for the Smart Cover Automat
 - `tests/test_platform_entities.py` - Platform entity loading
 - `tests/test_sensor_additional.py` - Status sensor details
 - `tests/test_integration.py` - End-to-end integration tests
+ - `tests/test_edge_cases.py` - Unlikely/impossible inputs to harden behavior
 
 ### Test Coverage Areas
 
@@ -26,7 +27,7 @@ This document describes the comprehensive test suite for the Smart Cover Automat
 - **Combined Automation**:
   - Temperature contribution (hot/cold/comfortable, hysteresis)
   - Sun contribution (elevation threshold, azimuth tolerance, per-cover azimuth)
-  - Final decision (choose more closed, respect min position delta)
+  - Final decision (AND semantics when both enabled; temp-only or sun-only otherwise; respect min position delta)
   - Maximum closure cap
 
 - **Error Handling**:
@@ -99,7 +100,7 @@ This document describes the comprehensive test suite for the Smart Cover Automat
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (with formatting + lint first)
 ./scripts/test
 
 # Run specific test file
@@ -112,6 +113,7 @@ python3 -m pytest tests/ --cov=custom_components.smart_cover_automation --cov-re
 ### Test Requirements
 
 Tests require the packages listed in `requirements-test.txt`.
+Verbose logging can be enabled per-entry via the integration Options or globally via YAML when debugging test behavior.
 
 ## Test Best Practices
 
