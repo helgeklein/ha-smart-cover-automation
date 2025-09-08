@@ -30,9 +30,7 @@ class TestIntegrationSetup:
 
         with (
             patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
-            patch(
-                "custom_components.smart_cover_automation.DataUpdateCoordinator"
-            ) as mock_coordinator_class,
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
         ):
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
@@ -64,14 +62,10 @@ class TestIntegrationSetup:
 
         with (
             patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
-            patch(
-                "custom_components.smart_cover_automation.DataUpdateCoordinator"
-            ) as mock_coordinator_class,
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
         ):
             mock_coordinator = MagicMock()
-            mock_coordinator.async_config_entry_first_refresh = AsyncMock(
-                side_effect=OSError("Refresh failed")
-            )
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock(side_effect=OSError("Refresh failed"))
             mock_coordinator_class.return_value = mock_coordinator
 
             result = await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
@@ -82,17 +76,13 @@ class TestIntegrationSetup:
         """Test setup failure during platform setup."""
         hass = MagicMock(spec=HomeAssistant)
         hass.config_entries = MagicMock()
-        hass.config_entries.async_forward_entry_setups = AsyncMock(
-            side_effect=ImportError("Platform setup failed")
-        )
+        hass.config_entries.async_forward_entry_setups = AsyncMock(side_effect=ImportError("Platform setup failed"))
 
         config_entry = MockConfigEntry(create_temperature_config())
 
         with (
             patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
-            patch(
-                "custom_components.smart_cover_automation.DataUpdateCoordinator"
-            ) as mock_coordinator_class,
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
         ):
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
@@ -119,9 +109,7 @@ class TestIntegrationSetup:
         """Test unload failure."""
         hass = MagicMock(spec=HomeAssistant)
         hass.config_entries = MagicMock()
-        hass.config_entries.async_unload_platforms = AsyncMock(
-            side_effect=OSError("Unload failed")
-        )
+        hass.config_entries.async_unload_platforms = AsyncMock(side_effect=OSError("Unload failed"))
 
         config_entry = MockConfigEntry(create_temperature_config())
 
@@ -149,12 +137,8 @@ class TestIntegrationSetup:
         config_entry = MockConfigEntry(create_temperature_config())
 
         with (
-            patch(
-                "custom_components.smart_cover_automation.async_get_loaded_integration"
-            ) as mock_get_integration,
-            patch(
-                "custom_components.smart_cover_automation.DataUpdateCoordinator"
-            ) as mock_coordinator_class,
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration") as mock_get_integration,
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
             patch("custom_components.smart_cover_automation.IntegrationData") as mock_data_class,
         ):
             mock_coordinator = MagicMock()
@@ -186,9 +170,7 @@ class TestIntegrationSetup:
 
         with (
             patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
-            patch(
-                "custom_components.smart_cover_automation.DataUpdateCoordinator"
-            ) as mock_coordinator_class,
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
         ):
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()

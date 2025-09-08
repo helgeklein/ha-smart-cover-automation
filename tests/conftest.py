@@ -199,7 +199,4 @@ async def assert_service_called(
             return
 
     actual_calls = [call.args for call in calls]
-    pytest.fail(
-        f"Service {domain}.{service} not called for {entity_id} with {kwargs}. "
-        f"Actual calls: {actual_calls}"
-    )
+    pytest.fail(f"Service {domain}.{service} not called for {entity_id} with {kwargs}. Actual calls: {actual_calls}")

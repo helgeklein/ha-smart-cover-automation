@@ -105,8 +105,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         config = config_entry.runtime_data.config
         settings: Settings | None = (
             config_entry.runtime_data.settings
-            if hasattr(config_entry.runtime_data, "settings")
-            and isinstance(getattr(config_entry.runtime_data, "settings"), Settings)
+            if hasattr(config_entry.runtime_data, "settings") and isinstance(getattr(config_entry.runtime_data, "settings"), Settings)
             else None
         )
         const.LOGGER.info(
@@ -126,11 +125,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             pass
 
     def _get_settings(self) -> Settings | None:
-        s = (
-            self.config_entry.runtime_data.settings
-            if hasattr(self.config_entry.runtime_data, "settings")
-            else None
-        )
+        s = self.config_entry.runtime_data.settings if hasattr(self.config_entry.runtime_data, "settings") else None
         return s if isinstance(s, Settings) else None
 
     def _effective_settings(self) -> Settings:
@@ -170,9 +165,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 return {"covers": {}}
 
             # Collect states for all configured covers
-            states: dict[str, State | None] = {
-                entity_id: self.hass.states.get(entity_id) for entity_id in covers
-            }
+            states: dict[str, State | None] = {entity_id: self.hass.states.get(entity_id) for entity_id in covers}
             available_covers = sum(1 for s in states.values() if s is not None)
             for entity_id, state in states.items():
                 if state is None:
@@ -193,9 +186,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
     async def _set_cover_position(self, entity_id: str, desired_pos: int, features: int) -> None:
         try:
             if features & CoverEntityFeature.SET_POSITION:
-                const.LOGGER.info(
-                    f"[{entity_id}] Using set_cover_position to {desired_pos} (features={features})"
-                )
+                const.LOGGER.info(f"[{entity_id}] Using set_cover_position to {desired_pos} (features={features})")
                 await self.hass.services.async_call(
                     "cover",
                     "set_cover_position",
@@ -203,18 +194,12 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 )
             elif desired_pos == COVER_FULLY_CLOSED:
                 const.LOGGER.info(f"[{entity_id}] Closing cover")
-                await self.hass.services.async_call(
-                    "cover", "close_cover", {"entity_id": entity_id}
-                )
+                await self.hass.services.async_call("cover", "close_cover", {"entity_id": entity_id})
             elif desired_pos == COVER_FULLY_OPEN:
                 const.LOGGER.info(f"[{entity_id}] Opening cover")
-                await self.hass.services.async_call(
-                    "cover", "open_cover", {"entity_id": entity_id}
-                )
+                await self.hass.services.async_call("cover", "open_cover", {"entity_id": entity_id})
             else:
-                const.LOGGER.warning(
-                    f"Cannot set cover {entity_id} position: desired={desired_pos}, features={features}"
-                )
+                const.LOGGER.warning(f"Cannot set cover {entity_id} position: desired={desired_pos}, features={features}")
         except (OSError, ValueError, TypeError, RuntimeError) as err:
             const.LOGGER.error(f"Failed to control cover {entity_id}: {err}")
 
@@ -229,10 +214,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         settings = self._effective_settings()
 
         # Which contributors are configured (presence based on explicit values)
-        temp_enabled = (
-            settings.max_temperature.value is not None
-            and settings.min_temperature.value is not None
-        )
+        temp_enabled = settings.max_temperature.value is not None and settings.min_temperature.value is not None
         sun_enabled = settings.sun_elevation_threshold.value is not None
 
         # Temperature input
@@ -250,9 +232,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 current_temp = float(temp_state.state)
                 temp_available = True
             except (ValueError, TypeError) as err:
-                raise InvalidSensorReadingError(
-                    temp_state.entity_id, str(temp_state.state)
-                ) from err
+                raise InvalidSensorReadingError(temp_state.entity_id, str(temp_state.state)) from err
 
         temp_hysteresis = float(settings.temperature_hysteresis.current)
         min_position_delta = int(float(settings.min_position_delta.current))
@@ -341,16 +321,12 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     # Compute sun desired position and whether the sun is hitting the window
                     angle_difference = None
                     if elevation >= threshold:
-                        angle_difference = self._calculate_angle_difference(
-                            azimuth, direction_azimuth
-                        )
+                        angle_difference = self._calculate_angle_difference(azimuth, direction_azimuth)
                         sun_hitting = angle_difference < const.AZIMUTH_TOLERANCE
                     else:
                         sun_hitting = False
 
-                    desired_from_sun = self._calculate_desired_position(
-                        elevation, azimuth, threshold, direction_azimuth, entity_id
-                    )
+                    desired_from_sun = self._calculate_desired_position(elevation, azimuth, threshold, direction_azimuth, entity_id)
                     details.update(
                         {
                             "sun_elevation": elevation,
@@ -367,9 +343,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                         f"Sun eval {entity_id}: elev={elevation:.2f}(threshold={threshold:.2f}) azimuth={azimuth:.2f} window={direction_azimuth:.2f} angle_diff={angle_difference} hit={sun_hitting} => desired_from_sun={desired_from_sun}"
                     )
                 else:
-                    const.LOGGER.warning(
-                        f"Cover {entity_id}: invalid or missing direction for sun logic"
-                    )
+                    const.LOGGER.warning(f"Cover {entity_id}: invalid or missing direction for sun logic")
                     if not temp_enabled:
                         # Only sun configured -> skip this cover entirely
                         continue
@@ -410,9 +384,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     f"Skip small adjust {entity_id}: current={current_pos} desired={combined_desired} delta={abs(combined_desired - current_pos)} < min_delta={min_position_delta}"
                 )
             elif combined_desired is not None and combined_desired != current_pos:
-                const.LOGGER.info(
-                    f"[{entity_id}] Action: current={current_pos} desired={combined_desired} (features={features})"
-                )
+                const.LOGGER.info(f"[{entity_id}] Action: current={current_pos} desired={combined_desired} (features={features})")
                 await self._set_cover_position(entity_id, combined_desired, features)
 
             details.update(
@@ -446,9 +418,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         if elevation < threshold:
             # Sun is low, open covers
-            const.LOGGER.debug(
-                f"Desired {entity_id} (sun low): elevation={elevation:.2f}<threshold={threshold:.2f} => {COVER_FULLY_OPEN}"
-            )
+            const.LOGGER.debug(f"Desired {entity_id} (sun low): elevation={elevation:.2f}<threshold={threshold:.2f} => {COVER_FULLY_OPEN}")
             return COVER_FULLY_OPEN
 
         # Calculate angle between sun and window

@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from dataclasses import Field as _DataclassField
 from dataclasses import dataclass, field, fields
 from typing import Any, Generic, Mapping, TypeVar
 
@@ -17,11 +18,23 @@ class Setting(Generic[T]):
     """A typed setting with a default and an optional override value."""
 
     default: T
+    key: str
     value: T | None = None
 
     @property
     def current(self) -> T:
         return self.value if self.value is not None else self.default
+
+
+# Allow class-level access like Settings.max_temperature.key to resolve to the
+# literal field name by attaching a 'key' property on dataclasses.Field.
+# On instances, Setting.key remains the explicit string set in default_factory.
+try:
+    if not hasattr(_DataclassField, "key"):
+        _DataclassField.key = property(lambda f: f.name)  # type: ignore[attr-defined]
+except Exception:
+    # Best-effort only; callers can fall back to KEYS if this is unavailable.
+    pass
 
 
 @dataclass(slots=True)
@@ -35,21 +48,19 @@ class Settings:
     """
 
     # Field names are the keys used in options and data mappings
-    enabled: Setting[bool] = field(default_factory=lambda: Setting(True))
-    covers: Setting[tuple[str, ...]] = field(default_factory=lambda: Setting(()))
-    temperature_sensor: Setting[str] = field(default_factory=lambda: Setting("sensor.temperature"))
-    max_temperature: Setting[float] = field(default_factory=lambda: Setting(24.0))
-    min_temperature: Setting[float] = field(default_factory=lambda: Setting(21.0))
-    temperature_hysteresis: Setting[float] = field(default_factory=lambda: Setting(0.5))
-    min_position_delta: Setting[int] = field(default_factory=lambda: Setting(5))
-    sun_elevation_threshold: Setting[float] = field(default_factory=lambda: Setting(20.0))
-    max_closure: Setting[int] = field(default_factory=lambda: Setting(100))
-    verbose_logging: Setting[bool] = field(default_factory=lambda: Setting(False))
+    enabled: Setting[bool] = field(default_factory=lambda: Setting(key="enabled", default=True))
+    covers: Setting[tuple[str, ...]] = field(default_factory=lambda: Setting(key="covers", default=()))
+    temperature_sensor: Setting[str] = field(default_factory=lambda: Setting(key="temperature_sensor", default="sensor.temperature"))
+    max_temperature: Setting[float] = field(default_factory=lambda: Setting(key="max_temperature", default=24.0))
+    min_temperature: Setting[float] = field(default_factory=lambda: Setting(key="min_temperature", default=21.0))
+    temperature_hysteresis: Setting[float] = field(default_factory=lambda: Setting(key="temperature_hysteresis", default=0.5))
+    min_position_delta: Setting[int] = field(default_factory=lambda: Setting(key="min_position_delta", default=5))
+    sun_elevation_threshold: Setting[float] = field(default_factory=lambda: Setting(key="sun_elevation_threshold", default=20.0))
+    max_closure: Setting[int] = field(default_factory=lambda: Setting(key="max_closure", default=100))
+    verbose_logging: Setting[bool] = field(default_factory=lambda: Setting(key="verbose_logging", default=False))
 
     @classmethod
-    def from_sources(
-        cls, options: Mapping[str, Any] | None, data: Mapping[str, Any] | None
-    ) -> "Settings":
+    def from_sources(cls, options: Mapping[str, Any] | None, data: Mapping[str, Any] | None) -> "Settings":
         """Build settings by reading options first, then data.
 
         Only explicit overrides are stored in the Setting.value fields.

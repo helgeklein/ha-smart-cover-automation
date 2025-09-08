@@ -99,9 +99,7 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
 
     # Because states dict uses keys, duplicates collapse to one
     # Expect exactly one set_cover_position call
-    await assert_service_called(
-        hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=0
-    )
+    await assert_service_called(hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=0)
     assert hass.services.async_call.call_count == 1
 
 
@@ -139,9 +137,7 @@ async def test_extreme_max_closure_is_clamped_to_zero() -> None:
 
     await coordinator.async_refresh()
 
-    await assert_service_called(
-        hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=0
-    )
+    await assert_service_called(hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=0)
 
 
 @pytest.mark.asyncio
@@ -179,9 +175,7 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting() -> None:
     await coordinator.async_refresh()
 
     # Should open fully (not hitting)
-    await assert_service_called(
-        hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=100
-    )
+    await assert_service_called(hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=100)
 
 
 @pytest.mark.asyncio
@@ -217,9 +211,7 @@ async def test_missing_current_position_behaves_safely() -> None:
 
     # With temp-only config and cold reading, desired is open (100). Since current is unknown,
     # coordinator issues a set_cover_position to 100 using best effort.
-    await assert_service_called(
-        hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=100
-    )
+    await assert_service_called(hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=100)
 
 
 @pytest.mark.asyncio

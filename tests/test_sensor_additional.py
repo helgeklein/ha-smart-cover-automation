@@ -45,11 +45,7 @@ async def test_automation_status_combined_summary_present() -> None:
 
     await async_setup_entry_sensor(hass, cast(IntegrationConfigEntry, config_entry), add_entities)
 
-    status = next(
-        e
-        for e in captured
-        if getattr(getattr(e, "entity_description"), "key", "") == "automation_status"
-    )
+    status = next(e for e in captured if getattr(getattr(e, "entity_description"), "key", "") == "automation_status")
 
     summary = cast(str, getattr(status, "native_value"))
     assert "moves" in summary and "/" in summary

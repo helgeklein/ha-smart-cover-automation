@@ -32,9 +32,7 @@ class TestConfigFlow:
     def mock_hass_with_covers(self) -> MagicMock:
         """Create mock hass with cover entities."""
         hass = MagicMock()
-        hass.states.get.side_effect = lambda entity_id: (
-            MagicMock(state="closed") if entity_id.startswith("cover.") else None
-        )
+        hass.states.get.side_effect = lambda entity_id: (MagicMock(state="closed") if entity_id.startswith("cover.") else None)
         return hass
 
     async def test_user_step_combined_success_with_temps(

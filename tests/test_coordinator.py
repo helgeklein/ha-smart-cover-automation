@@ -237,9 +237,7 @@ class TestDataUpdateCoordinator:
         cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
         assert cover_data["sun_elevation"] == HIGH_ELEVATION
         assert cover_data["sun_azimuth"] == DIRECT_AZIMUTH
-        assert (
-            cover_data["desired_position"] == CLOSED_TILT_POSITION
-        )  # Should close fully by default
+        assert cover_data["desired_position"] == CLOSED_TILT_POSITION  # Should close fully by default
 
     async def test_sun_automation_respects_max_closure_option(
         self,
@@ -447,9 +445,7 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Test covers without position support."""
         # Setup cover without position support
-        mock_cover_state.attributes["supported_features"] = (
-            CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
-        )
+        mock_cover_state.attributes["supported_features"] = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
         mock_temperature_state.state = HOT_TEMP  # Too hot
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 

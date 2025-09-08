@@ -60,6 +60,4 @@ AZIMUTH_TOLERANCE: Final[int] = 90  # Window considers sun if within this angle
 
 # Behavior tuning
 TEMP_HYSTERESIS: Final[float] = 0.5  # degrees Celsius; helps avoid rapid toggling near thresholds
-MIN_POSITION_DELTA: Final[int] = (
-    5  # percentage points; ignore tiny position changes to avoid chatter
-)
+MIN_POSITION_DELTA: Final[int] = 5  # percentage points; ignore tiny position changes to avoid chatter

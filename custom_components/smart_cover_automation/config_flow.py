@@ -11,7 +11,7 @@ from homeassistant.const import UnitOfTemperature
 from homeassistant.helpers import selector
 
 from . import const
-from .settings import Settings
+from .settings import KEYS, Settings
 
 
 class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
@@ -37,23 +37,19 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     if not state:
                         invalid_covers.append(cover)
                     elif state.state == "unavailable":
-                        const.LOGGER.warning(
-                            f"Cover {cover} is currently unavailable but will be configured"
-                        )
+                        const.LOGGER.warning(f"Cover {cover} is currently unavailable but will be configured")
 
                 if invalid_covers:
                     errors["base"] = "invalid_cover"
                     const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
 
                 # Validate temperature ranges if provided
-                if "max_temperature" in user_input and const.CONF_MIN_TEMP in user_input:
-                    max_temp = user_input["max_temperature"]
-                    min_temp = user_input[const.CONF_MIN_TEMP]
+                if KEYS["MAX_TEMPERATURE"] in user_input and KEYS["MIN_TEMPERATURE"] in user_input:
+                    max_temp = user_input[KEYS["MAX_TEMPERATURE"]]
+                    min_temp = user_input[KEYS["MIN_TEMPERATURE"]]
                     if max_temp <= min_temp:
                         errors["base"] = "invalid_temperature_range"
-                        const.LOGGER.error(
-                            f"Invalid temperature range: max={max_temp} <= min={min_temp}"
-                        )
+                        const.LOGGER.error(f"Invalid temperature range: max={max_temp} <= min={min_temp}")
 
                 if not errors:
                     # Create unique ID based on the covers being automated
@@ -123,9 +119,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """
         self._config_entry = config_entry
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Manage the options for the integration."""
         if user_input is not None:
             # Persist options; Home Assistant will trigger entry update and reload
@@ -155,12 +149,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     default_angle = None
 
             if default_angle is not None:
-                direction_fields[vol.Optional(key, default=default_angle)] = (
-                    selector.NumberSelector(
-                        selector.NumberSelectorConfig(
-                            min=0, max=359, step=1, unit_of_measurement="°"
-                        )
-                    )
+                direction_fields[vol.Optional(key, default=default_angle)] = selector.NumberSelector(
+                    selector.NumberSelectorConfig(min=0, max=359, step=1, unit_of_measurement="°")
                 )
             else:
                 direction_fields[vol.Optional(key)] = selector.NumberSelector(
@@ -200,10 +190,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Compute safe default for max_closure via Settings
         max_closure_default = int(settings.max_closure.current)
 
-        schema_dict[vol.Optional(const.CONF_MAX_CLOSURE, default=max_closure_default)] = (
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%")
-            )
+        schema_dict[vol.Optional(const.CONF_MAX_CLOSURE, default=max_closure_default)] = selector.NumberSelector(
+            selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%")
         )
 
         # Add dynamic direction fields at the end

@@ -50,9 +50,7 @@ class TestIntegrationScenarios:
         cover_positions = [COVER_OPEN, COVER_CLOSED, COVER_CLOSED]
         expected_positions = [COVER_CLOSED, COVER_CLOSED, COVER_OPEN]
 
-        for i, (temp, current_pos, expected_pos) in enumerate(
-            zip(temp_states, cover_positions, expected_positions, strict=False)
-        ):
+        for i, (temp, current_pos, expected_pos) in enumerate(zip(temp_states, cover_positions, expected_positions, strict=False)):
             # Setup states
             temp_state = MagicMock()
             temp_state.state = temp
@@ -82,19 +80,14 @@ class TestIntegrationScenarios:
 
                 cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
                 assert cover_data["desired_position"] == expected_pos, (
-                    f"Cycle {i}: Expected position {expected_pos}, "
-                    f"got {cover_data['desired_position']}"
+                    f"Cycle {i}: Expected position {expected_pos}, got {cover_data['desired_position']}"
                 )
 
                 # Check service calls only when position changes
                 if current_pos != expected_pos:
-                    assert hass.services.async_call.called, (
-                        f"Cycle {i}: Service should have been called"
-                    )
+                    assert hass.services.async_call.called, f"Cycle {i}: Service should have been called"
                 else:
-                    assert not hass.services.async_call.called, (
-                        f"Cycle {i}: Service should not have been called"
-                    )
+                    assert not hass.services.async_call.called, f"Cycle {i}: Service should not have been called"
 
             except Exception as e:
                 pytest.fail(f"Automation failed in cycle {i}: {e}")
@@ -139,13 +132,9 @@ class TestIntegrationScenarios:
 
             # Verify logical sun behavior
             if elevation < LOW_SUN_ELEVATION:  # Low sun
-                assert cover_data["desired_position"] == COVER_OPEN, (
-                    f"Low sun should open covers: {elevation}°"
-                )
+                assert cover_data["desired_position"] == COVER_OPEN, f"Low sun should open covers: {elevation}°"
             elif elevation >= LOW_SUN_ELEVATION and azimuth == DIRECT_SUN_AZIMUTH:
-                assert cover_data["desired_position"] != COVER_OPEN, (
-                    f"Direct sun should close covers: {elevation}°, {azimuth}°"
-                )
+                assert cover_data["desired_position"] != COVER_OPEN, f"Direct sun should close covers: {elevation}°, {azimuth}°"
 
     async def test_error_recovery_scenarios(self) -> None:
         """Test error handling and recovery scenarios."""
@@ -253,15 +242,11 @@ class TestIntegrationScenarios:
         result = coordinator.data
 
         # Verify all covers were processed
-        assert len(result["covers"]) == NUM_COVERS, (
-            f"Expected {NUM_COVERS} covers, got {len(result['covers'])}"
-        )
+        assert len(result["covers"]) == NUM_COVERS, f"Expected {NUM_COVERS} covers, got {len(result['covers'])}"
 
         # Verify all covers should close (position 0) due to hot temperature
         for cover_id in config["covers"]:
-            assert result["covers"][cover_id]["desired_position"] == COVER_CLOSED, (
-                f"Cover {cover_id} should close in hot weather"
-            )
+            assert result["covers"][cover_id]["desired_position"] == COVER_CLOSED, f"Cover {cover_id} should close in hot weather"
 
         # Verify service calls were made for covers that needed to move
         call_count = hass.services.async_call.call_count
@@ -306,9 +291,7 @@ class TestIntegrationScenarios:
         calls = [call.args for call in hass.services.async_call.call_args_list]
 
         # Should have calls for both covers
-        assert len(calls) >= MIN_SERVICE_CALLS, (
-            f"Expected at least {MIN_SERVICE_CALLS} service calls, got {len(calls)}"
-        )
+        assert len(calls) >= MIN_SERVICE_CALLS, f"Expected at least {MIN_SERVICE_CALLS} service calls, got {len(calls)}"
 
         # Smart cover should use set_cover_position
         smart_call = next((call for call in calls if call[2]["entity_id"] == "cover.smart"), None)

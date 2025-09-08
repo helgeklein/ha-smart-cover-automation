@@ -129,10 +129,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
         total = len(covers)
         moved = sum(
-            1
-            for d in covers.values()
-            if d.get("desired_position") is not None
-            and d.get("current_position") != d.get("desired_position")
+            1 for d in covers.values() if d.get("desired_position") is not None and d.get("current_position") != d.get("desired_position")
         )
         # Combined summary (only supported mode)
         parts: list[str] = []
@@ -172,30 +169,21 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             enabled = bool(settings_obj.enabled.current)
         else:
             enabled = bool(config.get(const.CONF_ENABLED, True))
-        if (
-            isinstance(settings_obj, Settings)
-            and settings_obj.temperature_hysteresis.value is not None
-        ):
+        if isinstance(settings_obj, Settings) and settings_obj.temperature_hysteresis.value is not None:
             temp_hyst = float(settings_obj.temperature_hysteresis.current)
         else:
             temp_hyst = float(config.get(const.CONF_TEMP_HYSTERESIS, const.TEMP_HYSTERESIS))
-        if (
-            isinstance(settings_obj, Settings)
-            and settings_obj.min_position_delta.value is not None
-        ):
+        if isinstance(settings_obj, Settings) and settings_obj.min_position_delta.value is not None:
             min_delta = int(float(settings_obj.min_position_delta.current))
         else:
-            min_delta = int(
-                float(config.get(const.CONF_MIN_POSITION_DELTA, const.MIN_POSITION_DELTA))
-            )
+            min_delta = int(float(config.get(const.CONF_MIN_POSITION_DELTA, const.MIN_POSITION_DELTA)))
         attrs: dict[str, Any] = {
             "enabled": enabled,
             "covers_total": len(covers),
             "covers_moved": sum(
                 1
                 for d in covers.values()
-                if d.get("desired_position") is not None
-                and d.get("current_position") != d.get("desired_position")
+                if d.get("desired_position") is not None and d.get("current_position") != d.get("desired_position")
             ),
             "temp_hysteresis": temp_hyst,
             "min_position_delta": min_delta,
@@ -207,20 +195,17 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
                 # Temperature-related
                 "temperature_sensor": (
                     settings_obj.temperature_sensor.current
-                    if isinstance(settings_obj, Settings)
-                    and settings_obj.temperature_sensor.value is not None
+                    if isinstance(settings_obj, Settings) and settings_obj.temperature_sensor.value is not None
                     else config.get(const.CONF_TEMP_SENSOR, const.DEFAULT_TEMP_SENSOR)
                 ),
                 "min_temp": (
                     settings_obj.min_temperature.current
-                    if isinstance(settings_obj, Settings)
-                    and settings_obj.min_temperature.value is not None
+                    if isinstance(settings_obj, Settings) and settings_obj.min_temperature.value is not None
                     else config.get(const.CONF_MIN_TEMP, const.DEFAULT_MIN_TEMP)
                 ),
                 "max_temp": (
                     settings_obj.max_temperature.current
-                    if isinstance(settings_obj, Settings)
-                    and settings_obj.max_temperature.value is not None
+                    if isinstance(settings_obj, Settings) and settings_obj.max_temperature.value is not None
                     else config.get("max_temperature", const.DEFAULT_MAX_TEMP)
                 ),
                 "current_temp": self._first_cover_value("current_temp"),
@@ -229,18 +214,14 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
                 "sun_azimuth": self._first_cover_value("sun_azimuth"),
                 "elevation_threshold": (
                     settings_obj.sun_elevation_threshold.current
-                    if isinstance(settings_obj, Settings)
-                    and settings_obj.sun_elevation_threshold.value is not None
-                    else config.get(
-                        const.CONF_SUN_ELEVATION_THRESHOLD, const.DEFAULT_SUN_ELEVATION_THRESHOLD
-                    )
+                    if isinstance(settings_obj, Settings) and settings_obj.sun_elevation_threshold.value is not None
+                    else config.get(const.CONF_SUN_ELEVATION_THRESHOLD, const.DEFAULT_SUN_ELEVATION_THRESHOLD)
                 ),
                 "max_closure": int(
                     float(
                         (
                             settings_obj.max_closure.current
-                            if isinstance(settings_obj, Settings)
-                            and settings_obj.max_closure.value is not None
+                            if isinstance(settings_obj, Settings) and settings_obj.max_closure.value is not None
                             else config.get(const.CONF_MAX_CLOSURE, const.DEFAULT_MAX_CLOSURE)
                         )
                     )

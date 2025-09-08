@@ -75,9 +75,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
         else:
             # Fall back to raw config with default True
             try:
-                enabled = bool(
-                    self.coordinator.config_entry.runtime_data.config.get(const.CONF_ENABLED, True)
-                )
+                enabled = bool(self.coordinator.config_entry.runtime_data.config.get(const.CONF_ENABLED, True))
             except Exception:
                 enabled = None
         if isinstance(enabled, bool):

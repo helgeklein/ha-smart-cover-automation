@@ -41,11 +41,7 @@ async def _capture_entities(hass: HomeAssistant, config: dict[str, object]) -> l
 
 
 def _get_status_entity(entities: list[Entity]) -> Entity:
-    return next(
-        e
-        for e in entities
-        if getattr(getattr(e, "entity_description"), "key", "") == "automation_status"
-    )
+    return next(e for e in entities if getattr(getattr(e, "entity_description"), "key", "") == "automation_status")
 
 
 @pytest.mark.asyncio

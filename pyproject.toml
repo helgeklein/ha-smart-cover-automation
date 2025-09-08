@@ -39,7 +39,7 @@ show_missing = true
 
 [tool.ruff]
 target-version = "py313"
-line-length = 99
+line-length = 140
 
 [tool.ruff.lint]
 # Only enable essential rules (no extended plugins)
