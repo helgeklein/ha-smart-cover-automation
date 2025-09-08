@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import fields
 from typing import Any
 
 import voluptuous as vol
@@ -10,6 +11,7 @@ from homeassistant.const import UnitOfTemperature
 from homeassistant.helpers import selector
 
 from . import const
+from .settings import Settings
 
 
 class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
@@ -44,11 +46,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
 
                 # Validate temperature ranges if provided
-                if (
-                    const.CONF_MAX_TEMP in user_input
-                    and const.CONF_MIN_TEMP in user_input
-                ):
-                    max_temp = user_input[const.CONF_MAX_TEMP]
+                if "max_temperature" in user_input and const.CONF_MIN_TEMP in user_input:
+                    max_temp = user_input["max_temperature"]
                     min_temp = user_input[const.CONF_MIN_TEMP]
                     if max_temp <= min_temp:
                         errors["base"] = "invalid_temperature_range"
@@ -66,9 +65,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     data = dict(user_input)
 
                     return self.async_create_entry(
-                        title=(
-                            f"Cover Automation ({len(user_input[const.CONF_COVERS])} covers)"
-                        ),
+                        title=(f"Cover Automation ({len(user_input[const.CONF_COVERS])} covers)"),
                         data=data,
                     )
 
@@ -88,7 +85,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     ),
                     # Optional temperature thresholds used by combined mode
                     vol.Optional(
-                        const.CONF_MAX_TEMP,
+                        "max_temperature",
                         default=const.DEFAULT_MAX_TEMP,
                     ): selector.NumberSelector(
                         selector.NumberSelectorConfig(
@@ -137,14 +134,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         data = dict(self._config_entry.data)
         options = dict(self._config_entry.options or {})
 
-        # Helper to read current option with fallback to data
-        def opt(key: str, default: Any | None = None) -> Any | None:
-            if key in options:
-                return options[key]
-            if key in data:
-                return data[key]
-            return default
-
         covers: list[str] = list(data.get(const.CONF_COVERS, []))
 
         # Build dynamic fields for per-cover directions as numeric azimuth angles (0-359)
@@ -155,7 +144,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             raw = options.get(key, data.get(key))
             default_angle: float | None = None
             if isinstance(raw, str):
-                # Try parse numeric string
                 try:
                     default_angle = float(raw)
                 except (TypeError, ValueError):
@@ -176,32 +164,27 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 )
             else:
                 direction_fields[vol.Optional(key)] = selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=0, max=359, step=1, unit_of_measurement="°"
-                    )
+                    selector.NumberSelectorConfig(min=0, max=359, step=1, unit_of_measurement="°")
                 )
 
-        # Compute concrete defaults
-        enabled_default = bool(opt(const.CONF_ENABLED, True))
-        temp_sensor_default = str(opt(const.CONF_TEMP_SENSOR, "sensor.temperature"))
-        raw_threshold = opt(
-            const.CONF_SUN_ELEVATION_THRESHOLD, const.DEFAULT_SUN_ELEVATION_THRESHOLD
-        )
-        if isinstance(raw_threshold, (int, float, str)):
-            try:
-                threshold_default = float(raw_threshold)
-            except (TypeError, ValueError):
-                threshold_default = float(const.DEFAULT_SUN_ELEVATION_THRESHOLD)
-        else:
-            threshold_default = float(const.DEFAULT_SUN_ELEVATION_THRESHOLD)
+        # Compute concrete defaults via typed Settings using Settings field names
+        # Accept only keys that exist as fields on Settings to avoid duplicating any registry
+        allowed_keys = {f.name for f in fields(Settings)}
+
+        def _to_field_map(src: dict[str, Any]) -> dict[str, Any]:
+            return {k: v for k, v in src.items() if k in allowed_keys}
+
+        settings = Settings.from_sources(_to_field_map(options), _to_field_map(data))
+
+        enabled_default = bool(settings.enabled.current)
+        temp_sensor_default = str(settings.temperature_sensor.current)
+        threshold_default = float(settings.sun_elevation_threshold.current)
 
         schema_dict: dict[vol.Marker, object] = {
-            vol.Optional(
-                const.CONF_ENABLED, default=enabled_default
-            ): selector.BooleanSelector(),
+            vol.Optional(const.CONF_ENABLED, default=enabled_default): selector.BooleanSelector(),
             vol.Optional(
                 const.CONF_VERBOSE_LOGGING,
-                default=bool(opt(const.CONF_VERBOSE_LOGGING, False)),
+                default=bool(settings.verbose_logging.current),
             ): selector.BooleanSelector(),
             vol.Optional(
                 const.CONF_TEMP_SENSOR,
@@ -210,26 +193,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             vol.Optional(
                 const.CONF_SUN_ELEVATION_THRESHOLD,
                 default=threshold_default,
-            ): selector.NumberSelector(
-                selector.NumberSelectorConfig(min=0, max=90, step=1)
-            ),
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=90, step=1)),
         }
 
         # Compute safe default for max_closure
-        raw_max_closure = opt(const.CONF_MAX_CLOSURE, const.MAX_CLOSURE)
-        if isinstance(raw_max_closure, (int, float, str)):
-            try:
-                max_closure_default = int(float(raw_max_closure))
-            except (TypeError, ValueError):
-                max_closure_default = int(const.MAX_CLOSURE)
-        else:
-            max_closure_default = int(const.MAX_CLOSURE)
+        # Compute safe default for max_closure via Settings
+        max_closure_default = int(settings.max_closure.current)
 
-        schema_dict[
-            vol.Optional(const.CONF_MAX_CLOSURE, default=max_closure_default)
-        ] = selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=0, max=100, step=1, unit_of_measurement="%"
+        schema_dict[vol.Optional(const.CONF_MAX_CLOSURE, default=max_closure_default)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%")
             )
         )
 

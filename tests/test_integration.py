@@ -43,9 +43,7 @@ class TestIntegrationScenarios:
         """Test complete temperature automation cycle."""
         hass = MagicMock()
         config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(
-            hass, cast(IntegrationConfigEntry, config_entry)
-        )
+        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         # Mock states for full cycle test
         temp_states = [HOT_TEMP, COMFORTABLE_TEMP, COLD_TEMP]
@@ -66,12 +64,10 @@ class TestIntegrationScenarios:
                 "supported_features": 15,
             }
 
-            hass.states.get.side_effect = (
-                lambda entity_id, ts=temp_state, cs=cover_state: {
-                    MOCK_TEMP_SENSOR_ENTITY_ID: ts,
-                    MOCK_COVER_ENTITY_ID: cs,
-                }.get(entity_id)
-            )
+            hass.states.get.side_effect = lambda entity_id, ts=temp_state, cs=cover_state: {
+                MOCK_TEMP_SENSOR_ENTITY_ID: ts,
+                MOCK_COVER_ENTITY_ID: cs,
+            }.get(entity_id)
 
             hass.services.async_call.reset_mock()
 
@@ -107,9 +103,7 @@ class TestIntegrationScenarios:
         """Test sun automation through daily cycle."""
         hass = MagicMock()
         config_entry = MockConfigEntry(create_sun_config())
-        coordinator = DataUpdateCoordinator(
-            hass, cast(IntegrationConfigEntry, config_entry)
-        )
+        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         # Simulate sun positions throughout day
         sun_positions = [
@@ -130,20 +124,16 @@ class TestIntegrationScenarios:
                 "supported_features": 15,
             }
 
-            hass.states.get.side_effect = (
-                lambda entity_id, ss=sun_state, cs=cover_state: {
-                    MOCK_SUN_ENTITY_ID: ss,
-                    MOCK_COVER_ENTITY_ID: cs,
-                }.get(entity_id)
-            )
+            hass.states.get.side_effect = lambda entity_id, ss=sun_state, cs=cover_state: {
+                MOCK_SUN_ENTITY_ID: ss,
+                MOCK_COVER_ENTITY_ID: cs,
+            }.get(entity_id)
 
             await coordinator.async_refresh()
             result = coordinator.data
 
             assert result is not None, "Result is None"
-            assert "covers" in result, (
-                f"Invalid result for sun position {elevation}°, {azimuth}°"
-            )
+            assert "covers" in result, f"Invalid result for sun position {elevation}°, {azimuth}°"
 
             cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
 
@@ -161,9 +151,7 @@ class TestIntegrationScenarios:
         """Test error handling and recovery scenarios."""
         hass = MagicMock()
         config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(
-            hass, cast(IntegrationConfigEntry, config_entry)
-        )
+        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         # Test 1: Temperature sensor temporarily unavailable
         cover_state = MagicMock()
@@ -223,9 +211,7 @@ class TestIntegrationScenarios:
         config = create_temperature_config()
         config["covers"] = []
         config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(
-            hass, cast(IntegrationConfigEntry, config_entry)
-        )
+        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         await coordinator.async_refresh()
         assert isinstance(coordinator.last_exception, ConfigurationError)
@@ -238,9 +224,7 @@ class TestIntegrationScenarios:
         config = create_temperature_config()
         config["covers"] = ["cover.living_room", "cover.bedroom", "cover.kitchen"]
         config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(
-            hass, cast(IntegrationConfigEntry, config_entry)
-        )
+        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         # Setup hot temperature scenario
         temp_state = MagicMock()
@@ -289,9 +273,7 @@ class TestIntegrationScenarios:
         config = create_temperature_config()
         config["covers"] = ["cover.smart", "cover.basic"]
         config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(
-            hass, cast(IntegrationConfigEntry, config_entry)
-        )
+        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         # Setup cold temperature to open covers
         temp_state = MagicMock()
@@ -329,17 +311,11 @@ class TestIntegrationScenarios:
         )
 
         # Smart cover should use set_cover_position
-        smart_call = next(
-            (call for call in calls if call[2]["entity_id"] == "cover.smart"), None
-        )
+        smart_call = next((call for call in calls if call[2]["entity_id"] == "cover.smart"), None)
         assert smart_call is not None, "No call found for smart cover"
-        assert smart_call[1] == "set_cover_position", (
-            "Smart cover should use set_cover_position"
-        )
+        assert smart_call[1] == "set_cover_position", "Smart cover should use set_cover_position"
 
         # Basic cover should use open_cover
-        basic_call = next(
-            (call for call in calls if call[2]["entity_id"] == "cover.basic"), None
-        )
+        basic_call = next((call for call in calls if call[2]["entity_id"] == "cover.basic"), None)
         assert basic_call is not None, "No call found for basic cover"
         assert basic_call[1] == "open_cover", "Basic cover should use open_cover"

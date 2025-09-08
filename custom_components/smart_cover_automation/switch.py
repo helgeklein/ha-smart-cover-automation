@@ -12,8 +12,9 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 
-from .const import CONF_ENABLED
+from . import const
 from .entity import IntegrationEntity
+from .settings import Settings
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -67,7 +68,18 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
     def is_on(self) -> bool | None:  # type: ignore[override]
         """Return true if the switch is on."""
         # Prefer enabled option if present; fall back to demo title flag for tests
-        enabled = self.coordinator.config_entry.runtime_data.config.get(CONF_ENABLED)
+        settings_obj = getattr(self.coordinator.config_entry.runtime_data, "settings", None)
+        enabled: bool | None
+        if isinstance(settings_obj, Settings) and settings_obj.enabled.value is not None:
+            enabled = bool(settings_obj.enabled.current)
+        else:
+            # Fall back to raw config with default True
+            try:
+                enabled = bool(
+                    self.coordinator.config_entry.runtime_data.config.get(const.CONF_ENABLED, True)
+                )
+            except Exception:
+                enabled = None
         if isinstance(enabled, bool):
             return enabled
         return self.coordinator.data.get("title", "") == "foo"
@@ -77,7 +89,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
         # Persist enabled=True in options if available
         entry = self.coordinator.config_entry
         current = dict(getattr(entry, "options", {}) or {})
-        current[CONF_ENABLED] = True
+        current[const.CONF_ENABLED] = True
         try:
             await entry.async_set_options(current)  # type: ignore[attr-defined]
         except Exception:
@@ -91,7 +103,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
         """Turn off the switch."""
         entry = self.coordinator.config_entry
         current = dict(getattr(entry, "options", {}) or {})
-        current[CONF_ENABLED] = False
+        current[const.CONF_ENABLED] = False
         try:
             await entry.async_set_options(current)  # type: ignore[attr-defined]
         except Exception:

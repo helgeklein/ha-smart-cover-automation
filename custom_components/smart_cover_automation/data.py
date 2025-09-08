@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from homeassistant.loader import Integration
 
     from .coordinator import DataUpdateCoordinator
+    from .settings import Settings
 
 
 type IntegrationConfigEntry = ConfigEntry[IntegrationData]
@@ -28,3 +29,5 @@ class IntegrationData:
     integration: Integration
     config: dict[str, Any]  # Configuration data from the config entry
     client: _TitleClient | None = None
+    # Typed settings built from entry.options (overrides) and entry.data
+    settings: Settings | None = None

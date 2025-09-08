@@ -29,9 +29,7 @@ class TestIntegrationSetup:
         config_entry = MockConfigEntry(create_temperature_config())
 
         with (
-            patch(
-                "custom_components.smart_cover_automation.async_get_loaded_integration"
-            ),
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
             patch(
                 "custom_components.smart_cover_automation.DataUpdateCoordinator"
             ) as mock_coordinator_class,
@@ -40,9 +38,7 @@ class TestIntegrationSetup:
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator_class.return_value = mock_coordinator
 
-            result = await async_setup_entry(
-                hass, cast(IntegrationConfigEntry, config_entry)
-            )
+            result = await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
 
         assert result is True
         mock_coordinator.async_config_entry_first_refresh.assert_called_once()
@@ -57,9 +53,7 @@ class TestIntegrationSetup:
             "custom_components.smart_cover_automation.DataUpdateCoordinator",
             side_effect=ValueError("Coordinator init failed"),
         ):
-            result = await async_setup_entry(
-                hass, cast(IntegrationConfigEntry, config_entry)
-            )
+            result = await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
 
         assert result is False
 
@@ -69,9 +63,7 @@ class TestIntegrationSetup:
         config_entry = MockConfigEntry(create_temperature_config())
 
         with (
-            patch(
-                "custom_components.smart_cover_automation.async_get_loaded_integration"
-            ),
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
             patch(
                 "custom_components.smart_cover_automation.DataUpdateCoordinator"
             ) as mock_coordinator_class,
@@ -82,9 +74,7 @@ class TestIntegrationSetup:
             )
             mock_coordinator_class.return_value = mock_coordinator
 
-            result = await async_setup_entry(
-                hass, cast(IntegrationConfigEntry, config_entry)
-            )
+            result = await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
 
         assert result is False
 
@@ -99,9 +89,7 @@ class TestIntegrationSetup:
         config_entry = MockConfigEntry(create_temperature_config())
 
         with (
-            patch(
-                "custom_components.smart_cover_automation.async_get_loaded_integration"
-            ),
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
             patch(
                 "custom_components.smart_cover_automation.DataUpdateCoordinator"
             ) as mock_coordinator_class,
@@ -110,9 +98,7 @@ class TestIntegrationSetup:
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator_class.return_value = mock_coordinator
 
-            result = await async_setup_entry(
-                hass, cast(IntegrationConfigEntry, config_entry)
-            )
+            result = await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
 
         assert result is False
 
@@ -124,9 +110,7 @@ class TestIntegrationSetup:
 
         config_entry = MockConfigEntry(create_temperature_config())
 
-        result = await async_unload_entry(
-            hass, cast(IntegrationConfigEntry, config_entry)
-        )
+        result = await async_unload_entry(hass, cast(IntegrationConfigEntry, config_entry))
 
         assert result is True
         hass.config_entries.async_unload_platforms.assert_called_once()
@@ -141,9 +125,7 @@ class TestIntegrationSetup:
 
         config_entry = MockConfigEntry(create_temperature_config())
 
-        result = await async_unload_entry(
-            hass, cast(IntegrationConfigEntry, config_entry)
-        )
+        result = await async_unload_entry(hass, cast(IntegrationConfigEntry, config_entry))
 
         assert result is False
 
@@ -173,9 +155,7 @@ class TestIntegrationSetup:
             patch(
                 "custom_components.smart_cover_automation.DataUpdateCoordinator"
             ) as mock_coordinator_class,
-            patch(
-                "custom_components.smart_cover_automation.IntegrationData"
-            ) as mock_data_class,
+            patch("custom_components.smart_cover_automation.IntegrationData") as mock_data_class,
         ):
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
@@ -205,9 +185,7 @@ class TestIntegrationSetup:
         config_entry = MockConfigEntry(create_temperature_config())
 
         with (
-            patch(
-                "custom_components.smart_cover_automation.async_get_loaded_integration"
-            ),
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
             patch(
                 "custom_components.smart_cover_automation.DataUpdateCoordinator"
             ) as mock_coordinator_class,

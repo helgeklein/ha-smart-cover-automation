@@ -11,7 +11,6 @@ from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.const import (
     CONF_COVERS,
-    CONF_MAX_TEMP,
     CONF_MIN_TEMP,
     CONF_SUN_ELEVATION_THRESHOLD,
     DEFAULT_MAX_TEMP,
@@ -59,7 +58,7 @@ def mock_config_entry() -> MagicMock:
     entry.entry_id = "test_entry_id"
     entry.data = {
         CONF_COVERS: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-        CONF_MAX_TEMP: DEFAULT_MAX_TEMP,
+    "max_temperature": DEFAULT_MAX_TEMP,
         CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
     }
     entry.runtime_data = MagicMock()
@@ -165,7 +164,7 @@ def create_temperature_config(
     """Create temperature automation config."""
     return {
         CONF_COVERS: covers or [MOCK_COVER_ENTITY_ID],
-        CONF_MAX_TEMP: max_temp,
+    "max_temperature": max_temp,
         CONF_MIN_TEMP: min_temp,
     }
 
@@ -199,11 +198,7 @@ async def assert_service_called(
 
     for call in calls:
         args, call_kwargs = call
-        if (
-            args[0] == domain
-            and args[1] == service
-            and args[2]["entity_id"] == entity_id
-        ):
+        if args[0] == domain and args[1] == service and args[2]["entity_id"] == entity_id:
             for key, value in kwargs.items():
                 expected_msg = f"Expected {key}={value}, got {args[2].get(key)}"
                 if args[2].get(key) != value:

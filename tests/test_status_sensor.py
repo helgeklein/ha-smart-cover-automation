@@ -11,7 +11,6 @@ from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.const import (
     CONF_ENABLED,
-    CONF_MAX_TEMP,
     CONF_MIN_POSITION_DELTA,
     CONF_MIN_TEMP,
     CONF_SUN_ELEVATION_THRESHOLD,
@@ -27,9 +26,7 @@ from custom_components.smart_cover_automation.sensor import (
 from .conftest import MockConfigEntry, create_sun_config, create_temperature_config
 
 
-async def _capture_entities(
-    hass: HomeAssistant, config: dict[str, object]
-) -> list[Entity]:
+async def _capture_entities(hass: HomeAssistant, config: dict[str, object]) -> list[Entity]:
     """Helper to set up the sensor platform and capture created entities."""
     hass_mock = cast(MagicMock, hass)
     entry = MockConfigEntry(config)
@@ -41,15 +38,11 @@ async def _capture_entities(
 
     captured: list[Entity] = []
 
-    def add_entities(
-        new_entities: Iterable[Entity], update_before_add: bool = False
-    ) -> None:  # noqa: ARG001
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:  # noqa: ARG001
         captured.extend(list(new_entities))
 
     # Execute platform setup
-    await async_setup_entry_sensor(
-        hass_mock, cast(IntegrationConfigEntry, entry), add_entities
-    )
+    await async_setup_entry_sensor(hass_mock, cast(IntegrationConfigEntry, entry), add_entities)
 
     return captured
 
@@ -83,14 +76,14 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
             "cover.one": {
                 "current_temp": 22.5,
                 "min_temp": config[CONF_MIN_TEMP],
-                "max_temp": config[CONF_MAX_TEMP],
+                "max_temp": config["max_temperature"],
                 "current_position": 50,
                 "desired_position": 40,  # movement
             },
             "cover.two": {
                 "current_temp": 22.5,
                 "min_temp": config[CONF_MIN_TEMP],
-                "max_temp": config[CONF_MAX_TEMP],
+                "max_temp": config["max_temperature"],
                 "current_position": 100,
                 "desired_position": 100,  # no movement
             },
@@ -113,7 +106,7 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     assert attrs["min_position_delta"] == 10
     assert attrs["temperature_sensor"] == "sensor.temperature"
     assert attrs["min_temp"] == config[CONF_MIN_TEMP]
-    assert attrs["max_temp"] == config[CONF_MAX_TEMP]
+    assert attrs["max_temp"] == config["max_temperature"]
     assert attrs["current_temp"] == 22.5
     assert isinstance(attrs["covers"], dict)
 

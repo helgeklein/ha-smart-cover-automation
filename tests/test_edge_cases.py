@@ -74,9 +74,7 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
     hass.services.async_call = AsyncMock()
 
     # Temperature-only config with duplicates
-    config = create_temperature_config(
-        covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID]
-    )
+    config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID])
     entry = MockConfigEntry(config)
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
 
@@ -194,9 +192,7 @@ async def test_missing_current_position_behaves_safely() -> None:
     hass.services = MagicMock()
     hass.services.async_call = AsyncMock()
 
-    config = create_temperature_config(
-        covers=[MOCK_COVER_ENTITY_ID], max_temp=30, min_temp=10
-    )
+    config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID], max_temp=30, min_temp=10)
     entry = MockConfigEntry(config)
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
 
@@ -210,9 +206,7 @@ async def test_missing_current_position_behaves_safely() -> None:
 
     temp_state = MagicMock()
     temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
-    temp_state.state = (
-        "5.0"  # cold -> desire open (already open, but current is unknown)
-    )
+    temp_state.state = "5.0"  # cold -> desire open (already open, but current is unknown)
 
     hass.states.get.side_effect = lambda entity_id: {
         MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,

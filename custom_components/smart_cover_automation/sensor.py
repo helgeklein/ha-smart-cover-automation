@@ -17,6 +17,7 @@ from homeassistant.components.sensor import SensorEntity, SensorEntityDescriptio
 
 from . import const
 from .entity import IntegrationEntity
+from .settings import Settings
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -79,9 +80,7 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):
         super().__init__(coordinator)
         self.entity_description = entity_description
         # Ensure unique IDs are unique per entity within the platform
-        self._attr_unique_id = (
-            f"{coordinator.config_entry.entry_id}-{entity_description.key}"
-        )
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}-{entity_description.key}"
 
     @cached_property
     def available(self) -> bool | None:  # type: ignore[override]
@@ -104,9 +103,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
     ) -> None:
         super().__init__(coordinator)
         self.entity_description = entity_description
-        self._attr_unique_id = (
-            f"{coordinator.config_entry.entry_id}-{entity_description.key}"
-        )
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}-{entity_description.key}"
 
     @cached_property
     def available(self) -> bool | None:  # type: ignore[override]
@@ -122,7 +119,11 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
     @cached_property
     def native_value(self) -> str | None:  # type: ignore[override]
         config = self.coordinator.config_entry.runtime_data.config
-        enabled = config.get(const.CONF_ENABLED, True)
+        settings_obj = getattr(self.coordinator.config_entry.runtime_data, "settings", None)
+        if isinstance(settings_obj, Settings) and settings_obj.enabled.value is not None:
+            enabled = settings_obj.enabled.current
+        else:
+            enabled = config.get(const.CONF_ENABLED, True)
         if enabled is False:
             return "Disabled"
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
@@ -137,14 +138,20 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         parts: list[str] = []
         current_temp = self._first_cover_value("current_temp")
         if isinstance(current_temp, (int, float)):
-            min_temp = config.get(const.CONF_MIN_TEMP)
-            max_temp = config.get(const.CONF_MAX_TEMP)
+            settings2 = getattr(self.coordinator.config_entry.runtime_data, "settings", None)
+            if isinstance(settings2, Settings) and settings2.min_temperature.value is not None:
+                min_temp = settings2.min_temperature.current
+            else:
+                min_temp = config.get(const.CONF_MIN_TEMP, const.DEFAULT_MIN_TEMP)
+            if isinstance(settings2, Settings) and settings2.max_temperature.value is not None:
+                max_temp = settings2.max_temperature.current
+            else:
+                max_temp = config.get("max_temperature", const.DEFAULT_MAX_TEMP)
             parts.append(
                 f"Temp {float(current_temp):.1f}°C"
                 + (
                     f" in [{float(min_temp):.1f}–{float(max_temp):.1f}]"
-                    if isinstance(min_temp, (int, float))
-                    and isinstance(max_temp, (int, float))
+                    if isinstance(min_temp, (int, float)) and isinstance(max_temp, (int, float))
                     else ""
                 )
             )
@@ -158,13 +165,29 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:  # type: ignore[override]
         config = self.coordinator.config_entry.runtime_data.config
+        settings_obj = getattr(self.coordinator.config_entry.runtime_data, "settings", None)
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
 
-        enabled = bool(config.get(const.CONF_ENABLED, True))
-        temp_hyst = float(config.get(const.CONF_TEMP_HYSTERESIS, const.TEMP_HYSTERESIS))
-        min_delta = int(
-            float(config.get(const.CONF_MIN_POSITION_DELTA, const.MIN_POSITION_DELTA))
-        )
+        if isinstance(settings_obj, Settings) and settings_obj.enabled.value is not None:
+            enabled = bool(settings_obj.enabled.current)
+        else:
+            enabled = bool(config.get(const.CONF_ENABLED, True))
+        if (
+            isinstance(settings_obj, Settings)
+            and settings_obj.temperature_hysteresis.value is not None
+        ):
+            temp_hyst = float(settings_obj.temperature_hysteresis.current)
+        else:
+            temp_hyst = float(config.get(const.CONF_TEMP_HYSTERESIS, const.TEMP_HYSTERESIS))
+        if (
+            isinstance(settings_obj, Settings)
+            and settings_obj.min_position_delta.value is not None
+        ):
+            min_delta = int(float(settings_obj.min_position_delta.current))
+        else:
+            min_delta = int(
+                float(config.get(const.CONF_MIN_POSITION_DELTA, const.MIN_POSITION_DELTA))
+            )
         attrs: dict[str, Any] = {
             "enabled": enabled,
             "covers_total": len(covers),
@@ -182,19 +205,45 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         attrs.update(
             {
                 # Temperature-related
-                "temperature_sensor": config.get(const.CONF_TEMP_SENSOR),
-                "min_temp": config.get(const.CONF_MIN_TEMP),
-                "max_temp": config.get(const.CONF_MAX_TEMP),
+                "temperature_sensor": (
+                    settings_obj.temperature_sensor.current
+                    if isinstance(settings_obj, Settings)
+                    and settings_obj.temperature_sensor.value is not None
+                    else config.get(const.CONF_TEMP_SENSOR, const.DEFAULT_TEMP_SENSOR)
+                ),
+                "min_temp": (
+                    settings_obj.min_temperature.current
+                    if isinstance(settings_obj, Settings)
+                    and settings_obj.min_temperature.value is not None
+                    else config.get(const.CONF_MIN_TEMP, const.DEFAULT_MIN_TEMP)
+                ),
+                "max_temp": (
+                    settings_obj.max_temperature.current
+                    if isinstance(settings_obj, Settings)
+                    and settings_obj.max_temperature.value is not None
+                    else config.get("max_temperature", const.DEFAULT_MAX_TEMP)
+                ),
                 "current_temp": self._first_cover_value("current_temp"),
                 # Sun-related
                 "sun_elevation": self._first_cover_value("sun_elevation"),
                 "sun_azimuth": self._first_cover_value("sun_azimuth"),
-                "elevation_threshold": config.get(
-                    const.CONF_SUN_ELEVATION_THRESHOLD,
-                    const.DEFAULT_SUN_ELEVATION_THRESHOLD,
+                "elevation_threshold": (
+                    settings_obj.sun_elevation_threshold.current
+                    if isinstance(settings_obj, Settings)
+                    and settings_obj.sun_elevation_threshold.value is not None
+                    else config.get(
+                        const.CONF_SUN_ELEVATION_THRESHOLD, const.DEFAULT_SUN_ELEVATION_THRESHOLD
+                    )
                 ),
                 "max_closure": int(
-                    float(config.get(const.CONF_MAX_CLOSURE, const.MAX_CLOSURE))
+                    float(
+                        (
+                            settings_obj.max_closure.current
+                            if isinstance(settings_obj, Settings)
+                            and settings_obj.max_closure.value is not None
+                            else config.get(const.CONF_MAX_CLOSURE, const.DEFAULT_MAX_CLOSURE)
+                        )
+                    )
                 ),
             }
         )

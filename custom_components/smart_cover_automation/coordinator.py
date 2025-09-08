@@ -18,6 +18,7 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from . import const
+from .settings import Settings
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, State
@@ -91,9 +92,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
     config_entry: IntegrationConfigEntry
 
-    def __init__(
-        self, hass: HomeAssistant, config_entry: IntegrationConfigEntry
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, config_entry: IntegrationConfigEntry) -> None:
         super().__init__(
             hass,
             const.LOGGER,
@@ -104,45 +103,79 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         self.config_entry = config_entry
 
         config = config_entry.runtime_data.config
+        settings: Settings | None = (
+            config_entry.runtime_data.settings
+            if hasattr(config_entry.runtime_data, "settings")
+            and isinstance(getattr(config_entry.runtime_data, "settings"), Settings)
+            else None
+        )
         const.LOGGER.info(
-            f"Initializing Smart Cover Automation coordinator: mode=combined, covers={config.get(const.CONF_COVERS, [])}, update_interval={UPDATE_INTERVAL}"
+            f"Initializing Smart Cover Automation coordinator: mode=combined, covers={tuple(settings.covers.current) if settings and settings.covers.value is not None else tuple(config.get(const.CONF_COVERS, ()))}, update_interval={UPDATE_INTERVAL}"
         )
         # Adjust logger level per-entry if verbose logging is enabled via options
         try:
-            if bool(config.get(const.CONF_VERBOSE_LOGGING)):
+            verbose = (
+                bool(settings.verbose_logging.current)
+                if settings is not None and settings.verbose_logging.value is not None
+                else bool(config.get(const.CONF_VERBOSE_LOGGING, False))
+            )
+            if verbose:
                 const.LOGGER.setLevel("DEBUG")
                 const.LOGGER.debug("Verbose logging enabled for this entry")
         except Exception:  # pragma: no cover - non-critical
             pass
 
+    def _get_settings(self) -> Settings | None:
+        s = (
+            self.config_entry.runtime_data.settings
+            if hasattr(self.config_entry.runtime_data, "settings")
+            else None
+        )
+        return s if isinstance(s, Settings) else None
+
+    def _effective_settings(self) -> Settings:
+        """Return a real Settings instance built from runtime_data when needed.
+
+        If a typed Settings is already present, return it. Otherwise, build one
+        from the raw config mapping in runtime_data.config. This lets the rest of
+        the code consult Settings exclusively for values and presence (via .value).
+        """
+        s = self._get_settings()
+        if s is not None:
+            return s
+        # Build from config mapping; unknown keys are ignored by Settings.from_sources
+        cfg = getattr(self.config_entry.runtime_data, "config", {})
+        return Settings.from_sources(None, cfg)
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Update automation state and control covers."""
         try:
+            # Always keep a reference to raw config for dynamic per-cover direction
             config = self.config_entry.runtime_data.config
-            covers = config[const.CONF_COVERS]
 
-            const.LOGGER.info(
-                f"Starting cover automation update: mode=combined, covers={covers}"
-            )
+            # Use typed settings for all global values
+            settings = self._effective_settings()
+            covers = tuple(settings.covers.current)
+
+            const.LOGGER.info(f"Starting cover automation update: mode=combined, covers={covers}")
 
             if not covers:
-                raise ConfigurationError("No covers configured for automation")
+                # No covers configured is a configuration error
+                raise ConfigurationError("No covers configured")
 
-            if config.get(const.CONF_ENABLED) is False:
-                const.LOGGER.info(
-                    "Automation disabled via configuration; skipping actions"
-                )
+            # Master enabled switch (defaults to True)
+            enabled = bool(settings.enabled.current)
+            if not enabled:
+                const.LOGGER.info("Automation disabled via configuration; skipping actions")
                 return {"covers": {}}
 
-            states = {
+            # Collect states for all configured covers
+            states: dict[str, State | None] = {
                 entity_id: self.hass.states.get(entity_id) for entity_id in covers
             }
-
-            available_covers = 0
+            available_covers = sum(1 for s in states.values() if s is not None)
             for entity_id, state in states.items():
-                if state:
-                    available_covers += 1
-                else:
+                if state is None:
                     const.LOGGER.warning(f"Cover {entity_id} is unavailable")
 
             if available_covers == 0:
@@ -157,10 +190,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         except (OSError, ValueError, TypeError) as err:
             raise UpdateFailed(f"System error during automation update: {err}") from err
 
-    async def _set_cover_position(
-        self, entity_id: str, desired_pos: int, features: int
-    ) -> None:
-        """Set cover position using best available method."""
+    async def _set_cover_position(self, entity_id: str, desired_pos: int, features: int) -> None:
         try:
             if features & CoverEntityFeature.SET_POSITION:
                 const.LOGGER.info(
@@ -196,19 +226,22 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         """Handle combined temperature and sun automation."""
         result: dict[str, Any] = {"covers": {}}
 
-        # Which contributors are configured
-        temp_enabled = const.CONF_MAX_TEMP in config and const.CONF_MIN_TEMP in config
-        sun_enabled = const.CONF_SUN_ELEVATION_THRESHOLD in config
+        settings = self._effective_settings()
+
+        # Which contributors are configured (presence based on explicit values)
+        temp_enabled = (
+            settings.max_temperature.value is not None
+            and settings.min_temperature.value is not None
+        )
+        sun_enabled = settings.sun_elevation_threshold.value is not None
 
         # Temperature input
         temp_available = False
         current_temp: float | None = None
-        max_temp = float(config.get(const.CONF_MAX_TEMP, 0))
-        min_temp = float(config.get(const.CONF_MIN_TEMP, 0))
+        max_temp = float(settings.max_temperature.current)
+        min_temp = float(settings.min_temperature.current)
         if temp_enabled:
-            sensor_entity_id = config.get(
-                const.CONF_TEMP_SENSOR, const.DEFAULT_TEMP_SENSOR
-            )
+            sensor_entity_id = settings.temperature_sensor.current
             temp_state = self.hass.states.get(sensor_entity_id)
             if temp_state is None:
                 # Required temp sensor missing -> captured as last_exception
@@ -221,23 +254,14 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     temp_state.entity_id, str(temp_state.state)
                 ) from err
 
-        temp_hysteresis = float(
-            config.get(const.CONF_TEMP_HYSTERESIS, const.TEMP_HYSTERESIS)
-        )
-        min_position_delta = int(
-            float(config.get(const.CONF_MIN_POSITION_DELTA, const.MIN_POSITION_DELTA))
-        )
+        temp_hysteresis = float(settings.temperature_hysteresis.current)
+        min_position_delta = int(float(settings.min_position_delta.current))
 
         # Sun input
         sun_available = False
         elevation: float | None = None
         azimuth: float | None = None
-        threshold = float(
-            config.get(
-                const.CONF_SUN_ELEVATION_THRESHOLD,
-                const.DEFAULT_SUN_ELEVATION_THRESHOLD,
-            )
-        )
+        threshold = float(settings.sun_elevation_threshold.current)
         if sun_enabled:
             sun_state = self.hass.states.get("sun.sun")
             if sun_state is None:
@@ -298,12 +322,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 details["temp_unavailable"] = True
 
             # Sun contribution
-            if (
-                sun_enabled
-                and sun_available
-                and elevation is not None
-                and azimuth is not None
-            ):
+            if sun_enabled and sun_available and elevation is not None and azimuth is not None:
+                # Per-cover direction remains dynamic and stored in config by entity_id
                 direction = config.get(f"{entity_id}_{const.CONF_COVER_DIRECTION}")
                 direction_azimuth: float | None = None
                 if isinstance(direction, (int, float)):
@@ -400,13 +420,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     "current_position": current_pos,
                     "desired_position": combined_desired,
                     "min_position_delta": min_position_delta,
-                    "max_closure": int(
-                        float(
-                            self.config_entry.runtime_data.config.get(
-                                const.CONF_MAX_CLOSURE, const.MAX_CLOSURE
-                            )
-                        )
-                    ),
+                    "max_closure": int(float(settings.max_closure.current)),
                     "combined_strategy": "and",
                 }
             )
@@ -424,13 +438,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         entity_id: str,
     ) -> int:
         """Calculate desired cover position for sun logic."""
-        config = self.config_entry.runtime_data.config
+        settings = self._effective_settings()
         try:
-            max_closure = int(
-                float(config.get(const.CONF_MAX_CLOSURE, const.MAX_CLOSURE))
-            )
+            max_closure = int(float(settings.max_closure.current))
         except (TypeError, ValueError):
-            max_closure = const.MAX_CLOSURE
+            max_closure = const.DEFAULT_MAX_CLOSURE
 
         if elevation < threshold:
             # Sun is low, open covers
@@ -450,8 +462,6 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         )
         return round(desired_pos)
 
-    def _calculate_angle_difference(
-        self, azimuth: float, direction_azimuth: float
-    ) -> float:
+    def _calculate_angle_difference(self, azimuth: float, direction_azimuth: float) -> float:
         """Calculate minimal absolute angle difference between two azimuths."""
         return abs(((azimuth - direction_azimuth + 180) % 360) - 180)

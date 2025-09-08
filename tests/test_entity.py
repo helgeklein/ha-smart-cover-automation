@@ -44,6 +44,4 @@ class TestIntegrationEntity:
 
         entity = IntegrationEntity(coordinator)
 
-        assert entity.coordinator == coordinator, (
-            "Entity should maintain reference to coordinator"
-        )
+        assert entity.coordinator == coordinator, "Entity should maintain reference to coordinator"

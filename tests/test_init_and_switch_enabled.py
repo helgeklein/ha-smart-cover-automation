@@ -43,14 +43,10 @@ async def test_switch_is_on_uses_enabled_option() -> None:
 
     captured: list[Entity] = []
 
-    def add_entities(
-        new_entities: Iterable[Entity], update_before_add: bool = False
-    ) -> None:  # noqa: ARG001
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:  # noqa: ARG001
         captured.extend(list(new_entities))
 
-    await async_setup_entry_switch(
-        hass, cast(IntegrationConfigEntry, entry), add_entities
-    )
+    await async_setup_entry_switch(hass, cast(IntegrationConfigEntry, entry), add_entities)
 
     entity = captured[0]
     # With enabled option False, is_on should reflect False regardless of demo title

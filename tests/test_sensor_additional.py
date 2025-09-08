@@ -24,9 +24,7 @@ async def test_automation_status_combined_summary_present() -> None:
     hass = MagicMock(spec=HomeAssistant)
     config_entry = MockConfigEntry(create_temperature_config())
 
-    coordinator = DataUpdateCoordinator(
-        hass, cast(IntegrationConfigEntry, config_entry)
-    )
+    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
     coordinator.data = {
         "covers": {
             "cover.one": {
@@ -42,14 +40,10 @@ async def test_automation_status_combined_summary_present() -> None:
 
     captured: list[Entity] = []
 
-    def add_entities(
-        new_entities: Iterable[Entity], update_before_add: bool = False
-    ) -> None:  # noqa: ARG001
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:  # noqa: ARG001
         captured.extend(list(new_entities))
 
-    await async_setup_entry_sensor(
-        hass, cast(IntegrationConfigEntry, config_entry), add_entities
-    )
+    await async_setup_entry_sensor(hass, cast(IntegrationConfigEntry, config_entry), add_entities)
 
     status = next(
         e

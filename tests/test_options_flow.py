@@ -18,9 +18,7 @@ from custom_components.smart_cover_automation.const import (
 )
 
 
-def _mock_entry(
-    data: dict[str, Any], options: dict[str, Any] | None = None
-) -> MagicMock:
+def _mock_entry(data: dict[str, Any], options: dict[str, Any] | None = None) -> MagicMock:
     entry = MagicMock()
     entry.data = data
     entry.options = options or {}

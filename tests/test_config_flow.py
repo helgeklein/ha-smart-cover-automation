@@ -11,7 +11,6 @@ from homeassistant.data_entry_flow import FlowResultType
 from custom_components.smart_cover_automation.config_flow import FlowHandler
 from custom_components.smart_cover_automation.const import (
     CONF_COVERS,
-    CONF_MAX_TEMP,
     CONF_MIN_TEMP,
     DEFAULT_MAX_TEMP,
     DEFAULT_MIN_TEMP,
@@ -53,7 +52,7 @@ class TestConfigFlow:
 
         user_input = {
             CONF_COVERS: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-            CONF_MAX_TEMP: 25.0,
+            "max_temperature": 25.0,
             CONF_MIN_TEMP: 20.0,
         }
 
@@ -77,7 +76,7 @@ class TestConfigFlow:
 
         user_input = {
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            CONF_MAX_TEMP: DEFAULT_MAX_TEMP,
+            "max_temperature": DEFAULT_MAX_TEMP,
             CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
         }
 
@@ -119,7 +118,7 @@ class TestConfigFlow:
 
         user_input = {
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            CONF_MAX_TEMP: 20.0,  # Less than min_temp
+            "max_temperature": 20.0,  # Less than min_temp
             CONF_MIN_TEMP: 25.0,
         }
 
@@ -142,7 +141,7 @@ class TestConfigFlow:
 
         user_input = {
             CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            CONF_MAX_TEMP: DEFAULT_MAX_TEMP,
+            "max_temperature": DEFAULT_MAX_TEMP,
             CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
         }
 
@@ -198,7 +197,7 @@ class TestConfigFlow:
 
         user_input = {
             CONF_COVERS: [MOCK_COVER_ENTITY_ID_2, MOCK_COVER_ENTITY_ID],  # Unsorted
-            CONF_MAX_TEMP: DEFAULT_MAX_TEMP,
+            "max_temperature": DEFAULT_MAX_TEMP,
             CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
         }
 

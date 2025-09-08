@@ -31,9 +31,7 @@ async def test_binary_sensor_entity_properties() -> None:
     config_entry = MockConfigEntry(create_temperature_config())
 
     # Coordinator with predefined data and success state
-    coordinator = DataUpdateCoordinator(
-        hass, cast(IntegrationConfigEntry, config_entry)
-    )
+    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
     coordinator.data = {"title": "foo"}
     coordinator.last_update_success = True  # type: ignore[attr-defined]
 
@@ -42,9 +40,7 @@ async def test_binary_sensor_entity_properties() -> None:
 
     captured: list[Entity] = []
 
-    def add_entities(
-        new_entities: Iterable[Entity], update_before_add: bool = False
-    ) -> None:
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:
         captured.extend(list(new_entities))
 
     await async_setup_entry_binary_sensor(
@@ -69,18 +65,14 @@ async def test_sensor_entity_properties() -> None:
     hass = MagicMock(spec=HomeAssistant)
     config_entry = MockConfigEntry(create_temperature_config())
 
-    coordinator = DataUpdateCoordinator(
-        hass, cast(IntegrationConfigEntry, config_entry)
-    )
+    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
     coordinator.data = {"body": "hello"}
     coordinator.last_update_success = True  # type: ignore[attr-defined]
     config_entry.runtime_data.coordinator = coordinator
 
     captured: list[Entity] = []
 
-    def add_entities(
-        new_entities: Iterable[Entity], update_before_add: bool = False
-    ) -> None:
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:
         captured.extend(list(new_entities))
 
     await async_setup_entry_sensor(
@@ -95,8 +87,7 @@ async def test_sensor_entity_properties() -> None:
     integration_sensor = next(
         e
         for e in captured
-        if getattr(getattr(e, "entity_description"), "key", "")
-        == "smart_cover_automation"
+        if getattr(getattr(e, "entity_description"), "key", "") == "smart_cover_automation"
     )
     # available is delegated from CoordinatorEntity; with last_update_success=True it's truthy
     assert cast(bool | None, getattr(integration_sensor, "available")) in (True, None)
@@ -110,9 +101,7 @@ async def test_switch_entity_turn_on_off_and_state() -> None:
     hass = MagicMock(spec=HomeAssistant)
     config_entry = MockConfigEntry(create_temperature_config())
 
-    coordinator = DataUpdateCoordinator(
-        hass, cast(IntegrationConfigEntry, config_entry)
-    )
+    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
     coordinator.data = {"title": "foo"}
     coordinator.last_update_success = True  # type: ignore[attr-defined]
 
@@ -128,9 +117,7 @@ async def test_switch_entity_turn_on_off_and_state() -> None:
 
     captured: list[Entity] = []
 
-    def add_entities(
-        new_entities: Iterable[Entity], update_before_add: bool = False
-    ) -> None:
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:
         captured.extend(list(new_entities))
 
     await async_setup_entry_switch(
@@ -159,9 +146,7 @@ async def test_switch_entity_turn_on_off_and_state() -> None:
 
     # When client is None, calls should not raise and no client method invoked
     other_entry = MockConfigEntry(create_temperature_config())
-    other_coordinator = DataUpdateCoordinator(
-        hass, cast(IntegrationConfigEntry, other_entry)
-    )
+    other_coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, other_entry))
     other_coordinator.data = {"title": "baz"}
     other_coordinator.last_update_success = True  # type: ignore[attr-defined]
     other_coordinator.async_request_refresh = AsyncMock()  # type: ignore[assignment]
