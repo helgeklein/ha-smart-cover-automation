@@ -8,14 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
-from custom_components.smart_cover_automation.const import (
-    CONF_COVERS,
-    CONF_ENABLED,
-    CONF_MAX_CLOSURE,
-    CONF_SUN_ELEVATION_THRESHOLD,
-    CONF_TEMP_SENSOR,
-    DEFAULT_SUN_ELEVATION_THRESHOLD,
-)
+from custom_components.smart_cover_automation.settings import DEFAULTS, KEYS
 
 
 def _mock_entry(data: dict[str, Any], options: dict[str, Any] | None = None) -> MagicMock:
@@ -29,8 +22,8 @@ def _mock_entry(data: dict[str, Any], options: dict[str, Any] | None = None) -> 
 async def test_options_flow_form_shows_dynamic_fields() -> None:
     """Form should include global options and per-cover direction fields."""
     data = {
-        CONF_COVERS: ["cover.one", "cover.two"],
-        CONF_SUN_ELEVATION_THRESHOLD: DEFAULT_SUN_ELEVATION_THRESHOLD,
+        KEYS["COVERS"]: ["cover.one", "cover.two"],
+        KEYS["SUN_ELEVATION_THRESHOLD"]: DEFAULTS["SUN_ELEVATION_THRESHOLD"],
     }
     flow = OptionsFlowHandler(_mock_entry(data))
 
@@ -40,10 +33,10 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
     schema = result_dict["data_schema"].schema
 
     # Global options exposed
-    assert CONF_ENABLED in schema
-    assert CONF_TEMP_SENSOR in schema
-    assert CONF_SUN_ELEVATION_THRESHOLD in schema
-    assert CONF_MAX_CLOSURE in schema
+    assert KEYS["ENABLED"] in schema
+    assert KEYS["TEMPERATURE_SENSOR"] in schema
+    assert KEYS["SUN_ELEVATION_THRESHOLD"] in schema
+    assert KEYS["MAX_CLOSURE"] in schema
 
     # Dynamic per-cover directions
     assert "cover.one_cover_direction" in schema
@@ -53,14 +46,14 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
 @pytest.mark.asyncio
 async def test_options_flow_submit_creates_entry() -> None:
     """Submitting options returns a CREATE_ENTRY with the data."""
-    data = {CONF_COVERS: ["cover.one"]}
+    data = {KEYS["COVERS"]: ["cover.one"]}
     flow = OptionsFlowHandler(_mock_entry(data))
 
     user_input = {
-        CONF_ENABLED: False,
-        CONF_TEMP_SENSOR: "sensor.living_room",
-        CONF_SUN_ELEVATION_THRESHOLD: 30,
-        CONF_MAX_CLOSURE: 75,
+        KEYS["ENABLED"]: False,
+        KEYS["TEMPERATURE_SENSOR"]: "sensor.living_room",
+        KEYS["SUN_ELEVATION_THRESHOLD"]: 30,
+        KEYS["MAX_CLOSURE"]: 75,
         # Use numeric azimuth instead of legacy cardinal string
         "cover.one_cover_direction": 180,
     }

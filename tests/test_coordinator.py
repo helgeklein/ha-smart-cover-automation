@@ -9,11 +9,6 @@ import pytest
 from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from custom_components.smart_cover_automation.const import (
-    CONF_COVERS,
-    CONF_MIN_TEMP,
-    CONF_SUN_ELEVATION_THRESHOLD,
-)
 from custom_components.smart_cover_automation.coordinator import (
     ConfigurationError,
     DataUpdateCoordinator,
@@ -23,6 +18,7 @@ from custom_components.smart_cover_automation.coordinator import (
     ServiceCallError,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.settings import KEYS
 
 from .conftest import (
     MOCK_COVER_ENTITY_ID,
@@ -482,7 +478,7 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Test error when no covers are configured."""
         config = create_temperature_config()
-        config[CONF_COVERS] = []
+        config[KEYS["COVERS"]] = []
         config_entry = MockConfigEntry(config)
 
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -850,10 +846,10 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """When hot but sun not hitting, AND logic should not move the cover."""
         config = {
-            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            "max_temperature": 24.0,
-            CONF_MIN_TEMP: 21.0,
-            CONF_SUN_ELEVATION_THRESHOLD: 20.0,
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID],
+            KEYS["MAX_TEMPERATURE"]: 24.0,
+            KEYS["MIN_TEMPERATURE"]: 21.0,
+            KEYS["SUN_ELEVATION_THRESHOLD"]: 20.0,
             f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
         }
         config_entry = MockConfigEntry(config)
@@ -886,10 +882,10 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """When comfortable and direct sun, AND logic should not move the cover."""
         config = {
-            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            "max_temperature": 24.0,
-            CONF_MIN_TEMP: 21.0,
-            CONF_SUN_ELEVATION_THRESHOLD: 20.0,
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID],
+            KEYS["MAX_TEMPERATURE"]: 24.0,
+            KEYS["MIN_TEMPERATURE"]: 21.0,
+            KEYS["SUN_ELEVATION_THRESHOLD"]: 20.0,
             "max_closure": 60,  # partial closure => desired 40
             f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
         }
@@ -922,10 +918,10 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Cold with direct sun should not move the cover under AND logic."""
         config = {
-            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            "max_temperature": 24.0,
-            CONF_MIN_TEMP: 21.0,
-            CONF_SUN_ELEVATION_THRESHOLD: 20.0,
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID],
+            KEYS["MAX_TEMPERATURE"]: 24.0,
+            KEYS["MIN_TEMPERATURE"]: 21.0,
+            KEYS["SUN_ELEVATION_THRESHOLD"]: 20.0,
             f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
         }
         config_entry = MockConfigEntry(config)
@@ -957,10 +953,10 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """If sun direction missing, combined falls back to temperature input."""
         config = {
-            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            "max_temperature": 24.0,
-            CONF_MIN_TEMP: 21.0,
-            CONF_SUN_ELEVATION_THRESHOLD: 20.0,
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID],
+            KEYS["MAX_TEMPERATURE"]: 24.0,
+            KEYS["MIN_TEMPERATURE"]: 21.0,
+            KEYS["SUN_ELEVATION_THRESHOLD"]: 20.0,
             # Intentionally omit direction key
         }
         config_entry = MockConfigEntry(config)

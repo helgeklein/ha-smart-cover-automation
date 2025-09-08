@@ -37,8 +37,6 @@ DOMAIN: Final = "smart_cover_automation"
 
 # Configuration
 CONF_MIN_TEMP: Final = "min_temperature"
-# Backwards-compat key kept for tests; runtime uses Settings field name
-CONF_MAX_TEMP: Final = "max_temperature"
 CONF_COVERS: Final = "covers"
 CONF_SUN_ELEVATION_THRESHOLD: Final = "sun_elevation_threshold"
 CONF_COVER_DIRECTION: Final = "cover_direction"

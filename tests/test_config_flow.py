@@ -9,13 +9,8 @@ import pytest
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.smart_cover_automation.config_flow import FlowHandler
-from custom_components.smart_cover_automation.const import (
-    CONF_COVERS,
-    CONF_MIN_TEMP,
-    DEFAULT_MAX_TEMP,
-    DEFAULT_MIN_TEMP,
-    DOMAIN,
-)
+from custom_components.smart_cover_automation.const import DOMAIN
+from custom_components.smart_cover_automation.settings import DEFAULTS, KEYS
 
 from .conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2
 
@@ -51,9 +46,9 @@ class TestConfigFlow:
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
-            CONF_COVERS: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-            "max_temperature": 25.0,
-            CONF_MIN_TEMP: 20.0,
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+            KEYS["MAX_TEMPERATURE"]: 25.0,
+            KEYS["MIN_TEMPERATURE"]: 20.0,
         }
 
         with (
@@ -75,9 +70,9 @@ class TestConfigFlow:
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
-            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            "max_temperature": DEFAULT_MAX_TEMP,
-            CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID],
+            KEYS["MAX_TEMPERATURE"]: DEFAULTS["MAX_TEMPERATURE"],
+            KEYS["MIN_TEMPERATURE"]: DEFAULTS["MIN_TEMPERATURE"],
         }
 
         with (
@@ -99,7 +94,7 @@ class TestConfigFlow:
         flow_handler.hass = hass
 
         user_input = {
-            CONF_COVERS: ["cover.nonexistent"],
+            KEYS["COVERS"]: ["cover.nonexistent"],
         }
 
         result = await flow_handler.async_step_user(user_input)
@@ -117,9 +112,9 @@ class TestConfigFlow:
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
-            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            "max_temperature": 20.0,  # Less than min_temp
-            CONF_MIN_TEMP: 25.0,
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID],
+            KEYS["MAX_TEMPERATURE"]: 20.0,  # Less than min_temp
+            KEYS["MIN_TEMPERATURE"]: 25.0,
         }
 
         result = await flow_handler.async_step_user(user_input)
@@ -140,9 +135,9 @@ class TestConfigFlow:
         flow_handler.hass = hass
 
         user_input = {
-            CONF_COVERS: [MOCK_COVER_ENTITY_ID],
-            "max_temperature": DEFAULT_MAX_TEMP,
-            CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID],
+            KEYS["MAX_TEMPERATURE"]: DEFAULTS["MAX_TEMPERATURE"],
+            KEYS["MIN_TEMPERATURE"]: DEFAULTS["MIN_TEMPERATURE"],
         }
 
         with (
@@ -162,10 +157,9 @@ class TestConfigFlow:
         """Test showing form when no input provided."""
         result = await flow_handler.async_step_user(None)
         result = self._as_dict(result)
-
         assert result["type"] == FlowResultType.FORM
         assert result["step_id"] == "user"
-        assert CONF_COVERS in result["data_schema"].schema
+        assert KEYS["COVERS"] in result["data_schema"].schema
         # No automation type field should be present
         schema = result["data_schema"].schema
         assert "automation_type" not in schema
@@ -196,9 +190,9 @@ class TestConfigFlow:
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
-            CONF_COVERS: [MOCK_COVER_ENTITY_ID_2, MOCK_COVER_ENTITY_ID],  # Unsorted
-            "max_temperature": DEFAULT_MAX_TEMP,
-            CONF_MIN_TEMP: DEFAULT_MIN_TEMP,
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID_2, MOCK_COVER_ENTITY_ID],  # Unsorted
+            KEYS["MAX_TEMPERATURE"]: DEFAULTS["MAX_TEMPERATURE"],
+            KEYS["MIN_TEMPERATURE"]: DEFAULTS["MIN_TEMPERATURE"],
         }
 
         with (
@@ -208,7 +202,7 @@ class TestConfigFlow:
             await flow_handler.async_step_user(user_input)
 
         # Should use sorted cover list for unique ID
-        expected_id = "_".join(sorted(user_input[CONF_COVERS]))
+        expected_id = "_".join(sorted(user_input[KEYS["COVERS"]]))
         mock_set_id.assert_called_once_with(expected_id)
 
     async def test_version_and_domain(

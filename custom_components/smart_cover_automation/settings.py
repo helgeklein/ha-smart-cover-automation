@@ -89,3 +89,16 @@ class Settings:
             # Persist as tuple for immutability
             return tuple(value)
         return value
+
+
+# Mapping helpers to avoid duplicating string literals in tests and callers
+# KEYS maps UPPER_CASE friendly names to the canonical field name strings
+# DEFAULTS maps UPPER_CASE names to the default values defined on Settings
+KEYS: dict[str, str] = {}
+DEFAULTS: dict[str, Any] = {}
+_inst = Settings()
+for _f in fields(Settings):
+    _key = _f.name
+    KEYS[_key.upper()] = _key
+    _setting: Setting[Any] = getattr(_inst, _key)
+    DEFAULTS[_key.upper()] = _setting.default

@@ -9,19 +9,12 @@ import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
-from custom_components.smart_cover_automation.const import (
-    CONF_ENABLED,
-    CONF_MIN_POSITION_DELTA,
-    CONF_MIN_TEMP,
-    CONF_SUN_ELEVATION_THRESHOLD,
-    CONF_TEMP_HYSTERESIS,
-    CONF_TEMP_SENSOR,
-)
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.sensor import (
     async_setup_entry as async_setup_entry_sensor,
 )
+from custom_components.smart_cover_automation.settings import KEYS
 
 from .conftest import MockConfigEntry, create_sun_config, create_temperature_config
 
@@ -61,9 +54,9 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
     # Add tuning/options to config
-    config[CONF_TEMP_SENSOR] = "sensor.temperature"
-    config[CONF_TEMP_HYSTERESIS] = 0.7
-    config[CONF_MIN_POSITION_DELTA] = 10
+    config[KEYS["TEMPERATURE_SENSOR"]] = "sensor.temperature"
+    config[KEYS["TEMPERATURE_HYSTERESIS"]] = 0.7
+    config[KEYS["MIN_POSITION_DELTA"]] = 10
 
     entities = await _capture_entities(hass, config)
     status = _get_status_entity(entities)
@@ -75,15 +68,15 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
         "covers": {
             "cover.one": {
                 "current_temp": 22.5,
-                "min_temp": config[CONF_MIN_TEMP],
-                "max_temp": config["max_temperature"],
+                "min_temp": config[KEYS["MIN_TEMPERATURE"]],
+                "max_temp": config[KEYS["MAX_TEMPERATURE"]],
                 "current_position": 50,
                 "desired_position": 40,  # movement
             },
             "cover.two": {
                 "current_temp": 22.5,
-                "min_temp": config[CONF_MIN_TEMP],
-                "max_temp": config["max_temperature"],
+                "min_temp": config[KEYS["MIN_TEMPERATURE"]],
+                "max_temp": config[KEYS["MAX_TEMPERATURE"]],
                 "current_position": 100,
                 "desired_position": 100,  # no movement
             },
@@ -105,8 +98,8 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     assert attrs["temp_hysteresis"] == 0.7
     assert attrs["min_position_delta"] == 10
     assert attrs["temperature_sensor"] == "sensor.temperature"
-    assert attrs["min_temp"] == config[CONF_MIN_TEMP]
-    assert attrs["max_temp"] == config["max_temperature"]
+    assert attrs["min_temp"] == config[KEYS["MIN_TEMPERATURE"]]
+    assert attrs["max_temp"] == config[KEYS["MAX_TEMPERATURE"]]
     assert attrs["current_temp"] == 22.5
     assert isinstance(attrs["covers"], dict)
 
@@ -126,14 +119,14 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
             "cover.one": {
                 "sun_elevation": 35.0,
                 "sun_azimuth": 180.0,
-                "elevation_threshold": config[CONF_SUN_ELEVATION_THRESHOLD],
+                "elevation_threshold": config[KEYS["SUN_ELEVATION_THRESHOLD"]],
                 "current_position": 100,
                 "desired_position": 80,
             },
             "cover.two": {
                 "sun_elevation": 35.0,
                 "sun_azimuth": 180.0,
-                "elevation_threshold": config[CONF_SUN_ELEVATION_THRESHOLD],
+                "elevation_threshold": config[KEYS["SUN_ELEVATION_THRESHOLD"]],
                 "current_position": 100,
                 "desired_position": 100,
             },
@@ -154,7 +147,7 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     assert attrs["covers_moved"] == 1
     assert attrs["sun_elevation"] == 35.0
     assert attrs["sun_azimuth"] == 180.0
-    assert attrs["elevation_threshold"] == config[CONF_SUN_ELEVATION_THRESHOLD]
+    assert attrs["elevation_threshold"] == config[KEYS["SUN_ELEVATION_THRESHOLD"]]
     assert isinstance(attrs["covers"], dict)
 
 
@@ -163,7 +156,7 @@ async def test_status_sensor_disabled() -> None:
     """When globally disabled, summary is 'Disabled'."""
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
-    config[CONF_ENABLED] = False
+    config[KEYS["ENABLED"]] = False
 
     entities = await _capture_entities(hass, config)
     status = _get_status_entity(entities)

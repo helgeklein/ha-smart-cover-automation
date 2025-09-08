@@ -8,12 +8,9 @@ from unittest.mock import MagicMock
 import pytest
 from homeassistant.components.cover import CoverEntityFeature
 
-from custom_components.smart_cover_automation.const import (
-    CONF_ENABLED,
-    CONF_MIN_POSITION_DELTA,
-)
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.settings import KEYS
 
 from .conftest import (
     MOCK_COVER_ENTITY_ID,
@@ -29,9 +26,9 @@ from .conftest import (
 async def test_automation_disabled_skips_actions(
     mock_hass: MagicMock,
 ) -> None:
-    """When CONF_ENABLED is False, coordinator returns empty covers and takes no action."""
+    """When enabled is False, coordinator returns empty covers and takes no action."""
     config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID])
-    config[CONF_ENABLED] = False
+    config[KEYS["ENABLED"]] = False
     config_entry = MockConfigEntry(config)
     coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -77,7 +74,7 @@ async def test_min_position_delta_skips_small_adjustments(
     """Small desired change below min_position_delta should be skipped (pass branch)."""
     # Sun-only config with very small max closure to produce desired=95 from 100
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
-    config[CONF_MIN_POSITION_DELTA] = 10  # require >=10 change
+    config[KEYS["MIN_POSITION_DELTA"]] = 10  # require >=10 change
     config["max_closure"] = 5  # desired position = 100 - 5 = 95
     config_entry = MockConfigEntry(config)
     coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
