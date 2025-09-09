@@ -18,6 +18,8 @@
             "invalid_cover": "One or more selected covers are not available",
             "no_direction": "Window azimuth must be set for sun-based automation",
             "invalid_temperature_range": "Maximum temperature must be higher than minimum temperature",
+            "required_with_max_temperature": "Minimum temperature is required when a maximum temperature is set",
+            "required_with_min_temperature": "Maximum temperature is required when a minimum temperature is set",
             "invalid_config": "Invalid configuration provided"
         },
         "abort": {

@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import fields
 from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import STATE_UNAVAILABLE, UnitOfTemperature
 from homeassistant.helpers import selector
 
 from . import const
-from .settings import KEYS, Settings
+from .settings import Settings
 
 
 class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
@@ -25,50 +26,84 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
         self,
         user_input: dict[str, Any] | None = None,
     ) -> config_entries.ConfigFlowResult:
-        """Handle a flow initialized by the user."""
+        """Handle a flow initialized by the user. Validate user input and create an integration instance.
+
+        Invoked when the user chooses to add the integration from the UI.
+        HA calls async_step_user(None) to show the form, then calls it again with a dict after submit.
+        It's called again on validation errors (re-display form) until it returns create_entry or aborts.
+        It's not used for editing options (that's OptionsFlowHandler.async_step_init).
+
+        Error messages are retured in the errors dict:
+        - The key "base" is for general errors not associated with a specific field.
+        - Values like "invalid_cover" are keys that are mapped to strings defined in <lang>.json.
+        """
         errors = {}
 
-        if user_input is not None:
-            try:
-                # Validate covers exist and are available
-                invalid_covers = []
-                for cover in user_input[const.CONF_COVERS]:
-                    state = self.hass.states.get(cover)
-                    if not state:
-                        invalid_covers.append(cover)
-                    elif state.state == "unavailable":
-                        const.LOGGER.warning(f"Cover {cover} is currently unavailable but will be configured")
+        # Initial call: user_input is None -> show the form to the user
+        if user_input is None:
+            return self._show_user_form()
 
-                if invalid_covers:
-                    errors["base"] = "invalid_cover"
-                    const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
+        # Subsequent calls: user_input has form data -> validate user data and create entry
+        try:
+            # Validate covers
+            invalid_covers = []
+            for cover in user_input[const.CONF_COVERS]:
+                state = self.hass.states.get(cover)
+                if not state:
+                    invalid_covers.append(cover)
+                elif state.state == STATE_UNAVAILABLE:
+                    const.LOGGER.warning(f"Cover {cover} is currently unavailable but will be configured")
 
-                # Validate temperature ranges if provided
-                if KEYS["MAX_TEMPERATURE"] in user_input and KEYS["MIN_TEMPERATURE"] in user_input:
-                    max_temp = user_input[KEYS["MAX_TEMPERATURE"]]
-                    min_temp = user_input[KEYS["MIN_TEMPERATURE"]]
-                    if max_temp <= min_temp:
-                        errors["base"] = "invalid_temperature_range"
-                        const.LOGGER.error(f"Invalid temperature range: max={max_temp} <= min={min_temp}")
+            if invalid_covers:
+                errors["base"] = "invalid_cover"
+                const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
 
-                if not errors:
-                    # Create unique ID based on the covers being automated
-                    unique_id = "_".join(sorted(user_input[const.CONF_COVERS]))
-                    await self.async_set_unique_id(unique_id)
-                    self._abort_if_unique_id_configured()
+            # Validate temperature thresholds
+            max_key = Settings.max_temperature.key
+            min_key = Settings.min_temperature.key
+            has_max = max_key in user_input
+            has_min = min_key in user_input
 
-                    # Persist provided data; single combined mode is implicit
-                    data = dict(user_input)
+            # If only one threshold is provided, mark the counterpart as required
+            if has_max ^ has_min:
+                if has_max:
+                    errors[min_key] = "required_with_max_temperature"
+                    const.LOGGER.error("min_temperature required when max_temperature is provided")
+                else:
+                    errors[max_key] = "required_with_min_temperature"
+                    const.LOGGER.error("max_temperature required when min_temperature is provided")
+            # If both are provided, validate the range
+            elif has_max and has_min:
+                max_temp = user_input[max_key]
+                min_temp = user_input[min_key]
+                if max_temp <= min_temp:
+                    errors["base"] = "invalid_temperature_range"
+                    const.LOGGER.error(f"Invalid temperature range: max={max_temp} <= min={min_temp}")
 
-                    return self.async_create_entry(
-                        title=(f"Cover Automation ({len(user_input[const.CONF_COVERS])} covers)"),
-                        data=data,
-                    )
+            if not errors:
+                # Create a permanent unique ID for this config entry
+                unique_id = str(uuid.uuid4())
+                await self.async_set_unique_id(unique_id)
+                self._abort_if_unique_id_configured()
 
-            except (KeyError, ValueError, TypeError) as err:
-                const.LOGGER.exception(f"Configuration validation error: {err}")
-                errors["base"] = "invalid_config"
+                # Persist provided data; single combined mode is implicit
+                data = dict(user_input)
 
+                # Create a new HA config entry with the provided data
+                return self.async_create_entry(
+                    title=(f"Cover Automation ({len(user_input[const.CONF_COVERS])} covers)"),
+                    data=data,
+                )
+
+        except (KeyError, ValueError, TypeError) as err:
+            const.LOGGER.exception(f"Configuration validation error: {err}")
+            errors["base"] = "invalid_config"
+
+        # Validation error: show the form to the user again
+        return self._show_user_form(errors)
+
+    def _show_user_form(self, errors: dict[str, str] | None = None) -> config_entries.ConfigFlowResult:
+        """Render the initial user form (or re-display after validation errors)."""
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
@@ -104,7 +139,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     ),
                 }
             ),
-            errors=errors,
+            errors=errors or {},
         )
 
 
@@ -128,7 +163,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         data = dict(self._config_entry.data)
         options = dict(self._config_entry.options or {})
 
-        covers: list[str] = list(data.get(const.CONF_COVERS, []))
+        # Compute concrete defaults via typed Settings using Settings field names
+        # Accept only keys that exist as fields on Settings to avoid duplicating any registry
+        allowed_keys = {f.name for f in fields(Settings)}
+
+        def _to_field_map(src: dict[str, Any]) -> dict[str, Any]:
+            return {k: v for k, v in src.items() if k in allowed_keys}
+
+        settings = Settings.from_sources(_to_field_map(options), _to_field_map(data))
+
+        covers: list[str] = list(settings.covers.current)
 
         # Build dynamic fields for per-cover directions as numeric azimuth angles (0-359)
         direction_fields: dict[vol.Marker, object] = {}
@@ -157,15 +201,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     selector.NumberSelectorConfig(min=0, max=359, step=1, unit_of_measurement="°")
                 )
 
-        # Compute concrete defaults via typed Settings using Settings field names
-        # Accept only keys that exist as fields on Settings to avoid duplicating any registry
-        allowed_keys = {f.name for f in fields(Settings)}
-
-        def _to_field_map(src: dict[str, Any]) -> dict[str, Any]:
-            return {k: v for k, v in src.items() if k in allowed_keys}
-
-        settings = Settings.from_sources(_to_field_map(options), _to_field_map(data))
-
         enabled_default = bool(settings.enabled.current)
         temp_sensor_default = str(settings.temperature_sensor.current)
         threshold_default = float(settings.sun_elevation_threshold.current)
@@ -176,6 +211,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 const.CONF_VERBOSE_LOGGING,
                 default=bool(settings.verbose_logging.current),
             ): selector.BooleanSelector(),
+            # Allow editing the list of covers without changing the unique_id
+            vol.Optional(
+                const.CONF_COVERS,
+                default=covers,
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(
+                    domain="cover",
+                    multiple=True,
+                ),
+            ),
             vol.Optional(
                 const.CONF_TEMP_SENSOR,
                 default=temp_sensor_default,

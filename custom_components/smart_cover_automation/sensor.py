@@ -131,7 +131,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         moved = sum(
             1 for d in covers.values() if d.get("desired_position") is not None and d.get("current_position") != d.get("desired_position")
         )
-        # Combined summary (only supported mode)
+
         parts: list[str] = []
         current_temp = self._first_cover_value("current_temp")
         if isinstance(current_temp, (int, float)):

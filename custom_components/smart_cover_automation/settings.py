@@ -2,12 +2,18 @@
 
 - The dataclass field names are the single source of truth (e.g., "max_temperature").
 - Each setting has a default and an optional current value, accessed via `.current`.
+- Class-level `.key` access is supported: `Settings.<field>.key` returns the literal
+    field name string. This is implemented via a metaclass that intercepts slotted
+    dataclass member descriptors and returns a tiny proxy exposing `.key`.
+    At instance level, `Setting.key` remains the explicit string passed to the
+    default factory. Treat `Settings.<field>.key` as a constant; in unusual runtimes
+    where this cannot be provided, callers can fall back to `KEYS`.
 """
 
 from __future__ import annotations
 
-from dataclasses import Field as _DataclassField
 from dataclasses import dataclass, field, fields
+from types import MemberDescriptorType
 from typing import Any, Generic, Mapping, TypeVar
 
 T = TypeVar("T")
@@ -26,19 +32,36 @@ class Setting(Generic[T]):
         return self.value if self.value is not None else self.default
 
 
-# Allow class-level access like Settings.max_temperature.key to resolve to the
-# literal field name by attaching a 'key' property on dataclasses.Field.
-# On instances, Setting.key remains the explicit string set in default_factory.
-try:
-    if not hasattr(_DataclassField, "key"):
-        _DataclassField.key = property(lambda f: f.name)  # type: ignore[attr-defined]
-except Exception:
-    # Best-effort only; callers can fall back to KEYS if this is unavailable.
-    pass
+@dataclass(frozen=True, slots=True)
+class _FieldKeyProxy:
+    """Lightweight proxy that exposes a 'key' attribute for class-level access."""
+
+    key: str
+
+
+class _SettingsMeta(type):
+    """Metaclass that maps class-level field access to a proxy exposing .key.
+
+    For slotted dataclasses, class attributes are member descriptors. We intercept
+    those and return a proxy so code can use `Settings.<field>.key`.
+    """
+
+    def __getattribute__(cls, name: str):  # type: ignore[override]
+        value = super().__getattribute__(name)
+        # If the attribute is a slot member (field), return a proxy with .key
+        if isinstance(value, MemberDescriptorType):
+            try:
+                dataclass_fields = getattr(cls, "__dataclass_fields__", None)
+                if dataclass_fields and name in dataclass_fields:
+                    return _FieldKeyProxy(key=name)
+            except Exception:
+                # Fall through to normal value if field lookup fails
+                pass
+        return value
 
 
 @dataclass(slots=True)
-class Settings:
+class Settings(metaclass=_SettingsMeta):
     """All integration settings; field names are the canonical keys.
 
     Usage:

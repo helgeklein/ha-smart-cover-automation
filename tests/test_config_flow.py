@@ -121,6 +121,48 @@ class TestConfigFlow:
         assert result["type"] == FlowResultType.FORM
         assert result["errors"]["base"] == "invalid_temperature_range"
 
+    async def test_user_step_only_max_temperature_requires_min(
+        self,
+        flow_handler: FlowHandler,
+        mock_hass_with_covers: MagicMock,
+    ) -> None:
+        """When only max_temperature is provided, min_temperature should be required with field error."""
+        flow_handler.hass = mock_hass_with_covers
+
+        user_input = {
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID],
+            KEYS["MAX_TEMPERATURE"]: 25.0,
+            # MIN_TEMPERATURE intentionally omitted
+        }
+
+        result = await flow_handler.async_step_user(user_input)
+        result = self._as_dict(result)
+
+        assert result["type"] == FlowResultType.FORM
+        # Expect field-specific error on min_temperature
+        assert result["errors"][KEYS["MIN_TEMPERATURE"]] == "required_with_max_temperature"
+
+    async def test_user_step_only_min_temperature_requires_max(
+        self,
+        flow_handler: FlowHandler,
+        mock_hass_with_covers: MagicMock,
+    ) -> None:
+        """When only min_temperature is provided, max_temperature should be required with field error."""
+        flow_handler.hass = mock_hass_with_covers
+
+        user_input = {
+            KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID],
+            KEYS["MIN_TEMPERATURE"]: 20.0,
+            # MAX_TEMPERATURE intentionally omitted
+        }
+
+        result = await flow_handler.async_step_user(user_input)
+        result = self._as_dict(result)
+
+        assert result["type"] == FlowResultType.FORM
+        # Expect field-specific error on max_temperature
+        assert result["errors"][KEYS["MAX_TEMPERATURE"]] == "required_with_min_temperature"
+
     async def test_user_step_unavailable_cover_warning(
         self,
         flow_handler: FlowHandler,
@@ -184,7 +226,7 @@ class TestConfigFlow:
         flow_handler: FlowHandler,
         mock_hass_with_covers: MagicMock,
     ) -> None:
-        """Test unique ID generation based on covers."""
+        """Test unique ID generation creates a stable UUID independent of covers."""
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
@@ -199,9 +241,14 @@ class TestConfigFlow:
         ):
             await flow_handler.async_step_user(user_input)
 
-        # Should use sorted cover list for unique ID
-        expected_id = "_".join(sorted(user_input[KEYS["COVERS"]]))
-        mock_set_id.assert_called_once_with(expected_id)
+        # Ensure a UUID-like value was used
+        args, _ = mock_set_id.call_args
+        assert len(args) == 1
+        uid = args[0]
+        import uuid as _uuid
+
+        # Validate it's a valid UUID string
+        _uuid.UUID(uid)
 
     async def test_version_and_domain(
         self,
