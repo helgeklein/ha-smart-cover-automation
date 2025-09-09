@@ -12,9 +12,8 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 
-from . import const
 from .entity import IntegrationEntity
-from .settings import Settings
+from .settings import SettingsKey, resolve_entry
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -68,14 +67,13 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
     def is_on(self) -> bool | None:  # type: ignore[override]
         """Return true if the switch is on."""
         # Prefer enabled option if present; fall back to demo title flag for tests
-        settings_obj = getattr(self.coordinator.config_entry.runtime_data, "settings", None)
         enabled: bool | None
-        if isinstance(settings_obj, Settings) and settings_obj.enabled.value is not None:
-            enabled = bool(settings_obj.enabled.current)
-        else:
+        try:
+            enabled = bool(resolve_entry(self.coordinator.config_entry).enabled)
+        except Exception:
             # Fall back to raw config with default True
             try:
-                enabled = bool(self.coordinator.config_entry.runtime_data.config.get(const.CONF_ENABLED, True))
+                enabled = bool(self.coordinator.config_entry.runtime_data.config.get(SettingsKey.ENABLED.value, True))
             except Exception:
                 enabled = None
         if isinstance(enabled, bool):
@@ -87,7 +85,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
         # Persist enabled=True in options if available
         entry = self.coordinator.config_entry
         current = dict(getattr(entry, "options", {}) or {})
-        current[const.CONF_ENABLED] = True
+        current[SettingsKey.ENABLED.value] = True
         try:
             await entry.async_set_options(current)  # type: ignore[attr-defined]
         except Exception:
@@ -101,7 +99,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
         """Turn off the switch."""
         entry = self.coordinator.config_entry
         current = dict(getattr(entry, "options", {}) or {})
-        current[const.CONF_ENABLED] = False
+        current[SettingsKey.ENABLED.value] = False
         try:
             await entry.async_set_options(current)  # type: ignore[attr-defined]
         except Exception:

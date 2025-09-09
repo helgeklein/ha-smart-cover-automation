@@ -15,9 +15,8 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 
-from . import const
 from .entity import IntegrationEntity
-from .settings import Settings
+from .settings import ResolvedSettings, resolve_entry
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -118,13 +117,8 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
 
     @cached_property
     def native_value(self) -> str | None:  # type: ignore[override]
-        config = self.coordinator.config_entry.runtime_data.config
-        settings_obj = getattr(self.coordinator.config_entry.runtime_data, "settings", None)
-        if isinstance(settings_obj, Settings) and settings_obj.enabled.value is not None:
-            enabled = settings_obj.enabled.current
-        else:
-            enabled = config.get(const.CONF_ENABLED, True)
-        if enabled is False:
+        resolved: ResolvedSettings = resolve_entry(self.coordinator.config_entry)
+        if not bool(resolved.enabled):
             return "Disabled"
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
         total = len(covers)
@@ -135,15 +129,8 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         parts: list[str] = []
         current_temp = self._first_cover_value("current_temp")
         if isinstance(current_temp, (int, float)):
-            settings2 = getattr(self.coordinator.config_entry.runtime_data, "settings", None)
-            if isinstance(settings2, Settings) and settings2.min_temperature.value is not None:
-                min_temp = settings2.min_temperature.current
-            else:
-                min_temp = config.get(const.CONF_MIN_TEMP, const.DEFAULT_MIN_TEMP)
-            if isinstance(settings2, Settings) and settings2.max_temperature.value is not None:
-                max_temp = settings2.max_temperature.current
-            else:
-                max_temp = config.get("max_temperature", const.DEFAULT_MAX_TEMP)
+            min_temp = resolve_entry(self.coordinator.config_entry).min_temperature
+            max_temp = resolve_entry(self.coordinator.config_entry).max_temperature
             parts.append(
                 f"Temp {float(current_temp):.1f}°C"
                 + (
@@ -161,22 +148,12 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:  # type: ignore[override]
-        config = self.coordinator.config_entry.runtime_data.config
-        settings_obj = getattr(self.coordinator.config_entry.runtime_data, "settings", None)
+        resolved: ResolvedSettings = resolve_entry(self.coordinator.config_entry)
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
 
-        if isinstance(settings_obj, Settings) and settings_obj.enabled.value is not None:
-            enabled = bool(settings_obj.enabled.current)
-        else:
-            enabled = bool(config.get(const.CONF_ENABLED, True))
-        if isinstance(settings_obj, Settings) and settings_obj.temperature_hysteresis.value is not None:
-            temp_hyst = float(settings_obj.temperature_hysteresis.current)
-        else:
-            temp_hyst = float(config.get(const.CONF_TEMP_HYSTERESIS, const.TEMP_HYSTERESIS))
-        if isinstance(settings_obj, Settings) and settings_obj.min_position_delta.value is not None:
-            min_delta = int(float(settings_obj.min_position_delta.current))
-        else:
-            min_delta = int(float(config.get(const.CONF_MIN_POSITION_DELTA, const.MIN_POSITION_DELTA)))
+        enabled = bool(resolved.enabled)
+        temp_hyst = float(resolved.temperature_hysteresis)
+        min_delta = int(float(resolved.min_position_delta))
         attrs: dict[str, Any] = {
             "enabled": enabled,
             "covers_total": len(covers),
@@ -193,39 +170,15 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         attrs.update(
             {
                 # Temperature-related
-                "temperature_sensor": (
-                    settings_obj.temperature_sensor.current
-                    if isinstance(settings_obj, Settings) and settings_obj.temperature_sensor.value is not None
-                    else config.get(const.CONF_TEMP_SENSOR, const.DEFAULT_TEMP_SENSOR)
-                ),
-                "min_temp": (
-                    settings_obj.min_temperature.current
-                    if isinstance(settings_obj, Settings) and settings_obj.min_temperature.value is not None
-                    else config.get(const.CONF_MIN_TEMP, const.DEFAULT_MIN_TEMP)
-                ),
-                "max_temp": (
-                    settings_obj.max_temperature.current
-                    if isinstance(settings_obj, Settings) and settings_obj.max_temperature.value is not None
-                    else config.get("max_temperature", const.DEFAULT_MAX_TEMP)
-                ),
+                "temperature_sensor": resolved.temperature_sensor,
+                "min_temp": resolved.min_temperature,
+                "max_temp": resolved.max_temperature,
                 "current_temp": self._first_cover_value("current_temp"),
                 # Sun-related
                 "sun_elevation": self._first_cover_value("sun_elevation"),
                 "sun_azimuth": self._first_cover_value("sun_azimuth"),
-                "elevation_threshold": (
-                    settings_obj.sun_elevation_threshold.current
-                    if isinstance(settings_obj, Settings) and settings_obj.sun_elevation_threshold.value is not None
-                    else config.get(const.CONF_SUN_ELEVATION_THRESHOLD, const.DEFAULT_SUN_ELEVATION_THRESHOLD)
-                ),
-                "max_closure": int(
-                    float(
-                        (
-                            settings_obj.max_closure.current
-                            if isinstance(settings_obj, Settings) and settings_obj.max_closure.value is not None
-                            else config.get(const.CONF_MAX_CLOSURE, const.DEFAULT_MAX_CLOSURE)
-                        )
-                    )
-                ),
+                "elevation_threshold": resolved.sun_elevation_threshold,
+                "max_closure": int(float(resolved.max_closure)),
             }
         )
 

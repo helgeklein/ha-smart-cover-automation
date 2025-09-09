@@ -12,13 +12,12 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.components.cover import CoverEntityFeature
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator as BaseCoordinator,
-)
+from homeassistant.const import Platform
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator as BaseCoordinator
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from . import const
-from .settings import Settings
+from .settings import SETTINGS_SPECS, ResolvedSettings, SettingsKey, resolve_entry
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, State
@@ -102,45 +101,21 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         )
         self.config_entry = config_entry
 
-        config = config_entry.runtime_data.config
-        settings: Settings | None = (
-            config_entry.runtime_data.settings
-            if hasattr(config_entry.runtime_data, "settings") and isinstance(getattr(config_entry.runtime_data, "settings"), Settings)
-            else None
-        )
+        resolved = resolve_entry(config_entry)
         const.LOGGER.info(
-            f"Initializing Smart Cover Automation coordinator: mode=combined, covers={tuple(settings.covers.current) if settings and settings.covers.value is not None else tuple(config.get(const.CONF_COVERS, ()))}, update_interval={UPDATE_INTERVAL}"
+            f"Initializing Smart Cover Automation coordinator: mode=combined, covers={tuple(resolved.covers)}, update_interval={UPDATE_INTERVAL}"
         )
-        # Adjust logger level per-entry if verbose logging is enabled via options
+        # Adjust logger level per-entry if verbose logging is enabled
         try:
-            verbose = (
-                bool(settings.verbose_logging.current)
-                if settings is not None and settings.verbose_logging.value is not None
-                else bool(config.get(const.CONF_VERBOSE_LOGGING, False))
-            )
-            if verbose:
+            if bool(resolved.verbose_logging):
                 const.LOGGER.setLevel("DEBUG")
                 const.LOGGER.debug("Verbose logging enabled for this entry")
         except Exception:  # pragma: no cover - non-critical
             pass
 
-    def _get_settings(self) -> Settings | None:
-        s = self.config_entry.runtime_data.settings if hasattr(self.config_entry.runtime_data, "settings") else None
-        return s if isinstance(s, Settings) else None
-
-    def _effective_settings(self) -> Settings:
-        """Return a real Settings instance built from runtime_data when needed.
-
-        If a typed Settings is already present, return it. Otherwise, build one
-        from the raw config mapping in runtime_data.config. This lets the rest of
-        the code consult Settings exclusively for values and presence (via .value).
-        """
-        s = self._get_settings()
-        if s is not None:
-            return s
-        # Build from config mapping; unknown keys are ignored by Settings.from_sources
-        cfg = getattr(self.config_entry.runtime_data, "config", {})
-        return Settings.from_sources(None, cfg)
+    def _resolved_settings(self) -> ResolvedSettings:
+        """Return resolved settings from the config entry (options over data)."""
+        return resolve_entry(self.config_entry)
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update automation state and control covers."""
@@ -148,9 +123,9 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Always keep a reference to raw config for dynamic per-cover direction
             config = self.config_entry.runtime_data.config
 
-            # Use typed settings for all global values
-            settings = self._effective_settings()
-            covers = tuple(settings.covers.current)
+            # Use resolved settings for all global values
+            resolved = self._resolved_settings()
+            covers = tuple(resolved.covers)
 
             const.LOGGER.info(f"Starting cover automation update: mode=combined, covers={covers}")
 
@@ -159,7 +134,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 raise ConfigurationError("No covers configured")
 
             # Master enabled switch (defaults to True)
-            enabled = bool(settings.enabled.current)
+            enabled = bool(resolved.enabled)
             if not enabled:
                 const.LOGGER.info("Automation disabled via configuration; skipping actions")
                 return {"covers": {}}
@@ -188,16 +163,16 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             if features & CoverEntityFeature.SET_POSITION:
                 const.LOGGER.info(f"[{entity_id}] Using set_cover_position to {desired_pos} (features={features})")
                 await self.hass.services.async_call(
-                    "cover",
+                    Platform.COVER,
                     "set_cover_position",
                     {"entity_id": entity_id, "position": desired_pos},
                 )
             elif desired_pos == COVER_FULLY_CLOSED:
                 const.LOGGER.info(f"[{entity_id}] Closing cover")
-                await self.hass.services.async_call("cover", "close_cover", {"entity_id": entity_id})
+                await self.hass.services.async_call(Platform.COVER, "close_cover", {"entity_id": entity_id})
             elif desired_pos == COVER_FULLY_OPEN:
                 const.LOGGER.info(f"[{entity_id}] Opening cover")
-                await self.hass.services.async_call("cover", "open_cover", {"entity_id": entity_id})
+                await self.hass.services.async_call(Platform.COVER, "open_cover", {"entity_id": entity_id})
             else:
                 const.LOGGER.warning(f"Cannot set cover {entity_id} position: desired={desired_pos}, features={features}")
         except (OSError, ValueError, TypeError, RuntimeError) as err:
@@ -211,19 +186,31 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         """Handle combined temperature and sun automation."""
         result: dict[str, Any] = {"covers": {}}
 
-        settings = self._effective_settings()
+        resolved = self._resolved_settings()
 
-        # Which contributors are configured (presence based on explicit values)
-        temp_enabled = settings.max_temperature.value is not None and settings.min_temperature.value is not None
-        sun_enabled = settings.sun_elevation_threshold.value is not None
+        # Determine which contributors are configured based on raw config presence
+        # Defaults exist in ResolvedSettings, but we only enable a contributor
+        # when the user actually provided related keys in their config/options.
+        temp_enabled = any(
+            key in config
+            for key in (
+                SettingsKey.TEMPERATURE_SENSOR.value,
+                SettingsKey.MIN_TEMPERATURE.value,
+                SettingsKey.MAX_TEMPERATURE.value,
+                SettingsKey.TEMPERATURE_HYSTERESIS.value,
+            )
+        )
+        sun_enabled = SettingsKey.SUN_ELEVATION_THRESHOLD.value in config or any(
+            f"{entity_id}_{'cover_direction'}" in config for entity_id in states.keys()
+        )
 
         # Temperature input
         temp_available = False
         current_temp: float | None = None
-        max_temp = float(settings.max_temperature.current)
-        min_temp = float(settings.min_temperature.current)
+        max_temp = float(resolved.max_temperature)
+        min_temp = float(resolved.min_temperature)
         if temp_enabled:
-            sensor_entity_id = settings.temperature_sensor.current
+            sensor_entity_id = resolved.temperature_sensor
             temp_state = self.hass.states.get(sensor_entity_id)
             if temp_state is None:
                 # Required temp sensor missing -> captured as last_exception
@@ -234,14 +221,14 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             except (ValueError, TypeError) as err:
                 raise InvalidSensorReadingError(temp_state.entity_id, str(temp_state.state)) from err
 
-        temp_hysteresis = float(settings.temperature_hysteresis.current)
-        min_position_delta = int(float(settings.min_position_delta.current))
+        temp_hysteresis = float(resolved.temperature_hysteresis)
+        min_position_delta = int(float(resolved.min_position_delta))
 
         # Sun input
         sun_available = False
         elevation: float | None = None
         azimuth: float | None = None
-        threshold = float(settings.sun_elevation_threshold.current)
+        threshold = float(resolved.sun_elevation_threshold)
         if sun_enabled:
             sun_state = self.hass.states.get("sun.sun")
             if sun_state is None:
@@ -304,7 +291,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Sun contribution
             if sun_enabled and sun_available and elevation is not None and azimuth is not None:
                 # Per-cover direction remains dynamic and stored in config by entity_id
-                direction = config.get(f"{entity_id}_{const.CONF_COVER_DIRECTION}")
+                direction = config.get(f"{entity_id}_{'cover_direction'}")
                 direction_azimuth: float | None = None
                 if isinstance(direction, (int, float)):
                     try:
@@ -392,7 +379,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     "current_position": current_pos,
                     "desired_position": combined_desired,
                     "min_position_delta": min_position_delta,
-                    "max_closure": int(float(settings.max_closure.current)),
+                    "max_closure": int(float(resolved.max_closure)),
                     "combined_strategy": "and",
                 }
             )
@@ -410,11 +397,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         entity_id: str,
     ) -> int:
         """Calculate desired cover position for sun logic."""
-        settings = self._effective_settings()
+        resolved = self._resolved_settings()
         try:
-            max_closure = int(float(settings.max_closure.current))
+            max_closure = int(float(resolved.max_closure))
         except (TypeError, ValueError):
-            max_closure = const.DEFAULT_MAX_CLOSURE
+            max_closure = int(SETTINGS_SPECS[SettingsKey.MAX_CLOSURE].default)
 
         if elevation < threshold:
             # Sun is low, open covers

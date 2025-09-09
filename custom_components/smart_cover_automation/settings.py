@@ -1,138 +1,148 @@
-"""Typed settings dataclasses for smart_cover_automation.
+"""Settings registry and resolution for smart_cover_automation.
 
-- The dataclass field names are the single source of truth (e.g., "max_temperature").
-- Each setting has a default and an optional current value, accessed via `.current`.
-- Class-level `.key` access is supported: `Settings.<field>.key` returns the literal
-    field name string. This is implemented via a metaclass that intercepts slotted
-    dataclass member descriptors and returns a tiny proxy exposing `.key`.
-    At instance level, `Setting.key` remains the explicit string passed to the
-    default factory. Treat `Settings.<field>.key` as a constant; in unusual runtimes
-    where this cannot be provided, callers can fall back to `KEYS`.
+This module defines a typo-safe enum of setting keys, a registry of specs with
+defaults and coercion, and helpers to resolve effective settings from a
+ConfigEntry (options → data → defaults). Legacy classes have been removed.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, fields
-from types import MemberDescriptorType
-from typing import Any, Generic, Mapping, TypeVar
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import Any, Callable, Mapping
 
-T = TypeVar("T")
-
-
-@dataclass(slots=True)
-class Setting(Generic[T]):
-    """A typed setting with a default and an optional override value."""
-
-    default: T
-    key: str
-    value: T | None = None
-
-    @property
-    def current(self) -> T:
-        return self.value if self.value is not None else self.default
+# Explicit key/default registry for every setting using an Enum to avoid typos.
+# Kept fully explicit and self-contained (no references to other structures).
 
 
 @dataclass(frozen=True, slots=True)
-class _FieldKeyProxy:
-    """Lightweight proxy that exposes a 'key' attribute for class-level access."""
-
+class SettingSpec:
     key: str
+    default: Any
+    coerce: Callable[[Any], Any]
 
 
-class _SettingsMeta(type):
-    """Metaclass that maps class-level field access to a proxy exposing .key.
+class SettingsKey(StrEnum):
+    ENABLED = "enabled"
+    COVERS = "covers"
+    TEMPERATURE_SENSOR = "temperature_sensor"
+    MAX_TEMPERATURE = "max_temperature"
+    MIN_TEMPERATURE = "min_temperature"
+    TEMPERATURE_HYSTERESIS = "temperature_hysteresis"
+    MIN_POSITION_DELTA = "min_position_delta"
+    SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"
+    MAX_CLOSURE = "max_closure"
+    VERBOSE_LOGGING = "verbose_logging"
 
-    For slotted dataclasses, class attributes are member descriptors. We intercept
-    those and return a proxy so code can use `Settings.<field>.key`.
+
+# Enum-keyed registry; StrEnum members behave like strings for equality/hash
+# so accidental plain-string lookups may still work, but use the Enum for safety.
+def _to_bool(v: Any) -> bool:
+    return bool(v)
+
+
+def _to_int(v: Any) -> int:
+    return int(v)
+
+
+def _to_float(v: Any) -> float:
+    return float(v)
+
+
+def _to_str(v: Any) -> str:
+    return str(v)
+
+
+def _to_covers_tuple(v: Any) -> tuple[str, ...]:
+    if not v:
+        return ()
+    if isinstance(v, tuple):
+        # Convert each element to str defensively
+        return tuple(str(x) for x in v)
+    if isinstance(v, list):
+        return tuple(str(x) for x in v)
+    # Fallback: mirror prior behavior (tuple(v)), which turns a string into chars
+    try:
+        return tuple(v)  # type: ignore[arg-type]
+    except Exception:
+        return ()
+
+
+SETTINGS_SPECS: dict[SettingsKey, SettingSpec] = {
+    SettingsKey.ENABLED: SettingSpec(key=SettingsKey.ENABLED, default=True, coerce=_to_bool),
+    SettingsKey.COVERS: SettingSpec(key=SettingsKey.COVERS, default=(), coerce=_to_covers_tuple),
+    SettingsKey.TEMPERATURE_SENSOR: SettingSpec(key=SettingsKey.TEMPERATURE_SENSOR, default="sensor.temperature", coerce=_to_str),
+    SettingsKey.MAX_TEMPERATURE: SettingSpec(key=SettingsKey.MAX_TEMPERATURE, default=24.0, coerce=_to_float),
+    SettingsKey.MIN_TEMPERATURE: SettingSpec(key=SettingsKey.MIN_TEMPERATURE, default=21.0, coerce=_to_float),
+    SettingsKey.TEMPERATURE_HYSTERESIS: SettingSpec(key=SettingsKey.TEMPERATURE_HYSTERESIS, default=0.5, coerce=_to_float),
+    SettingsKey.MIN_POSITION_DELTA: SettingSpec(key=SettingsKey.MIN_POSITION_DELTA, default=5, coerce=_to_int),
+    SettingsKey.SUN_ELEVATION_THRESHOLD: SettingSpec(key=SettingsKey.SUN_ELEVATION_THRESHOLD, default=20.0, coerce=_to_float),
+    SettingsKey.MAX_CLOSURE: SettingSpec(key=SettingsKey.MAX_CLOSURE, default=100, coerce=_to_int),
+    SettingsKey.VERBOSE_LOGGING: SettingSpec(key=SettingsKey.VERBOSE_LOGGING, default=False, coerce=_to_bool),
+}
+
+# Optional: string-keyed view if consumers prefer plain str keys.
+SETTINGS_SPECS_BY_STR: dict[str, SettingSpec] = {k.value: v for k, v in SETTINGS_SPECS.items()}
+
+
+# Simple, explicit settings structure resolved from options → data → defaults.
+# This provides a lightweight alternative to the descriptor-based Settings above
+# without changing existing callers. Consumers can migrate to this over time.
+@dataclass(frozen=True, slots=True)
+class ResolvedSettings:
+    enabled: bool
+    covers: tuple[str, ...]
+    temperature_sensor: str
+    max_temperature: float
+    min_temperature: float
+    temperature_hysteresis: float
+    min_position_delta: int
+    sun_elevation_threshold: float
+    max_closure: int
+    verbose_logging: bool
+
+    def get(self, key: SettingsKey) -> Any:
+        # Generic access: SettingsKey values match dataclass field names
+        return getattr(self, key.value)
+
+    def as_enum_dict(self) -> dict[SettingsKey, Any]:
+        # Build dict without hard-coded names
+        return {k: getattr(self, k.value) for k in SettingsKey}
+
+
+def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None) -> ResolvedSettings:
+    """Resolve settings from options → data → defaults using SettingsKey.
+
+    Only shallow keys are considered. Performs light normalization (covers → tuple).
     """
+    options = options or {}
+    data = data or {}
 
-    def __getattribute__(cls, name: str):  # type: ignore[override]
-        value = super().__getattribute__(name)
-        # If the attribute is a slot member (field), return a proxy with .key
-        if isinstance(value, MemberDescriptorType):
-            try:
-                dataclass_fields = getattr(cls, "__dataclass_fields__", None)
-                if dataclass_fields and name in dataclass_fields:
-                    return _FieldKeyProxy(key=name)
-            except Exception:
-                # Fall through to normal value if field lookup fails
-                pass
-        return value
+    def _val(key: SettingsKey) -> Any:
+        spec = SETTINGS_SPECS[key]
+        if key.value in options:
+            raw = options[key.value]
+        elif key.value in data:
+            raw = data[key.value]
+        else:
+            raw = spec.default
+        try:
+            return spec.coerce(raw)
+        except Exception:
+            # Fallback safely to default if coercion fails
+            return spec.coerce(spec.default)
+
+    # Build kwargs dynamically by iterating over SettingsKey, applying light coercion
+    values: dict[str, Any] = {k.value: _val(k) for k in SettingsKey}
+
+    return ResolvedSettings(**values)
 
 
-@dataclass(slots=True)
-class Settings(metaclass=_SettingsMeta):
-    """All integration settings; field names are the canonical keys.
+def resolve_entry(entry: Any) -> ResolvedSettings:
+    """Resolve settings directly from a ConfigEntry-like object.
 
-    Usage:
-    - Load: settings = Settings.from_sources(entry.options, entry.data)
-    - Read: max_t: float = settings.max_temperature.current
-    - Save: await entry.async_set_options(settings.to_options())
+    Accepts any object with 'options' and 'data' attributes (works with test mocks).
     """
-
-    # Field names are the keys used in options and data mappings
-    enabled: Setting[bool] = field(default_factory=lambda: Setting(key="enabled", default=True))
-    covers: Setting[tuple[str, ...]] = field(default_factory=lambda: Setting(key="covers", default=()))
-    temperature_sensor: Setting[str] = field(default_factory=lambda: Setting(key="temperature_sensor", default="sensor.temperature"))
-    max_temperature: Setting[float] = field(default_factory=lambda: Setting(key="max_temperature", default=24.0))
-    min_temperature: Setting[float] = field(default_factory=lambda: Setting(key="min_temperature", default=21.0))
-    temperature_hysteresis: Setting[float] = field(default_factory=lambda: Setting(key="temperature_hysteresis", default=0.5))
-    min_position_delta: Setting[int] = field(default_factory=lambda: Setting(key="min_position_delta", default=5))
-    sun_elevation_threshold: Setting[float] = field(default_factory=lambda: Setting(key="sun_elevation_threshold", default=20.0))
-    max_closure: Setting[int] = field(default_factory=lambda: Setting(key="max_closure", default=100))
-    verbose_logging: Setting[bool] = field(default_factory=lambda: Setting(key="verbose_logging", default=False))
-
-    @classmethod
-    def from_sources(cls, options: Mapping[str, Any] | None, data: Mapping[str, Any] | None) -> "Settings":
-        """Build settings by reading options first, then data.
-
-        Only explicit overrides are stored in the Setting.value fields.
-        """
-        options = options or {}
-        data = data or {}
-        inst = cls()
-        for f in fields(cls):
-            key = f.name
-            s: Setting[Any] = getattr(inst, f.name)
-            if key in options:
-                s.value = cls._normalize_value(key, options[key])
-            elif key in data:
-                s.value = cls._normalize_value(key, data[key])
-        return inst
-
-    def to_options(self) -> dict[str, Any]:
-        """Return a dict of explicit overrides suitable for entry.async_set_options.
-
-        Defaults are not persisted; only values explicitly set are included.
-        """
-        out: dict[str, Any] = {}
-        for f in fields(self):
-            key = f.name
-            val = getattr(self, f.name).value
-            if val is not None:
-                out[key] = val
-        return out
-
-    @staticmethod
-    def _normalize_value(key: str, value: Any) -> Any:
-        """Normalize certain values to expected types.
-
-        Keeps keys single-sourced; light coercion for types often serialized.
-        """
-        if key == "covers" and isinstance(value, list):
-            # Persist as tuple for immutability
-            return tuple(value)
-        return value
-
-
-# Mapping helpers to avoid duplicating string literals in tests and callers
-# KEYS maps UPPER_CASE friendly names to the canonical field name strings
-# DEFAULTS maps UPPER_CASE names to the default values defined on Settings
-KEYS: dict[str, str] = {}
-DEFAULTS: dict[str, Any] = {}
-_inst = Settings()
-for _f in fields(Settings):
-    _key = _f.name
-    KEYS[_key.upper()] = _key
-    _setting: Setting[Any] = getattr(_inst, _key)
-    DEFAULTS[_key.upper()] = _setting.default
+    opts = getattr(entry, "options", None) or {}
+    dat = getattr(entry, "data", None) or {}
+    return resolve(opts, dat)

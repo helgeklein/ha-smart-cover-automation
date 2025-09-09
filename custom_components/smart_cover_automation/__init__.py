@@ -16,7 +16,6 @@ from .config_flow import OptionsFlowHandler
 from .const import DOMAIN, LOGGER
 from .coordinator import DataUpdateCoordinator
 from .data import IntegrationData
-from .settings import Settings
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -45,9 +44,7 @@ async def async_setup_entry(
             **dict(entry.data),
             **dict(getattr(entry, "options", {}) or {}),
         }
-        # Build typed settings from options overriding data
-        options = dict(getattr(entry, "options", {}) or {})
-        settings = Settings.from_sources(options, entry.data)
+        # Resolved settings are computed on-demand by consumers; no need to build here
 
         entry.runtime_data = IntegrationData(
             integration=async_get_loaded_integration(hass, entry.domain),
@@ -55,12 +52,7 @@ async def async_setup_entry(
             config=merged_config,
         )
 
-        # Store typed settings separately to keep constructor signature compatible with tests
-        try:
-            entry.runtime_data.settings = settings  # type: ignore[attr-defined]
-        except Exception:
-            # If runtime_data is a MagicMock in tests, attribute set will still work; ignore otherwise
-            pass
+        # No longer store legacy Settings on runtime_data; callers should use resolve_entry/resolve
 
         LOGGER.debug("Starting initial coordinator refresh")
         # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities

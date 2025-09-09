@@ -23,7 +23,8 @@
             "invalid_config": "Invalid configuration provided"
         },
         "abort": {
-            "already_configured": "These covers are already configured in another automation"
+            "already_configured": "These covers are already configured in another automation",
+            "single_instance_allowed": "Only one instance of this integration can be configured"
         }
     },
     "options": {

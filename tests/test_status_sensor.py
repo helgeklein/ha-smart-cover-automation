@@ -14,7 +14,7 @@ from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.sensor import (
     async_setup_entry as async_setup_entry_sensor,
 )
-from custom_components.smart_cover_automation.settings import KEYS
+from custom_components.smart_cover_automation.settings import SettingsKey
 
 from .conftest import MockConfigEntry, create_sun_config, create_temperature_config
 
@@ -50,9 +50,9 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
     # Add tuning/options to config
-    config[KEYS["TEMPERATURE_SENSOR"]] = "sensor.temperature"
-    config[KEYS["TEMPERATURE_HYSTERESIS"]] = 0.7
-    config[KEYS["MIN_POSITION_DELTA"]] = 10
+    config[SettingsKey.TEMPERATURE_SENSOR.value] = "sensor.temperature"
+    config[SettingsKey.TEMPERATURE_HYSTERESIS.value] = 0.7
+    config[SettingsKey.MIN_POSITION_DELTA.value] = 10
 
     entities = await _capture_entities(hass, config)
     status = _get_status_entity(entities)
@@ -64,15 +64,15 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
         "covers": {
             "cover.one": {
                 "current_temp": 22.5,
-                "min_temp": config[KEYS["MIN_TEMPERATURE"]],
-                "max_temp": config[KEYS["MAX_TEMPERATURE"]],
+                "min_temp": config[SettingsKey.MIN_TEMPERATURE.value],
+                "max_temp": config[SettingsKey.MAX_TEMPERATURE.value],
                 "current_position": 50,
                 "desired_position": 40,  # movement
             },
             "cover.two": {
                 "current_temp": 22.5,
-                "min_temp": config[KEYS["MIN_TEMPERATURE"]],
-                "max_temp": config[KEYS["MAX_TEMPERATURE"]],
+                "min_temp": config[SettingsKey.MIN_TEMPERATURE.value],
+                "max_temp": config[SettingsKey.MAX_TEMPERATURE.value],
                 "current_position": 100,
                 "desired_position": 100,  # no movement
             },
@@ -94,8 +94,8 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     assert attrs["temp_hysteresis"] == 0.7
     assert attrs["min_position_delta"] == 10
     assert attrs["temperature_sensor"] == "sensor.temperature"
-    assert attrs["min_temp"] == config[KEYS["MIN_TEMPERATURE"]]
-    assert attrs["max_temp"] == config[KEYS["MAX_TEMPERATURE"]]
+    assert attrs["min_temp"] == config[SettingsKey.MIN_TEMPERATURE.value]
+    assert attrs["max_temp"] == config[SettingsKey.MAX_TEMPERATURE.value]
     assert attrs["current_temp"] == 22.5
     assert isinstance(attrs["covers"], dict)
 
@@ -115,14 +115,14 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
             "cover.one": {
                 "sun_elevation": 35.0,
                 "sun_azimuth": 180.0,
-                "elevation_threshold": config[KEYS["SUN_ELEVATION_THRESHOLD"]],
+                "elevation_threshold": config[SettingsKey.SUN_ELEVATION_THRESHOLD.value],
                 "current_position": 100,
                 "desired_position": 80,
             },
             "cover.two": {
                 "sun_elevation": 35.0,
                 "sun_azimuth": 180.0,
-                "elevation_threshold": config[KEYS["SUN_ELEVATION_THRESHOLD"]],
+                "elevation_threshold": config[SettingsKey.SUN_ELEVATION_THRESHOLD.value],
                 "current_position": 100,
                 "desired_position": 100,
             },
@@ -143,7 +143,7 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     assert attrs["covers_moved"] == 1
     assert attrs["sun_elevation"] == 35.0
     assert attrs["sun_azimuth"] == 180.0
-    assert attrs["elevation_threshold"] == config[KEYS["SUN_ELEVATION_THRESHOLD"]]
+    assert attrs["elevation_threshold"] == config[SettingsKey.SUN_ELEVATION_THRESHOLD.value]
     assert isinstance(attrs["covers"], dict)
 
 
@@ -152,7 +152,7 @@ async def test_status_sensor_disabled() -> None:
     """When globally disabled, summary is 'Disabled'."""
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
-    config[KEYS["ENABLED"]] = False
+    config[SettingsKey.ENABLED.value] = False
 
     entities = await _capture_entities(hass, config)
     status = _get_status_entity(entities)

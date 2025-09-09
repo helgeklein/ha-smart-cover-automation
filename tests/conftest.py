@@ -10,7 +10,7 @@ from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.const import DOMAIN
-from custom_components.smart_cover_automation.settings import DEFAULTS, KEYS
+from custom_components.smart_cover_automation.settings import SETTINGS_SPECS, SettingsKey
 
 # Test data
 MOCK_COVER_ENTITY_ID = "cover.test_cover"
@@ -50,9 +50,9 @@ def mock_config_entry() -> MagicMock:
     entry.domain = DOMAIN
     entry.entry_id = "test_entry_id"
     entry.data = {
-        KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-        KEYS["MAX_TEMPERATURE"]: DEFAULTS["MAX_TEMPERATURE"],
-        KEYS["MIN_TEMPERATURE"]: DEFAULTS["MIN_TEMPERATURE"],
+        SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+        SettingsKey.MAX_TEMPERATURE.value: SETTINGS_SPECS[SettingsKey.MAX_TEMPERATURE].default,
+        SettingsKey.MIN_TEMPERATURE.value: SETTINGS_SPECS[SettingsKey.MIN_TEMPERATURE].default,
     }
     entry.runtime_data = MagicMock()
     entry.runtime_data.config = entry.data
@@ -66,8 +66,8 @@ def mock_config_entry_sun() -> MagicMock:
     entry.domain = DOMAIN
     entry.entry_id = "test_entry_id_sun"
     entry.data = {
-        KEYS["COVERS"]: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-        KEYS["SUN_ELEVATION_THRESHOLD"]: DEFAULTS["SUN_ELEVATION_THRESHOLD"],
+        SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+        SettingsKey.SUN_ELEVATION_THRESHOLD.value: SETTINGS_SPECS[SettingsKey.SUN_ELEVATION_THRESHOLD].default,
         # Use numeric azimuths (degrees) for directions
         f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
         f"{MOCK_COVER_ENTITY_ID_2}_cover_direction": 0.0,
@@ -151,28 +151,28 @@ class MockConfigEntry:
 
 def create_temperature_config(
     covers: list[str] | None = None,
-    max_temp: float = DEFAULTS["MAX_TEMPERATURE"],
-    min_temp: float = DEFAULTS["MIN_TEMPERATURE"],
+    max_temp: float = SETTINGS_SPECS[SettingsKey.MAX_TEMPERATURE].default,
+    min_temp: float = SETTINGS_SPECS[SettingsKey.MIN_TEMPERATURE].default,
 ) -> dict[str, Any]:
     """Create temperature automation config."""
     return {
-        KEYS["COVERS"]: covers or [MOCK_COVER_ENTITY_ID],
-        KEYS["MAX_TEMPERATURE"]: max_temp,
-        KEYS["MIN_TEMPERATURE"]: min_temp,
+        SettingsKey.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
+        SettingsKey.MAX_TEMPERATURE.value: max_temp,
+        SettingsKey.MIN_TEMPERATURE.value: min_temp,
     }
 
 
 def create_sun_config(
     covers: list[str] | None = None,
-    threshold: float = DEFAULTS["SUN_ELEVATION_THRESHOLD"],
+    threshold: float = SETTINGS_SPECS[SettingsKey.SUN_ELEVATION_THRESHOLD].default,
 ) -> dict[str, Any]:
     """Create sun automation config."""
     config = {
-        KEYS["COVERS"]: covers or [MOCK_COVER_ENTITY_ID],
-        KEYS["SUN_ELEVATION_THRESHOLD"]: threshold,
+        SettingsKey.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
+        SettingsKey.SUN_ELEVATION_THRESHOLD.value: threshold,
     }
     # Add directions for each cover
-    for cover in config[KEYS["COVERS"]]:
+    for cover in config[SettingsKey.COVERS.value]:
         # Default to south-facing (180°) as numeric azimuth
         config[f"{cover}_cover_direction"] = 180.0
     return config
