@@ -15,8 +15,8 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 
+from .config import ConfKeys, ResolvedConfig, resolve_entry
 from .entity import IntegrationEntity
-from .settings import ResolvedSettings, resolve_entry
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -109,7 +109,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         return super().available
 
     def _first_cover_value(self, key: str) -> Any | None:
-        covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
+        covers: dict[str, dict[str, Any]] = self.coordinator.data.get(ConfKeys.COVERS.value) or {}
         for data in covers.values():
             if key in data:
                 return data.get(key)
@@ -117,10 +117,10 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
 
     @cached_property
     def native_value(self) -> str | None:  # type: ignore[override]
-        resolved: ResolvedSettings = resolve_entry(self.coordinator.config_entry)
+        resolved: ResolvedConfig = resolve_entry(self.coordinator.config_entry)
         if not bool(resolved.enabled):
             return "Disabled"
-        covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
+        covers: dict[str, dict[str, Any]] = self.coordinator.data.get(ConfKeys.COVERS.value) or {}
         total = len(covers)
         moved = sum(
             1 for d in covers.values() if d.get("desired_position") is not None and d.get("current_position") != d.get("desired_position")
@@ -148,8 +148,8 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:  # type: ignore[override]
-        resolved: ResolvedSettings = resolve_entry(self.coordinator.config_entry)
-        covers: dict[str, dict[str, Any]] = self.coordinator.data.get("covers") or {}
+        resolved: ResolvedConfig = resolve_entry(self.coordinator.config_entry)
+        covers: dict[str, dict[str, Any]] = self.coordinator.data.get(ConfKeys.COVERS.value) or {}
 
         enabled = bool(resolved.enabled)
         temp_hyst = float(resolved.temperature_hysteresis)
@@ -178,10 +178,10 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
                 "sun_elevation": self._first_cover_value("sun_elevation"),
                 "sun_azimuth": self._first_cover_value("sun_azimuth"),
                 "elevation_threshold": resolved.sun_elevation_threshold,
-                "max_closure": int(float(resolved.max_closure)),
+                ConfKeys.MAX_CLOSURE.value: int(float(resolved.max_closure)),
             }
         )
 
         # Include per-cover snapshots for debugging/visibility
-        attrs["covers"] = covers
+        attrs[ConfKeys.COVERS.value] = covers
         return attrs

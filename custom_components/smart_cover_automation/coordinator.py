@@ -17,7 +17,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator as Ba
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from . import const
-from .settings import SETTINGS_SPECS, ResolvedSettings, SettingsKey, resolve_entry
+from .config import CONF_SPECS, ConfKeys, ResolvedConfig, resolve_entry
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, State
@@ -113,7 +113,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         except Exception:  # pragma: no cover - non-critical
             pass
 
-    def _resolved_settings(self) -> ResolvedSettings:
+    def _resolved_settings(self) -> ResolvedConfig:
         """Return resolved settings from the config entry (options over data)."""
         return resolve_entry(self.config_entry)
 
@@ -137,7 +137,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             enabled = bool(resolved.enabled)
             if not enabled:
                 const.LOGGER.info("Automation disabled via configuration; skipping actions")
-                return {"covers": {}}
+                return {ConfKeys.COVERS.value: {}}
 
             # Collect states for all configured covers
             states: dict[str, State | None] = {entity_id: self.hass.states.get(entity_id) for entity_id in covers}
@@ -184,24 +184,24 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         config: dict[str, Any],
     ) -> dict[str, Any]:
         """Handle combined temperature and sun automation."""
-        result: dict[str, Any] = {"covers": {}}
+        result: dict[str, Any] = {ConfKeys.COVERS.value: {}}
 
         resolved = self._resolved_settings()
 
         # Determine which contributors are configured based on raw config presence
-        # Defaults exist in ResolvedSettings, but we only enable a contributor
+        # Defaults exist in ResolvedConfig, but we only enable a contributor
         # when the user actually provided related keys in their config/options.
         temp_enabled = any(
             key in config
             for key in (
-                SettingsKey.TEMPERATURE_SENSOR.value,
-                SettingsKey.MIN_TEMPERATURE.value,
-                SettingsKey.MAX_TEMPERATURE.value,
-                SettingsKey.TEMPERATURE_HYSTERESIS.value,
+                ConfKeys.TEMPERATURE_SENSOR.value,
+                ConfKeys.MIN_TEMPERATURE.value,
+                ConfKeys.MAX_TEMPERATURE.value,
+                ConfKeys.TEMPERATURE_HYSTERESIS.value,
             )
         )
-        sun_enabled = SettingsKey.SUN_ELEVATION_THRESHOLD.value in config or any(
-            f"{entity_id}_{'cover_direction'}" in config for entity_id in states.keys()
+        sun_enabled = ConfKeys.SUN_ELEVATION_THRESHOLD.value in config or any(
+            f"{entity_id}_{const.COVER_AZIMUTH}" in config for entity_id in states.keys()
         )
 
         # Temperature input
@@ -291,7 +291,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Sun contribution
             if sun_enabled and sun_available and elevation is not None and azimuth is not None:
                 # Per-cover direction remains dynamic and stored in config by entity_id
-                direction = config.get(f"{entity_id}_{'cover_direction'}")
+                direction = config.get(f"{entity_id}_{const.COVER_AZIMUTH}")
                 direction_azimuth: float | None = None
                 if isinstance(direction, (int, float)):
                     try:
@@ -379,12 +379,12 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     "current_position": current_pos,
                     "desired_position": combined_desired,
                     "min_position_delta": min_position_delta,
-                    "max_closure": int(float(resolved.max_closure)),
+                    ConfKeys.MAX_CLOSURE.value: int(float(resolved.max_closure)),
                     "combined_strategy": "and",
                 }
             )
 
-            result["covers"][entity_id] = details
+            result[ConfKeys.COVERS.value][entity_id] = details
 
         return result
 
@@ -401,7 +401,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         try:
             max_closure = int(float(resolved.max_closure))
         except (TypeError, ValueError):
-            max_closure = int(SETTINGS_SPECS[SettingsKey.MAX_CLOSURE].default)
+            max_closure = int(CONF_SPECS[ConfKeys.MAX_CLOSURE].default)
 
         if elevation < threshold:
             # Sun is low, open covers

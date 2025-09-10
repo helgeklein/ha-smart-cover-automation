@@ -9,8 +9,8 @@ import pytest
 from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.core import HomeAssistant
 
+from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.const import DOMAIN
-from custom_components.smart_cover_automation.settings import SETTINGS_SPECS, SettingsKey
 
 # Test data
 MOCK_COVER_ENTITY_ID = "cover.test_cover"
@@ -50,9 +50,9 @@ def mock_config_entry() -> MagicMock:
     entry.domain = DOMAIN
     entry.entry_id = "test_entry_id"
     entry.data = {
-        SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-        SettingsKey.MAX_TEMPERATURE.value: SETTINGS_SPECS[SettingsKey.MAX_TEMPERATURE].default,
-        SettingsKey.MIN_TEMPERATURE.value: SETTINGS_SPECS[SettingsKey.MIN_TEMPERATURE].default,
+        ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+        ConfKeys.MAX_TEMPERATURE.value: CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
+        ConfKeys.MIN_TEMPERATURE.value: CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
     }
     entry.runtime_data = MagicMock()
     entry.runtime_data.config = entry.data
@@ -66,11 +66,11 @@ def mock_config_entry_sun() -> MagicMock:
     entry.domain = DOMAIN
     entry.entry_id = "test_entry_id_sun"
     entry.data = {
-        SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-        SettingsKey.SUN_ELEVATION_THRESHOLD.value: SETTINGS_SPECS[SettingsKey.SUN_ELEVATION_THRESHOLD].default,
+        ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+        ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
         # Use numeric azimuths (degrees) for directions
-        f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
-        f"{MOCK_COVER_ENTITY_ID_2}_cover_direction": 0.0,
+        f"{MOCK_COVER_ENTITY_ID}_cover_azimuth": 180.0,
+        f"{MOCK_COVER_ENTITY_ID_2}_cover_azimuth": 0.0,
     }
     entry.runtime_data = MagicMock()
     entry.runtime_data.config = entry.data
@@ -151,30 +151,30 @@ class MockConfigEntry:
 
 def create_temperature_config(
     covers: list[str] | None = None,
-    max_temp: float = SETTINGS_SPECS[SettingsKey.MAX_TEMPERATURE].default,
-    min_temp: float = SETTINGS_SPECS[SettingsKey.MIN_TEMPERATURE].default,
+    max_temp: float = CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
+    min_temp: float = CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
 ) -> dict[str, Any]:
     """Create temperature automation config."""
     return {
-        SettingsKey.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
-        SettingsKey.MAX_TEMPERATURE.value: max_temp,
-        SettingsKey.MIN_TEMPERATURE.value: min_temp,
+        ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
+        ConfKeys.MAX_TEMPERATURE.value: max_temp,
+        ConfKeys.MIN_TEMPERATURE.value: min_temp,
     }
 
 
 def create_sun_config(
     covers: list[str] | None = None,
-    threshold: float = SETTINGS_SPECS[SettingsKey.SUN_ELEVATION_THRESHOLD].default,
+    threshold: float = CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
 ) -> dict[str, Any]:
     """Create sun automation config."""
     config = {
-        SettingsKey.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
-        SettingsKey.SUN_ELEVATION_THRESHOLD.value: threshold,
+        ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
+        ConfKeys.SUN_ELEVATION_THRESHOLD.value: threshold,
     }
     # Add directions for each cover
-    for cover in config[SettingsKey.COVERS.value]:
+    for cover in config[ConfKeys.COVERS.value]:
         # Default to south-facing (180°) as numeric azimuth
-        config[f"{cover}_cover_direction"] = 180.0
+        config[f"{cover}_cover_azimuth"] = 180.0
     return config
 
 

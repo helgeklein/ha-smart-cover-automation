@@ -4,26 +4,24 @@ from types import SimpleNamespace
 
 import pytest
 
-from custom_components.smart_cover_automation.settings import (
-    SETTINGS_SPECS,
-    SETTINGS_SPECS_BY_STR,
-    ResolvedSettings,
-    SettingsKey,
+from custom_components.smart_cover_automation.config import (
+    CONF_SPECS,
+    ConfKeys,
+    ResolvedConfig,
     resolve,
     resolve_entry,
 )
 
 
 def test_keys_and_defaults_registry_complete():
-    # SETTINGS_SPECS contains all enum members and mirrors string view
-    assert set(SETTINGS_SPECS.keys()) == set(SettingsKey)
-    for key in SettingsKey:
-        assert SETTINGS_SPECS_BY_STR[key.value] is SETTINGS_SPECS[key]
+    # CONF_SPECS contains all enum members and mirrors string view
+    assert set(CONF_SPECS.keys()) == set(ConfKeys)
+    assert all(isinstance(key.value, str) for key in CONF_SPECS.keys())
 
 
 def test_list_covers_normalized_via_resolve():
     # covers provided as a list should be normalized to a tuple by resolve()
-    options = {"covers": ["cover.a", "cover.b"]}
+    options = {ConfKeys.COVERS.value: ["cover.a", "cover.b"]}
     rs = resolve(options, data=None)
     assert isinstance(rs.covers, tuple)
     assert rs.covers == ("cover.a", "cover.b")
@@ -32,15 +30,15 @@ def test_list_covers_normalized_via_resolve():
 def test_resolve_priority_and_coercion_with_defaults_fallback():
     # options take priority over data
     data = {
-        "max_temperature": "18.5",  # will coerce to float 18.5 if chosen
-        "enabled": 0,  # bool(0) -> False
+        ConfKeys.MAX_TEMPERATURE.value: "18.5",  # will coerce to float 18.5 if chosen
+        ConfKeys.ENABLED.value: 0,  # bool(0) -> False
     }
     options = {
-        "max_temperature": "20.0",  # chosen over data
-        "min_position_delta": "not-an-int",  # coercion fails -> default 5
+        ConfKeys.MAX_TEMPERATURE.value: "20.0",  # chosen over data
+        ConfKeys.MIN_POSITION_DELTA.value: "not-an-int",  # coercion fails -> default 5
     }
 
-    rs: ResolvedSettings = resolve(options, data)
+    rs: ResolvedConfig = resolve(options, data)
 
     # Priority: options over data
     assert rs.max_temperature == 20.0
@@ -62,41 +60,41 @@ def test_resolve_priority_and_coercion_with_defaults_fallback():
     ],
 )
 def test_resolve_covers_common_shapes(covers_input, expected):
-    rs = resolve({"covers": covers_input}, {})
+    rs = resolve({ConfKeys.COVERS.value: covers_input}, {})
     assert rs.covers == expected
 
 
 def test_resolve_covers_string_and_non_iterable_behaviors():
     # String input is treated as an iterable of characters (back-compat behavior)
-    rs = resolve({"covers": "cover.window"}, {})
+    rs = resolve({ConfKeys.COVERS.value: "cover.window"}, {})
     assert rs.covers == tuple("cover.window")
 
     # Non-iterable input results in an empty tuple via safe fallback
     class NotIterable:
         pass
 
-    rs2 = resolve({"covers": NotIterable()}, {})
+    rs2 = resolve({ConfKeys.COVERS.value: NotIterable()}, {})
     assert rs2.covers == ()
 
 
 def test_resolved_settings_accessors():
     rs = resolve(
         {
-            "enabled": True,
-            "max_temperature": 30,
+            ConfKeys.ENABLED.value: True,
+            ConfKeys.MAX_TEMPERATURE.value: 30,
         },
         {},
     )
 
     # get() reads by enum; as_enum_dict returns mapping by enum
-    assert rs.get(SettingsKey.MAX_TEMPERATURE) == 30.0
+    assert rs.get(ConfKeys.MAX_TEMPERATURE) == 30.0
     enum_dict = rs.as_enum_dict()
-    assert set(enum_dict.keys()) == set(SettingsKey)
-    assert enum_dict[SettingsKey.ENABLED] is True
+    assert set(enum_dict.keys()) == set(ConfKeys)
+    assert enum_dict[ConfKeys.ENABLED] is True
 
 
 def test_resolve_entry_reads_from_attributes():
-    entry = SimpleNamespace(options={"enabled": False}, data={"max_temperature": 22})
+    entry = SimpleNamespace(options={ConfKeys.ENABLED.value: False}, data={ConfKeys.MAX_TEMPERATURE.value: 22})
     rs = resolve_entry(entry)
     assert rs.enabled is False
     assert rs.max_temperature == 22.0
@@ -104,5 +102,5 @@ def test_resolve_entry_reads_from_attributes():
 
 def test_enum_members_values_are_canonical():
     # Ensure enum values match expected string keys used in config
-    assert SettingsKey.ENABLED.value == "enabled"
-    assert SettingsKey.MAX_TEMPERATURE.value == "max_temperature"
+    assert ConfKeys.ENABLED.value == "enabled"
+    assert ConfKeys.MAX_TEMPERATURE.value == "max_temperature"

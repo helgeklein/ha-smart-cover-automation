@@ -9,12 +9,12 @@ import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
+from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.sensor import (
     async_setup_entry as async_setup_entry_sensor,
 )
-from custom_components.smart_cover_automation.settings import SettingsKey
 
 from .conftest import MockConfigEntry, create_sun_config, create_temperature_config
 
@@ -50,9 +50,9 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
     # Add tuning/options to config
-    config[SettingsKey.TEMPERATURE_SENSOR.value] = "sensor.temperature"
-    config[SettingsKey.TEMPERATURE_HYSTERESIS.value] = 0.7
-    config[SettingsKey.MIN_POSITION_DELTA.value] = 10
+    config[ConfKeys.TEMPERATURE_SENSOR.value] = "sensor.temperature"
+    config[ConfKeys.TEMPERATURE_HYSTERESIS.value] = 0.7
+    config[ConfKeys.MIN_POSITION_DELTA.value] = 10
 
     entities = await _capture_entities(hass, config)
     status = _get_status_entity(entities)
@@ -61,18 +61,18 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
     # Combined is the only mode; no automation_type key is used anymore.
     coordinator.data = {
-        "covers": {
+        ConfKeys.COVERS.value: {
             "cover.one": {
                 "current_temp": 22.5,
-                "min_temp": config[SettingsKey.MIN_TEMPERATURE.value],
-                "max_temp": config[SettingsKey.MAX_TEMPERATURE.value],
+                "min_temp": config[ConfKeys.MIN_TEMPERATURE.value],
+                "max_temp": config[ConfKeys.MAX_TEMPERATURE.value],
                 "current_position": 50,
                 "desired_position": 40,  # movement
             },
             "cover.two": {
                 "current_temp": 22.5,
-                "min_temp": config[SettingsKey.MIN_TEMPERATURE.value],
-                "max_temp": config[SettingsKey.MAX_TEMPERATURE.value],
+                "min_temp": config[ConfKeys.MIN_TEMPERATURE.value],
+                "max_temp": config[ConfKeys.MAX_TEMPERATURE.value],
                 "current_position": 100,
                 "desired_position": 100,  # no movement
             },
@@ -94,10 +94,10 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     assert attrs["temp_hysteresis"] == 0.7
     assert attrs["min_position_delta"] == 10
     assert attrs["temperature_sensor"] == "sensor.temperature"
-    assert attrs["min_temp"] == config[SettingsKey.MIN_TEMPERATURE.value]
-    assert attrs["max_temp"] == config[SettingsKey.MAX_TEMPERATURE.value]
+    assert attrs["min_temp"] == config[ConfKeys.MIN_TEMPERATURE.value]
+    assert attrs["max_temp"] == config[ConfKeys.MAX_TEMPERATURE.value]
     assert attrs["current_temp"] == 22.5
-    assert isinstance(attrs["covers"], dict)
+    assert isinstance(attrs[ConfKeys.COVERS.value], dict)
 
 
 @pytest.mark.asyncio
@@ -111,18 +111,18 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
     # Combined-only, no automation_type in config
     coordinator.data = {
-        "covers": {
+        ConfKeys.COVERS.value: {
             "cover.one": {
                 "sun_elevation": 35.0,
                 "sun_azimuth": 180.0,
-                "elevation_threshold": config[SettingsKey.SUN_ELEVATION_THRESHOLD.value],
+                "elevation_threshold": config[ConfKeys.SUN_ELEVATION_THRESHOLD.value],
                 "current_position": 100,
                 "desired_position": 80,
             },
             "cover.two": {
                 "sun_elevation": 35.0,
                 "sun_azimuth": 180.0,
-                "elevation_threshold": config[SettingsKey.SUN_ELEVATION_THRESHOLD.value],
+                "elevation_threshold": config[ConfKeys.SUN_ELEVATION_THRESHOLD.value],
                 "current_position": 100,
                 "desired_position": 100,
             },
@@ -143,8 +143,8 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     assert attrs["covers_moved"] == 1
     assert attrs["sun_elevation"] == 35.0
     assert attrs["sun_azimuth"] == 180.0
-    assert attrs["elevation_threshold"] == config[SettingsKey.SUN_ELEVATION_THRESHOLD.value]
-    assert isinstance(attrs["covers"], dict)
+    assert attrs["elevation_threshold"] == config[ConfKeys.SUN_ELEVATION_THRESHOLD.value]
+    assert isinstance(attrs[ConfKeys.COVERS.value], dict)
 
 
 @pytest.mark.asyncio
@@ -152,13 +152,13 @@ async def test_status_sensor_disabled() -> None:
     """When globally disabled, summary is 'Disabled'."""
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
-    config[SettingsKey.ENABLED.value] = False
+    config[ConfKeys.ENABLED.value] = False
 
     entities = await _capture_entities(hass, config)
     status = _get_status_entity(entities)
 
     # Even with dummy data, 'enabled' False should short-circuit
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
-    coordinator.data = {"covers": {}}
+    coordinator.data = {ConfKeys.COVERS.value: {}}
     val = cast(str, getattr(status, "native_value"))
     assert val == "Disabled"

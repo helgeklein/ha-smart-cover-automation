@@ -8,9 +8,9 @@ from unittest.mock import MagicMock
 import pytest
 from homeassistant.components.cover import CoverEntityFeature
 
+from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-from custom_components.smart_cover_automation.settings import SettingsKey
 
 from .conftest import (
     MOCK_COVER_ENTITY_ID,
@@ -28,12 +28,12 @@ async def test_automation_disabled_skips_actions(
 ) -> None:
     """When enabled is False, coordinator returns empty covers and takes no action."""
     config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID])
-    config[SettingsKey.ENABLED.value] = False
+    config[ConfKeys.ENABLED.value] = False
     config_entry = MockConfigEntry(config)
     coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
     await coordinator.async_refresh()
-    assert coordinator.data == {"covers": {}}
+    assert coordinator.data == {ConfKeys.COVERS.value: {}}
     mock_hass.services.async_call.assert_not_called()
 
 
@@ -74,8 +74,8 @@ async def test_min_position_delta_skips_small_adjustments(
     """Small desired change below min_position_delta should be skipped (pass branch)."""
     # Sun-only config with very small max closure to produce desired=95 from 100
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
-    config[SettingsKey.MIN_POSITION_DELTA.value] = 10  # require >=10 change
-    config["max_closure"] = 5  # desired position = 100 - 5 = 95
+    config[ConfKeys.MIN_POSITION_DELTA.value] = 10  # require >=10 change
+    config[ConfKeys.MAX_CLOSURE.value] = 5  # desired position = 100 - 5 = 95
     config_entry = MockConfigEntry(config)
     coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -97,6 +97,6 @@ async def test_min_position_delta_skips_small_adjustments(
 
     await coordinator.async_refresh()
     result = coordinator.data
-    assert result["covers"][MOCK_COVER_ENTITY_ID]["desired_position"] == 95
+    assert result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]["desired_position"] == 95
     # Movement from 100 to 95 is below min_position_delta -> no service called
     mock_hass.services.async_call.assert_not_called()

@@ -113,13 +113,6 @@ An additional sensor named `Automation Status` summarizes the current combined i
 - Combined: `Temp 22.5°C in [21.0–24.0] • Sun elev 35.0°, az 180° • moves 1/2`
 - Disabled: `Disabled`
 
-Attributes include:
-
-- `enabled`, `covers_total`, `covers_moved`, `combined_strategy`
-- `min_temperature`, `max_temperature`, `temperature_hysteresis`, `min_position_delta`
-- `sun_elevation_threshold`, sun elevation/azimuth
-- A per-cover snapshot of inputs and desired/current positions for visibility
-
 ## Usage
 
 1. Install and add the integration

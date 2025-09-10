@@ -7,6 +7,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from custom_components.smart_cover_automation.config import (
+    ConfKeys,
+)
 from custom_components.smart_cover_automation.coordinator import (
     ConfigurationError,
     DataUpdateCoordinator,
@@ -76,9 +79,9 @@ class TestIntegrationScenarios:
 
                 # Verify result structure
                 assert result is not None, f"Result is None in cycle {i}"
-                assert "covers" in result, f"Invalid result structure in cycle {i}"
+                assert ConfKeys.COVERS.value in result, f"Invalid result structure in cycle {i}"
 
-                cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+                cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
                 assert cover_data["desired_position"] == expected_pos, (
                     f"Cycle {i}: Expected position {expected_pos}, got {cover_data['desired_position']}"
                 )
@@ -126,9 +129,9 @@ class TestIntegrationScenarios:
             result = coordinator.data
 
             assert result is not None, "Result is None"
-            assert "covers" in result, f"Invalid result for sun position {elevation}°, {azimuth}°"
+            assert ConfKeys.COVERS.value in result, f"Invalid result for sun position {elevation}°, {azimuth}°"
 
-            cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+            cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
 
             # Verify logical sun behavior
             if elevation < LOW_SUN_ELEVATION:  # Low sun
@@ -190,7 +193,7 @@ class TestIntegrationScenarios:
         await coordinator.async_refresh()
         result = coordinator.data
         assert result is not None, "Automation should continue despite service failure"
-        assert "covers" in result, "Automation should continue despite service failure"
+        assert ConfKeys.COVERS.value in result, "Automation should continue despite service failure"
 
     async def test_configuration_validation(self) -> None:
         """Test configuration validation scenarios."""
@@ -198,7 +201,7 @@ class TestIntegrationScenarios:
 
         # Test empty covers list
         config = create_temperature_config()
-        config["covers"] = []
+        config[ConfKeys.COVERS.value] = []
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -211,7 +214,7 @@ class TestIntegrationScenarios:
         """Test controlling multiple covers simultaneously."""
         hass = MagicMock()
         config = create_temperature_config()
-        config["covers"] = ["cover.living_room", "cover.bedroom", "cover.kitchen"]
+        config[ConfKeys.COVERS.value] = ["cover.living_room", "cover.bedroom", "cover.kitchen"]
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -222,7 +225,7 @@ class TestIntegrationScenarios:
 
         # Create different cover states
         cover_states = {}
-        for i, cover_id in enumerate(config["covers"]):
+        for i, cover_id in enumerate(config[ConfKeys.COVERS.value]):
             cover_state = MagicMock()
             cover_state.attributes = {
                 "current_position": 100 - (i * 20),  # Different positions
@@ -242,11 +245,13 @@ class TestIntegrationScenarios:
         result = coordinator.data
 
         # Verify all covers were processed
-        assert len(result["covers"]) == NUM_COVERS, f"Expected {NUM_COVERS} covers, got {len(result['covers'])}"
+        assert len(result[ConfKeys.COVERS.value]) == NUM_COVERS, f"Expected {NUM_COVERS} covers, got {len(result['covers'])}"
 
         # Verify all covers should close (position 0) due to hot temperature
-        for cover_id in config["covers"]:
-            assert result["covers"][cover_id]["desired_position"] == COVER_CLOSED, f"Cover {cover_id} should close in hot weather"
+        for cover_id in config[ConfKeys.COVERS.value]:
+            assert result[ConfKeys.COVERS.value][cover_id]["desired_position"] == COVER_CLOSED, (
+                f"Cover {cover_id} should close in hot weather"
+            )
 
         # Verify service calls were made for covers that needed to move
         call_count = hass.services.async_call.call_count
@@ -256,7 +261,7 @@ class TestIntegrationScenarios:
         """Test handling covers with different capabilities."""
         hass = MagicMock()
         config = create_temperature_config()
-        config["covers"] = ["cover.smart", "cover.basic"]
+        config[ConfKeys.COVERS.value] = ["cover.smart", "cover.basic"]
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 

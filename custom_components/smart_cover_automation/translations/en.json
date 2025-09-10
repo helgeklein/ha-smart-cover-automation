@@ -10,7 +10,7 @@
                     "max_temperature": "Maximum temperature (when to close covers)",
                     "min_temperature": "Minimum temperature (when to open covers)",
                     "sun_elevation_threshold": "Sun elevation threshold (degrees)",
-                    "cover_direction": "Window azimuth (degrees)"
+                    "cover_azimuth": "Window azimuth (degrees)"
                 }
             }
         },

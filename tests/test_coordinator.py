@@ -9,6 +9,7 @@ import pytest
 from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
+from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.coordinator import (
     ConfigurationError,
     DataUpdateCoordinator,
@@ -18,7 +19,6 @@ from custom_components.smart_cover_automation.coordinator import (
     ServiceCallError,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-from custom_components.smart_cover_automation.settings import SettingsKey
 
 from .conftest import (
     MOCK_COVER_ENTITY_ID,
@@ -94,8 +94,8 @@ class TestDataUpdateCoordinator:
 
         # Verify
         assert result is not None
-        assert MOCK_COVER_ENTITY_ID in result["covers"]
-        cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["current_temp"] == float(HOT_TEMP)
         assert cover_data["desired_position"] == CLOSED_POSITION  # Should close
 
@@ -131,7 +131,7 @@ class TestDataUpdateCoordinator:
         result = coordinator.data
 
         # Verify
-        cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["current_temp"] == float(COLD_TEMP)
         assert cover_data["desired_position"] == OPEN_POSITION  # Should open
 
@@ -167,7 +167,7 @@ class TestDataUpdateCoordinator:
         result = coordinator.data
 
         # Verify
-        cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["current_temp"] == float(COMFORTABLE_TEMP)
         assert cover_data["desired_position"] == PARTIAL_POSITION  # Should maintain
 
@@ -234,7 +234,7 @@ class TestDataUpdateCoordinator:
         result = sun_coordinator.data
 
         # Verify
-        cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["sun_elevation"] == HIGH_ELEVATION
         assert cover_data["sun_azimuth"] == DIRECT_AZIMUTH
         assert cover_data["desired_position"] == CLOSED_TILT_POSITION  # Should close fully by default
@@ -247,7 +247,7 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Direct sun should use configured max_closure instead of default."""
         config = create_sun_config()
-        config["max_closure"] = 60  # cap direct hit to 60%
+        config[ConfKeys.MAX_CLOSURE.value] = 60  # cap direct hit to 60%
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -264,7 +264,7 @@ class TestDataUpdateCoordinator:
 
         await coordinator.async_refresh()
         result = coordinator.data
-        cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         # With max_closure=60 and direct hit, desired = 100 - 60 = 40
         assert cover_data["desired_position"] == 40
 
@@ -294,7 +294,7 @@ class TestDataUpdateCoordinator:
         result = sun_coordinator.data
 
         # Verify
-        cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == OPEN_POSITION  # Should open fully
 
     async def test_sun_automation_not_hitting_window_above_threshold(
@@ -324,7 +324,7 @@ class TestDataUpdateCoordinator:
 
         await coordinator.async_refresh()
         result = coordinator.data
-        cover_data = result["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == OPEN_POSITION
         # angle_difference should be computed when elevation >= threshold
         assert cover_data["angle_difference"] is not None
@@ -389,8 +389,8 @@ class TestDataUpdateCoordinator:
         await coordinator.async_refresh()
         result = coordinator.data
         # Only first cover should appear
-        assert MOCK_COVER_ENTITY_ID in result["covers"]
-        assert MOCK_COVER_ENTITY_ID_2 not in result["covers"]
+        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
 
     async def test_cover_unavailable(
         self,
@@ -434,7 +434,7 @@ class TestDataUpdateCoordinator:
 
         # Verify - automation still completes despite service failure
         assert result is not None
-        assert MOCK_COVER_ENTITY_ID in result["covers"]
+        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
 
     async def test_cover_without_position_support(
         self,
@@ -474,7 +474,7 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Test error when no covers are configured."""
         config = create_temperature_config()
-        config[SettingsKey.COVERS.value] = []
+        config[ConfKeys.COVERS.value] = []
         config_entry = MockConfigEntry(config)
 
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -514,7 +514,7 @@ class TestDataUpdateCoordinator:
         )
         assert pos == OPEN_POSITION  # Fully open
 
-    async def test_sun_missing_cover_direction_skips_cover(
+    async def test_sun_missing_cover_azimuth_skips_cover(
         self,
         mock_hass: MagicMock,
         mock_cover_state: MagicMock,
@@ -524,7 +524,7 @@ class TestDataUpdateCoordinator:
         # Build a sun config for two covers, remove direction for second cover
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
         # Remove direction for cover 2 to trigger skip
-        config.pop(f"{MOCK_COVER_ENTITY_ID_2}_cover_direction", None)
+        config.pop(f"{MOCK_COVER_ENTITY_ID_2}_cover_azimuth", None)
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -553,10 +553,10 @@ class TestDataUpdateCoordinator:
         result = coordinator.data
 
         # Only the properly configured cover should be in results
-        assert MOCK_COVER_ENTITY_ID in result["covers"]
-        assert MOCK_COVER_ENTITY_ID_2 not in result["covers"]
+        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
 
-    async def test_sun_invalid_cover_direction_skips_cover(
+    async def test_sun_invalid_cover_azimuth_skips_cover(
         self,
         mock_hass: MagicMock,
         mock_cover_state: MagicMock,
@@ -565,7 +565,7 @@ class TestDataUpdateCoordinator:
         """If a cover has an invalid direction, it should be skipped."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
         # Set an invalid direction string for cover 2
-        config[f"{MOCK_COVER_ENTITY_ID_2}_cover_direction"] = "upwards"
+        config[f"{MOCK_COVER_ENTITY_ID_2}_cover_azimuth"] = "upwards"
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -591,8 +591,8 @@ class TestDataUpdateCoordinator:
         result = coordinator.data
 
         # Only the valid-direction cover should be present
-        assert MOCK_COVER_ENTITY_ID in result["covers"]
-        assert MOCK_COVER_ENTITY_ID_2 not in result["covers"]
+        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
 
     async def test_set_cover_position_warning_branch_no_features_partial(
         self,
@@ -602,7 +602,7 @@ class TestDataUpdateCoordinator:
         """When cover lacks position and open/close for partial desired, no service is called."""
         config = create_sun_config()
         # Ensure direct-sun partial closure is not 100% (so desired != 0)
-        config["max_closure"] = 90
+        config[ConfKeys.MAX_CLOSURE.value] = 90
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -628,7 +628,7 @@ class TestDataUpdateCoordinator:
         result = coordinator.data
 
         # Desired should be partial (10) but no service should be called
-        assert result["covers"][MOCK_COVER_ENTITY_ID]["desired_position"] not in (
+        assert result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]["desired_position"] not in (
             OPEN_POSITION,
             CLOSED_POSITION,
         )
@@ -683,7 +683,7 @@ class TestDataUpdateCoordinator:
             (315.0, 45.0, OPEN_POSITION),
         ]:
             # Set numeric angle for window
-            config[f"{MOCK_COVER_ENTITY_ID}_cover_direction"] = window_azimuth
+            config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = window_azimuth
 
             # Sun above threshold with varying azimuth
             mock_sun_state.attributes = {
@@ -698,7 +698,7 @@ class TestDataUpdateCoordinator:
             }.get(entity_id)
 
             await coordinator.async_refresh()
-            cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+            cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
             assert cover_data["desired_position"] == expected
 
     @pytest.mark.asyncio
@@ -709,7 +709,7 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Direction as a numeric string should be parsed as azimuth."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
-        config[f"{MOCK_COVER_ENTITY_ID}_cover_direction"] = "180"
+        config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = "180"
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -726,7 +726,7 @@ class TestDataUpdateCoordinator:
         }.get(entity_id)
 
         await coordinator.async_refresh()
-        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == CLOSED_POSITION
 
     @pytest.mark.asyncio
@@ -737,8 +737,8 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Only covers within tolerance should close when sun hits."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
-        config[f"{MOCK_COVER_ENTITY_ID}_cover_direction"] = 180.0
-        config[f"{MOCK_COVER_ENTITY_ID_2}_cover_direction"] = 90.0
+        config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = 180.0
+        config[f"{MOCK_COVER_ENTITY_ID_2}_cover_azimuth"] = 90.0
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -761,7 +761,7 @@ class TestDataUpdateCoordinator:
         }.get(entity_id)
 
         await coordinator.async_refresh()
-        covers = coordinator.data["covers"]
+        covers = coordinator.data[ConfKeys.COVERS.value]
         assert covers[MOCK_COVER_ENTITY_ID]["desired_position"] == CLOSED_POSITION
         assert covers[MOCK_COVER_ENTITY_ID_2]["desired_position"] == OPEN_POSITION
 
@@ -782,7 +782,7 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """When elevation equals the threshold, closure logic applies (not low sun)."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
-        config[f"{MOCK_COVER_ENTITY_ID}_cover_direction"] = 180.0
+        config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = 180.0
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -800,7 +800,7 @@ class TestDataUpdateCoordinator:
         }.get(entity_id)
 
         await coordinator.async_refresh()
-        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == CLOSED_POSITION
 
     @pytest.mark.asyncio
@@ -811,8 +811,8 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Numeric angle with max_closure less than 100% results in partial close."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
-        config["max_closure"] = 60  # 60% close => desired position 40
-        config[f"{MOCK_COVER_ENTITY_ID}_cover_direction"] = 180.0
+        config[ConfKeys.MAX_CLOSURE.value] = 60  # 60% close => desired position 40
+        config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = 180.0
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -829,7 +829,7 @@ class TestDataUpdateCoordinator:
         }.get(entity_id)
 
         await coordinator.async_refresh()
-        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == 40
 
     @pytest.mark.asyncio
@@ -842,11 +842,11 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """When hot but sun not hitting, AND logic should not move the cover."""
         config = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            SettingsKey.MAX_TEMPERATURE.value: 24.0,
-            SettingsKey.MIN_TEMPERATURE.value: 21.0,
-            SettingsKey.SUN_ELEVATION_THRESHOLD.value: 20.0,
-            f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.MAX_TEMPERATURE.value: 24.0,
+            ConfKeys.MIN_TEMPERATURE.value: 21.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
+            f"{MOCK_COVER_ENTITY_ID}_cover_azimuth": 180.0,
         }
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -863,7 +863,7 @@ class TestDataUpdateCoordinator:
         }.get(entity_id)
 
         await coordinator.async_refresh()
-        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == OPEN_POSITION
         # AND semantics: no action when sun not hitting
         mock_hass.services.async_call.assert_not_called()
@@ -878,12 +878,12 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """When comfortable and direct sun, AND logic should not move the cover."""
         config = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            SettingsKey.MAX_TEMPERATURE.value: 24.0,
-            SettingsKey.MIN_TEMPERATURE.value: 21.0,
-            SettingsKey.SUN_ELEVATION_THRESHOLD.value: 20.0,
-            "max_closure": 60,  # partial closure => desired 40
-            f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.MAX_TEMPERATURE.value: 24.0,
+            ConfKeys.MIN_TEMPERATURE.value: 21.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
+            ConfKeys.MAX_CLOSURE.value: 60,  # partial closure => desired 40
+            f"{MOCK_COVER_ENTITY_ID}_cover_azimuth": 180.0,
         }
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -899,7 +899,7 @@ class TestDataUpdateCoordinator:
         }.get(entity_id)
 
         await coordinator.async_refresh()
-        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == OPEN_POSITION
         # AND semantics: no action when temperature is not hot
         mock_hass.services.async_call.assert_not_called()
@@ -914,11 +914,11 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Cold with direct sun should not move the cover under AND logic."""
         config = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            SettingsKey.MAX_TEMPERATURE.value: 24.0,
-            SettingsKey.MIN_TEMPERATURE.value: 21.0,
-            SettingsKey.SUN_ELEVATION_THRESHOLD.value: 20.0,
-            f"{MOCK_COVER_ENTITY_ID}_cover_direction": 180.0,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.MAX_TEMPERATURE.value: 24.0,
+            ConfKeys.MIN_TEMPERATURE.value: 21.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
+            f"{MOCK_COVER_ENTITY_ID}_cover_azimuth": 180.0,
         }
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -934,7 +934,7 @@ class TestDataUpdateCoordinator:
         }.get(entity_id)
 
         await coordinator.async_refresh()
-        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == OPEN_POSITION
         # AND semantics: no action when temperature is cold
         mock_hass.services.async_call.assert_not_called()
@@ -949,10 +949,10 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """If sun direction missing, combined falls back to temperature input."""
         config = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            SettingsKey.MAX_TEMPERATURE.value: 24.0,
-            SettingsKey.MIN_TEMPERATURE.value: 21.0,
-            SettingsKey.SUN_ELEVATION_THRESHOLD.value: 20.0,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.MAX_TEMPERATURE.value: 24.0,
+            ConfKeys.MIN_TEMPERATURE.value: 21.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
             # Intentionally omit direction key
         }
         config_entry = MockConfigEntry(config)
@@ -969,5 +969,5 @@ class TestDataUpdateCoordinator:
         }.get(entity_id)
 
         await coordinator.async_refresh()
-        cover_data = coordinator.data["covers"][MOCK_COVER_ENTITY_ID]
+        cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["desired_position"] == CLOSED_POSITION

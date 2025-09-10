@@ -9,6 +9,9 @@ import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
+from custom_components.smart_cover_automation.config import (
+    ConfKeys,
+)
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.sensor import (
@@ -26,7 +29,7 @@ async def test_automation_status_combined_summary_present() -> None:
 
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
     coordinator.data = {
-        "covers": {
+        ConfKeys.COVERS.value: {
             "cover.one": {
                 "current_position": 50,
                 "desired_position": 50,

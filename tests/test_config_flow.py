@@ -8,9 +8,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from homeassistant.data_entry_flow import FlowResultType
 
+from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import FlowHandler
 from custom_components.smart_cover_automation.const import DOMAIN
-from custom_components.smart_cover_automation.settings import SETTINGS_SPECS, SettingsKey
 
 from .conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2
 
@@ -44,9 +44,9 @@ class TestConfigFlow:
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-            SettingsKey.MAX_TEMPERATURE.value: 25.0,
-            SettingsKey.MIN_TEMPERATURE.value: 20.0,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+            ConfKeys.MAX_TEMPERATURE.value: 25.0,
+            ConfKeys.MIN_TEMPERATURE.value: 20.0,
         }
 
         with (
@@ -68,9 +68,9 @@ class TestConfigFlow:
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            SettingsKey.MAX_TEMPERATURE.value: SETTINGS_SPECS[SettingsKey.MAX_TEMPERATURE].default,
-            SettingsKey.MIN_TEMPERATURE.value: SETTINGS_SPECS[SettingsKey.MIN_TEMPERATURE].default,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.MAX_TEMPERATURE.value: CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
+            ConfKeys.MIN_TEMPERATURE.value: CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
         }
 
         with (
@@ -92,7 +92,7 @@ class TestConfigFlow:
         flow_handler.hass = hass
 
         user_input = {
-            SettingsKey.COVERS.value: ["cover.nonexistent"],
+            ConfKeys.COVERS.value: ["cover.nonexistent"],
         }
 
         result = await flow_handler.async_step_user(user_input)
@@ -110,9 +110,9 @@ class TestConfigFlow:
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            SettingsKey.MAX_TEMPERATURE.value: 20.0,  # Less than min_temp
-            SettingsKey.MIN_TEMPERATURE.value: 25.0,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.MAX_TEMPERATURE.value: 20.0,  # Less than min_temp
+            ConfKeys.MIN_TEMPERATURE.value: 25.0,
         }
 
         result = await flow_handler.async_step_user(user_input)
@@ -130,8 +130,8 @@ class TestConfigFlow:
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            SettingsKey.MAX_TEMPERATURE.value: 25.0,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.MAX_TEMPERATURE.value: 25.0,
             # MIN_TEMPERATURE intentionally omitted
         }
 
@@ -140,7 +140,7 @@ class TestConfigFlow:
 
         assert result["type"] == FlowResultType.FORM
         # Expect field-specific error on min_temperature
-        assert result["errors"][SettingsKey.MIN_TEMPERATURE.value] == "required_with_max_temperature"
+        assert result["errors"][ConfKeys.MIN_TEMPERATURE.value] == "required_with_max_temperature"
 
     async def test_user_step_only_min_temperature_requires_max(
         self,
@@ -151,8 +151,8 @@ class TestConfigFlow:
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            SettingsKey.MIN_TEMPERATURE.value: 20.0,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.MIN_TEMPERATURE.value: 20.0,
             # MAX_TEMPERATURE intentionally omitted
         }
 
@@ -161,7 +161,7 @@ class TestConfigFlow:
 
         assert result["type"] == FlowResultType.FORM
         # Expect field-specific error on max_temperature
-        assert result["errors"][SettingsKey.MAX_TEMPERATURE.value] == "required_with_min_temperature"
+        assert result["errors"][ConfKeys.MAX_TEMPERATURE.value] == "required_with_min_temperature"
 
     async def test_user_step_unavailable_cover_warning(
         self,
@@ -175,9 +175,9 @@ class TestConfigFlow:
         flow_handler.hass = hass
 
         user_input = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            SettingsKey.MAX_TEMPERATURE.value: SETTINGS_SPECS[SettingsKey.MAX_TEMPERATURE].default,
-            SettingsKey.MIN_TEMPERATURE.value: SETTINGS_SPECS[SettingsKey.MIN_TEMPERATURE].default,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.MAX_TEMPERATURE.value: CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
+            ConfKeys.MIN_TEMPERATURE.value: CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
         }
 
         with (
@@ -196,7 +196,7 @@ class TestConfigFlow:
         result = self._as_dict(result)
         assert result["type"] == FlowResultType.FORM
         assert result["step_id"] == "user"
-        assert SettingsKey.COVERS.value in result["data_schema"].schema
+        assert ConfKeys.COVERS.value in result["data_schema"].schema
         # No automation type field should be present
         schema = result["data_schema"].schema
         assert "automation_type" not in schema
@@ -227,9 +227,9 @@ class TestConfigFlow:
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
-            SettingsKey.COVERS.value: [MOCK_COVER_ENTITY_ID_2, MOCK_COVER_ENTITY_ID],  # Unsorted
-            SettingsKey.MAX_TEMPERATURE.value: SETTINGS_SPECS[SettingsKey.MAX_TEMPERATURE].default,
-            SettingsKey.MIN_TEMPERATURE.value: SETTINGS_SPECS[SettingsKey.MIN_TEMPERATURE].default,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID_2, MOCK_COVER_ENTITY_ID],  # Unsorted
+            ConfKeys.MAX_TEMPERATURE.value: CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
+            ConfKeys.MIN_TEMPERATURE.value: CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
         }
 
         with (

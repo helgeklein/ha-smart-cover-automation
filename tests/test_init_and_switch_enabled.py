@@ -10,9 +10,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation import async_get_options_flow
+from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-from custom_components.smart_cover_automation.settings import SettingsKey
 from custom_components.smart_cover_automation.switch import (
     async_setup_entry as async_setup_entry_switch,
 )
@@ -32,7 +32,7 @@ async def test_async_get_options_flow_returns_handler() -> None:
 async def test_switch_is_on_uses_enabled_option() -> None:
     hass = MagicMock(spec=HomeAssistant)
     entry = MockConfigEntry(create_temperature_config())
-    entry.runtime_data.config[SettingsKey.ENABLED.value] = False
+    entry.runtime_data.config[ConfKeys.ENABLED.value] = False
 
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
     coordinator.data = {"title": "foo"}

@@ -1,0 +1,174 @@
+"""Settings registry and resolution for smart_cover_automation.
+
+This module defines a typo-safe enum of setting keys, a registry of specs with
+defaults and coercion, and helpers to resolve effective settings from a
+ConfigEntry (options → data → defaults). Legacy classes have been removed.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
+
+T = TypeVar("T")
+
+
+@dataclass(frozen=True, slots=True)
+class _ConfSpec(Generic[T]):
+    """Metadata for a configuration setting.
+
+    Attributes:
+    default: The default value for the setting.
+    converter: A callable that converts a raw value to the desired type T.
+    """
+
+    default: T
+    converter: Callable[[Any], T]
+
+
+class ConfKeys(StrEnum):
+    """Configuration keys for the integration's settings.
+
+    Each key corresponds to a setting that can be configured via options or data.
+    """
+
+    ENABLED = "enabled"
+    COVERS = "covers"
+    TEMPERATURE_SENSOR = "temperature_sensor"
+    MAX_TEMPERATURE = "max_temperature"
+    MIN_TEMPERATURE = "min_temperature"
+    TEMPERATURE_HYSTERESIS = "temperature_hysteresis"
+    MIN_POSITION_DELTA = "min_position_delta"
+    SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"
+    MAX_CLOSURE = "max_closure"
+    VERBOSE_LOGGING = "verbose_logging"
+
+
+class _Converters:
+    """Coercion helpers used by _ConfSpec."""
+
+    @staticmethod
+    def to_bool(v: Any) -> bool:
+        return bool(v)
+
+    @staticmethod
+    def to_int(v: Any) -> int:
+        return int(v)
+
+    @staticmethod
+    def to_float(v: Any) -> float:
+        return float(v)
+
+    @staticmethod
+    def to_str(v: Any) -> str:
+        return str(v)
+
+    @staticmethod
+    def to_covers_tuple(v: Any) -> tuple[str, ...]:
+        if not v:
+            return ()
+        if isinstance(v, tuple):
+            # Convert each element to str defensively
+            return tuple(str(x) for x in v)
+        if isinstance(v, list):
+            return tuple(str(x) for x in v)
+        # Fallback: mirror prior behavior (tuple(v)), which turns a string into chars
+        try:
+            return tuple(v)  # type: ignore[arg-type]
+        except Exception:
+            return ()
+
+
+# Type-only aliases so annotations can refer without exporting helpers.
+if TYPE_CHECKING:  # pragma: no cover - type checking only
+    Converters = _Converters
+    ConfSpec = _ConfSpec
+
+
+# Central registry of settings with defaults and coercion (type conversion).
+# This is the single source of truth for all settings keys and their types.
+CONF_SPECS: dict[ConfKeys, _ConfSpec] = {
+    ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
+    ConfKeys.TEMPERATURE_SENSOR: _ConfSpec(default="sensor.temperature", converter=_Converters.to_str),
+    ConfKeys.MAX_TEMPERATURE: _ConfSpec(default=24.0, converter=_Converters.to_float),
+    ConfKeys.MIN_TEMPERATURE: _ConfSpec(default=21.0, converter=_Converters.to_float),
+    ConfKeys.TEMPERATURE_HYSTERESIS: _ConfSpec(default=0.5, converter=_Converters.to_float),
+    ConfKeys.MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
+    ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=20.0, converter=_Converters.to_float),
+    ConfKeys.MAX_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int),
+    ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool),
+}
+
+# Public API of this module (keep helper class internal)
+__all__ = [
+    "ConfKeys",
+    "CONF_SPECS",
+    "ResolvedConfig",
+    "resolve",
+    "resolve_entry",
+]
+
+
+# Simple, explicit settings structure resolved from options → data → defaults.
+# This provides a lightweight alternative to the descriptor-based Settings above
+# without changing existing callers. Consumers can migrate to this over time.
+@dataclass(frozen=True, slots=True)
+class ResolvedConfig:
+    enabled: bool
+    covers: tuple[str, ...]
+    temperature_sensor: str
+    max_temperature: float
+    min_temperature: float
+    temperature_hysteresis: float
+    min_position_delta: int
+    sun_elevation_threshold: float
+    max_closure: int
+    verbose_logging: bool
+
+    def get(self, key: ConfKeys) -> Any:
+        # Generic access: ConfKeys values match dataclass field names
+        return getattr(self, key.value)
+
+    def as_enum_dict(self) -> dict[ConfKeys, Any]:
+        # Build dict without hard-coded names
+        return {k: getattr(self, k.value) for k in ConfKeys}
+
+
+def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None) -> ResolvedConfig:
+    """Resolve settings from options → data → defaults using ConfKeys.
+
+    Only shallow keys are considered. Performs light normalization (covers → tuple).
+    """
+    options = options or {}
+    data = data or {}
+
+    def _val(key: ConfKeys) -> Any:
+        spec = CONF_SPECS[key]
+        if key.value in options:
+            raw = options[key.value]
+        elif key.value in data:
+            raw = data[key.value]
+        else:
+            raw = spec.default
+        try:
+            return spec.converter(raw)
+        except Exception:
+            # Fallback safely to default if coercion fails
+            return spec.converter(spec.default)
+
+    # Build kwargs dynamically by iterating over ConfKeys, applying light coercion
+    values: dict[str, Any] = {k.value: _val(k) for k in ConfKeys}
+
+    return ResolvedConfig(**values)
+
+
+def resolve_entry(entry: Any) -> ResolvedConfig:
+    """Resolve settings directly from a ConfigEntry-like object.
+
+    Accepts any object with 'options' and 'data' attributes (works with test mocks).
+    """
+    opts = getattr(entry, "options", None) or {}
+    dat = getattr(entry, "data", None) or {}
+    return resolve(opts, dat)

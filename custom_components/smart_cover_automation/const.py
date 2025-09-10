@@ -22,8 +22,8 @@ LOGGER: Final = getLogger(__package__)
 
 DOMAIN: Final = "smart_cover_automation"
 
-# Per-cover field name constant retained for schema/dynamic keys
-CONF_COVER_DIRECTION: Final = "cover_direction"
-
 # Sun position thresholds
 AZIMUTH_TOLERANCE: Final[int] = 90  # Window considers sun if within this angle
+
+# Window azimuth (degrees)
+COVER_AZIMUTH: Final[str] = "cover_azimuth"

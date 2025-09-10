@@ -11,7 +11,7 @@ from homeassistant.const import STATE_UNAVAILABLE, Platform, UnitOfTemperature
 from homeassistant.helpers import selector
 
 from . import const
-from .settings import SETTINGS_SPECS, SettingsKey, resolve
+from .config import CONF_SPECS, ConfKeys, resolve
 
 
 class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
@@ -56,7 +56,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
         try:
             # Validate covers
             invalid_covers = []
-            for cover in user_input[SettingsKey.COVERS.value]:
+            for cover in user_input[ConfKeys.COVERS.value]:
                 state = self.hass.states.get(cover)
                 if not state:
                     invalid_covers.append(cover)
@@ -68,8 +68,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                 const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
 
             # Validate temperature thresholds
-            max_key = SettingsKey.MAX_TEMPERATURE.value
-            min_key = SettingsKey.MIN_TEMPERATURE.value
+            max_key = ConfKeys.MAX_TEMPERATURE.value
+            min_key = ConfKeys.MIN_TEMPERATURE.value
             has_max = max_key in user_input
             has_min = min_key in user_input
 
@@ -100,7 +100,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
 
                 # Create a new HA config entry with the provided data
                 return self.async_create_entry(
-                    title=(f"Cover Automation ({len(user_input[SettingsKey.COVERS.value])} covers)"),
+                    title=(f"Cover Automation ({len(user_input[ConfKeys.COVERS.value])} covers)"),
                     data=data,
                 )
 
@@ -117,7 +117,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(SettingsKey.COVERS.value): selector.EntitySelector(
+                    vol.Required(ConfKeys.COVERS.value): selector.EntitySelector(
                         selector.EntitySelectorConfig(
                             domain=Platform.COVER,
                             multiple=True,
@@ -125,8 +125,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     ),
                     # Optional temperature thresholds used by combined mode
                     vol.Optional(
-                        SettingsKey.MAX_TEMPERATURE.value,
-                        default=SETTINGS_SPECS[SettingsKey.MAX_TEMPERATURE].default,
+                        ConfKeys.MAX_TEMPERATURE.value,
+                        default=CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
                     ): selector.NumberSelector(
                         selector.NumberSelectorConfig(
                             min=0,
@@ -136,8 +136,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                         ),
                     ),
                     vol.Optional(
-                        SettingsKey.MIN_TEMPERATURE.value,
-                        default=SETTINGS_SPECS[SettingsKey.MIN_TEMPERATURE].default,
+                        ConfKeys.MIN_TEMPERATURE.value,
+                        default=CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
                     ): selector.NumberSelector(
                         selector.NumberSelectorConfig(
                             min=0,
@@ -172,8 +172,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         data = dict(self._config_entry.data)
         options = dict(self._config_entry.options or {})
 
-        # Compute concrete defaults via registry-based SettingsKey; accept only known keys
-        allowed_keys = {k.value for k in SettingsKey}
+        # Compute concrete defaults via registry-based ConfKeys; accept only known keys
+        allowed_keys = {k.value for k in ConfKeys}
 
         def _to_field_map(src: dict[str, Any]) -> dict[str, Any]:
             return {k: v for k, v in src.items() if k in allowed_keys}
@@ -184,7 +184,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Build dynamic fields for per-cover directions as numeric azimuth angles (0-359)
         direction_fields: dict[vol.Marker, object] = {}
         for cover in covers:
-            key = f"{cover}_cover_direction"
+            key = f"{cover}_cover_azimuth"
             # Compute default: accept numeric strings/floats; otherwise leave without default.
             raw = options.get(key, data.get(key))
             default_angle: float | None = None
@@ -213,14 +213,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         threshold_default = float(resolved_settings.sun_elevation_threshold)
 
         schema_dict: dict[vol.Marker, object] = {
-            vol.Optional(SettingsKey.ENABLED.value, default=enabled_default): selector.BooleanSelector(),
+            vol.Optional(ConfKeys.ENABLED.value, default=enabled_default): selector.BooleanSelector(),
             vol.Optional(
-                SettingsKey.VERBOSE_LOGGING.value,
+                ConfKeys.VERBOSE_LOGGING.value,
                 default=bool(resolved_settings.verbose_logging),
             ): selector.BooleanSelector(),
             # Allow editing the list of covers without changing the unique_id
             vol.Optional(
-                SettingsKey.COVERS.value,
+                ConfKeys.COVERS.value,
                 default=covers,
             ): selector.EntitySelector(
                 selector.EntitySelectorConfig(
@@ -229,11 +229,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 ),
             ),
             vol.Optional(
-                SettingsKey.TEMPERATURE_SENSOR.value,
+                ConfKeys.TEMPERATURE_SENSOR.value,
                 default=temp_sensor_default,
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain=Platform.SENSOR)),
             vol.Optional(
-                SettingsKey.SUN_ELEVATION_THRESHOLD.value,
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value,
                 default=threshold_default,
             ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=90, step=1)),
         }
@@ -241,7 +241,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Compute safe default for max_closure
         max_closure_default = int(resolved_settings.max_closure)
 
-        schema_dict[vol.Optional(SettingsKey.MAX_CLOSURE.value, default=max_closure_default)] = selector.NumberSelector(
+        schema_dict[vol.Optional(ConfKeys.MAX_CLOSURE.value, default=max_closure_default)] = selector.NumberSelector(
             selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%")
         )
 
