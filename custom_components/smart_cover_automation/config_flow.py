@@ -44,7 +44,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
             if getattr(self, "hass", None) is not None:
                 current_entries = self._async_current_entries()
                 if isinstance(current_entries, list) and len(current_entries) > 0:
-                    return self.async_abort(reason="single_instance_allowed")
+                    return self.async_abort(reason=const.ABORT_SINGLE_INSTANCE_ALLOWED)
         except Exception:  # pragma: no cover - defensive against MagicMock behavior in tests
             pass
 
@@ -64,7 +64,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     const.LOGGER.warning(f"Cover {cover} is currently unavailable but will be configured")
 
             if invalid_covers:
-                errors["base"] = "invalid_cover"
+                errors["base"] = const.ERROR_INVALID_COVER
                 const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
 
             # Validate temperature thresholds
@@ -76,17 +76,17 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
             # If only one threshold is provided, mark the counterpart as required
             if has_max ^ has_min:
                 if has_max:
-                    errors[min_key] = "required_with_max_temperature"
+                    errors[min_key] = const.ERROR_REQUIRED_WITH_MAX_TEMPERATURE
                     const.LOGGER.error(f"{min_key} required when {max_key} is provided")
                 else:
-                    errors[max_key] = "required_with_min_temperature"
+                    errors[max_key] = const.ERROR_REQUIRED_WITH_MIN_TEMPERATURE
                     const.LOGGER.error(f"{max_key} required when {min_key} is provided")
             # If both are provided, validate the range
             elif has_max and has_min:
                 max_temp = user_input[max_key]
                 min_temp = user_input[min_key]
                 if max_temp <= min_temp:
-                    errors["base"] = "invalid_temperature_range"
+                    errors["base"] = const.ERROR_INVALID_TEMPERATURE_RANGE
                     const.LOGGER.error(f"Invalid temperature range: max={max_temp} <= min={min_temp}")
 
             if not errors:
@@ -106,7 +106,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
 
         except (KeyError, ValueError, TypeError) as err:
             const.LOGGER.exception(f"Configuration validation error: {err}")
-            errors["base"] = "invalid_config"
+            errors["base"] = const.ERROR_INVALID_CONFIG
 
         # Validation error: show the form to the user again
         return self._show_user_form(errors)
@@ -145,6 +145,12 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                             step=0.5,
                             unit_of_measurement=UnitOfTemperature.CELSIUS,
                         ),
+                    ),
+                    vol.Optional(
+                        ConfKeys.AZIMUTH_TOLERANCE.value,
+                        default=CONF_SPECS[ConfKeys.AZIMUTH_TOLERANCE].default,
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°"),
                     ),
                 }
             ),
@@ -209,8 +215,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 )
 
         enabled_default = bool(resolved_settings.enabled)
-        temp_sensor_default = str(resolved_settings.temperature_sensor)
+        temp_sensor_default = str(resolved_settings.temp_sensor_entity_id)
         threshold_default = float(resolved_settings.sun_elevation_threshold)
+        azimuth_tol_default = int(resolved_settings.azimuth_tolerance)
 
         schema_dict: dict[vol.Marker, object] = {
             vol.Optional(ConfKeys.ENABLED.value, default=enabled_default): selector.BooleanSelector(),
@@ -229,13 +236,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 ),
             ),
             vol.Optional(
-                ConfKeys.TEMPERATURE_SENSOR.value,
+                ConfKeys.TEMP_SENSOR_ENTITY_ID.value,
                 default=temp_sensor_default,
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain=Platform.SENSOR)),
             vol.Optional(
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value,
                 default=threshold_default,
             ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=90, step=1)),
+            vol.Optional(
+                ConfKeys.AZIMUTH_TOLERANCE.value,
+                default=azimuth_tol_default,
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°")),
         }
 
         # Compute safe default for max_closure

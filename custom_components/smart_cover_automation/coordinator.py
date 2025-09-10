@@ -194,7 +194,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         temp_enabled = any(
             key in config
             for key in (
-                ConfKeys.TEMPERATURE_SENSOR.value,
+                ConfKeys.TEMP_SENSOR_ENTITY_ID.value,
                 ConfKeys.MIN_TEMPERATURE.value,
                 ConfKeys.MAX_TEMPERATURE.value,
                 ConfKeys.TEMPERATURE_HYSTERESIS.value,
@@ -210,7 +210,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         max_temp = float(resolved.max_temperature)
         min_temp = float(resolved.min_temperature)
         if temp_enabled:
-            sensor_entity_id = resolved.temperature_sensor
+            sensor_entity_id = resolved.temp_sensor_entity_id
             temp_state = self.hass.states.get(sensor_entity_id)
             if temp_state is None:
                 # Required temp sensor missing -> captured as last_exception
@@ -267,10 +267,10 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     desired_from_temp = current_pos
                 details.update(
                     {
-                        "current_temp": current_temp,
-                        "max_temp": max_temp,
-                        "min_temp": min_temp,
-                        "temp_hysteresis": temp_hysteresis,
+                        const.ATTR_TEMP_CURRENT: current_temp,
+                        const.ATTR_TEMP_MAX_THRESH: max_temp,
+                        const.ATTR_TEMP_MIN_THRESH: min_temp,
+                        const.ATTR_TEMP_HYSTERESIS: temp_hysteresis,
                         "desired_from_temp": desired_from_temp,
                         "temp_hot": temp_hot,
                     }
@@ -305,20 +305,21 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                         direction_azimuth = None
 
                 if direction_azimuth is not None:
+                    tolerance = int(float(resolved.azimuth_tolerance))
                     # Compute sun desired position and whether the sun is hitting the window
                     angle_difference = None
                     if elevation >= threshold:
                         angle_difference = self._calculate_angle_difference(azimuth, direction_azimuth)
-                        sun_hitting = angle_difference < const.AZIMUTH_TOLERANCE
+                        sun_hitting = angle_difference < tolerance
                     else:
                         sun_hitting = False
 
                     desired_from_sun = self._calculate_desired_position(elevation, azimuth, threshold, direction_azimuth, entity_id)
                     details.update(
                         {
-                            "sun_elevation": elevation,
-                            "sun_azimuth": azimuth,
-                            "elevation_threshold": threshold,
+                            const.ATTR_SUN_ELEVATION: elevation,
+                            const.ATTR_SUN_AZIMUTH: azimuth,
+                            const.ATTR_SUN_ELEVATION_THRESH: threshold,
                             "window_direction": direction,
                             "window_direction_azimuth": direction_azimuth,
                             "angle_difference": angle_difference,
@@ -378,7 +379,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 {
                     "current_position": current_pos,
                     "desired_position": combined_desired,
-                    "min_position_delta": min_position_delta,
+                    const.ATTR_MIN_POSITION_DELTA: min_position_delta,
                     ConfKeys.MAX_CLOSURE.value: int(float(resolved.max_closure)),
                     "combined_strategy": "and",
                 }
@@ -410,12 +411,13 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         # Calculate angle between sun and window
         angle_diff = self._calculate_angle_difference(azimuth, direction_azimuth)
-        if angle_diff < const.AZIMUTH_TOLERANCE:
+        tolerance = int(float(self._resolved_settings().azimuth_tolerance))
+        if angle_diff < tolerance:
             desired_pos = max(COVER_FULLY_CLOSED, COVER_FULLY_OPEN - max_closure)
         else:
             desired_pos = COVER_FULLY_OPEN
         const.LOGGER.debug(
-            f"Desired {entity_id} (sun): angle_diff={angle_diff:.2f} tol={const.AZIMUTH_TOLERANCE} max_closure={max_closure} => {desired_pos}"
+            f"Desired {entity_id} (sun): angle_diff={angle_diff:.2f} tol={tolerance} max_closure={max_closure} => {desired_pos}"
         )
         return round(desired_pos)
 

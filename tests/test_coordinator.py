@@ -10,6 +10,11 @@ from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.config import ConfKeys
+from custom_components.smart_cover_automation.const import (
+    ATTR_SUN_AZIMUTH,
+    ATTR_SUN_ELEVATION,
+    ATTR_TEMP_CURRENT,
+)
 from custom_components.smart_cover_automation.coordinator import (
     ConfigurationError,
     DataUpdateCoordinator,
@@ -96,7 +101,7 @@ class TestDataUpdateCoordinator:
         assert result is not None
         assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data["current_temp"] == float(HOT_TEMP)
+        assert cover_data[ATTR_TEMP_CURRENT] == float(HOT_TEMP)
         assert cover_data["desired_position"] == CLOSED_POSITION  # Should close
 
         # Verify service call
@@ -132,7 +137,7 @@ class TestDataUpdateCoordinator:
 
         # Verify
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data["current_temp"] == float(COLD_TEMP)
+        assert cover_data[ATTR_TEMP_CURRENT] == float(COLD_TEMP)
         assert cover_data["desired_position"] == OPEN_POSITION  # Should open
 
         # Verify service call
@@ -168,7 +173,7 @@ class TestDataUpdateCoordinator:
 
         # Verify
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data["current_temp"] == float(COMFORTABLE_TEMP)
+        assert cover_data[ATTR_TEMP_CURRENT] == float(COMFORTABLE_TEMP)
         assert cover_data["desired_position"] == PARTIAL_POSITION  # Should maintain
 
         # Verify no service call made
@@ -235,8 +240,8 @@ class TestDataUpdateCoordinator:
 
         # Verify
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data["sun_elevation"] == HIGH_ELEVATION
-        assert cover_data["sun_azimuth"] == DIRECT_AZIMUTH
+        assert cover_data[ATTR_SUN_ELEVATION] == HIGH_ELEVATION
+        assert cover_data[ATTR_SUN_AZIMUTH] == DIRECT_AZIMUTH
         assert cover_data["desired_position"] == CLOSED_TILT_POSITION  # Should close fully by default
 
     async def test_sun_automation_respects_max_closure_option(

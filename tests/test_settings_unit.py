@@ -98,9 +98,3 @@ def test_resolve_entry_reads_from_attributes():
     rs = resolve_entry(entry)
     assert rs.enabled is False
     assert rs.max_temperature == 22.0
-
-
-def test_enum_members_values_are_canonical():
-    # Ensure enum values match expected string keys used in config
-    assert ConfKeys.ENABLED.value == "enabled"
-    assert ConfKeys.MAX_TEMPERATURE.value == "max_temperature"

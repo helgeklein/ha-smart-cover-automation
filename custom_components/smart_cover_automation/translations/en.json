@@ -10,6 +10,7 @@
                     "max_temperature": "Maximum temperature (when to close covers)",
                     "min_temperature": "Minimum temperature (when to open covers)",
                     "sun_elevation_threshold": "Sun elevation threshold (degrees)",
+                    "azimuth_tolerance": "Azimuth tolerance (degrees)",
                     "cover_azimuth": "Window azimuth (degrees)"
                 }
             }
@@ -34,9 +35,14 @@
                 "description": "Adjust automation settings",
                 "data": {
                     "automation_type": "Automation Type",
+                    "enabled": "Enable automation",
+                    "verbose_logging": "Verbose logging",
+                    "covers": "Covers to automate",
+                    "temp_sensor_entity_id": "Temperature sensor",
                     "max_temperature": "Maximum temperature",
                     "min_temperature": "Minimum temperature",
                     "sun_elevation_threshold": "Sun elevation threshold",
+                    "azimuth_tolerance": "Azimuth tolerance (degrees)",
                     "max_closure": "Maximum closure (%)"
                 }
             }

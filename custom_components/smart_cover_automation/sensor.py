@@ -16,6 +16,20 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 
 from .config import ConfKeys, ResolvedConfig, resolve_entry
+from .const import (
+    ATTR_AUTOMATION_ENABLED,
+    ATTR_COVERS_NUM_MOVED,
+    ATTR_COVERS_NUM_TOTAL,
+    ATTR_MIN_POSITION_DELTA,
+    ATTR_SUN_AZIMUTH,
+    ATTR_SUN_ELEVATION,
+    ATTR_SUN_ELEVATION_THRESH,
+    ATTR_TEMP_CURRENT,
+    ATTR_TEMP_HYSTERESIS,
+    ATTR_TEMP_MAX_THRESH,
+    ATTR_TEMP_MIN_THRESH,
+    ATTR_TEMP_SENSOR_ENTITY_ID,
+)
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -127,7 +141,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         )
 
         parts: list[str] = []
-        current_temp = self._first_cover_value("current_temp")
+        current_temp = self._first_cover_value(ATTR_TEMP_CURRENT)
         if isinstance(current_temp, (int, float)):
             min_temp = resolve_entry(self.coordinator.config_entry).min_temperature
             max_temp = resolve_entry(self.coordinator.config_entry).max_temperature
@@ -139,8 +153,8 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
                     else ""
                 )
             )
-        elevation = self._first_cover_value("sun_elevation")
-        azimuth = self._first_cover_value("sun_azimuth")
+        elevation = self._first_cover_value(ATTR_SUN_ELEVATION)
+        azimuth = self._first_cover_value(ATTR_SUN_AZIMUTH)
         if isinstance(elevation, (int, float)) and isinstance(azimuth, (int, float)):
             parts.append(f"Sun elev {float(elevation):.1f}°, az {float(azimuth):.0f}°")
         prefix = " • ".join(parts) if parts else "Combined"
@@ -155,29 +169,29 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         temp_hyst = float(resolved.temperature_hysteresis)
         min_delta = int(float(resolved.min_position_delta))
         attrs: dict[str, Any] = {
-            "enabled": enabled,
-            "covers_total": len(covers),
-            "covers_moved": sum(
+            ATTR_AUTOMATION_ENABLED: enabled,
+            ATTR_COVERS_NUM_TOTAL: len(covers),
+            ATTR_COVERS_NUM_MOVED: sum(
                 1
                 for d in covers.values()
                 if d.get("desired_position") is not None and d.get("current_position") != d.get("desired_position")
             ),
-            "temp_hysteresis": temp_hyst,
-            "min_position_delta": min_delta,
+            ATTR_TEMP_HYSTERESIS: temp_hyst,
+            ATTR_MIN_POSITION_DELTA: min_delta,
         }
 
         # Combined-only attributes
         attrs.update(
             {
                 # Temperature-related
-                "temperature_sensor": resolved.temperature_sensor,
-                "min_temp": resolved.min_temperature,
-                "max_temp": resolved.max_temperature,
-                "current_temp": self._first_cover_value("current_temp"),
+                ATTR_TEMP_SENSOR_ENTITY_ID: resolved.temp_sensor_entity_id,
+                ATTR_TEMP_MIN_THRESH: resolved.min_temperature,
+                ATTR_TEMP_MAX_THRESH: resolved.max_temperature,
+                ATTR_TEMP_CURRENT: self._first_cover_value(ATTR_TEMP_CURRENT),
                 # Sun-related
-                "sun_elevation": self._first_cover_value("sun_elevation"),
-                "sun_azimuth": self._first_cover_value("sun_azimuth"),
-                "elevation_threshold": resolved.sun_elevation_threshold,
+                ATTR_SUN_ELEVATION: self._first_cover_value(ATTR_SUN_ELEVATION),
+                ATTR_SUN_AZIMUTH: self._first_cover_value(ATTR_SUN_AZIMUTH),
+                ATTR_SUN_ELEVATION_THRESH: resolved.sun_elevation_threshold,
                 ConfKeys.MAX_CLOSURE.value: int(float(resolved.max_closure)),
             }
         )

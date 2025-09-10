@@ -7,7 +7,7 @@ ConfigEntry (options → data → defaults). Legacy classes have been removed.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
@@ -26,6 +26,11 @@ class _ConfSpec(Generic[T]):
     default: T
     converter: Callable[[Any], T]
 
+    def __post_init__(self) -> None:
+        # Disallow None defaults to ensure ResolvedConfig fields are always concrete
+        if self.default is None:
+            raise ValueError("_ConfSpec.default must not be None")
+
 
 class ConfKeys(StrEnum):
     """Configuration keys for the integration's settings.
@@ -33,16 +38,17 @@ class ConfKeys(StrEnum):
     Each key corresponds to a setting that can be configured via options or data.
     """
 
-    ENABLED = "enabled"
-    COVERS = "covers"
-    TEMPERATURE_SENSOR = "temperature_sensor"
-    MAX_TEMPERATURE = "max_temperature"
-    MIN_TEMPERATURE = "min_temperature"
-    TEMPERATURE_HYSTERESIS = "temperature_hysteresis"
-    MIN_POSITION_DELTA = "min_position_delta"
-    SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"
-    MAX_CLOSURE = "max_closure"
-    VERBOSE_LOGGING = "verbose_logging"
+    ENABLED = "enabled"  # Global on/off for all automation.
+    COVERS = "covers"  # Tuple of cover entity_ids to control.
+    TEMP_SENSOR_ENTITY_ID = "temp_sensor_entity_id"  # Temperature sensor entity_id.
+    MAX_TEMPERATURE = "max_temperature"  # Close when hotter than this (°C).
+    MIN_TEMPERATURE = "min_temperature"  # Open when cooler than this (°C).
+    TEMPERATURE_HYSTERESIS = "temperature_hysteresis"  # Deadband around thresholds (°C).
+    MIN_POSITION_DELTA = "min_position_delta"  # Ignore smaller position changes (%).
+    SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
+    AZIMUTH_TOLERANCE = "azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
+    MAX_CLOSURE = "max_closure"  # Cap on closure when sun hits (%).
+    VERBOSE_LOGGING = "verbose_logging"  # Enable DEBUG logs for this entry.
 
 
 class _Converters:
@@ -91,12 +97,13 @@ if TYPE_CHECKING:  # pragma: no cover - type checking only
 CONF_SPECS: dict[ConfKeys, _ConfSpec] = {
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
-    ConfKeys.TEMPERATURE_SENSOR: _ConfSpec(default="sensor.temperature", converter=_Converters.to_str),
+    ConfKeys.TEMP_SENSOR_ENTITY_ID: _ConfSpec(default="sensor.temperature", converter=_Converters.to_str),
     ConfKeys.MAX_TEMPERATURE: _ConfSpec(default=24.0, converter=_Converters.to_float),
     ConfKeys.MIN_TEMPERATURE: _ConfSpec(default=21.0, converter=_Converters.to_float),
     ConfKeys.TEMPERATURE_HYSTERESIS: _ConfSpec(default=0.5, converter=_Converters.to_float),
     ConfKeys.MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=20.0, converter=_Converters.to_float),
+    ConfKeys.AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
     ConfKeys.MAX_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int),
     ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool),
 }
@@ -106,6 +113,7 @@ __all__ = [
     "ConfKeys",
     "CONF_SPECS",
     "ResolvedConfig",
+    "validate_settings_contract",
     "resolve",
     "resolve_entry",
 ]
@@ -118,12 +126,13 @@ __all__ = [
 class ResolvedConfig:
     enabled: bool
     covers: tuple[str, ...]
-    temperature_sensor: str
+    temp_sensor_entity_id: str
     max_temperature: float
     min_temperature: float
     temperature_hysteresis: float
     min_position_delta: int
     sun_elevation_threshold: float
+    azimuth_tolerance: int
     max_closure: int
     verbose_logging: bool
 
@@ -136,6 +145,31 @@ class ResolvedConfig:
         return {k: getattr(self, k.value) for k in ConfKeys}
 
 
+def validate_settings_contract() -> None:
+    """Validate ConfKeys, CONF_SPECS and ResolvedConfig stay in sync.
+
+    Raises AssertionError with a clear message if there is any mismatch.
+    """
+    enum_names = {k.value for k in ConfKeys}
+    spec_names = {k.value for k in CONF_SPECS.keys()}
+    dc_names = {f.name for f in fields(ResolvedConfig)}
+
+    errors: list[str] = []
+    if enum_names != spec_names:
+        errors.append(
+            f"ConfKeys vs CONF_SPECS mismatch: missing_in_specs={enum_names - spec_names}, extra_in_specs={spec_names - enum_names}"
+        )
+    if enum_names != dc_names:
+        errors.append(f"ConfKeys vs ResolvedConfig mismatch: missing_in_dc={enum_names - dc_names}, extra_in_dc={dc_names - enum_names}")
+    # Ensure no None defaults are present
+    none_defaults = [k.value for k, spec in CONF_SPECS.items() if spec.default is None]
+    if none_defaults:
+        errors.append(f"None defaults found in CONF_SPECS: {none_defaults}")
+
+    if errors:
+        raise AssertionError(" | ".join(errors))
+
+
 def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None) -> ResolvedConfig:
     """Resolve settings from options → data → defaults using ConfKeys.
 
@@ -143,6 +177,9 @@ def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None) -
     """
     options = options or {}
     data = data or {}
+
+    # Enforce contract consistency during resolution for clear failures in dev/CI
+    validate_settings_contract()
 
     def _val(key: ConfKeys) -> Any:
         spec = CONF_SPECS[key]
@@ -159,8 +196,15 @@ def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None) -
             return spec.converter(spec.default)
 
     # Build kwargs dynamically by iterating over ConfKeys, applying light coercion
-    values: dict[str, Any] = {k.value: _val(k) for k in ConfKeys}
+    converted: dict[str, Any] = {k.value: _val(k) for k in ConfKeys}
 
+    # Filter strictly to ResolvedConfig fields and fail clearly if anything is missing
+    field_names = {f.name for f in fields(ResolvedConfig)}
+    missing_for_dc = field_names - converted.keys()
+    if missing_for_dc:
+        raise RuntimeError(f"Missing values for ResolvedConfig fields: {missing_for_dc}")
+
+    values: dict[str, Any] = {name: converted[name] for name in field_names}
     return ResolvedConfig(**values)
 
 

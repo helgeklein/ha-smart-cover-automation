@@ -22,8 +22,28 @@ LOGGER: Final = getLogger(__package__)
 
 DOMAIN: Final = "smart_cover_automation"
 
-# Sun position thresholds
-AZIMUTH_TOLERANCE: Final[int] = 90  # Window considers sun if within this angle
-
 # Window azimuth (degrees)
 COVER_AZIMUTH: Final[str] = "cover_azimuth"
+
+# Sensor attribute keys (public API of Automation Status sensor)
+ATTR_AUTOMATION_ENABLED: Final[str] = "automation_enabled"  # Whether the automation is currently enabled
+ATTR_COVERS_NUM_TOTAL: Final[str] = "covers__num_total"  # Total number of configured covers
+ATTR_COVERS_NUM_MOVED: Final[str] = "covers_num_moved"  # Number of covers adjusted in the last cycle
+ATTR_MIN_POSITION_DELTA: Final[str] = "min_position_delta"  # Minimum position change (%) required to move
+ATTR_TEMP_HYSTERESIS: Final[str] = "temp_hysteresis"  # Temperature hysteresis (°C) to prevent oscillation
+ATTR_TEMP_SENSOR_ENTITY_ID: Final[str] = "temp_sensor_entity_id"  # Entity ID of the temperature sensor
+ATTR_TEMP_MIN_THRESH: Final[str] = "temp_min_thresh"  # Minimum temperature threshold (°C)
+ATTR_TEMP_MAX_THRESH: Final[str] = "temp_max_thresh"  # Maximum temperature threshold (°C)
+ATTR_TEMP_CURRENT: Final[str] = "temp_current"  # Current measured temperature (°C)
+ATTR_SUN_ELEVATION: Final[str] = "sun_elevation"  # Current sun elevation (°)
+ATTR_SUN_ELEVATION_THRESH: Final[str] = "sun_elevation_thresh"  # Minimum elevation (°) to consider direct sun
+ATTR_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Current sun azimuth (°)
+
+# Translation keys used by config flows and tests (centralize to avoid magic strings)
+ERROR_INVALID_COVER: Final[str] = "invalid_cover"
+ERROR_INVALID_TEMPERATURE_RANGE: Final[str] = "invalid_temperature_range"
+ERROR_REQUIRED_WITH_MAX_TEMPERATURE: Final[str] = "required_with_max_temperature"
+ERROR_REQUIRED_WITH_MIN_TEMPERATURE: Final[str] = "required_with_min_temperature"
+ERROR_INVALID_CONFIG: Final[str] = "invalid_config"
+
+ABORT_SINGLE_INSTANCE_ALLOWED: Final[str] = "single_instance_allowed"

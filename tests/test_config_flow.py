@@ -254,3 +254,16 @@ class TestConfigFlow:
         """Test flow version and domain."""
         assert flow_handler.VERSION == 1
         assert flow_handler.domain == DOMAIN
+
+    async def test_single_instance_allowed_abort(self, flow_handler: FlowHandler) -> None:
+        """When an instance already exists, the flow should abort early."""
+        # Provide a hass object so the guard does not short-circuit
+        flow_handler.hass = MagicMock()
+        # Simulate existing entries
+        flow_handler._async_current_entries = MagicMock(return_value=[MagicMock()])  # type: ignore[attr-defined]
+
+        result = await flow_handler.async_step_user(None)
+        result_dict = self._as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.ABORT
+        assert result_dict["reason"] == "single_instance_allowed"

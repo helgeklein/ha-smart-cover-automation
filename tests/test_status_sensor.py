@@ -10,6 +10,20 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.config import ConfKeys
+from custom_components.smart_cover_automation.const import (
+    ATTR_AUTOMATION_ENABLED,
+    ATTR_COVERS_NUM_MOVED,
+    ATTR_COVERS_NUM_TOTAL,
+    ATTR_MIN_POSITION_DELTA,
+    ATTR_SUN_AZIMUTH,
+    ATTR_SUN_ELEVATION,
+    ATTR_SUN_ELEVATION_THRESH,
+    ATTR_TEMP_CURRENT,
+    ATTR_TEMP_HYSTERESIS,
+    ATTR_TEMP_MAX_THRESH,
+    ATTR_TEMP_MIN_THRESH,
+    ATTR_TEMP_SENSOR_ENTITY_ID,
+)
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.sensor import (
@@ -50,7 +64,7 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
     # Add tuning/options to config
-    config[ConfKeys.TEMPERATURE_SENSOR.value] = "sensor.temperature"
+    config[ConfKeys.TEMP_SENSOR_ENTITY_ID.value] = "sensor.temperature"
     config[ConfKeys.TEMPERATURE_HYSTERESIS.value] = 0.7
     config[ConfKeys.MIN_POSITION_DELTA.value] = 10
 
@@ -63,16 +77,16 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     coordinator.data = {
         ConfKeys.COVERS.value: {
             "cover.one": {
-                "current_temp": 22.5,
-                "min_temp": config[ConfKeys.MIN_TEMPERATURE.value],
-                "max_temp": config[ConfKeys.MAX_TEMPERATURE.value],
+                ATTR_TEMP_CURRENT: 22.5,
+                ATTR_TEMP_MIN_THRESH: config[ConfKeys.MIN_TEMPERATURE.value],
+                ATTR_TEMP_MAX_THRESH: config[ConfKeys.MAX_TEMPERATURE.value],
                 "current_position": 50,
                 "desired_position": 40,  # movement
             },
             "cover.two": {
-                "current_temp": 22.5,
-                "min_temp": config[ConfKeys.MIN_TEMPERATURE.value],
-                "max_temp": config[ConfKeys.MAX_TEMPERATURE.value],
+                ATTR_TEMP_CURRENT: 22.5,
+                ATTR_TEMP_MIN_THRESH: config[ConfKeys.MIN_TEMPERATURE.value],
+                ATTR_TEMP_MAX_THRESH: config[ConfKeys.MAX_TEMPERATURE.value],
                 "current_position": 100,
                 "desired_position": 100,  # no movement
             },
@@ -87,16 +101,16 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
 
     # Attributes
     attrs = cast(dict, getattr(status, "extra_state_attributes"))
-    assert attrs["enabled"] is True
+    assert attrs[ATTR_AUTOMATION_ENABLED] is True
     assert "automation_type" not in attrs
-    assert attrs["covers_total"] == 2
-    assert attrs["covers_moved"] == 1
-    assert attrs["temp_hysteresis"] == 0.7
-    assert attrs["min_position_delta"] == 10
-    assert attrs["temperature_sensor"] == "sensor.temperature"
-    assert attrs["min_temp"] == config[ConfKeys.MIN_TEMPERATURE.value]
-    assert attrs["max_temp"] == config[ConfKeys.MAX_TEMPERATURE.value]
-    assert attrs["current_temp"] == 22.5
+    assert attrs[ATTR_COVERS_NUM_TOTAL] == 2
+    assert attrs[ATTR_COVERS_NUM_MOVED] == 1
+    assert attrs[ATTR_TEMP_HYSTERESIS] == 0.7
+    assert attrs[ATTR_MIN_POSITION_DELTA] == 10
+    assert attrs[ATTR_TEMP_SENSOR_ENTITY_ID] == "sensor.temperature"
+    assert attrs[ATTR_TEMP_MIN_THRESH] == config[ConfKeys.MIN_TEMPERATURE.value]
+    assert attrs[ATTR_TEMP_MAX_THRESH] == config[ConfKeys.MAX_TEMPERATURE.value]
+    assert attrs[ATTR_TEMP_CURRENT] == 22.5
     assert isinstance(attrs[ConfKeys.COVERS.value], dict)
 
 
@@ -113,16 +127,16 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     coordinator.data = {
         ConfKeys.COVERS.value: {
             "cover.one": {
-                "sun_elevation": 35.0,
-                "sun_azimuth": 180.0,
-                "elevation_threshold": config[ConfKeys.SUN_ELEVATION_THRESHOLD.value],
+                ATTR_SUN_ELEVATION: 35.0,
+                ATTR_SUN_AZIMUTH: 180.0,
+                ATTR_SUN_ELEVATION_THRESH: config[ConfKeys.SUN_ELEVATION_THRESHOLD.value],
                 "current_position": 100,
                 "desired_position": 80,
             },
             "cover.two": {
-                "sun_elevation": 35.0,
-                "sun_azimuth": 180.0,
-                "elevation_threshold": config[ConfKeys.SUN_ELEVATION_THRESHOLD.value],
+                ATTR_SUN_ELEVATION: 35.0,
+                ATTR_SUN_AZIMUTH: 180.0,
+                ATTR_SUN_ELEVATION_THRESH: config[ConfKeys.SUN_ELEVATION_THRESHOLD.value],
                 "current_position": 100,
                 "desired_position": 100,
             },
@@ -137,13 +151,13 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
 
     # Attributes
     attrs = cast(dict, getattr(status, "extra_state_attributes"))
-    assert attrs["enabled"] is True
+    assert attrs[ATTR_AUTOMATION_ENABLED] is True
     assert "automation_type" not in attrs
-    assert attrs["covers_total"] == 2
-    assert attrs["covers_moved"] == 1
-    assert attrs["sun_elevation"] == 35.0
-    assert attrs["sun_azimuth"] == 180.0
-    assert attrs["elevation_threshold"] == config[ConfKeys.SUN_ELEVATION_THRESHOLD.value]
+    assert attrs[ATTR_COVERS_NUM_TOTAL] == 2
+    assert attrs[ATTR_COVERS_NUM_MOVED] == 1
+    assert attrs[ATTR_SUN_ELEVATION] == 35.0
+    assert attrs[ATTR_SUN_AZIMUTH] == 180.0
+    assert attrs[ATTR_SUN_ELEVATION_THRESH] == config[ConfKeys.SUN_ELEVATION_THRESHOLD.value]
     assert isinstance(attrs[ConfKeys.COVERS.value], dict)
 
 
