@@ -29,6 +29,9 @@ from .const import (
     ATTR_TEMP_MAX_THRESH,
     ATTR_TEMP_MIN_THRESH,
     ATTR_TEMP_SENSOR_ENTITY_ID,
+    KEY_BODY,
+    KEY_CURRENT_POSITION,
+    KEY_DESIRED_POSITION,
 )
 from .entity import IntegrationEntity
 
@@ -103,7 +106,7 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):
     @cached_property
     def native_value(self) -> str | None:  # type: ignore[override]
         """Return the native value of the sensor."""
-        return self.coordinator.data.get("body")
+        return self.coordinator.data.get(KEY_BODY)
 
 
 class AutomationStatusSensor(IntegrationEntity, SensorEntity):
@@ -137,7 +140,9 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get(ConfKeys.COVERS.value) or {}
         total = len(covers)
         moved = sum(
-            1 for d in covers.values() if d.get("desired_position") is not None and d.get("current_position") != d.get("desired_position")
+            1
+            for d in covers.values()
+            if d.get(KEY_DESIRED_POSITION) is not None and d.get(KEY_CURRENT_POSITION) != d.get(KEY_DESIRED_POSITION)
         )
 
         parts: list[str] = []
@@ -174,7 +179,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             ATTR_COVERS_NUM_MOVED: sum(
                 1
                 for d in covers.values()
-                if d.get("desired_position") is not None and d.get("current_position") != d.get("desired_position")
+                if d.get(KEY_DESIRED_POSITION) is not None and d.get(KEY_CURRENT_POSITION) != d.get(KEY_DESIRED_POSITION)
             ),
             ATTR_TEMP_HYSTERESIS: temp_hyst,
             ATTR_MIN_POSITION_DELTA: min_delta,

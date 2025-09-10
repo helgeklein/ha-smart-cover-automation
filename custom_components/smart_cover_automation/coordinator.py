@@ -11,8 +11,15 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Final
 
-from homeassistant.components.cover import CoverEntityFeature
-from homeassistant.const import Platform
+from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_POSITION, CoverEntityFeature
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    ATTR_SUPPORTED_FEATURES,
+    SERVICE_CLOSE_COVER,
+    SERVICE_OPEN_COVER,
+    SERVICE_SET_COVER_POSITION,
+    Platform,
+)
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator as BaseCoordinator
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
@@ -164,15 +171,15 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 const.LOGGER.info(f"[{entity_id}] Using set_cover_position to {desired_pos} (features={features})")
                 await self.hass.services.async_call(
                     Platform.COVER,
-                    "set_cover_position",
-                    {"entity_id": entity_id, "position": desired_pos},
+                    SERVICE_SET_COVER_POSITION,
+                    {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos},
                 )
             elif desired_pos == COVER_FULLY_CLOSED:
                 const.LOGGER.info(f"[{entity_id}] Closing cover")
-                await self.hass.services.async_call(Platform.COVER, "close_cover", {"entity_id": entity_id})
+                await self.hass.services.async_call(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
             elif desired_pos == COVER_FULLY_OPEN:
                 const.LOGGER.info(f"[{entity_id}] Opening cover")
-                await self.hass.services.async_call(Platform.COVER, "open_cover", {"entity_id": entity_id})
+                await self.hass.services.async_call(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
             else:
                 const.LOGGER.warning(f"Cannot set cover {entity_id} position: desired={desired_pos}, features={features}")
         except (OSError, ValueError, TypeError, RuntimeError) as err:
@@ -230,13 +237,13 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         azimuth: float | None = None
         threshold = float(resolved.sun_elevation_threshold)
         if sun_enabled:
-            sun_state = self.hass.states.get("sun.sun")
+            sun_state = self.hass.states.get(const.SUN_ENTITY_ID)
             if sun_state is None:
                 # Required sun entity missing -> captured as last_exception
                 raise UpdateFailed(ERR_NO_SUN)
             try:
-                elevation = float(sun_state.attributes.get("elevation", 0))
-                azimuth = float(sun_state.attributes.get("azimuth", 0))
+                elevation = float(sun_state.attributes.get(const.SUN_ATTR_ELEVATION, 0))
+                azimuth = float(sun_state.attributes.get(const.SUN_ATTR_AZIMUTH, 0))
                 sun_available = True
             except (ValueError, TypeError) as err:
                 raise UpdateFailed(ERR_INVALID_SUN) from err
@@ -247,8 +254,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 const.LOGGER.warning(f"Skipping unavailable cover: {entity_id}")
                 continue
 
-            features = state.attributes.get("supported_features", 0)
-            current_pos = state.attributes.get("current_position")
+            features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
+            current_pos = state.attributes.get(ATTR_CURRENT_POSITION)
 
             desired_from_temp: int | None = None
             desired_from_sun: int | None = None

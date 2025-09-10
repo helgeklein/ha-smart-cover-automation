@@ -47,3 +47,15 @@ ERROR_REQUIRED_WITH_MIN_TEMPERATURE: Final[str] = "required_with_min_temperature
 ERROR_INVALID_CONFIG: Final[str] = "invalid_config"
 
 ABORT_SINGLE_INSTANCE_ALLOWED: Final[str] = "single_instance_allowed"
+
+# Home Assistant sun entity and attribute keys (centralize to avoid magic strings)
+SUN_ENTITY_ID: Final[str] = "sun.sun"
+SUN_ATTR_ELEVATION: Final[str] = "elevation"
+SUN_ATTR_AZIMUTH: Final[str] = "azimuth"
+
+# Coordinator data keys and values (internal but shared across modules/tests)
+KEY_BODY: Final[str] = "body"
+KEY_CURRENT_POSITION: Final[str] = "current_position"
+KEY_DESIRED_POSITION: Final[str] = "desired_position"
+KEY_COMBINED_STRATEGY: Final[str] = "combined_strategy"
+STRATEGY_AND: Final[str] = "and"

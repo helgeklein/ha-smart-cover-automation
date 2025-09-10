@@ -12,6 +12,7 @@ from homeassistant.helpers.entity import Entity
 from custom_components.smart_cover_automation.binary_sensor import (
     async_setup_entry as async_setup_entry_binary_sensor,
 )
+from custom_components.smart_cover_automation.const import KEY_BODY
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.sensor import (
@@ -66,7 +67,7 @@ async def test_sensor_entity_properties() -> None:
     config_entry = MockConfigEntry(create_temperature_config())
 
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-    coordinator.data = {"body": "hello"}
+    coordinator.data = {KEY_BODY: "hello"}
     coordinator.last_update_success = True  # type: ignore[attr-defined]
     config_entry.runtime_data.coordinator = coordinator
 
@@ -87,7 +88,7 @@ async def test_sensor_entity_properties() -> None:
     integration_sensor = next(e for e in captured if getattr(getattr(e, "entity_description"), "key", "") == "smart_cover_automation")
     # available is delegated from CoordinatorEntity; with last_update_success=True it's truthy
     assert cast(bool | None, getattr(integration_sensor, "available")) in (True, None)
-    # native_value comes from coordinator.data["body"]
+    # native_value comes from coordinator.data[KEY_BODY]
     assert getattr(integration_sensor, "native_value") == "hello"
 
 
