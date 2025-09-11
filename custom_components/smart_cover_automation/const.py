@@ -23,8 +23,8 @@ LOGGER: Final = getLogger(__package__)
 DOMAIN: Final = "smart_cover_automation"
 INTEGRATION_NAME: Final = "Smart Cover Automation"
 
-# Window azimuth (degrees)
-COVER_AZIMUTH: Final[str] = "cover_azimuth"
+# Entity configuration keys
+COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Window azimuth (degrees)
 
 # Sensor attribute keys (public API of Automation Status sensor)
 ATTR_AUTOMATION_ENABLED: Final[str] = "automation_enabled"  # Whether the automation is currently enabled

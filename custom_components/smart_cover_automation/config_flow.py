@@ -12,6 +12,7 @@ from homeassistant.helpers import selector
 
 from . import const
 from .config import CONF_SPECS, ConfKeys, resolve
+from .util import to_float_or_none
 
 
 class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
@@ -51,7 +52,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
 
         # Initial call: user_input is None -> show the form to the user
         if user_input is None:
-            return self._show_user_form()
+            return self._show_user_form_config()
 
         # Subsequent calls: user_input has form data -> validate user data and create entry
         try:
@@ -110,9 +111,9 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
             errors["base"] = const.ERROR_INVALID_CONFIG
 
         # Validation error: show the form to the user again
-        return self._show_user_form(errors)
+        return self._show_user_form_config(errors)
 
-    def _show_user_form(self, errors: dict[str, str] | None = None) -> config_entries.ConfigFlowResult:
+    def _show_user_form_config(self, errors: dict[str, str] | None = None) -> config_entries.ConfigFlowResult:
         """Render the initial user form (or re-display after validation errors)."""
         return self.async_show_form(
             step_id="user",
@@ -171,48 +172,36 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Manage the options for the integration."""
+        """Invoked when the user clicks the gear icon to bring up the integration's options dialog.
+
+        HA calls async_step_init(None) to show the form, then calls it again with a dict after submit.
+        """
+        # Subsequent calls: user_input has form data -> store the options and finish
         if user_input is not None:
-            # Persist options; Home Assistant will trigger entry update and reload
+            # Persist options; HA will trigger entry update and reload
             return self.async_create_entry(title="Options", data=user_input)
+
+        # Initial call: user_input is None -> show the form to the user
 
         data = dict(self._config_entry.data)
         options = dict(self._config_entry.options or {})
-
-        # Compute concrete defaults via registry-based ConfKeys; accept only known keys
-        allowed_keys = {k.value for k in ConfKeys}
-
-        def _to_field_map(src: dict[str, Any]) -> dict[str, Any]:
-            return {k: v for k, v in src.items() if k in allowed_keys}
-
-        resolved_settings = resolve(_to_field_map(options), _to_field_map(data))
-        covers: list[str] = list(resolved_settings.covers)
+        resolved_settings = resolve(options, data)
 
         # Build dynamic fields for per-cover directions as numeric azimuth angles (0-359)
+        covers: list[str] = list(resolved_settings.covers)
         direction_fields: dict[vol.Marker, object] = {}
         for cover in covers:
             key = f"{cover}_{const.COVER_AZIMUTH}"
-            # Compute default: accept numeric strings/floats; otherwise leave without default.
             raw = options.get(key, data.get(key))
-            default_angle: float | None = None
-            if isinstance(raw, str):
-                try:
-                    default_angle = float(raw)
-                except (TypeError, ValueError):
-                    default_angle = None
-            elif isinstance(raw, (int, float)):
-                try:
-                    default_angle = float(raw)
-                except (TypeError, ValueError):
-                    default_angle = None
+            direction_azimuth: float | None = to_float_or_none(raw)
 
-            if default_angle is not None:
-                direction_fields[vol.Optional(key, default=default_angle)] = selector.NumberSelector(
-                    selector.NumberSelectorConfig(min=0, max=359, step=1, unit_of_measurement="°")
+            if direction_azimuth is not None:
+                direction_fields[vol.Optional(key, default=direction_azimuth)] = selector.NumberSelector(
+                    selector.NumberSelectorConfig(min=0, max=359, step=0.1, unit_of_measurement="°")
                 )
             else:
                 direction_fields[vol.Optional(key)] = selector.NumberSelector(
-                    selector.NumberSelectorConfig(min=0, max=359, step=1, unit_of_measurement="°")
+                    selector.NumberSelectorConfig(min=0, max=359, step=0.1, unit_of_measurement="°")
                 )
 
         enabled_default = bool(resolved_settings.enabled)

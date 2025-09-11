@@ -25,6 +25,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from . import const
 from .config import CONF_SPECS, ConfKeys, ResolvedConfig, resolve_entry
+from .util import to_float_or_none
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, State
@@ -298,18 +299,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Sun contribution
             if sun_enabled and sun_available and elevation is not None and azimuth is not None:
                 # Per-cover direction remains dynamic and stored in config by entity_id
-                direction = config.get(f"{entity_id}_{const.COVER_AZIMUTH}")
-                direction_azimuth: float | None = None
-                if isinstance(direction, (int, float)):
-                    try:
-                        direction_azimuth = float(direction) % 360
-                    except (TypeError, ValueError):
-                        direction_azimuth = None
-                elif isinstance(direction, str):
-                    try:
-                        direction_azimuth = float(direction) % 360
-                    except (TypeError, ValueError):
-                        direction_azimuth = None
+                direction_raw = config.get(f"{entity_id}_{const.COVER_AZIMUTH}")
+                direction_azimuth: float | None = to_float_or_none(direction_raw)
 
                 if direction_azimuth is not None:
                     tolerance = int(float(resolved.azimuth_tolerance))
@@ -327,7 +318,6 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                             const.ATTR_SUN_ELEVATION: elevation,
                             const.ATTR_SUN_AZIMUTH: azimuth,
                             const.ATTR_SUN_ELEVATION_THRESH: threshold,
-                            "window_direction": direction,
                             "window_direction_azimuth": direction_azimuth,
                             "angle_difference": angle_difference,
                             "desired_from_sun": desired_from_sun,
