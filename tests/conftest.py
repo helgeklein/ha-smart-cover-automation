@@ -10,7 +10,7 @@ from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
-from custom_components.smart_cover_automation.const import DOMAIN
+from custom_components.smart_cover_automation.const import COVER_AZIMUTH, DOMAIN
 
 # Test data
 MOCK_COVER_ENTITY_ID = "cover.test_cover"
@@ -69,8 +69,8 @@ def mock_config_entry_sun() -> MagicMock:
         ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
         # Use numeric azimuths (degrees) for directions
-        f"{MOCK_COVER_ENTITY_ID}_cover_azimuth": 180.0,
-        f"{MOCK_COVER_ENTITY_ID_2}_cover_azimuth": 0.0,
+        f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}": 180.0,
+        f"{MOCK_COVER_ENTITY_ID_2}_{COVER_AZIMUTH}": 0.0,
     }
     entry.runtime_data = MagicMock()
     entry.runtime_data.config = entry.data
@@ -174,7 +174,7 @@ def create_sun_config(
     # Add directions for each cover
     for cover in config[ConfKeys.COVERS.value]:
         # Default to south-facing (180°) as numeric azimuth
-        config[f"{cover}_cover_azimuth"] = 180.0
+        config[f"{cover}_{COVER_AZIMUTH}"] = 180.0
     return config
 
 

@@ -16,6 +16,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 
+from .const import INTEGRATION_NAME
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
 ENTITY_DESCRIPTIONS = (
     BinarySensorEntityDescription(
         key="smart_cover_automation",
-        name="Smart cover automation binary sensor",
+        name=f"{INTEGRATION_NAME} binary sensor",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
     ),
 )

@@ -17,19 +17,20 @@ from .config import CONF_SPECS, ConfKeys, resolve
 class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
     """Config flow for the integration."""
 
+    # Schema version
+    # When changing the schema, increment the version and implement async_migrate_entry
     VERSION = 1
-    # Provide explicit domain attribute for tests referencing FlowHandler.domain
+    # Explicit domain attribute for tests referencing FlowHandler.domain
     domain = const.DOMAIN
 
     async def async_step_user(
         self,
         user_input: dict[str, Any] | None = None,
     ) -> config_entries.ConfigFlowResult:
-        """Handle a flow initialized by the user. Validate user input and create an integration instance.
+        """Invoked when the user adds the integration from the UI.
 
-        Invoked when the user chooses to add the integration from the UI.
         HA calls async_step_user(None) to show the form, then calls it again with a dict after submit.
-        It's called again on validation errors (re-display form) until it returns create_entry or aborts.
+        It's called again on validation errors (to re-display the form) until it returns create_entry or aborts.
         It's not used for editing options (that's OptionsFlowHandler.async_step_init).
 
         Error messages are retured in the errors dict:
@@ -100,7 +101,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
 
                 # Create a new HA config entry with the provided data
                 return self.async_create_entry(
-                    title=(f"Cover Automation ({len(user_input[ConfKeys.COVERS.value])} covers)"),
+                    title=const.INTEGRATION_NAME,
                     data=data,
                 )
 
@@ -190,7 +191,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Build dynamic fields for per-cover directions as numeric azimuth angles (0-359)
         direction_fields: dict[vol.Marker, object] = {}
         for cover in covers:
-            key = f"{cover}_cover_azimuth"
+            key = f"{cover}_{const.COVER_AZIMUTH}"
             # Compute default: accept numeric strings/floats; otherwise leave without default.
             raw = options.get(key, data.get(key))
             default_angle: float | None = None

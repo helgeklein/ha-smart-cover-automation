@@ -14,6 +14,7 @@ from custom_components.smart_cover_automation.const import (
     ATTR_SUN_AZIMUTH,
     ATTR_SUN_ELEVATION,
     ATTR_TEMP_CURRENT,
+    COVER_AZIMUTH,
 )
 from custom_components.smart_cover_automation.coordinator import (
     ConfigurationError,
@@ -529,7 +530,7 @@ class TestDataUpdateCoordinator:
         # Build a sun config for two covers, remove direction for second cover
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
         # Remove direction for cover 2 to trigger skip
-        config.pop(f"{MOCK_COVER_ENTITY_ID_2}_cover_azimuth", None)
+        config.pop(f"{MOCK_COVER_ENTITY_ID_2}_{COVER_AZIMUTH}", None)
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -570,7 +571,7 @@ class TestDataUpdateCoordinator:
         """If a cover has an invalid direction, it should be skipped."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
         # Set an invalid direction string for cover 2
-        config[f"{MOCK_COVER_ENTITY_ID_2}_cover_azimuth"] = "upwards"
+        config[f"{MOCK_COVER_ENTITY_ID_2}_{COVER_AZIMUTH}"] = "upwards"
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -688,7 +689,7 @@ class TestDataUpdateCoordinator:
             (315.0, 45.0, OPEN_POSITION),
         ]:
             # Set numeric angle for window
-            config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = window_azimuth
+            config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = window_azimuth
 
             # Sun above threshold with varying azimuth
             mock_sun_state.attributes = {
@@ -714,7 +715,7 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Direction as a numeric string should be parsed as azimuth."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
-        config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = "180"
+        config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = "180"
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -742,8 +743,8 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Only covers within tolerance should close when sun hits."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
-        config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = 180.0
-        config[f"{MOCK_COVER_ENTITY_ID_2}_cover_azimuth"] = 90.0
+        config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = 180.0
+        config[f"{MOCK_COVER_ENTITY_ID_2}_{COVER_AZIMUTH}"] = 90.0
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -787,7 +788,7 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """When elevation equals the threshold, closure logic applies (not low sun)."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
-        config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = 180.0
+        config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = 180.0
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -817,7 +818,7 @@ class TestDataUpdateCoordinator:
         """Numeric angle with max_closure less than 100% results in partial close."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
         config[ConfKeys.MAX_CLOSURE.value] = 60  # 60% close => desired position 40
-        config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = 180.0
+        config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = 180.0
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -851,7 +852,7 @@ class TestDataUpdateCoordinator:
             ConfKeys.MAX_TEMPERATURE.value: 24.0,
             ConfKeys.MIN_TEMPERATURE.value: 21.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
-            f"{MOCK_COVER_ENTITY_ID}_cover_azimuth": 180.0,
+            f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}": 180.0,
         }
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -888,7 +889,7 @@ class TestDataUpdateCoordinator:
             ConfKeys.MIN_TEMPERATURE.value: 21.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
             ConfKeys.MAX_CLOSURE.value: 60,  # partial closure => desired 40
-            f"{MOCK_COVER_ENTITY_ID}_cover_azimuth": 180.0,
+            f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}": 180.0,
         }
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -923,7 +924,7 @@ class TestDataUpdateCoordinator:
             ConfKeys.MAX_TEMPERATURE.value: 24.0,
             ConfKeys.MIN_TEMPERATURE.value: 21.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
-            f"{MOCK_COVER_ENTITY_ID}_cover_azimuth": 180.0,
+            f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}": 180.0,
         }
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))

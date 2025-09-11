@@ -9,6 +9,7 @@ import pytest
 
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
+from custom_components.smart_cover_automation.const import COVER_AZIMUTH
 
 
 def _mock_entry(data: dict[str, Any], options: dict[str, Any] | None = None) -> MagicMock:
@@ -39,8 +40,8 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
     assert ConfKeys.MAX_CLOSURE.value in schema
 
     # Dynamic per-cover directions
-    assert "cover.one_cover_azimuth" in schema
-    assert "cover.two_cover_azimuth" in schema
+    assert f"cover.one_{COVER_AZIMUTH}" in schema
+    assert f"cover.two_{COVER_AZIMUTH}" in schema
 
 
 @pytest.mark.asyncio
@@ -55,7 +56,7 @@ async def test_options_flow_submit_creates_entry() -> None:
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 30,
         ConfKeys.MAX_CLOSURE.value: 75,
         # Use numeric azimuth instead of legacy cardinal string
-        "cover.one_cover_azimuth": 180,
+        f"cover.one_{COVER_AZIMUTH}": 180,
     }
 
     result = await flow.async_step_init(user_input)
@@ -71,14 +72,14 @@ async def test_options_flow_direction_field_defaults_and_parsing() -> None:
     data = {
         ConfKeys.COVERS.value: ["cover.one", "cover.two", "cover.three"],
         # Store raw values across data/options the way HA would
-        "cover.one_cover_azimuth": "90",  # numeric string -> default 90
-        "cover.two_cover_azimuth": 270,  # int -> default 270
-        "cover.three_cover_azimuth": "west",  # invalid -> no default
+        f"cover.one_{COVER_AZIMUTH}": "90",  # numeric string -> default 90
+        f"cover.two_{COVER_AZIMUTH}": 270,  # int -> default 270
+        f"cover.three_{COVER_AZIMUTH}": "west",  # invalid -> no default
     }
 
     # Put some values into options to ensure options take precedence
     options = {
-        "cover.one_cover_azimuth": "180",  # overrides data to 180 default
+        f"cover.one_{COVER_AZIMUTH}": "180",  # overrides data to 180 default
     }
 
     flow = OptionsFlowHandler(_mock_entry(data, options))
@@ -88,14 +89,14 @@ async def test_options_flow_direction_field_defaults_and_parsing() -> None:
     schema = result_dict["data_schema"].schema
 
     # Voluptuous stores defaults on the marker; ensure present for 1 and 2, not for 3
-    assert "cover.one_cover_azimuth" in schema
-    assert "cover.two_cover_azimuth" in schema
-    assert "cover.three_cover_azimuth" in schema
+    assert f"cover.one_{COVER_AZIMUTH}" in schema
+    assert f"cover.two_{COVER_AZIMUTH}" in schema
+    assert f"cover.three_{COVER_AZIMUTH}" in schema
 
     # Check defaults via the marker's default attribute, which may be a callable
-    marker_one = next(k for k in schema.keys() if getattr(k, "schema", None) == "cover.one_cover_azimuth")
-    marker_two = next(k for k in schema.keys() if getattr(k, "schema", None) == "cover.two_cover_azimuth")
-    marker_three = next(k for k in schema.keys() if getattr(k, "schema", None) == "cover.three_cover_azimuth")
+    marker_one = next(k for k in schema.keys() if getattr(k, "schema", None) == f"cover.one_{COVER_AZIMUTH}")
+    marker_two = next(k for k in schema.keys() if getattr(k, "schema", None) == f"cover.two_{COVER_AZIMUTH}")
+    marker_three = next(k for k in schema.keys() if getattr(k, "schema", None) == f"cover.three_{COVER_AZIMUTH}")
 
     def _resolve_default(marker: object) -> Any:
         if hasattr(marker, "default"):

@@ -13,7 +13,7 @@ from homeassistant.const import Platform
 from homeassistant.loader import async_get_loaded_integration
 
 from .config_flow import OptionsFlowHandler
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN, INTEGRATION_NAME, LOGGER
 from .coordinator import DataUpdateCoordinator
 from .data import IntegrationData
 
@@ -34,7 +34,7 @@ async def async_setup_entry(
     entry: IntegrationConfigEntry,
 ) -> bool:
     """Set up this integration using the UI."""
-    LOGGER.info("Setting up Smart Cover Automation integration")
+    LOGGER.info(f"Setting up {INTEGRATION_NAME} integration")
 
     try:
         coordinator = DataUpdateCoordinator(hass, entry)
@@ -63,13 +63,13 @@ async def async_setup_entry(
         entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     except (OSError, ValueError, TypeError) as err:
-        LOGGER.error(f"Failed to set up Smart Cover Automation integration: {err}")
+        LOGGER.error(f"Failed to set up {INTEGRATION_NAME} integration: {err}")
         return False
     except (ImportError, AttributeError, KeyError) as err:
-        LOGGER.exception(f"Configuration error during Smart Cover Automation setup: {err}")
+        LOGGER.exception(f"Configuration error during {INTEGRATION_NAME} setup: {err}")
         return False
     else:
-        LOGGER.info("Smart Cover Automation integration setup completed")
+        LOGGER.info(f"{INTEGRATION_NAME} integration setup completed")
         return True
 
 
@@ -83,11 +83,11 @@ async def async_unload_entry(
     entry: IntegrationConfigEntry,
 ) -> bool:
     """Handle removal of an entry."""
-    LOGGER.info("Unloading Smart Cover Automation integration")
+    LOGGER.info(f"Unloading {INTEGRATION_NAME} integration")
     try:
         return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     except (OSError, ValueError, TypeError) as err:
-        LOGGER.error(f"Error unloading Smart Cover Automation integration: {err}")
+        LOGGER.error(f"Error unloading {INTEGRATION_NAME} integration: {err}")
         return False
 
 
@@ -96,7 +96,7 @@ async def async_reload_entry(
     entry: IntegrationConfigEntry,
 ) -> None:
     """Reload config entry."""
-    LOGGER.info("Reloading Smart Cover Automation integration")
+    LOGGER.info(f"Reloading {INTEGRATION_NAME} integration")
     await hass.config_entries.async_reload(entry.entry_id)
 
 

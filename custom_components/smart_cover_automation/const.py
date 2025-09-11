@@ -21,6 +21,7 @@ from typing import Final
 LOGGER: Final = getLogger(__package__)
 
 DOMAIN: Final = "smart_cover_automation"
+INTEGRATION_NAME: Final = "Smart Cover Automation"
 
 # Window azimuth (degrees)
 COVER_AZIMUTH: Final[str] = "cover_azimuth"
@@ -58,4 +59,3 @@ KEY_BODY: Final[str] = "body"
 KEY_CURRENT_POSITION: Final[str] = "current_position"
 KEY_DESIRED_POSITION: Final[str] = "desired_position"
 KEY_COMBINED_STRATEGY: Final[str] = "combined_strategy"
-STRATEGY_AND: Final[str] = "and"

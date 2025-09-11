@@ -10,7 +10,7 @@ from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import FlowHandler
-from custom_components.smart_cover_automation.const import DOMAIN
+from custom_components.smart_cover_automation.const import DOMAIN, INTEGRATION_NAME
 
 from .conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2
 
@@ -57,7 +57,7 @@ class TestConfigFlow:
             result = self._as_dict(result)
             assert result["type"] == FlowResultType.CREATE_ENTRY
             assert result["data"] == user_input
-            assert "2 covers" in result["title"]
+            assert result["title"] == INTEGRATION_NAME
 
     async def test_user_step_combined_success_without_temps(
         self,

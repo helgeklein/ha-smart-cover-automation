@@ -13,6 +13,7 @@ from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.config import ConfKeys
+from custom_components.smart_cover_automation.const import COVER_AZIMUTH
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
@@ -37,7 +38,7 @@ async def test_non_int_supported_features_does_not_crash() -> None:
 
     # Sun-only config with direct hit, but features attribute is an invalid string
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
-    config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = 0  # facing east
+    config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = 0  # facing east
     entry = MockConfigEntry(config)
 
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
@@ -114,7 +115,7 @@ async def test_extreme_max_closure_is_clamped_to_zero() -> None:
 
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
     config[ConfKeys.MAX_CLOSURE.value] = 1000  # extreme
-    config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = 0
+    config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = 0
     entry = MockConfigEntry(config)
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
 
@@ -224,7 +225,7 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     hass.services.async_call = AsyncMock()
 
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
-    config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = "south"  # invalid string
+    config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = "south"  # invalid string
     entry = MockConfigEntry(config)
 
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))

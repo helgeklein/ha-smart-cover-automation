@@ -110,7 +110,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         resolved = resolve_entry(config_entry)
         const.LOGGER.info(
-            f"Initializing Smart Cover Automation coordinator: mode=combined, covers={tuple(resolved.covers)}, update_interval={UPDATE_INTERVAL}"
+            f"Initializing {const.INTEGRATION_NAME} coordinator: mode=combined, covers={tuple(resolved.covers)}, update_interval={UPDATE_INTERVAL}"
         )
         # Adjust logger level per-entry if verbose logging is enabled
         try:
