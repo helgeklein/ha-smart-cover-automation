@@ -3,12 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol
-
-
-class _TitleClient(Protocol):
-    async def async_set_title(self, title: str) -> None: ...
-
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -27,4 +22,3 @@ class IntegrationData:
     coordinator: DataUpdateCoordinator
     integration: Integration
     config: dict[str, Any]  # Configuration data from the config entry
-    client: _TitleClient | None = None

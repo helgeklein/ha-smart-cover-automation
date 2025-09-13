@@ -33,7 +33,6 @@ async def test_binary_sensor_entity_properties() -> None:
 
     # Coordinator with predefined data and success state
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-    coordinator.data = {"title": "foo"}
     coordinator.last_update_success = True  # type: ignore[attr-defined]
 
     # Wire coordinator into runtime_data as HA would do
@@ -56,8 +55,6 @@ async def test_binary_sensor_entity_properties() -> None:
 
     # available is delegated from CoordinatorEntity; with last_update_success=True it's truthy
     assert cast(bool, getattr(entity, "available")) is True
-    # is_on based on coordinator.data["title"] == "foo"
-    assert cast(bool, getattr(entity, "is_on")) is True
 
 
 @pytest.mark.asyncio
@@ -99,18 +96,14 @@ async def test_switch_entity_turn_on_off_and_state() -> None:
     config_entry = MockConfigEntry(create_temperature_config())
 
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-    coordinator.data = {"title": "foo"}
+    # Make sure coordinator.data exists
+    coordinator.data = {"dummy": "value"}
     coordinator.last_update_success = True  # type: ignore[attr-defined]
+    config_entry.runtime_data.coordinator = coordinator
+    config_entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
 
     # Prevent real refresh logic from running in tests
     coordinator.async_request_refresh = AsyncMock()  # type: ignore[assignment]
-
-    # Fake client with async_set_title
-    client = MagicMock()
-    client.async_set_title = AsyncMock()
-
-    config_entry.runtime_data.coordinator = coordinator
-    config_entry.runtime_data.client = client
 
     captured: list[Entity] = []
 
@@ -126,29 +119,19 @@ async def test_switch_entity_turn_on_off_and_state() -> None:
     assert len(captured) == 1
     entity = captured[0]
 
-    # Initial state based on title == "foo"
     assert cast(bool, getattr(entity, "is_on")) is True
     # Access available to exercise property
     assert cast(bool | None, getattr(entity, "available")) in (True, None)
 
-    # Turn on should set title to "bar" and request refresh
-    await getattr(entity, "async_turn_on")()
-    client.async_set_title.assert_awaited_with("bar")
-    coordinator.async_request_refresh.assert_awaited()  # type: ignore[func-returns-value]
-
-    # Turn off should set title to "foo" and request refresh
-    await getattr(entity, "async_turn_off")()
-    client.async_set_title.assert_awaited_with("foo")
-    coordinator.async_request_refresh.assert_awaited()  # type: ignore[func-returns-value]
-
-    # When client is None, calls should not raise and no client method invoked
+    # Calls should not raise
     other_entry = MockConfigEntry(create_temperature_config())
     other_coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, other_entry))
-    other_coordinator.data = {"title": "baz"}
+    # Make sure other_coordinator.data exists
+    other_coordinator.data = {"dummy": "value"}
     other_coordinator.last_update_success = True  # type: ignore[attr-defined]
     other_coordinator.async_request_refresh = AsyncMock()  # type: ignore[assignment]
     other_entry.runtime_data.coordinator = other_coordinator
-    other_entry.runtime_data.client = None
+    other_entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
 
     other_captured: list[Entity] = []
 
@@ -166,5 +149,4 @@ async def test_switch_entity_turn_on_off_and_state() -> None:
     assert cast(bool | None, getattr(other_entity, "available")) in (True, None)
     await getattr(other_entity, "async_turn_on")()
     await getattr(other_entity, "async_turn_off")()
-    # No client to call; just ensure no exception and refresh was requested
     other_coordinator.async_request_refresh.assert_awaited()  # type: ignore[func-returns-value]

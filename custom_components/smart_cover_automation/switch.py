@@ -1,8 +1,7 @@
 """Switch platform for smart_cover_automation.
 
 Controls an integration switch backed by the DataUpdateCoordinator. Turning the
-switch on/off optionally uses a client from runtime_data and requests a
-coordinator refresh to propagate state.
+switch on/off optionally requests a coordinator refresh to propagate state.
 """
 
 from __future__ import annotations
@@ -68,19 +67,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
     @cached_property
     def is_on(self) -> bool | None:  # type: ignore[override]
         """Return true if the switch is on."""
-        # Prefer enabled option if present; fall back to demo title flag for tests
-        enabled: bool | None
-        try:
-            enabled = bool(resolve_entry(self.coordinator.config_entry).enabled)
-        except Exception:
-            # Fall back to raw config with default True
-            try:
-                enabled = bool(self.coordinator.config_entry.runtime_data.config.get(ConfKeys.ENABLED.value, True))
-            except Exception:
-                enabled = None
-        if isinstance(enabled, bool):
-            return enabled
-        return self.coordinator.data.get("title", "") == "foo"
+        return bool(resolve_entry(self.coordinator.config_entry).enabled)
 
     async def async_turn_on(self, **_: Any) -> None:
         """Turn on the switch."""
@@ -88,13 +75,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
         entry = self.coordinator.config_entry
         current = dict(getattr(entry, HA_OPTIONS, {}) or {})
         current[ConfKeys.ENABLED.value] = True
-        try:
-            await entry.async_set_options(current)  # type: ignore[attr-defined]
-        except Exception:
-            # Fallback to client demo behavior for tests
-            client = entry.runtime_data.client
-            if client is not None:
-                await client.async_set_title("bar")
+        await entry.async_set_options(current)  # type: ignore[attr-defined]
         await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **_: Any) -> None:
@@ -102,10 +83,5 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
         entry = self.coordinator.config_entry
         current = dict(getattr(entry, HA_OPTIONS, {}) or {})
         current[ConfKeys.ENABLED.value] = False
-        try:
-            await entry.async_set_options(current)  # type: ignore[attr-defined]
-        except Exception:
-            client = entry.runtime_data.client
-            if client is not None:
-                await client.async_set_title("foo")
+        await entry.async_set_options(current)  # type: ignore[attr-defined]
         await self.coordinator.async_request_refresh()
