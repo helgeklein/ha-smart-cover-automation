@@ -1,15 +1,9 @@
-"""
-Smart cover automation coordinator.
-
-Provides automation logic for controlling covers based on temperature and sun
-position. Runs on a 60-second interval and exposes the last exception via
-DataUpdateCoordinator.last_exception.
-"""
+"""Implementation of the automation logic."""
 
 from __future__ import annotations
 
-from datetime import timedelta
-from typing import TYPE_CHECKING, Any, Final
+import logging
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_POSITION, CoverEntityFeature
 from homeassistant.const import (
@@ -32,29 +26,26 @@ if TYPE_CHECKING:
 
     from .data import IntegrationConfigEntry
 
-# Constants
-COVER_FULLY_OPEN: Final = 100
-COVER_FULLY_CLOSED: Final = 0
-UPDATE_INTERVAL: Final = timedelta(seconds=60)
 
-# Error messages
-ERR_NO_TEMP_SENSOR = "Temperature sensor not found"
-ERR_INVALID_TEMP = "Invalid temperature reading"
-ERR_NO_SUN = "Sun integration not found"
-ERR_INVALID_SUN = "Invalid sun position data"
-ERR_SERVICE_CALL = "Service call failed"
-ERR_ENTITY_UNAVAILABLE = "Entity is unavailable"
-ERR_INVALID_CONFIG = "Invalid configuration"
-
-
+#
+# Exception classes
+#
 class SmartCoverError(UpdateFailed):
-    """Base class for smart cover automation errors."""
+    """Base class for this integration's errors."""
 
 
-class SensorNotFoundError(SmartCoverError):
+class SunSensorNotFoundError(SmartCoverError):
+    """Sun sensor could not be found."""
+
+    def __init__(self, sensor_name: str) -> None:
+        super().__init__(f"Sun sensor '{sensor_name}' not found")
+        self.sensor_name = sensor_name
+
+
+class TempSensorNotFoundError(SmartCoverError):
     """Temperature sensor could not be found."""
 
-    def __init__(self, sensor_name: str = "sensor.temperature") -> None:
+    def __init__(self, sensor_name: str) -> None:
         super().__init__(f"Temperature sensor '{sensor_name}' not found")
         self.sensor_name = sensor_name
 
@@ -78,12 +69,11 @@ class ServiceCallError(SmartCoverError):
         self.error = error
 
 
-class EntityUnavailableError(SmartCoverError):
-    """Entity is unavailable."""
+class AllCoversUnavailableError(SmartCoverError):
+    """All covers are unavailable."""
 
-    def __init__(self, entity_id: str) -> None:
-        super().__init__(f"Entity '{entity_id}' is unavailable")
-        self.entity_id = entity_id
+    def __init__(self) -> None:
+        super().__init__("All covers are unavailable")
 
 
 class ConfigurationError(SmartCoverError):
@@ -94,8 +84,11 @@ class ConfigurationError(SmartCoverError):
         self.message = message
 
 
+#
+# DataUpdateCoordinator
+#
 class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
-    """Class to manage cover automation."""
+    """Automation engine."""
 
     config_entry: IntegrationConfigEntry
 
@@ -104,21 +97,21 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             hass,
             const.LOGGER,
             name=const.DOMAIN,
-            update_interval=UPDATE_INTERVAL,
+            update_interval=const.UPDATE_INTERVAL,
             config_entry=config_entry,
         )
         self.config_entry = config_entry
-
         resolved = resolve_entry(config_entry)
         const.LOGGER.info(
-            f"Initializing {const.INTEGRATION_NAME} coordinator: mode=combined, covers={tuple(resolved.covers)}, update_interval={UPDATE_INTERVAL}"
+            f"Initializing {const.INTEGRATION_NAME} coordinator: covers={tuple(resolved.covers)}, update_interval={const.UPDATE_INTERVAL}"
         )
-        # Adjust logger level per-entry if verbose logging is enabled
+
+        # Adjust log level if verbose logging is enabled
         try:
             if bool(resolved.verbose_logging):
-                const.LOGGER.setLevel("DEBUG")
-                const.LOGGER.debug("Verbose logging enabled for this entry")
-        except Exception:  # pragma: no cover - non-critical
+                const.LOGGER.setLevel(logging.DEBUG)
+                const.LOGGER.debug("Verbose logging enabled")
+        except Exception:
             pass
 
     def _resolved_settings(self) -> ResolvedConfig:
@@ -126,22 +119,32 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         return resolve_entry(self.config_entry)
 
     async def _async_update_data(self) -> dict[str, Any]:
-        """Update automation state and control covers."""
+        """Update automation state and control covers.
+
+        This is the heart of the automation logic. It evaluates sensor states and
+        controls covers as needed.
+
+        This is called by HA in the following cases:
+        - First refresh
+        - Periodically at update_interval
+        - Manual refresh
+        - Integration reload
+        """
         try:
-            # Always keep a reference to raw config for dynamic per-cover direction
+            const.LOGGER.info("Starting cover automation update")
+
+            # Keep a reference to raw config for dynamic per-cover direction
             config = self.config_entry.runtime_data.config
 
-            # Use resolved settings for all global values
+            # Get the resolved settings
             resolved = self._resolved_settings()
+
+            # Get the configured covers
             covers = tuple(resolved.covers)
-
-            const.LOGGER.info(f"Starting cover automation update: mode=combined, covers={covers}")
-
             if not covers:
-                # No covers configured is a configuration error
                 raise ConfigurationError("No covers configured")
 
-            # Master enabled switch (defaults to True)
+            # Get the enabled state
             enabled = bool(resolved.enabled)
             if not enabled:
                 const.LOGGER.info("Automation disabled via configuration; skipping actions")
@@ -150,12 +153,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Collect states for all configured covers
             states: dict[str, State | None] = {entity_id: self.hass.states.get(entity_id) for entity_id in covers}
             available_covers = sum(1 for s in states.values() if s is not None)
+            if available_covers == 0:
+                raise AllCoversUnavailableError()
             for entity_id, state in states.items():
                 if state is None:
                     const.LOGGER.warning(f"Cover {entity_id} is unavailable")
-
-            if available_covers == 0:
-                raise EntityUnavailableError("all_covers")
 
             return await self._handle_combined_automation(states, config)
 
@@ -175,10 +177,10 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     SERVICE_SET_COVER_POSITION,
                     {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos},
                 )
-            elif desired_pos == COVER_FULLY_CLOSED:
+            elif desired_pos == const.COVER_POS_FULLY_CLOSED:
                 const.LOGGER.info(f"[{entity_id}] Closing cover")
                 await self.hass.services.async_call(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
-            elif desired_pos == COVER_FULLY_OPEN:
+            elif desired_pos == const.COVER_POS_FULLY_OPEN:
                 const.LOGGER.info(f"[{entity_id}] Opening cover")
                 await self.hass.services.async_call(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
             else:
@@ -221,8 +223,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             sensor_entity_id = resolved.temp_sensor_entity_id
             temp_state = self.hass.states.get(sensor_entity_id)
             if temp_state is None:
-                # Required temp sensor missing -> captured as last_exception
-                raise SensorNotFoundError(sensor_entity_id)
+                # Required temp sensor missing
+                raise TempSensorNotFoundError(sensor_entity_id)
             try:
                 current_temp = float(temp_state.state)
                 temp_available = True
@@ -238,16 +240,17 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         azimuth: float | None = None
         threshold = float(resolved.sun_elevation_threshold)
         if sun_enabled:
-            sun_state = self.hass.states.get(const.SUN_ENTITY_ID)
+            sensor_entity_id = const.SUN_ENTITY_ID
+            sun_state = self.hass.states.get(sensor_entity_id)
             if sun_state is None:
-                # Required sun entity missing -> captured as last_exception
-                raise UpdateFailed(ERR_NO_SUN)
+                # Required sun entity missing
+                raise SunSensorNotFoundError(sensor_entity_id)
             try:
                 elevation = float(sun_state.attributes.get(const.SUN_ATTR_ELEVATION, 0))
                 azimuth = float(sun_state.attributes.get(const.SUN_ATTR_AZIMUTH, 0))
                 sun_available = True
             except (ValueError, TypeError) as err:
-                raise UpdateFailed(ERR_INVALID_SUN) from err
+                raise InvalidSensorReadingError(sun_state.entity_id, str(sun_state.state)) from err
 
         # Iterate covers
         for entity_id, state in states.items():
@@ -267,10 +270,10 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Temperature contribution
             if temp_enabled and temp_available and current_temp is not None:
                 if current_temp > max_temp + temp_hysteresis:
-                    desired_from_temp = COVER_FULLY_CLOSED
+                    desired_from_temp = const.COVER_POS_FULLY_CLOSED
                     temp_hot = True
                 elif current_temp < min_temp - temp_hysteresis:
-                    desired_from_temp = COVER_FULLY_OPEN
+                    desired_from_temp = const.COVER_POS_FULLY_OPEN
                 else:
                     desired_from_temp = current_pos
                 details.update(
@@ -403,16 +406,18 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         if elevation < threshold:
             # Sun is low, open covers
-            const.LOGGER.debug(f"Desired {entity_id} (sun low): elevation={elevation:.2f}<threshold={threshold:.2f} => {COVER_FULLY_OPEN}")
-            return COVER_FULLY_OPEN
+            const.LOGGER.debug(
+                f"Desired {entity_id} (sun low): elevation={elevation:.2f}<threshold={threshold:.2f} => {const.COVER_POS_FULLY_OPEN}"
+            )
+            return const.COVER_POS_FULLY_OPEN
 
         # Calculate angle between sun and window
         angle_diff = self._calculate_angle_difference(azimuth, direction_azimuth)
         tolerance = int(float(self._resolved_settings().azimuth_tolerance))
         if angle_diff < tolerance:
-            desired_pos = max(COVER_FULLY_CLOSED, COVER_FULLY_OPEN - max_closure)
+            desired_pos = max(const.COVER_POS_FULLY_CLOSED, const.COVER_POS_FULLY_OPEN - max_closure)
         else:
-            desired_pos = COVER_FULLY_OPEN
+            desired_pos = const.COVER_POS_FULLY_OPEN
         const.LOGGER.debug(
             f"Desired {entity_id} (sun): angle_diff={angle_diff:.2f} tol={tolerance} max_closure={max_closure} => {desired_pos}"
         )

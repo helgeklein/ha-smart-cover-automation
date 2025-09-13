@@ -1,4 +1,4 @@
-"""Custom types for smart_cover_automation."""
+"""Runtime data."""
 
 from __future__ import annotations
 
@@ -12,13 +12,14 @@ if TYPE_CHECKING:
     from .coordinator import DataUpdateCoordinator
 
 
-type IntegrationConfigEntry = ConfigEntry[IntegrationData]
+# Type safety: entry.runtime_data will be of type RuntimeData
+type IntegrationConfigEntry = ConfigEntry[RuntimeData]
 
 
 @dataclass
-class IntegrationData:
+class RuntimeData:
     """Data for the integration."""
 
     coordinator: DataUpdateCoordinator
     integration: Integration
-    config: dict[str, Any]  # Configuration data from the config entry
+    config: dict[str, Any]

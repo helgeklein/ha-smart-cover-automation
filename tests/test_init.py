@@ -139,7 +139,7 @@ class TestIntegrationSetup:
         with (
             patch("custom_components.smart_cover_automation.async_get_loaded_integration") as mock_get_integration,
             patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
-            patch("custom_components.smart_cover_automation.IntegrationData") as mock_data_class,
+            patch("custom_components.smart_cover_automation.RuntimeData") as mock_data_class,
         ):
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
@@ -150,7 +150,7 @@ class TestIntegrationSetup:
 
             await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
 
-            # Check that IntegrationData was created with correct parameters
+            # Check that RuntimeData was created with correct parameters
             mock_data_class.assert_called_once_with(
                 integration=mock_integration,
                 coordinator=mock_coordinator,

@@ -64,8 +64,6 @@ Home Assistant instance running and already configured with the included
 [`configuration.yaml`](./config/configuration.yaml)
 file.
 
-The integration uses a combined (AND) automation strategy by default. When adding features, ensure tests cover both temp-only, sun-only, and combined scenarios, including edge cases.
-
 ## License
 
 By contributing, you agree that your contributions will be licensed under its MIT License.

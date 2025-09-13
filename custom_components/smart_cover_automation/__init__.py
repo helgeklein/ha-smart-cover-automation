@@ -15,7 +15,7 @@ from homeassistant.loader import async_get_loaded_integration
 from .config_flow import OptionsFlowHandler
 from .const import DOMAIN, HA_OPTIONS, INTEGRATION_NAME, LOGGER
 from .coordinator import DataUpdateCoordinator
-from .data import IntegrationData
+from .data import RuntimeData
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -61,9 +61,7 @@ async def async_setup_entry(
         }
 
         # Store shared state
-        # Notes:
-        # - Resolved settings are computed on-demand by consumers; no need to build here
-        entry.runtime_data = IntegrationData(
+        entry.runtime_data = RuntimeData(
             integration=async_get_loaded_integration(hass, entry.domain),
             coordinator=coordinator,
             config=merged_config,

@@ -23,7 +23,7 @@ from .conftest import MockConfigEntry, create_temperature_config
 
 @pytest.mark.asyncio
 async def test_automation_status_combined_summary_present() -> None:
-    """Automation status should produce a combined-style summary without automation_type."""
+    """Automation status should produce a combined-style summary."""
     hass = MagicMock(spec=HomeAssistant)
     config_entry = MockConfigEntry(create_temperature_config())
 
@@ -38,8 +38,6 @@ async def test_automation_status_combined_summary_present() -> None:
     }
     coordinator.last_update_success = True  # type: ignore[attr-defined]
     config_entry.runtime_data.coordinator = coordinator
-
-    # automation_type is no longer used; sensor should still handle gracefully
 
     captured: list[Entity] = []
 

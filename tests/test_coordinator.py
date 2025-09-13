@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.components.cover import CoverEntityFeature
-from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
@@ -17,12 +16,13 @@ from custom_components.smart_cover_automation.const import (
     COVER_AZIMUTH,
 )
 from custom_components.smart_cover_automation.coordinator import (
+    AllCoversUnavailableError,
     ConfigurationError,
     DataUpdateCoordinator,
-    EntityUnavailableError,
     InvalidSensorReadingError,
-    SensorNotFoundError,
     ServiceCallError,
+    SunSensorNotFoundError,
+    TempSensorNotFoundError,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
@@ -198,7 +198,7 @@ class TestDataUpdateCoordinator:
         }.get(entity_id)
         await coordinator.async_refresh()
         # DataUpdateCoordinator captures exceptions; verify last_exception
-        assert isinstance(coordinator.last_exception, SensorNotFoundError)
+        assert isinstance(coordinator.last_exception, TempSensorNotFoundError)
         assert "sensor.temperature" in str(coordinator.last_exception)
 
     async def test_temperature_sensor_invalid_reading(
@@ -352,8 +352,7 @@ class TestDataUpdateCoordinator:
             MOCK_COVER_ENTITY_ID: cover_state,  # Cover available
         }.get(entity_id)
         await sun_coordinator.async_refresh()
-        assert isinstance(sun_coordinator.last_exception, UpdateFailed)
-        assert "Sun integration not found" in str(sun_coordinator.last_exception)
+        assert isinstance(sun_coordinator.last_exception, SunSensorNotFoundError)
 
     async def test_sun_automation_invalid_data(
         self,
@@ -365,8 +364,7 @@ class TestDataUpdateCoordinator:
         mock_sun_state.attributes = {"elevation": "invalid", "azimuth": DIRECT_AZIMUTH}
         mock_hass.states.get.return_value = mock_sun_state
         await sun_coordinator.async_refresh()
-        assert isinstance(sun_coordinator.last_exception, UpdateFailed)
-        assert "Invalid sun position data" in str(sun_coordinator.last_exception)
+        assert isinstance(sun_coordinator.last_exception, InvalidSensorReadingError)
 
     async def test_sun_automation_skips_unavailable_cover(
         self,
@@ -411,7 +409,7 @@ class TestDataUpdateCoordinator:
             MOCK_COVER_ENTITY_ID_2: None,
         }.get(entity_id)
         await coordinator.async_refresh()
-        assert isinstance(coordinator.last_exception, EntityUnavailableError)
+        assert isinstance(coordinator.last_exception, AllCoversUnavailableError)
 
     async def test_service_call_failure(
         self,
@@ -471,8 +469,6 @@ class TestDataUpdateCoordinator:
             "close_cover",
             MOCK_COVER_ENTITY_ID,
         )
-
-    # Invalid automation type test removed: only combined mode is supported.
 
     async def test_no_covers_configured(
         self,
@@ -953,7 +949,7 @@ class TestDataUpdateCoordinator:
         mock_cover_state: MagicMock,
         mock_temperature_state: MagicMock,
     ) -> None:
-        """If sun direction missing, combined falls back to temperature input."""
+        """If sun direction missing, fall back to temperature input."""
         config = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             ConfKeys.MAX_TEMPERATURE.value: 24.0,

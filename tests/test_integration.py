@@ -14,7 +14,7 @@ from custom_components.smart_cover_automation.coordinator import (
     ConfigurationError,
     DataUpdateCoordinator,
     InvalidSensorReadingError,
-    SensorNotFoundError,
+    TempSensorNotFoundError,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
@@ -158,7 +158,7 @@ class TestIntegrationScenarios:
         }.get(entity_id)
 
         await coordinator.async_refresh()
-        assert isinstance(coordinator.last_exception, SensorNotFoundError)
+        assert isinstance(coordinator.last_exception, TempSensorNotFoundError)
 
         # Test 2: Invalid temperature reading with recovery
         temp_state = MagicMock()

@@ -15,6 +15,7 @@ logger:
     custom_components.smart_cover_automation: debug
 """
 
+from datetime import timedelta
 from logging import getLogger
 from typing import Final
 
@@ -40,7 +41,7 @@ ATTR_SUN_ELEVATION: Final[str] = "sun_elevation"  # Current sun elevation (°)
 ATTR_SUN_ELEVATION_THRESH: Final[str] = "sun_elevation_thresh"  # Minimum elevation (°) to consider direct sun
 ATTR_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Current sun azimuth (°)
 
-# Translation keys used by config flows and tests (centralize to avoid magic strings)
+# Translation keys used by config flows and tests
 ERROR_INVALID_COVER: Final[str] = "invalid_cover"
 ERROR_INVALID_TEMPERATURE_RANGE: Final[str] = "invalid_temperature_range"
 ERROR_REQUIRED_WITH_MAX_TEMPERATURE: Final[str] = "required_with_max_temperature"
@@ -49,7 +50,7 @@ ERROR_INVALID_CONFIG: Final[str] = "invalid_config"
 
 ABORT_SINGLE_INSTANCE_ALLOWED: Final[str] = "single_instance_allowed"
 
-# Home Assistant sun entity and attribute keys (centralize to avoid magic strings)
+# Home Assistant sun entity and attribute keys
 SUN_ENTITY_ID: Final[str] = "sun.sun"
 SUN_ATTR_ELEVATION: Final[str] = "elevation"
 SUN_ATTR_AZIMUTH: Final[str] = "azimuth"
@@ -62,3 +63,10 @@ KEY_COMBINED_STRATEGY: Final[str] = "combined_strategy"
 
 # Home Assistant string literals
 HA_OPTIONS: Final = "options"
+
+# Cover positions
+COVER_POS_FULLY_OPEN: Final = 100
+COVER_POS_FULLY_CLOSED: Final = 0
+
+# Coordinator
+UPDATE_INTERVAL: Final = timedelta(seconds=60)

@@ -97,7 +97,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                 await self.async_set_unique_id(unique_id)
                 self._abort_if_unique_id_configured()
 
-                # Persist provided data; single combined mode is implicit
+                # Persist provided data
                 data = dict(user_input)
 
                 # Create a new HA config entry with the provided data
@@ -125,7 +125,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                             multiple=True,
                         ),
                     ),
-                    # Optional temperature thresholds used by combined mode
+                    # Optional temperature thresholds
                     vol.Optional(
                         ConfKeys.MAX_TEMPERATURE.value,
                         default=CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,

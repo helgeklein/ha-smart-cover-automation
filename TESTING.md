@@ -9,7 +9,7 @@ This document describes the comprehensive test suite for the Smart Cover Automat
 ### Test Files
 
 - `tests/conftest.py` - Common fixtures and utilities
-- `tests/test_coordinator.py` - Coordinator logic (combined automation)
+- `tests/test_coordinator.py` - Coordinator logic (automation)
 - `tests/test_coordinator_extra.py` - Edge branches (disabled, min-delta skip, open/close fallback)
 - `tests/test_config_flow.py` - Configuration flow tests
 - `tests/test_options_flow.py` - Options flow tests
@@ -86,7 +86,7 @@ This document describes the comprehensive test suite for the Smart Cover Automat
 
 #### 5. Integration Tests (`test_integration.py`)
 - **Complete Scenarios**:
-  - Full combined automation cycles (sun + temperature)
+  - Full automation cycles (sun + temperature)
   - Multiple cover coordination
   - Mixed cover capabilities
 

@@ -40,7 +40,7 @@ class TestConfigFlow:
         flow_handler: FlowHandler,
         mock_hass_with_covers: MagicMock,
     ) -> None:
-        """Test successful setup; combined mode is always used."""
+        """Test successful setup."""
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
