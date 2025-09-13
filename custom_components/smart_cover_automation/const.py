@@ -59,3 +59,6 @@ KEY_BODY: Final[str] = "body"
 KEY_CURRENT_POSITION: Final[str] = "current_position"
 KEY_DESIRED_POSITION: Final[str] = "desired_position"
 KEY_COMBINED_STRATEGY: Final[str] = "combined_strategy"
+
+# Home Assistant string literals
+HA_OPTIONS: Final = "options"

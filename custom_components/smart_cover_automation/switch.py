@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 
+from custom_components.smart_cover_automation.const import HA_OPTIONS
+
 from .config import ConfKeys, resolve_entry
 from .entity import IntegrationEntity
 
@@ -84,7 +86,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
         """Turn on the switch."""
         # Persist enabled=True in options if available
         entry = self.coordinator.config_entry
-        current = dict(getattr(entry, "options", {}) or {})
+        current = dict(getattr(entry, HA_OPTIONS, {}) or {})
         current[ConfKeys.ENABLED.value] = True
         try:
             await entry.async_set_options(current)  # type: ignore[attr-defined]
@@ -98,7 +100,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
     async def async_turn_off(self, **_: Any) -> None:
         """Turn off the switch."""
         entry = self.coordinator.config_entry
-        current = dict(getattr(entry, "options", {}) or {})
+        current = dict(getattr(entry, HA_OPTIONS, {}) or {})
         current[ConfKeys.ENABLED.value] = False
         try:
             await entry.async_set_options(current)  # type: ignore[attr-defined]

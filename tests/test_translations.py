@@ -37,7 +37,7 @@ def test_en_json_has_required_keys() -> None:
     assert not missing_user, f"Missing user form labels in en.json: {sorted(missing_user)}"
 
     # Required options-step labels
-    options_data = data.get("options", {}).get("step", {}).get("init", {}).get("data", {})
+    options_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("init", {}).get("data", {})
     expected_options_fields = {
         ConfKeys.ENABLED.value,
         ConfKeys.VERBOSE_LOGGING.value,

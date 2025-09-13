@@ -11,6 +11,8 @@ from dataclasses import dataclass, fields
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
+from custom_components.smart_cover_automation.const import HA_OPTIONS
+
 T = TypeVar("T")
 
 
@@ -213,6 +215,6 @@ def resolve_entry(entry: Any) -> ResolvedConfig:
 
     Accepts any object with 'options' and 'data' attributes (works with test mocks).
     """
-    opts = getattr(entry, "options", None) or {}
+    opts = getattr(entry, HA_OPTIONS, None) or {}
     dat = getattr(entry, "data", None) or {}
     return resolve(opts, dat)
