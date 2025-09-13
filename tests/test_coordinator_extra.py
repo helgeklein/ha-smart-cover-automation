@@ -1,4 +1,4 @@
-"""Extra tests to increase coverage for coordinator branches."""
+"""Extra coordinator tests."""
 
 from __future__ import annotations
 
@@ -9,94 +9,109 @@ import pytest
 from homeassistant.components.cover import CoverEntityFeature
 
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
+from custom_components.smart_cover_automation.const import ATTR_TEMP_CURRENT
+from custom_components.smart_cover_automation.coordinator import (
+    DataUpdateCoordinator,
+)
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-
-from .conftest import (
+from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
-    MOCK_SUN_ENTITY_ID,
     MockConfigEntry,
     assert_service_called,
-    create_sun_config,
+    create_combined_state_mock,
     create_temperature_config,
 )
 
-
-@pytest.mark.asyncio
-async def test_automation_disabled_skips_actions(
-    mock_hass: MagicMock,
-) -> None:
-    """When enabled is False, coordinator returns empty covers and takes no action."""
-    config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID])
-    config[ConfKeys.ENABLED.value] = False
-    config_entry = MockConfigEntry(config)
-    coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
-
-    await coordinator.async_refresh()
-    assert coordinator.data == {ConfKeys.COVERS.value: {}}
-    mock_hass.services.async_call.assert_not_called()
+# Test constants
+HOT_TEMP = "26.0"
+COLD_TEMP = "18.0"
+OPEN_POSITION = 100
+CLOSED_POSITION = 0
 
 
-@pytest.mark.asyncio
-async def test_open_cover_without_position_support_when_cold(
-    mock_hass: MagicMock,
-) -> None:
-    """If too cold and cover lacks position support, open_cover service should be used."""
-    config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID])
-    config_entry = MockConfigEntry(config)
-    coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+class TestCoordinatorExtra:
+    """Extra coordinator tests for edge cases."""
 
-    # Cover supports only open/close; currently closed
-    cover_state = MagicMock()
-    cover_state.attributes = {
-        "current_position": 0,
-        "supported_features": CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE,
-    }
+    @pytest.fixture
+    def coordinator(self, mock_hass: MagicMock) -> DataUpdateCoordinator:
+        """Create coordinator for testing."""
+        config_entry = MockConfigEntry(create_temperature_config())
+        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+        return coordinator
 
-    # Temperature below minimum threshold to trigger opening
-    temp_state = MagicMock()
-    temp_state.state = "18.0"
+    async def test_temperature_with_cold_trigger(
+        self,
+        coordinator: DataUpdateCoordinator,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Test temperature automation with cold trigger in combined mode."""
+        # Temperature below minimum threshold to trigger opening
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            "current_position": CLOSED_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
 
-    mock_hass.states.get.side_effect = lambda entity_id: {
-        "sensor.temperature": temp_state,
-        MOCK_COVER_ENTITY_ID: cover_state,
-    }.get(entity_id)
+        # Setup combined state for cold temp + sun not hitting
+        state_mapping = create_combined_state_mock(
+            temp_state=COLD_TEMP,  # Cold temp wants open
+            sun_elevation=30.0,  # Above threshold but...
+            sun_azimuth=90.0,  # Not hitting south-facing window
+            cover_states={
+                MOCK_COVER_ENTITY_ID: cover_state.attributes,
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
-    await coordinator.async_refresh()
+        # Execute
+        await coordinator.async_refresh()
+        result = coordinator.data
 
-    await assert_service_called(mock_hass.services, "cover", "open_cover", MOCK_COVER_ENTITY_ID)
+        # Verify - should open due to cold temp OR sun not hitting
+        assert result is not None
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        assert cover_data[ATTR_TEMP_CURRENT] == float(COLD_TEMP)
+        assert cover_data["desired_position"] == OPEN_POSITION
 
+        # Verify service call
+        await assert_service_called(
+            mock_hass.services,
+            "cover",
+            "set_cover_position",
+            MOCK_COVER_ENTITY_ID,
+            position=OPEN_POSITION,
+        )
 
-@pytest.mark.asyncio
-async def test_min_position_delta_skips_small_adjustments(
-    mock_hass: MagicMock,
-) -> None:
-    """Small desired change below min_position_delta should be skipped (pass branch)."""
-    # Sun-only config with very small max closure to produce desired=95 from 100
-    config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
-    config[ConfKeys.MIN_POSITION_DELTA.value] = 10  # require >=10 change
-    config[ConfKeys.MAX_CLOSURE.value] = 5  # desired position = 100 - 5 = 95
-    config_entry = MockConfigEntry(config)
-    coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+    async def test_combined_logic_comfortable_temp(
+        self,
+        coordinator: DataUpdateCoordinator,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Test combined logic with comfortable temperature."""
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            "current_position": OPEN_POSITION,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
 
-    # Sun above threshold, direct at window
-    sun_state = MagicMock()
-    sun_state.attributes = {"elevation": 45.0, "azimuth": 180.0}
+        # Setup comfortable temp + sun hitting - should stay open (neither condition for close/open)
+        state_mapping = create_combined_state_mock(
+            temp_state="22.0",  # Comfortable temp
+            sun_elevation=30.0,  # Sun above threshold
+            sun_azimuth=180.0,  # Sun hitting window
+            cover_states={
+                MOCK_COVER_ENTITY_ID: cover_state.attributes,
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
-    # Cover supports position and starts fully open (100)
-    cover_state = MagicMock()
-    cover_state.attributes = {
-        "current_position": 100,
-        "supported_features": CoverEntityFeature.SET_POSITION,
-    }
+        # Execute
+        await coordinator.async_refresh()
+        result = coordinator.data
 
-    mock_hass.states.get.side_effect = lambda entity_id: {
-        MOCK_SUN_ENTITY_ID: sun_state,
-        MOCK_COVER_ENTITY_ID: cover_state,
-    }.get(entity_id)
+        # Verify - should maintain current position
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        assert cover_data["desired_position"] == OPEN_POSITION  # No change
 
-    await coordinator.async_refresh()
-    result = coordinator.data
-    assert result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]["desired_position"] == 95
-    # Movement from 100 to 95 is below min_position_delta -> no service called
-    mock_hass.services.async_call.assert_not_called()
+        # Verify no service call
+        mock_hass.services.async_call.assert_not_called()

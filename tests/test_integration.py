@@ -23,18 +23,17 @@ from .conftest import (
     MOCK_SUN_ENTITY_ID,
     MOCK_TEMP_SENSOR_ENTITY_ID,
     MockConfigEntry,
-    create_sun_config,
     create_temperature_config,
 )
 
-# Constants for magic numbers
+# Test constants
 HOT_TEMP = "26.0"
 COMFORTABLE_TEMP = "22.0"
 COLD_TEMP = "18.0"
 COVER_OPEN = 100
 COVER_CLOSED = 0
-LOW_SUN_ELEVATION = 20.0
-DIRECT_SUN_AZIMUTH = 180.0
+
+# Constants for magic numbers
 NUM_COVERS = 3
 MIN_SERVICE_CALLS = 2
 
@@ -43,18 +42,22 @@ class TestIntegrationScenarios:
     """Test real-world integration scenarios."""
 
     async def test_temperature_automation_complete_cycle(self) -> None:
-        """Test complete temperature automation cycle."""
+        """Test complete temperature automation cycle with combined AND logic."""
         hass = MagicMock()
-        config_entry = MockConfigEntry(create_temperature_config())
+        config_entry = MockConfigEntry(create_temperature_config())  # Both automations now always active
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
-        # Mock states for full cycle test
-        temp_states = [HOT_TEMP, COMFORTABLE_TEMP, COLD_TEMP]
-        cover_positions = [COVER_OPEN, COVER_CLOSED, COVER_CLOSED]
-        expected_positions = [COVER_CLOSED, COVER_CLOSED, COVER_OPEN]
+        # Test scenarios with combined logic (temp AND sun)
+        test_scenarios = [
+            # (temp, sun_elevation, sun_azimuth, current_pos, expected_pos, description)
+            (HOT_TEMP, 30.0, 180.0, COVER_OPEN, COVER_CLOSED, "Hot + sun hitting -> close"),
+            (COMFORTABLE_TEMP, 30.0, 180.0, COVER_CLOSED, COVER_CLOSED, "Comfortable + sun hitting -> no change"),
+            (COLD_TEMP, 10.0, 90.0, COVER_CLOSED, COVER_OPEN, "Cold + sun not hitting -> open (cold temp wins)"),
+            (HOT_TEMP, 10.0, 90.0, COVER_OPEN, COVER_OPEN, "Hot + sun not hitting -> no change"),
+        ]
 
-        for i, (temp, current_pos, expected_pos) in enumerate(zip(temp_states, cover_positions, expected_positions, strict=False)):
-            # Setup states
+        for i, (temp, elevation, azimuth, current_pos, expected_pos, description) in enumerate(test_scenarios):
+            # Setup states for combined automation
             temp_state = MagicMock()
             temp_state.state = temp
             temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
@@ -65,9 +68,14 @@ class TestIntegrationScenarios:
                 "supported_features": 15,
             }
 
-            hass.states.get.side_effect = lambda entity_id, ts=temp_state, cs=cover_state: {
+            sun_state = MagicMock()
+            sun_state.state = "above_horizon"
+            sun_state.attributes = {"elevation": elevation, "azimuth": azimuth}
+
+            hass.states.get.side_effect = lambda entity_id, ts=temp_state, cs=cover_state, ss=sun_state: {
                 MOCK_TEMP_SENSOR_ENTITY_ID: ts,
                 MOCK_COVER_ENTITY_ID: cs,
+                MOCK_SUN_ENTITY_ID: ss,
             }.get(entity_id)
 
             hass.services.async_call.reset_mock()
@@ -78,41 +86,49 @@ class TestIntegrationScenarios:
                 result = coordinator.data
 
                 # Verify result structure
-                assert result is not None, f"Result is None in cycle {i}"
-                assert ConfKeys.COVERS.value in result, f"Invalid result structure in cycle {i}"
+                assert result is not None, f"Result is None in scenario {i}: {description}"
+                assert ConfKeys.COVERS.value in result, f"Invalid result structure in scenario {i}: {description}"
 
                 cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
                 assert cover_data["desired_position"] == expected_pos, (
-                    f"Cycle {i}: Expected position {expected_pos}, got {cover_data['desired_position']}"
+                    f"Scenario {i} ({description}): Expected position {expected_pos}, got {cover_data['desired_position']}"
                 )
 
                 # Check service calls only when position changes
                 if current_pos != expected_pos:
-                    assert hass.services.async_call.called, f"Cycle {i}: Service should have been called"
+                    assert hass.services.async_call.called, f"Scenario {i} ({description}): Service should have been called"
                 else:
-                    assert not hass.services.async_call.called, f"Cycle {i}: Service should not have been called"
+                    assert not hass.services.async_call.called, f"Scenario {i} ({description}): Service should not have been called"
 
             except Exception as e:
-                pytest.fail(f"Automation failed in cycle {i}: {e}")
+                pytest.fail(f"Automation failed in scenario {i} ({description}): {e}")
 
     async def test_sun_automation_daily_cycle(self) -> None:
-        """Test sun automation through daily cycle."""
+        """Test sun automation through daily cycle with combined AND logic."""
         hass = MagicMock()
-        config_entry = MockConfigEntry(create_sun_config())
+        config_entry = MockConfigEntry(create_temperature_config())  # Both automations now always active
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
-        # Simulate sun positions throughout day
-        sun_positions = [
-            (10.0, 90.0),  # Low sun, east
-            (45.0, 135.0),  # High sun, southeast
-            (50.0, 180.0),  # High sun, south (direct)
-            (30.0, 225.0),  # Lower sun, southwest
-            (5.0, 270.0),  # Low sun, west
+        # Test scenarios for combined temp+sun logic throughout the day
+        test_scenarios = [
+            # (elevation, azimuth, temp, expected_pos, description)
+            (10.0, 90.0, HOT_TEMP, COVER_OPEN, "Low sun, east + hot -> no change (sun not hitting)"),
+            (45.0, 135.0, HOT_TEMP, COVER_CLOSED, "High sun, southeast + hot -> close (sun hitting, temp hot)"),
+            (50.0, 180.0, HOT_TEMP, COVER_CLOSED, "High sun, south + hot -> close (both conditions met)"),
+            (30.0, 225.0, HOT_TEMP, COVER_CLOSED, "Lower sun, southwest + hot -> close (sun hitting, temp hot)"),
+            (5.0, 270.0, HOT_TEMP, COVER_OPEN, "Low sun, west + hot -> no change (sun not hitting)"),
+            (50.0, 180.0, COMFORTABLE_TEMP, COVER_OPEN, "High sun, south + comfortable -> no change (temp not hot)"),
+            (50.0, 180.0, COLD_TEMP, COVER_OPEN, "High sun, south + cold -> open (cold temp wins)"),
         ]
 
-        for elevation, azimuth in sun_positions:
+        for i, (elevation, azimuth, temp, expected_pos, description) in enumerate(test_scenarios):
             sun_state = MagicMock()
+            sun_state.state = "above_horizon"
             sun_state.attributes = {"elevation": elevation, "azimuth": azimuth}
+
+            temp_state = MagicMock()
+            temp_state.state = temp
+            temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
 
             cover_state = MagicMock()
             cover_state.attributes = {
@@ -120,24 +136,22 @@ class TestIntegrationScenarios:
                 "supported_features": 15,
             }
 
-            hass.states.get.side_effect = lambda entity_id, ss=sun_state, cs=cover_state: {
+            hass.states.get.side_effect = lambda entity_id, ss=sun_state, ts=temp_state, cs=cover_state: {
                 MOCK_SUN_ENTITY_ID: ss,
+                MOCK_TEMP_SENSOR_ENTITY_ID: ts,
                 MOCK_COVER_ENTITY_ID: cs,
             }.get(entity_id)
 
             await coordinator.async_refresh()
             result = coordinator.data
 
-            assert result is not None, "Result is None"
-            assert ConfKeys.COVERS.value in result, f"Invalid result for sun position {elevation}°, {azimuth}°"
+            assert result is not None, f"Result is None in scenario {i}: {description}"
+            assert ConfKeys.COVERS.value in result, f"Invalid result for scenario {i}: {description}"
 
             cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-
-            # Verify logical sun behavior
-            if elevation < LOW_SUN_ELEVATION:  # Low sun
-                assert cover_data["desired_position"] == COVER_OPEN, f"Low sun should open covers: {elevation}°"
-            elif elevation >= LOW_SUN_ELEVATION and azimuth == DIRECT_SUN_AZIMUTH:
-                assert cover_data["desired_position"] != COVER_OPEN, f"Direct sun should close covers: {elevation}°, {azimuth}°"
+            assert cover_data["desired_position"] == expected_pos, (
+                f"Scenario {i} ({description}): Expected {expected_pos}, got {cover_data['desired_position']}"
+            )
 
     async def test_error_recovery_scenarios(self) -> None:
         """Test error handling and recovery scenarios."""
@@ -155,6 +169,7 @@ class TestIntegrationScenarios:
         hass.states.get.side_effect = lambda entity_id, cs=cover_state: {
             MOCK_TEMP_SENSOR_ENTITY_ID: None,
             MOCK_COVER_ENTITY_ID: cs,
+            MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
         }.get(entity_id)
 
         await coordinator.async_refresh()
@@ -168,6 +183,7 @@ class TestIntegrationScenarios:
         hass.states.get.side_effect = lambda entity_id, ts=temp_state, cs=cover_state: {
             MOCK_TEMP_SENSOR_ENTITY_ID: ts,
             MOCK_COVER_ENTITY_ID: cs,
+            MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
         }.get(entity_id)
 
         await coordinator.async_refresh()
@@ -184,6 +200,7 @@ class TestIntegrationScenarios:
         hass.states.get.side_effect = lambda entity_id: {
             MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
             MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
         }.get(entity_id)
 
         # Make service call fail but automation should continue
@@ -223,6 +240,11 @@ class TestIntegrationScenarios:
         temp_state.state = HOT_TEMP
         temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
 
+        # Create sun state for combined automation
+        sun_state = MagicMock()
+        sun_state.state = "above_horizon"
+        sun_state.attributes = {"elevation": 50.0, "azimuth": 180.0}  # Direct sun hitting
+
         # Create different cover states
         cover_states = {}
         for i, cover_id in enumerate(config[ConfKeys.COVERS.value]):
@@ -236,6 +258,8 @@ class TestIntegrationScenarios:
         def get_state(entity_id: str) -> MagicMock | None:
             if entity_id == MOCK_TEMP_SENSOR_ENTITY_ID:
                 return temp_state
+            if entity_id == MOCK_SUN_ENTITY_ID:
+                return sun_state
             return cover_states.get(entity_id)
 
         hass.states.get.side_effect = get_state
@@ -247,10 +271,10 @@ class TestIntegrationScenarios:
         # Verify all covers were processed
         assert len(result[ConfKeys.COVERS.value]) == NUM_COVERS, f"Expected {NUM_COVERS} covers, got {len(result['covers'])}"
 
-        # Verify all covers should close (position 0) due to hot temperature
+        # Verify all covers should close (position 0) due to hot temperature AND sun hitting
         for cover_id in config[ConfKeys.COVERS.value]:
             assert result[ConfKeys.COVERS.value][cover_id]["desired_position"] == COVER_CLOSED, (
-                f"Cover {cover_id} should close in hot weather"
+                f"Cover {cover_id} should close in hot weather with sun hitting"
             )
 
         # Verify service calls were made for covers that needed to move
@@ -288,6 +312,7 @@ class TestIntegrationScenarios:
             MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
             "cover.smart": smart_cover,
             "cover.basic": basic_cover,
+            MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
         }.get(entity_id)
 
         await coordinator.async_refresh()

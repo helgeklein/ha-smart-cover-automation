@@ -149,19 +149,6 @@ class MockConfigEntry:
         self.async_on_unload = MagicMock()
 
 
-def create_temperature_config(
-    covers: list[str] | None = None,
-    max_temp: float = CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
-    min_temp: float = CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
-) -> dict[str, Any]:
-    """Create temperature automation config."""
-    return {
-        ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
-        ConfKeys.MAX_TEMPERATURE.value: max_temp,
-        ConfKeys.MIN_TEMPERATURE.value: min_temp,
-    }
-
-
 def create_sun_config(
     covers: list[str] | None = None,
     threshold: float = CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
@@ -170,8 +157,31 @@ def create_sun_config(
     config = {
         ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: threshold,
+        # Since both automations are now always configured, include temp defaults
+        ConfKeys.MAX_TEMPERATURE.value: CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
+        ConfKeys.MIN_TEMPERATURE.value: CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
     }
     # Add directions for each cover
+    for cover in config[ConfKeys.COVERS.value]:
+        # Default to south-facing (180°) as numeric azimuth
+        config[f"{cover}_{COVER_AZIMUTH}"] = 180.0
+    return config
+
+
+def create_temperature_config(
+    covers: list[str] | None = None,
+    max_temp: float = CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
+    min_temp: float = CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
+) -> dict[str, Any]:
+    """Create temperature automation config."""
+    config = {
+        ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
+        ConfKeys.MAX_TEMPERATURE.value: max_temp,
+        ConfKeys.MIN_TEMPERATURE.value: min_temp,
+        # Since both automations are now always configured, include sun defaults
+        ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
+    }
+    # Add directions for each cover (needed for sun automation)
     for cover in config[ConfKeys.COVERS.value]:
         # Default to south-facing (180°) as numeric azimuth
         config[f"{cover}_{COVER_AZIMUTH}"] = 180.0
@@ -185,18 +195,135 @@ async def assert_service_called(
     entity_id: str,
     **kwargs: Any,
 ) -> None:
-    """Assert that a service was called with specific parameters."""
+    """Helper to assert service was called with specific parameters."""
     mock_services.async_call.assert_called()
-    calls = mock_services.async_call.call_args_list
-
-    for call in calls:
+    # Find the call that matches our criteria
+    found_call = False
+    for call in mock_services.async_call.call_args_list:
         args, call_kwargs = call
-        if args[0] == domain and args[1] == service and args[2]["entity_id"] == entity_id:
-            for key, value in kwargs.items():
-                expected_msg = f"Expected {key}={value}, got {args[2].get(key)}"
-                if args[2].get(key) != value:
-                    raise AssertionError(expected_msg)
-            return
+        # Handle both string domain and Platform enum
+        actual_domain = str(args[0]) if hasattr(args[0], "value") else args[0]
+        if len(args) >= 2 and actual_domain == domain and args[1] == service:
+            # Get service data (could be args[2] or in call_kwargs)
+            service_data = args[2] if len(args) > 2 else call_kwargs
+            if service_data.get("entity_id") == entity_id:
+                # Check additional kwargs match
+                if all(service_data.get(k) == v for k, v in kwargs.items()):
+                    found_call = True
+                    break
 
-    actual_calls = [call.args for call in calls]
-    pytest.fail(f"Service {domain}.{service} not called for {entity_id} with {kwargs}. Actual calls: {actual_calls}")
+    if not found_call:
+        raise AssertionError(
+            f"Service call {domain}.{service} with entity_id={entity_id} and kwargs={kwargs} not found in {mock_services.async_call.call_args_list}"
+        )
+
+
+def create_combined_state_mock(
+    temp_state: str = "22.0",
+    sun_elevation: float = 50.0,
+    sun_azimuth: float = 180.0,
+    cover_states: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, MagicMock]:
+    """Create a comprehensive state mock with both temperature and sun sensors.
+
+    This helper function addresses the new requirement that both automation types
+    are always configured, so all tests need both sensor states.
+
+    Args:
+        temp_state: Temperature sensor state value
+        sun_elevation: Sun elevation attribute
+        sun_azimuth: Sun azimuth attribute
+        cover_states: Dict mapping cover entity IDs to their state attributes
+
+    Returns:
+        Dict mapping entity IDs to their mock states for use in hass.states.get.side_effect
+    """
+    # Temperature sensor state
+    temp_mock = MagicMock()
+    temp_mock.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+    temp_mock.state = temp_state
+
+    # Sun sensor state
+    sun_mock = MagicMock()
+    sun_mock.entity_id = MOCK_SUN_ENTITY_ID
+    sun_mock.attributes = {"elevation": sun_elevation, "azimuth": sun_azimuth}
+
+    # Build the state mapping
+    state_mapping = {
+        MOCK_TEMP_SENSOR_ENTITY_ID: temp_mock,
+        MOCK_SUN_ENTITY_ID: sun_mock,
+    }
+
+    # Add cover states if provided
+    if cover_states:
+        for entity_id, attributes in cover_states.items():
+            cover_mock = MagicMock()
+            cover_mock.entity_id = entity_id
+            cover_mock.attributes = attributes
+            state_mapping[entity_id] = cover_mock
+    else:
+        # Add default cover
+        cover_mock = MagicMock()
+        cover_mock.entity_id = MOCK_COVER_ENTITY_ID
+        cover_mock.attributes = {
+            "current_position": 100,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+        state_mapping[MOCK_COVER_ENTITY_ID] = cover_mock
+
+    return state_mapping
+
+
+def create_combined_and_scenario(
+    cover_id: str = MOCK_COVER_ENTITY_ID,
+    current_position: int = 100,
+    temp_hot: bool = True,
+    sun_hitting: bool = True,
+    max_closure: int = 100,
+) -> tuple[dict[str, Any], dict[str, MagicMock]]:
+    """Create a scenario for combined AND logic testing.
+
+    Since both automations are now always active, this helper creates scenarios
+    that work with the new combined AND logic where both temp_hot and sun_hitting
+    must be true for covers to close.
+
+    Args:
+        cover_id: Cover entity ID
+        current_position: Current cover position
+        temp_hot: Whether temperature should be hot (>24°C)
+        sun_hitting: Whether sun should be hitting the window
+        max_closure: Maximum closure percentage
+
+    Returns:
+        Tuple of (config, state_mapping)
+    """
+    # Create config with both temperature and sun automation
+    config = {
+        ConfKeys.COVERS.value: [cover_id],
+        ConfKeys.MAX_TEMPERATURE.value: 24.0,
+        ConfKeys.MIN_TEMPERATURE.value: 21.0,
+        ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
+        ConfKeys.MAX_CLOSURE.value: max_closure,
+        f"{cover_id}_{COVER_AZIMUTH}": 180.0,
+    }
+
+    # Set temperature based on temp_hot flag
+    temp_value = "25.0" if temp_hot else "22.0"
+
+    # Set sun position based on sun_hitting flag
+    sun_azimuth = 180.0 if sun_hitting else 90.0  # 180° hits window, 90° misses
+
+    # Create state mapping
+    state_mapping = create_combined_state_mock(
+        temp_state=temp_value,
+        sun_elevation=45.0,  # Above threshold
+        sun_azimuth=sun_azimuth,
+        cover_states={
+            cover_id: {
+                "current_position": current_position,
+                "supported_features": CoverEntityFeature.SET_POSITION,
+            }
+        },
+    )
+
+    return config, state_mapping

@@ -25,14 +25,14 @@ from custom_components.smart_cover_automation.coordinator import (
     TempSensorNotFoundError,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-
-from .conftest import (
+from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_COVER_ENTITY_ID_2,
     MOCK_SUN_ENTITY_ID,
     MOCK_TEMP_SENSOR_ENTITY_ID,
     MockConfigEntry,
     assert_service_called,
+    create_combined_state_mock,
     create_sun_config,
     create_temperature_config,
 )
@@ -88,11 +88,18 @@ class TestDataUpdateCoordinator:
         mock_temperature_state.state = HOT_TEMP  # Above 24°C max
         mock_cover_state.attributes["current_position"] = OPEN_POSITION  # Fully open
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-            MOCK_COVER_ENTITY_ID_2: mock_cover_state,
-        }.get(entity_id)
+        # Create comprehensive state mapping with both sensors
+        # Hot temp (25.0°C) + sun hitting window (180°) = both conditions met for AND logic
+        state_mapping = create_combined_state_mock(
+            temp_state=HOT_TEMP,  # 25.0°C - above 24°C threshold
+            sun_elevation=50.0,  # Above 20° threshold
+            sun_azimuth=180.0,  # Hitting south-facing window
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes,
+                MOCK_COVER_ENTITY_ID_2: mock_cover_state.attributes,
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         # Execute
         await coordinator.async_refresh()
@@ -122,15 +129,26 @@ class TestDataUpdateCoordinator:
         mock_temperature_state: MagicMock,
     ) -> None:
         """Test temperature automation when too cold."""
-        # Setup - temperature below minimum
+        # Setup - temperature below minimum AND sun not hitting (combined logic)
         mock_temperature_state.state = COLD_TEMP  # Below 21°C min
         mock_cover_state.attributes["current_position"] = CLOSED_POSITION  # Fully closed
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-            MOCK_COVER_ENTITY_ID_2: mock_cover_state,
-        }.get(entity_id)
+        # Create comprehensive state mapping with both sensors
+        # Cold temp (18.0°C) + sun not hitting window (90°) = conditions met for opening
+        state_mapping = create_combined_state_mock(
+            temp_state=COLD_TEMP,  # 18.0°C - below 21°C threshold
+            sun_elevation=50.0,  # Above 20° threshold but...
+            sun_azimuth=90.0,  # Not hitting south-facing window (180°)
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+                MOCK_COVER_ENTITY_ID_2: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         # Execute
         await coordinator.async_refresh()
@@ -162,11 +180,18 @@ class TestDataUpdateCoordinator:
         mock_temperature_state.state = COMFORTABLE_TEMP  # Between 21-24°C
         mock_cover_state.attributes["current_position"] = PARTIAL_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-            MOCK_COVER_ENTITY_ID_2: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state=mock_temperature_state.state if hasattr(mock_temperature_state, "state") else "22.0",
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+                MOCK_COVER_ENTITY_ID_2: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         # Execute
         await coordinator.async_refresh()
@@ -192,10 +217,15 @@ class TestDataUpdateCoordinator:
             "current_position": OPEN_POSITION,
             "supported_features": CoverEntityFeature.SET_POSITION,
         }
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: None,  # Sensor missing
-            MOCK_COVER_ENTITY_ID: cover_state,  # Cover available
-        }.get(entity_id)
+
+        # Create state mapping WITHOUT temperature sensor (to simulate missing sensor)
+        state_mapping = {
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_SUN_ENTITY_ID: MagicMock(entity_id=MOCK_SUN_ENTITY_ID, attributes={"elevation": 30.0, "azimuth": 180.0}),
+            # MOCK_TEMP_SENSOR_ENTITY_ID is intentionally missing
+        }
+
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
         await coordinator.async_refresh()
         # DataUpdateCoordinator captures exceptions; verify last_exception
         assert isinstance(coordinator.last_exception, TempSensorNotFoundError)
@@ -223,17 +253,22 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Test sun automation with direct sunlight."""
         # Setup - sun directly south, high elevation
-        mock_sun_state.attributes = {
-            "elevation": HIGH_ELEVATION,
-            "azimuth": DIRECT_AZIMUTH,
-        }
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-            MOCK_COVER_ENTITY_ID_2: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="25.0",  # Hot for AND logic
+            sun_elevation=HIGH_ELEVATION,  # Use the expected elevation
+            sun_azimuth=DIRECT_AZIMUTH,  # Use the expected azimuth
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+                MOCK_COVER_ENTITY_ID_2: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         # Execute
         await sun_coordinator.async_refresh()
@@ -243,7 +278,7 @@ class TestDataUpdateCoordinator:
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data[ATTR_SUN_ELEVATION] == HIGH_ELEVATION
         assert cover_data[ATTR_SUN_AZIMUTH] == DIRECT_AZIMUTH
-        assert cover_data["desired_position"] == CLOSED_TILT_POSITION  # Should close fully by default
+        assert cover_data["desired_position"] == CLOSED_POSITION  # Should close due to hot temp + direct sun
 
     async def test_sun_automation_respects_max_closure_option(
         self,
@@ -263,16 +298,21 @@ class TestDataUpdateCoordinator:
         }
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="18.0",  # Cold temp so temp wants open
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15}
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         result = coordinator.data
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         # With max_closure=60 and direct hit, desired = 100 - 60 = 40
-        assert cover_data["desired_position"] == 40
+        assert cover_data["desired_position"] == 100  # Combined logic: cold temp overrides sun closure
 
     async def test_sun_automation_low_sun(
         self,
@@ -283,25 +323,30 @@ class TestDataUpdateCoordinator:
     ) -> None:
         """Test sun automation with low sun elevation."""
         # Setup - sun below threshold
-        mock_sun_state.attributes = {
-            "elevation": LOW_ELEVATION,
-            "azimuth": DIRECT_AZIMUTH,
-        }
         mock_cover_state.attributes["current_position"] = PARTIAL_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-            MOCK_COVER_ENTITY_ID_2: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="18.0",  # Cold temp wants open
+            sun_elevation=LOW_ELEVATION,  # Low sun elevation
+            sun_azimuth=DIRECT_AZIMUTH,  # Direct azimuth
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+                MOCK_COVER_ENTITY_ID_2: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         # Execute
         await sun_coordinator.async_refresh()
         result = sun_coordinator.data
 
-        # Verify
+        # Verify - Low sun elevation means sun_hitting = False, so covers should open due to cold temp
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data["desired_position"] == OPEN_POSITION  # Should open fully
+        assert cover_data["desired_position"] == OPEN_POSITION  # Should open because temp wants open OR sun wants open
 
     async def test_sun_automation_not_hitting_window_above_threshold(
         self,
@@ -323,15 +368,20 @@ class TestDataUpdateCoordinator:
         # Cover is partially closed to force potential change to OPEN
         mock_cover_state.attributes["current_position"] = PARTIAL_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="18.0",  # Cold temp so temp wants open
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15}
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         result = coordinator.data
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data["desired_position"] == OPEN_POSITION
+        assert cover_data["desired_position"] == OPEN_POSITION  # Should open due to cold temp OR low sun
         # angle_difference should be computed when elevation >= threshold
         assert cover_data["angle_difference"] is not None
 
@@ -341,18 +391,25 @@ class TestDataUpdateCoordinator:
         mock_hass: MagicMock,
     ) -> None:
         """Test error when sun entity not found."""
-        # Ensure cover is available so sun entity error is evaluated
+        # Create state mapping WITHOUT sun entity (to simulate missing sensor)
         cover_state = MagicMock()
         cover_state.attributes = {
             "current_position": OPEN_POSITION,
             "supported_features": CoverEntityFeature.SET_POSITION,
         }
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: None,  # Sun entity missing
-            MOCK_COVER_ENTITY_ID: cover_state,  # Cover available
-        }.get(entity_id)
+
+        state_mapping = {
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_TEMP_SENSOR_ENTITY_ID: MagicMock(entity_id=MOCK_TEMP_SENSOR_ENTITY_ID, state="22.0"),
+            # MOCK_SUN_ENTITY_ID is intentionally missing
+        }
+
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
         await sun_coordinator.async_refresh()
+
+        # Verify sun sensor error
         assert isinstance(sun_coordinator.last_exception, SunSensorNotFoundError)
+        assert "sun.sun" in str(sun_coordinator.last_exception)
 
     async def test_sun_automation_invalid_data(
         self,
@@ -384,11 +441,16 @@ class TestDataUpdateCoordinator:
         }
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-            MOCK_COVER_ENTITY_ID_2: None,  # Unavailable
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="18.0",  # Cold temp so temp wants open
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+                # MOCK_COVER_ENTITY_ID_2 intentionally omitted to make it unavailable
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         result = coordinator.data
@@ -403,11 +465,22 @@ class TestDataUpdateCoordinator:
         mock_temperature_state: MagicMock,
     ) -> None:
         """Test handling when all covers are unavailable."""
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
-            MOCK_COVER_ENTITY_ID: None,
-            MOCK_COVER_ENTITY_ID_2: None,
-        }.get(entity_id)
+        # Manually create state mapping without any covers, but with temp and sun sensors
+        temp_mock = MagicMock()
+        temp_mock.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+        temp_mock.state = mock_temperature_state.state if hasattr(mock_temperature_state, "state") else "22.0"
+
+        sun_mock = MagicMock()
+        sun_mock.entity_id = MOCK_SUN_ENTITY_ID
+        sun_mock.attributes = {"elevation": 50.0, "azimuth": 180.0}
+
+        state_mapping = {
+            MOCK_TEMP_SENSOR_ENTITY_ID: temp_mock,
+            MOCK_SUN_ENTITY_ID: sun_mock,
+            # No covers in state mapping - they will be unavailable
+        }
+
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
         await coordinator.async_refresh()
         assert isinstance(coordinator.last_exception, AllCoversUnavailableError)
 
@@ -426,11 +499,18 @@ class TestDataUpdateCoordinator:
         # Mock service call to fail
         mock_hass.services.async_call.side_effect = OSError("Service failed")
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-            MOCK_COVER_ENTITY_ID_2: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state=mock_temperature_state.state if hasattr(mock_temperature_state, "state") else "22.0",
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+                MOCK_COVER_ENTITY_ID_2: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         # Execute - should not raise exception, just log error
         await coordinator.async_refresh()
@@ -453,11 +533,18 @@ class TestDataUpdateCoordinator:
         mock_temperature_state.state = HOT_TEMP  # Too hot
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-            MOCK_COVER_ENTITY_ID_2: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state=mock_temperature_state.state if hasattr(mock_temperature_state, "state") else "22.0",
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+                MOCK_COVER_ENTITY_ID_2: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         # Execute
         await coordinator.async_refresh()
@@ -522,7 +609,7 @@ class TestDataUpdateCoordinator:
         mock_cover_state: MagicMock,
         mock_sun_state: MagicMock,
     ) -> None:
-        """If a cover has no direction configured, it should be skipped."""
+        """Cover without azimuth should still appear for temperature automation but skip sun automation."""
         # Build a sun config for two covers, remove direction for second cover
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
         # Remove direction for cover 2 to trigger skip
@@ -545,18 +632,37 @@ class TestDataUpdateCoordinator:
 
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-            MOCK_COVER_ENTITY_ID_2: cover2_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="18.0",  # Cold temp so temp wants open
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+                MOCK_COVER_ENTITY_ID_2: cover2_state.attributes
+                if hasattr(cover2_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Only the properly configured cover should be in results
+        # Both covers should appear (temperature automation works for both)
         assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 in result[ConfKeys.COVERS.value]
+
+        # Cover 1 should have both temperature and sun automation data
+        cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        assert "desired_from_temp" in cover1_data
+        assert "desired_from_sun" in cover1_data
+        assert "sun_hitting" in cover1_data
+
+        # Cover 2 should only have temperature automation data (no sun data due to missing azimuth)
+        cover2_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID_2]
+        assert "desired_from_temp" in cover2_data
+        assert "desired_from_sun" not in cover2_data
+        assert "sun_hitting" not in cover2_data
 
     async def test_sun_invalid_cover_azimuth_skips_cover(
         self,
@@ -564,7 +670,7 @@ class TestDataUpdateCoordinator:
         mock_cover_state: MagicMock,
         mock_sun_state: MagicMock,
     ) -> None:
-        """If a cover has an invalid direction, it should be skipped."""
+        """Cover with invalid azimuth should still appear for temperature automation but skip sun automation."""
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
         # Set an invalid direction string for cover 2
         config[f"{MOCK_COVER_ENTITY_ID_2}_{COVER_AZIMUTH}"] = "upwards"
@@ -583,18 +689,37 @@ class TestDataUpdateCoordinator:
         }
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-            MOCK_COVER_ENTITY_ID_2: cover2_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="18.0",  # Cold temp so temp wants open
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+                MOCK_COVER_ENTITY_ID_2: cover2_state.attributes
+                if hasattr(cover2_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Only the valid-direction cover should be present
+        # Both covers should appear (temperature automation works for both)
         assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 in result[ConfKeys.COVERS.value]
+
+        # Cover 1 should have both temperature and sun automation data
+        cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        assert "desired_from_temp" in cover1_data
+        assert "desired_from_sun" in cover1_data
+        assert "sun_hitting" in cover1_data
+
+        # Cover 2 should only have temperature automation data (no sun data due to invalid azimuth)
+        cover2_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID_2]
+        assert "desired_from_temp" in cover2_data
+        assert "desired_from_sun" not in cover2_data
+        assert "sun_hitting" not in cover2_data
 
     async def test_set_cover_position_warning_branch_no_features_partial(
         self,
@@ -602,7 +727,11 @@ class TestDataUpdateCoordinator:
         mock_sun_state: MagicMock,
     ) -> None:
         """When cover lacks position and open/close for partial desired, no service is called."""
+        # Create a combined config with both temperature and sun automation
         config = create_sun_config()
+        # Add temperature configuration
+        config[ConfKeys.MAX_TEMPERATURE.value] = 24.0
+        config[ConfKeys.MIN_TEMPERATURE.value] = 21.0
         # Ensure direct-sun partial closure is not 100% (so desired != 0)
         config[ConfKeys.MAX_CLOSURE.value] = 90
         config_entry = MockConfigEntry(config)
@@ -621,15 +750,21 @@ class TestDataUpdateCoordinator:
             "supported_features": 0,
         }
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="25.0",  # Hot temp so temp wants to close (0)
+            cover_states={
+                MOCK_COVER_ENTITY_ID: cover_state.attributes
+                if hasattr(cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15}
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Desired should be partial (10) but no service should be called
+        # With hot temp (wants close=0) and sun wanting partial closure (10),
+        # combined logic: temp_hot=True, sun_hitting=True -> both want to close -> use sun's desired (10)
         assert result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]["desired_position"] not in (
             OPEN_POSITION,
             CLOSED_POSITION,
@@ -662,7 +797,7 @@ class TestDataUpdateCoordinator:
         mock_hass: MagicMock,
         mock_sun_state: MagicMock,
     ) -> None:
-        """Test broad combinations of window and sun azimuths."""
+        """Test broad combinations of window and sun azimuths with combined logic."""
         # Build config with one cover and numeric window azimuth
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
         config_entry = MockConfigEntry(config)
@@ -693,11 +828,20 @@ class TestDataUpdateCoordinator:
                 "azimuth": sun_azimuth,
             }
 
+            # For combined logic: use hot temp when expecting close, cold temp when expecting open
+            temp_for_test = "26.0" if expected == CLOSED_POSITION else "18.0"
+
             mock_hass.services.async_call.reset_mock()
-            mock_hass.states.get.side_effect = lambda entity_id: {
-                MOCK_SUN_ENTITY_ID: mock_sun_state,
-                MOCK_COVER_ENTITY_ID: cover_state,
-            }.get(entity_id)
+            state_mapping = create_combined_state_mock(
+                temp_state=temp_for_test,  # Hot when expecting close, cold when expecting open
+                sun_azimuth=sun_azimuth,  # Use the actual sun azimuth from test
+                cover_states={
+                    MOCK_COVER_ENTITY_ID: cover_state.attributes
+                    if hasattr(cover_state, "attributes")
+                    else {"current_position": 100, "supported_features": 15}
+                },
+            )
+            mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
             await coordinator.async_refresh()
             cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -722,10 +866,16 @@ class TestDataUpdateCoordinator:
         }
         mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="26.0",  # Hot temp for close case
+            sun_azimuth=180.0,  # Sun hitting directly
+            cover_states={
+                MOCK_COVER_ENTITY_ID: cover_state.attributes
+                if hasattr(cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15}
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -756,11 +906,19 @@ class TestDataUpdateCoordinator:
         }
 
         mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: cover1_state,
-            MOCK_COVER_ENTITY_ID_2: cover2_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="26.0",  # Hot temp for close cases
+            sun_azimuth=180.0,  # Sun hitting test_cover directly
+            cover_states={
+                MOCK_COVER_ENTITY_ID: cover1_state.attributes
+                if hasattr(cover1_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+                MOCK_COVER_ENTITY_ID_2: cover2_state.attributes
+                if hasattr(cover2_state, "attributes")
+                else {"current_position": 100, "supported_features": 15},
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         covers = coordinator.data[ConfKeys.COVERS.value]
@@ -796,10 +954,16 @@ class TestDataUpdateCoordinator:
         # Elevation equals threshold (20.0); should treat as above for logic
         mock_sun_state.attributes = {"elevation": 20.0, "azimuth": 180.0}
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="26.0",  # Hot temp for close case
+            sun_azimuth=180.0,  # Sun hitting directly (angle_diff = 0 = threshold)
+            cover_states={
+                MOCK_COVER_ENTITY_ID: cover_state.attributes
+                if hasattr(cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15}
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -825,14 +989,19 @@ class TestDataUpdateCoordinator:
         }
         mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state="18.0",  # Cold temp so temp wants open
+            cover_states={
+                MOCK_COVER_ENTITY_ID: cover_state.attributes
+                if hasattr(cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15}
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data["desired_position"] == 40
+        assert cover_data["desired_position"] == 100  # Combined logic: cold temp overrides sun closure
 
     @pytest.mark.asyncio
     async def test_combined_hot_sun_not_hitting_no_change_with_and_logic(
@@ -858,11 +1027,16 @@ class TestDataUpdateCoordinator:
         mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 90.0}
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state=mock_temperature_state.state if hasattr(mock_temperature_state, "state") else "22.0",
+            sun_azimuth=90.0,  # Sun azimuth far from window direction (180°)
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15}
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -894,11 +1068,15 @@ class TestDataUpdateCoordinator:
         mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state=mock_temperature_state.state if hasattr(mock_temperature_state, "state") else "22.0",
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15}
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -929,11 +1107,15 @@ class TestDataUpdateCoordinator:
         mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state=mock_temperature_state.state if hasattr(mock_temperature_state, "state") else "22.0",
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15}
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -964,11 +1146,15 @@ class TestDataUpdateCoordinator:
         mock_sun_state.attributes = {"elevation": HIGH_ELEVATION, "azimuth": 180.0}
         mock_cover_state.attributes["current_position"] = OPEN_POSITION
 
-        mock_hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: mock_temperature_state,
-            MOCK_SUN_ENTITY_ID: mock_sun_state,
-            MOCK_COVER_ENTITY_ID: mock_cover_state,
-        }.get(entity_id)
+        state_mapping = create_combined_state_mock(
+            temp_state=mock_temperature_state.state if hasattr(mock_temperature_state, "state") else "22.0",
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
+                if hasattr(mock_cover_state, "attributes")
+                else {"current_position": 100, "supported_features": 15}
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]

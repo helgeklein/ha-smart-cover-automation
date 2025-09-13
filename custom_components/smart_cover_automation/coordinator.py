@@ -195,41 +195,21 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Get the resolved settings
         resolved = self._resolved_settings()
 
-        # Determine which automation types are configured by checking the original config
-        temp_automation_configured = any(
-            key in config
-            for key in [
-                ConfKeys.MAX_TEMPERATURE.value,
-                ConfKeys.MIN_TEMPERATURE.value,
-                ConfKeys.TEMP_SENSOR_ENTITY_ID.value,
-            ]
-        )
-        sun_automation_configured = any(
-            key in config
-            for key in [
-                ConfKeys.SUN_ELEVATION_THRESHOLD.value,
-            ]
-        ) or any(key.endswith(f"_{const.COVER_AZIMUTH}") for key in config.keys())
-
         # Temperature input
         temp_available = False
         current_temp: float | None = None
-        if temp_automation_configured:
-            max_temp = float(resolved.max_temperature)
-            min_temp = float(resolved.min_temperature)
-            sensor_entity_id = resolved.temp_sensor_entity_id
-            temp_state = self.hass.states.get(sensor_entity_id)
-            if temp_state is None:
-                # Required temp sensor missing
-                raise TempSensorNotFoundError(sensor_entity_id)
-            try:
-                current_temp = float(temp_state.state)
-                temp_available = True
-            except (ValueError, TypeError) as err:
-                raise InvalidSensorReadingError(temp_state.entity_id, str(temp_state.state)) from err
-        else:
-            max_temp = float(resolved.max_temperature)
-            min_temp = float(resolved.min_temperature)
+        max_temp = float(resolved.max_temperature)
+        min_temp = float(resolved.min_temperature)
+        sensor_entity_id = resolved.temp_sensor_entity_id
+        temp_state = self.hass.states.get(sensor_entity_id)
+        if temp_state is None:
+            # Required temp sensor missing
+            raise TempSensorNotFoundError(sensor_entity_id)
+        try:
+            current_temp = float(temp_state.state)
+            temp_available = True
+        except (ValueError, TypeError) as err:
+            raise InvalidSensorReadingError(temp_state.entity_id, str(temp_state.state)) from err
 
         temp_hysteresis = float(resolved.temperature_hysteresis)
         min_position_delta = int(float(resolved.min_position_delta))
@@ -238,35 +218,24 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         sun_available = False
         elevation: float | None = None
         azimuth: float | None = None
-        if sun_automation_configured:
-            threshold = float(resolved.sun_elevation_threshold)
-            sensor_entity_id = const.SUN_ENTITY_ID
-            sun_state = self.hass.states.get(sensor_entity_id)
-            if sun_state is None:
-                # Required sun entity missing
-                raise SunSensorNotFoundError(sensor_entity_id)
-            try:
-                elevation = float(sun_state.attributes.get(const.SUN_ATTR_ELEVATION, 0))
-                azimuth = float(sun_state.attributes.get(const.SUN_ATTR_AZIMUTH, 0))
-                sun_available = True
-            except (ValueError, TypeError) as err:
-                raise InvalidSensorReadingError(sun_state.entity_id, str(sun_state.state)) from err
-        else:
-            threshold = float(resolved.sun_elevation_threshold)
+        threshold = float(resolved.sun_elevation_threshold)
+        sensor_entity_id = const.SUN_ENTITY_ID
+        sun_state = self.hass.states.get(sensor_entity_id)
+        if sun_state is None:
+            # Required sun entity missing
+            raise SunSensorNotFoundError(sensor_entity_id)
+        try:
+            elevation = float(sun_state.attributes.get(const.SUN_ATTR_ELEVATION, 0))
+            azimuth = float(sun_state.attributes.get(const.SUN_ATTR_AZIMUTH, 0))
+            sun_available = True
+        except (ValueError, TypeError) as err:
+            raise InvalidSensorReadingError(sun_state.entity_id, str(sun_state.state)) from err
 
         # Iterate covers
         for entity_id, state in states.items():
             if not state:
                 const.LOGGER.warning(f"Skipping unavailable cover: {entity_id}")
                 continue
-
-            # For sun-only automation, skip covers with invalid/missing direction
-            if sun_automation_configured and not temp_automation_configured:
-                direction_raw = config.get(f"{entity_id}_{const.COVER_AZIMUTH}")
-                direction_azimuth = to_float_or_none(direction_raw)
-                if direction_azimuth is None:
-                    const.LOGGER.warning(f"Skipping cover {entity_id}: invalid or missing direction for sun-only automation")
-                    continue
 
             features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
             current_pos = state.attributes.get(ATTR_CURRENT_POSITION)
@@ -346,60 +315,61 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             else:
                 details["sun_unavailable"] = True
 
-            # Combine logic based on which automation types are configured
-            # - If only temperature is configured: use temperature behavior
-            # - If only sun is configured: use sun behavior
-            # - If both are configured: use AND logic (both conditions must be true)
-            combined_desired = current_pos
+            desired_pos = current_pos
 
             # Determine which automations are active
-            temp_configured = temp_automation_configured and desired_from_temp is not None
-            sun_configured = sun_automation_configured and desired_from_sun is not None and not details.get("sun_direction_invalid")
+            include_temp = desired_from_temp is not None
+            include_sun = desired_from_sun is not None and not details.get("sun_direction_invalid")
 
-            if temp_configured and not sun_configured:
+            if include_temp and not include_sun:
                 # Temperature-only automation
-                combined_desired = desired_from_temp
-            elif sun_configured and not temp_configured:
+                desired_pos = desired_from_temp
+            elif include_sun and not include_temp:
                 # Sun-only automation
-                combined_desired = desired_from_sun
-            elif temp_configured and sun_configured:
-                # Combined automation: use AND logic (move only when both conditions agree to close)
+                desired_pos = desired_from_sun
+            elif include_temp and include_sun:
+                # Combined automation: Close when both want to close, open when either wants to open
                 if temp_hot and sun_hitting:
-                    combined_desired = desired_from_sun  # Both want to close
+                    # Both conditions want to close
+                    desired_pos = desired_from_sun  # Use sun's desired position (typically closed)
+                elif (desired_from_temp == const.COVER_POS_FULLY_OPEN) or (desired_from_sun == const.COVER_POS_FULLY_OPEN):
+                    # At least one condition wants to open
+                    desired_pos = const.COVER_POS_FULLY_OPEN
                 else:
-                    combined_desired = current_pos  # Keep current position if conditions don't align
-            elif details.get("sun_direction_invalid") and temp_configured:
+                    # Neither condition is clearly wanting to close or open (comfortable temps, etc.)
+                    desired_pos = current_pos  # Keep current position
+            elif details.get("sun_direction_invalid") and include_temp:
                 # Fallback: if sun direction invalid, behave as temperature-only
-                combined_desired = desired_from_temp
+                desired_pos = desired_from_temp
             else:
                 # No valid automation configured
-                combined_desired = current_pos
+                desired_pos = current_pos
 
             const.LOGGER.debug(
-                f"Combine {entity_id}: temp_hot={temp_hot} sun_hitting={sun_hitting} desired_temp={desired_from_temp} desired_sun={desired_from_sun} => desired={combined_desired}"
+                f"Combine {entity_id}: temp_hot={temp_hot} sun_hitting={sun_hitting} desired_temp={desired_from_temp} desired_sun={desired_from_sun} => desired={desired_pos} (close_when_both_hot_and_hitting, open_when_either_wants_open)"
             )
 
             # Act with min delta
             if (
-                combined_desired is not None
+                desired_pos is not None
                 and current_pos is not None
-                and combined_desired != current_pos
-                and abs(combined_desired - current_pos) < min_position_delta
+                and desired_pos != current_pos
+                and abs(desired_pos - current_pos) < min_position_delta
             ):
                 const.LOGGER.debug(
-                    f"Skip small adjust {entity_id}: current={current_pos} desired={combined_desired} delta={abs(combined_desired - current_pos)} < min_delta={min_position_delta}"
+                    f"Skip small adjust {entity_id}: current={current_pos} desired={desired_pos} delta={abs(desired_pos - current_pos)} < min_delta={min_position_delta}"
                 )
-            elif combined_desired is not None and combined_desired != current_pos:
-                const.LOGGER.info(f"[{entity_id}] Action: current={current_pos} desired={combined_desired} (features={features})")
-                await self._set_cover_position(entity_id, combined_desired, features)
+            elif desired_pos is not None and desired_pos != current_pos:
+                const.LOGGER.info(f"[{entity_id}] Action: current={current_pos} desired={desired_pos} (features={features})")
+                await self._set_cover_position(entity_id, desired_pos, features)
 
             details.update(
                 {
                     "current_position": current_pos,
-                    "desired_position": combined_desired,
+                    "desired_position": desired_pos,
                     const.ATTR_MIN_POSITION_DELTA: min_position_delta,
                     ConfKeys.MAX_CLOSURE.value: int(float(resolved.max_closure)),
-                    "combined_strategy": "and",
+                    "combined_strategy": "close_and_open_or",
                 }
             )
 

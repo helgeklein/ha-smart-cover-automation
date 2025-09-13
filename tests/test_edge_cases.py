@@ -59,6 +59,7 @@ async def test_non_int_supported_features_does_not_crash() -> None:
     hass.states.get.side_effect = lambda entity_id: {
         MOCK_SUN_ENTITY_ID: sun_state,
         MOCK_COVER_ENTITY_ID: cover_state,
+        MOCK_TEMP_SENSOR_ENTITY_ID: MagicMock(state="22.0"),
     }.get(entity_id)
 
     await coordinator.async_refresh()
@@ -92,9 +93,12 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
     temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
     temp_state.state = "30.0"  # Hot -> should close
 
+    temp_state.state = "25.0"  # Hot temp for AND logic
+
     hass.states.get.side_effect = lambda entity_id: {
         MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
         MOCK_COVER_ENTITY_ID: cover_state,
+        MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
     }.get(entity_id)
 
     await coordinator.async_refresh()
@@ -114,6 +118,9 @@ async def test_extreme_max_closure_is_clamped_to_zero() -> None:
     hass.services.async_call = AsyncMock()
 
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
+    # Add temperature configuration for combined automation
+    config[ConfKeys.MAX_TEMPERATURE.value] = 24.0
+    config[ConfKeys.MIN_TEMPERATURE.value] = 21.0
     config[ConfKeys.MAX_CLOSURE.value] = 1000  # extreme
     config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = 0
     entry = MockConfigEntry(config)
@@ -135,6 +142,7 @@ async def test_extreme_max_closure_is_clamped_to_zero() -> None:
     hass.states.get.side_effect = lambda entity_id: {
         MOCK_SUN_ENTITY_ID: sun_state,
         MOCK_COVER_ENTITY_ID: cover_state,
+        MOCK_TEMP_SENSOR_ENTITY_ID: MagicMock(state="25.0"),  # Hot temp to trigger combined logic
     }.get(entity_id)
 
     await coordinator.async_refresh()
@@ -172,6 +180,7 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting() -> None:
     hass.states.get.side_effect = lambda entity_id: {
         MOCK_SUN_ENTITY_ID: sun_state,
         MOCK_COVER_ENTITY_ID: cover_state,
+        MOCK_TEMP_SENSOR_ENTITY_ID: MagicMock(state="22.0"),
     }.get(entity_id)
 
     await coordinator.async_refresh()
@@ -207,6 +216,7 @@ async def test_missing_current_position_behaves_safely() -> None:
     hass.states.get.side_effect = lambda entity_id: {
         MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
         MOCK_COVER_ENTITY_ID: cover_state,
+        MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
     }.get(entity_id)
 
     await coordinator.async_refresh()
@@ -218,13 +228,16 @@ async def test_missing_current_position_behaves_safely() -> None:
 
 @pytest.mark.asyncio
 async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
-    """Invalid non-numeric direction should skip the cover when only sun is configured."""
+    """Invalid non-numeric direction should skip sun automation but allow temperature automation."""
     hass = MagicMock(spec=HomeAssistant)
     hass.states = MagicMock()
     hass.services = MagicMock()
     hass.services.async_call = AsyncMock()
 
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
+    # Add temperature configuration for combined automation
+    config[ConfKeys.MAX_TEMPERATURE.value] = 24.0
+    config[ConfKeys.MIN_TEMPERATURE.value] = 21.0
     config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = "south"  # invalid string
     entry = MockConfigEntry(config)
 
@@ -246,11 +259,22 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     hass.states.get.side_effect = lambda entity_id: {
         MOCK_SUN_ENTITY_ID: sun_state,
         MOCK_COVER_ENTITY_ID: cover_state,
+        MOCK_TEMP_SENSOR_ENTITY_ID: MagicMock(state="22.0"),  # Comfortable temp
     }.get(entity_id)
 
     await coordinator.async_refresh()
     result = coordinator.data
 
-    # Cover should be skipped entirely in results
-    assert MOCK_COVER_ENTITY_ID not in result[ConfKeys.COVERS.value]
+    # Cover should be present for temperature automation but skip sun automation
+    assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
+    cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+
+    # Should have temperature data but not sun data due to invalid azimuth
+    assert "desired_from_temp" in cover_data
+    assert "desired_from_sun" not in cover_data
+    assert "sun_hitting" not in cover_data
+    assert cover_data["sun_direction_invalid"] is True
+
+    # With comfortable temp, no position change expected
+    assert cover_data["desired_position"] == 50  # Current position maintained
     hass.services.async_call.assert_not_called()
