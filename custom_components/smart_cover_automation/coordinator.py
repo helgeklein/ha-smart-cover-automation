@@ -92,6 +92,9 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
     config_entry: IntegrationConfigEntry
 
+    #
+    # __init__
+    #
     def __init__(self, hass: HomeAssistant, config_entry: IntegrationConfigEntry) -> None:
         super().__init__(
             hass,
@@ -114,10 +117,16 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         except Exception:
             pass
 
+    #
+    # _resolved_settings
+    #
     def _resolved_settings(self) -> ResolvedConfig:
         """Return resolved settings from the config entry (options over data)."""
         return resolve_entry(self.config_entry)
 
+    #
+    # _async_update_data
+    #
     async def _async_update_data(self) -> dict[str, Any]:
         """Update automation state and control covers.
 
@@ -159,7 +168,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 if state is None:
                     const.LOGGER.warning(f"Cover {entity_id} is unavailable")
 
-            return await self._handle_combined_automation(states, config)
+            return await self._handle_automation(states, config)
 
         except SmartCoverError:
             raise
@@ -168,58 +177,46 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         except (OSError, ValueError, TypeError) as err:
             raise UpdateFailed(f"System error during automation update: {err}") from err
 
-    async def _set_cover_position(self, entity_id: str, desired_pos: int, features: int) -> None:
-        try:
-            if features & CoverEntityFeature.SET_POSITION:
-                const.LOGGER.info(f"[{entity_id}] Using set_cover_position to {desired_pos} (features={features})")
-                await self.hass.services.async_call(
-                    Platform.COVER,
-                    SERVICE_SET_COVER_POSITION,
-                    {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos},
-                )
-            elif desired_pos == const.COVER_POS_FULLY_CLOSED:
-                const.LOGGER.info(f"[{entity_id}] Closing cover")
-                await self.hass.services.async_call(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
-            elif desired_pos == const.COVER_POS_FULLY_OPEN:
-                const.LOGGER.info(f"[{entity_id}] Opening cover")
-                await self.hass.services.async_call(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
-            else:
-                const.LOGGER.warning(f"Cannot set cover {entity_id} position: desired={desired_pos}, features={features}")
-        except (OSError, ValueError, TypeError, RuntimeError) as err:
-            const.LOGGER.error(f"Failed to control cover {entity_id}: {err}")
-
-    async def _handle_combined_automation(
+    #
+    # _handle_automation
+    #
+    async def _handle_automation(
         self,
         states: dict[str, State | None],
         config: dict[str, Any],
     ) -> dict[str, Any]:
-        """Handle combined temperature and sun automation."""
+        """Implements the automation logic.
+
+        Called by _async_update_data after initial checks and state collection.
+        """
+        # Prepare empty result
         result: dict[str, Any] = {ConfKeys.COVERS.value: {}}
 
+        # Get the resolved settings
         resolved = self._resolved_settings()
 
-        # Determine which contributors are configured based on raw config presence
-        # Defaults exist in ResolvedConfig, but we only enable a contributor
-        # when the user actually provided related keys in their config/options.
-        temp_enabled = any(
+        # Determine which automation types are configured by checking the original config
+        temp_automation_configured = any(
             key in config
-            for key in (
-                ConfKeys.TEMP_SENSOR_ENTITY_ID.value,
-                ConfKeys.MIN_TEMPERATURE.value,
+            for key in [
                 ConfKeys.MAX_TEMPERATURE.value,
-                ConfKeys.TEMPERATURE_HYSTERESIS.value,
-            )
+                ConfKeys.MIN_TEMPERATURE.value,
+                ConfKeys.TEMP_SENSOR_ENTITY_ID.value,
+            ]
         )
-        sun_enabled = ConfKeys.SUN_ELEVATION_THRESHOLD.value in config or any(
-            f"{entity_id}_{const.COVER_AZIMUTH}" in config for entity_id in states.keys()
-        )
+        sun_automation_configured = any(
+            key in config
+            for key in [
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value,
+            ]
+        ) or any(key.endswith(f"_{const.COVER_AZIMUTH}") for key in config.keys())
 
         # Temperature input
         temp_available = False
         current_temp: float | None = None
-        max_temp = float(resolved.max_temperature)
-        min_temp = float(resolved.min_temperature)
-        if temp_enabled:
+        if temp_automation_configured:
+            max_temp = float(resolved.max_temperature)
+            min_temp = float(resolved.min_temperature)
             sensor_entity_id = resolved.temp_sensor_entity_id
             temp_state = self.hass.states.get(sensor_entity_id)
             if temp_state is None:
@@ -230,6 +227,9 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 temp_available = True
             except (ValueError, TypeError) as err:
                 raise InvalidSensorReadingError(temp_state.entity_id, str(temp_state.state)) from err
+        else:
+            max_temp = float(resolved.max_temperature)
+            min_temp = float(resolved.min_temperature)
 
         temp_hysteresis = float(resolved.temperature_hysteresis)
         min_position_delta = int(float(resolved.min_position_delta))
@@ -238,8 +238,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         sun_available = False
         elevation: float | None = None
         azimuth: float | None = None
-        threshold = float(resolved.sun_elevation_threshold)
-        if sun_enabled:
+        if sun_automation_configured:
+            threshold = float(resolved.sun_elevation_threshold)
             sensor_entity_id = const.SUN_ENTITY_ID
             sun_state = self.hass.states.get(sensor_entity_id)
             if sun_state is None:
@@ -251,12 +251,22 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 sun_available = True
             except (ValueError, TypeError) as err:
                 raise InvalidSensorReadingError(sun_state.entity_id, str(sun_state.state)) from err
+        else:
+            threshold = float(resolved.sun_elevation_threshold)
 
         # Iterate covers
         for entity_id, state in states.items():
             if not state:
                 const.LOGGER.warning(f"Skipping unavailable cover: {entity_id}")
                 continue
+
+            # For sun-only automation, skip covers with invalid/missing direction
+            if sun_automation_configured and not temp_automation_configured:
+                direction_raw = config.get(f"{entity_id}_{const.COVER_AZIMUTH}")
+                direction_azimuth = to_float_or_none(direction_raw)
+                if direction_azimuth is None:
+                    const.LOGGER.warning(f"Skipping cover {entity_id}: invalid or missing direction for sun-only automation")
+                    continue
 
             features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
             current_pos = state.attributes.get(ATTR_CURRENT_POSITION)
@@ -268,7 +278,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             details: dict[str, Any] = {}
 
             # Temperature contribution
-            if temp_enabled and temp_available and current_temp is not None:
+            if temp_available and current_temp is not None:
                 if current_temp > max_temp + temp_hysteresis:
                     desired_from_temp = const.COVER_POS_FULLY_CLOSED
                     temp_hot = True
@@ -296,11 +306,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     desired_from_temp,
                     temp_hot,
                 )
-            elif temp_enabled:
+            else:
                 details["temp_unavailable"] = True
 
             # Sun contribution
-            if sun_enabled and sun_available and elevation is not None and azimuth is not None:
+            if sun_available and elevation is not None and azimuth is not None:
                 # Per-cover direction remains dynamic and stored in config by entity_id
                 direction_raw = config.get(f"{entity_id}_{const.COVER_AZIMUTH}")
                 direction_azimuth: float | None = to_float_or_none(direction_raw)
@@ -332,33 +342,41 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     )
                 else:
                     const.LOGGER.warning(f"Cover {entity_id}: invalid or missing direction for sun logic")
-                    if not temp_enabled:
-                        # Only sun configured -> skip this cover entirely
-                        continue
                     details["sun_direction_invalid"] = True
-            elif sun_enabled:
+            else:
                 details["sun_unavailable"] = True
 
-            # Combine with logical AND semantics when both contributors are configured.
-            # - If only temperature is configured: use temperature behavior.
-            # - If only sun is configured: use sun behavior.
-            # - If both are configured: move only when sun is hitting AND temperature is hot.
+            # Combine logic based on which automation types are configured
+            # - If only temperature is configured: use temperature behavior
+            # - If only sun is configured: use sun behavior
+            # - If both are configured: use AND logic (both conditions must be true)
             combined_desired = current_pos
-            if temp_enabled and sun_enabled:
-                # Fallback: if sun direction invalid, behave as temperature-only
-                if details.get("sun_direction_invalid"):
-                    combined_desired = desired_from_temp
-                elif temp_hot and sun_hitting and desired_from_sun is not None:
-                    combined_desired = desired_from_sun
-                else:
-                    combined_desired = current_pos
-            elif temp_enabled and not sun_enabled:
+
+            # Determine which automations are active
+            temp_configured = temp_automation_configured and desired_from_temp is not None
+            sun_configured = sun_automation_configured and desired_from_sun is not None and not details.get("sun_direction_invalid")
+
+            if temp_configured and not sun_configured:
+                # Temperature-only automation
                 combined_desired = desired_from_temp
-            elif sun_enabled and not temp_enabled:
+            elif sun_configured and not temp_configured:
+                # Sun-only automation
                 combined_desired = desired_from_sun
+            elif temp_configured and sun_configured:
+                # Combined automation: use AND logic (move only when both conditions agree to close)
+                if temp_hot and sun_hitting:
+                    combined_desired = desired_from_sun  # Both want to close
+                else:
+                    combined_desired = current_pos  # Keep current position if conditions don't align
+            elif details.get("sun_direction_invalid") and temp_configured:
+                # Fallback: if sun direction invalid, behave as temperature-only
+                combined_desired = desired_from_temp
+            else:
+                # No valid automation configured
+                combined_desired = current_pos
 
             const.LOGGER.debug(
-                f"Combine {entity_id}: temp_enabled={temp_enabled} sun_enabled={sun_enabled} temp_hot={temp_hot} sun_hitting={sun_hitting} desired_temp={desired_from_temp} desired_sun={desired_from_sun} => desired={combined_desired}"
+                f"Combine {entity_id}: temp_hot={temp_hot} sun_hitting={sun_hitting} desired_temp={desired_from_temp} desired_sun={desired_from_sun} => desired={combined_desired}"
             )
 
             # Act with min delta
@@ -389,6 +407,32 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         return result
 
+    #
+    # _set_cover_position
+    #
+    async def _set_cover_position(self, entity_id: str, desired_pos: int, features: int) -> None:
+        try:
+            if features & CoverEntityFeature.SET_POSITION:
+                const.LOGGER.info(f"[{entity_id}] Using set_cover_position to {desired_pos} (features={features})")
+                await self.hass.services.async_call(
+                    Platform.COVER,
+                    SERVICE_SET_COVER_POSITION,
+                    {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos},
+                )
+            elif desired_pos == const.COVER_POS_FULLY_CLOSED:
+                const.LOGGER.info(f"[{entity_id}] Closing cover")
+                await self.hass.services.async_call(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
+            elif desired_pos == const.COVER_POS_FULLY_OPEN:
+                const.LOGGER.info(f"[{entity_id}] Opening cover")
+                await self.hass.services.async_call(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
+            else:
+                const.LOGGER.warning(f"Cannot set cover {entity_id} position: desired={desired_pos}, features={features}")
+        except (OSError, ValueError, TypeError, RuntimeError) as err:
+            const.LOGGER.error(f"Failed to control cover {entity_id}: {err}")
+
+    #
+    # _calculate_desired_position
+    #
     def _calculate_desired_position(
         self,
         elevation: float,
