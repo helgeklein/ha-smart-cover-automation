@@ -29,9 +29,8 @@ def test_en_json_has_required_keys() -> None:
     user_data = data.get("config", {}).get("step", {}).get("user", {}).get("data", {})
     expected_user_fields = {
         ConfKeys.COVERS.value,
-        ConfKeys.MAX_TEMPERATURE.value,
-        ConfKeys.MIN_TEMPERATURE.value,
-        ConfKeys.AZIMUTH_TOLERANCE.value,
+        ConfKeys.TEMP_THRESHOLD.value,
+        ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
     }
     missing_user = expected_user_fields - set(user_data.keys())
     assert not missing_user, f"Missing user form labels in en.json: {sorted(missing_user)}"
@@ -44,8 +43,8 @@ def test_en_json_has_required_keys() -> None:
         ConfKeys.COVERS.value,
         ConfKeys.TEMP_SENSOR_ENTITY_ID.value,
         ConfKeys.SUN_ELEVATION_THRESHOLD.value,
-        ConfKeys.AZIMUTH_TOLERANCE.value,
-        ConfKeys.MAX_CLOSURE.value,
+        ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
+        ConfKeys.COVERS_MAX_CLOSURE.value,
     }
     missing_options = expected_options_fields - set(options_data.keys())
     assert not missing_options, f"Missing options form labels in en.json: {sorted(missing_options)}"
@@ -54,9 +53,6 @@ def test_en_json_has_required_keys() -> None:
     error_data = data.get("config", {}).get("error", {})
     expected_errors = {
         const.ERROR_INVALID_COVER,
-        const.ERROR_INVALID_TEMPERATURE_RANGE,
-        const.ERROR_REQUIRED_WITH_MAX_TEMPERATURE,
-        const.ERROR_REQUIRED_WITH_MIN_TEMPERATURE,
         const.ERROR_INVALID_CONFIG,
     }
     missing_errors = expected_errors - set(error_data.keys())

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from typing import cast
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from homeassistant.components.cover import ATTR_CURRENT_POSITION
 
 from custom_components.smart_cover_automation.config import (
     ConfKeys,
@@ -44,6 +45,8 @@ class TestIntegrationScenarios:
     async def test_temperature_automation_complete_cycle(self) -> None:
         """Test complete temperature automation cycle with combined AND logic."""
         hass = MagicMock()
+        hass.services = MagicMock()
+        hass.services.async_call = AsyncMock()
         config_entry = MockConfigEntry(create_temperature_config())  # Both automations now always active
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -51,9 +54,9 @@ class TestIntegrationScenarios:
         test_scenarios = [
             # (temp, sun_elevation, sun_azimuth, current_pos, expected_pos, description)
             (HOT_TEMP, 30.0, 180.0, COVER_OPEN, COVER_CLOSED, "Hot + sun hitting -> close"),
-            (COMFORTABLE_TEMP, 30.0, 180.0, COVER_CLOSED, COVER_CLOSED, "Comfortable + sun hitting -> no change"),
-            (COLD_TEMP, 10.0, 90.0, COVER_CLOSED, COVER_OPEN, "Cold + sun not hitting -> open (cold temp wins)"),
-            (HOT_TEMP, 10.0, 90.0, COVER_OPEN, COVER_OPEN, "Hot + sun not hitting -> no change"),
+            (COMFORTABLE_TEMP, 30.0, 180.0, COVER_CLOSED, COVER_OPEN, "Comfortable + sun hitting -> open (not hot)"),
+            (COLD_TEMP, 10.0, 90.0, COVER_CLOSED, COVER_OPEN, "Cold + sun not hitting -> open"),
+            (HOT_TEMP, 10.0, 90.0, COVER_OPEN, COVER_OPEN, "Hot + sun not hitting -> open (not hitting)"),
         ]
 
         for i, (temp, elevation, azimuth, current_pos, expected_pos, description) in enumerate(test_scenarios):
@@ -64,7 +67,7 @@ class TestIntegrationScenarios:
 
             cover_state = MagicMock()
             cover_state.attributes = {
-                "current_position": current_pos,
+                ATTR_CURRENT_POSITION: current_pos,
                 "supported_features": 15,
             }
 
@@ -90,8 +93,8 @@ class TestIntegrationScenarios:
                 assert ConfKeys.COVERS.value in result, f"Invalid result structure in scenario {i}: {description}"
 
                 cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-                assert cover_data["desired_position"] == expected_pos, (
-                    f"Scenario {i} ({description}): Expected position {expected_pos}, got {cover_data['desired_position']}"
+                assert cover_data["sca_cover_desired_position"] == expected_pos, (
+                    f"Scenario {i} ({description}): Expected position {expected_pos}, got {cover_data['sca_cover_desired_position']}"
                 )
 
                 # Check service calls only when position changes
@@ -132,7 +135,7 @@ class TestIntegrationScenarios:
 
             cover_state = MagicMock()
             cover_state.attributes = {
-                "current_position": COVER_OPEN,
+                ATTR_CURRENT_POSITION: COVER_OPEN,
                 "supported_features": 15,
             }
 
@@ -149,7 +152,7 @@ class TestIntegrationScenarios:
             assert ConfKeys.COVERS.value in result, f"Invalid result for scenario {i}: {description}"
 
             cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-            assert cover_data["desired_position"] == expected_pos, (
+            assert cover_data["sca_cover_desired_position"] == expected_pos, (
                 f"Scenario {i} ({description}): Expected {expected_pos}, got {cover_data['desired_position']}"
             )
 
@@ -162,7 +165,7 @@ class TestIntegrationScenarios:
         # Test 1: Temperature sensor temporarily unavailable
         cover_state = MagicMock()
         cover_state.attributes = {
-            "current_position": COVER_OPEN,
+            ATTR_CURRENT_POSITION: COVER_OPEN,
             "supported_features": 15,
         }
         # Return None for temp sensor but a valid cover state
@@ -193,7 +196,7 @@ class TestIntegrationScenarios:
         temp_state.state = HOT_TEMP  # Valid hot temperature
         cover_state = MagicMock()
         cover_state.attributes = {
-            "current_position": COVER_OPEN,
+            ATTR_CURRENT_POSITION: COVER_OPEN,
             "supported_features": 15,
         }
 
@@ -230,8 +233,10 @@ class TestIntegrationScenarios:
     async def test_concurrent_cover_control(self) -> None:
         """Test controlling multiple covers simultaneously."""
         hass = MagicMock()
-        config = create_temperature_config()
-        config[ConfKeys.COVERS.value] = ["cover.living_room", "cover.bedroom", "cover.kitchen"]
+        hass.services = MagicMock()
+        hass.services.async_call = AsyncMock()
+        covers = ["cover.living_room", "cover.bedroom", "cover.kitchen"]
+        config = create_temperature_config(covers=covers)
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -247,10 +252,10 @@ class TestIntegrationScenarios:
 
         # Create different cover states
         cover_states = {}
-        for i, cover_id in enumerate(config[ConfKeys.COVERS.value]):
+        for i, cover_id in enumerate(covers):
             cover_state = MagicMock()
             cover_state.attributes = {
-                "current_position": 100 - (i * 20),  # Different positions
+                ATTR_CURRENT_POSITION: 100 - (i * 20),  # Different positions
                 "supported_features": 15,
             }
             cover_states[cover_id] = cover_state
@@ -272,8 +277,8 @@ class TestIntegrationScenarios:
         assert len(result[ConfKeys.COVERS.value]) == NUM_COVERS, f"Expected {NUM_COVERS} covers, got {len(result['covers'])}"
 
         # Verify all covers should close (position 0) due to hot temperature AND sun hitting
-        for cover_id in config[ConfKeys.COVERS.value]:
-            assert result[ConfKeys.COVERS.value][cover_id]["desired_position"] == COVER_CLOSED, (
+        for cover_id in covers:
+            assert result[ConfKeys.COVERS.value][cover_id]["sca_cover_desired_position"] == COVER_CLOSED, (
                 f"Cover {cover_id} should close in hot weather with sun hitting"
             )
 
@@ -284,8 +289,10 @@ class TestIntegrationScenarios:
     async def test_mixed_cover_capabilities(self) -> None:
         """Test handling covers with different capabilities."""
         hass = MagicMock()
-        config = create_temperature_config()
-        config[ConfKeys.COVERS.value] = ["cover.smart", "cover.basic"]
+        hass.services = MagicMock()
+        hass.services.async_call = AsyncMock()
+        covers = ["cover.smart", "cover.basic"]
+        config = create_temperature_config(covers=covers)
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -297,14 +304,14 @@ class TestIntegrationScenarios:
         # Smart cover with position support
         smart_cover = MagicMock()
         smart_cover.attributes = {
-            "current_position": COVER_CLOSED,
+            ATTR_CURRENT_POSITION: COVER_CLOSED,
             "supported_features": 15,
         }
 
         # Basic cover with only open/close
         basic_cover = MagicMock()
         basic_cover.attributes = {
-            "current_position": COVER_CLOSED,
+            ATTR_CURRENT_POSITION: COVER_CLOSED,
             "supported_features": 3,
         }
 

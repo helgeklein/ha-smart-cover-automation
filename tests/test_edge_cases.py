@@ -9,11 +9,11 @@ from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from homeassistant.components.cover import CoverEntityFeature
+from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.const import COVER_AZIMUTH
+from custom_components.smart_cover_automation.const import COVER_SFX_AZIMUTH
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
@@ -38,7 +38,7 @@ async def test_non_int_supported_features_does_not_crash() -> None:
 
     # Sun-only config with direct hit, but features attribute is an invalid string
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
-    config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = 0  # facing east
+    config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = 0  # facing east
     entry = MockConfigEntry(config)
 
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
@@ -47,7 +47,7 @@ async def test_non_int_supported_features_does_not_crash() -> None:
     cover_state.entity_id = MOCK_COVER_ENTITY_ID
     cover_state.state = "open"
     cover_state.attributes = {
-        "current_position": 100,
+        ATTR_CURRENT_POSITION: 100,
         "supported_features": "invalid",  # Not an int/bitmask
     }
 
@@ -85,7 +85,7 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
     cover_state.entity_id = MOCK_COVER_ENTITY_ID
     cover_state.state = "open"
     cover_state.attributes = {
-        "current_position": 100,
+        ATTR_CURRENT_POSITION: 100,
         "supported_features": CoverEntityFeature.SET_POSITION,
     }
 
@@ -110,47 +110,6 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
 
 
 @pytest.mark.asyncio
-async def test_extreme_max_closure_is_clamped_to_zero() -> None:
-    """Very large max_closure must clamp desired position to fully closed (0)."""
-    hass = MagicMock(spec=HomeAssistant)
-    hass.states = MagicMock()
-    hass.services = MagicMock()
-    hass.services.async_call = AsyncMock()
-
-    config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
-    # Add temperature configuration for combined automation
-    config[ConfKeys.MAX_TEMPERATURE.value] = 24.0
-    config[ConfKeys.MIN_TEMPERATURE.value] = 21.0
-    config[ConfKeys.MAX_CLOSURE.value] = 1000  # extreme
-    config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = 0
-    entry = MockConfigEntry(config)
-    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
-
-    cover_state = MagicMock()
-    cover_state.entity_id = MOCK_COVER_ENTITY_ID
-    cover_state.state = "open"
-    cover_state.attributes = {
-        "current_position": 100,
-        "supported_features": CoverEntityFeature.SET_POSITION,
-    }
-
-    sun_state = MagicMock()
-    sun_state.entity_id = MOCK_SUN_ENTITY_ID
-    sun_state.state = "above_horizon"
-    sun_state.attributes = {"elevation": 50.0, "azimuth": 0.0}
-
-    hass.states.get.side_effect = lambda entity_id: {
-        MOCK_SUN_ENTITY_ID: sun_state,
-        MOCK_COVER_ENTITY_ID: cover_state,
-        MOCK_TEMP_SENSOR_ENTITY_ID: MagicMock(state="25.0"),  # Hot temp to trigger combined logic
-    }.get(entity_id)
-
-    await coordinator.async_refresh()
-
-    await assert_service_called(hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=0)
-
-
-@pytest.mark.asyncio
 async def test_boundary_angle_equals_tolerance_is_not_hitting() -> None:
     """Angle difference equal to tolerance should be treated as not hitting (strict <)."""
     hass = MagicMock(spec=HomeAssistant)
@@ -168,7 +127,7 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting() -> None:
     cover_state.entity_id = MOCK_COVER_ENTITY_ID
     cover_state.state = "closed"
     cover_state.attributes = {
-        "current_position": 0,
+        ATTR_CURRENT_POSITION: 0,
         "supported_features": CoverEntityFeature.SET_POSITION,
     }
 
@@ -197,7 +156,7 @@ async def test_missing_current_position_behaves_safely() -> None:
     hass.services = MagicMock()
     hass.services.async_call = AsyncMock()
 
-    config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID], max_temp=30, min_temp=10)
+    config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID], temp_threshold=24.0)
     entry = MockConfigEntry(config)
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
 
@@ -221,9 +180,9 @@ async def test_missing_current_position_behaves_safely() -> None:
 
     await coordinator.async_refresh()
 
-    # With temp-only config and cold reading, desired is open (100). Since current is unknown,
-    # coordinator issues a set_cover_position to 100 using best effort.
-    await assert_service_called(hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=100)
+    # With temp-only config and cold reading, desired is open (100). Since current defaults to 100 when missing,
+    # no movement is needed and no service call should be made.
+    hass.services.async_call.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -236,9 +195,8 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
 
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
     # Add temperature configuration for combined automation
-    config[ConfKeys.MAX_TEMPERATURE.value] = 24.0
-    config[ConfKeys.MIN_TEMPERATURE.value] = 21.0
-    config[f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}"] = "south"  # invalid string
+    config[ConfKeys.TEMP_THRESHOLD.value] = 24.0
+    config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = "south"  # invalid string
     entry = MockConfigEntry(config)
 
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
@@ -247,7 +205,7 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     cover_state.entity_id = MOCK_COVER_ENTITY_ID
     cover_state.state = "open"
     cover_state.attributes = {
-        "current_position": 50,
+        ATTR_CURRENT_POSITION: 50,
         "supported_features": CoverEntityFeature.SET_POSITION,
     }
 
@@ -265,16 +223,8 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     await coordinator.async_refresh()
     result = coordinator.data
 
-    # Cover should be present for temperature automation but skip sun automation
-    assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-    cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+    # Cover should be skipped entirely due to invalid direction
+    assert MOCK_COVER_ENTITY_ID not in result[ConfKeys.COVERS.value]
 
-    # Should have temperature data but not sun data due to invalid azimuth
-    assert "desired_from_temp" in cover_data
-    assert "desired_from_sun" not in cover_data
-    assert "sun_hitting" not in cover_data
-    assert cover_data["sun_direction_invalid"] is True
-
-    # With comfortable temp, no position change expected
-    assert cover_data["desired_position"] == 50  # Current position maintained
+    # With comfortable temp and skipped cover, no service call expected
     hass.services.async_call.assert_not_called()

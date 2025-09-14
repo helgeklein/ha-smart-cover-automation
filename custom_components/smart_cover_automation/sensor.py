@@ -13,25 +13,26 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.components.cover import ATTR_CURRENT_POSITION
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 
 from .config import ConfKeys, ResolvedConfig, resolve_entry
 from .const import (
-    ATTR_AUTOMATION_ENABLED,
-    ATTR_COVERS_NUM_MOVED,
-    ATTR_COVERS_NUM_TOTAL,
-    ATTR_MIN_POSITION_DELTA,
-    ATTR_SUN_AZIMUTH,
-    ATTR_SUN_ELEVATION,
-    ATTR_SUN_ELEVATION_THRESH,
-    ATTR_TEMP_CURRENT,
-    ATTR_TEMP_HYSTERESIS,
-    ATTR_TEMP_MAX_THRESH,
-    ATTR_TEMP_MIN_THRESH,
-    ATTR_TEMP_SENSOR_ENTITY_ID,
+    COVER_ATTR_POSITION_DESIRED,
     KEY_BODY,
-    KEY_CURRENT_POSITION,
-    KEY_DESIRED_POSITION,
+    SENSOR_ATTR_AUTOMATION_ENABLED,
+    SENSOR_ATTR_COVERS_MAX_CLOSURE_POS,
+    SENSOR_ATTR_COVERS_MIN_POSITION_DELTA,
+    SENSOR_ATTR_COVERS_NUM_MOVED,
+    SENSOR_ATTR_COVERS_NUM_TOTAL,
+    SENSOR_ATTR_SUN_AZIMUTH,
+    SENSOR_ATTR_SUN_ELEVATION,
+    SENSOR_ATTR_SUN_ELEVATION_THRESH,
+    SENSOR_ATTR_TEMP_CURRENT,
+    SENSOR_ATTR_TEMP_HOT,
+    SENSOR_ATTR_TEMP_HYSTERESIS,
+    SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID,
+    SENSOR_ATTR_TEMP_THRESHOLD,
 )
 from .entity import IntegrationEntity
 
@@ -125,82 +126,76 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
     def available(self) -> bool | None:  # type: ignore[override]
         return super().available
 
-    def _first_cover_value(self, key: str) -> Any | None:
-        covers: dict[str, dict[str, Any]] = self.coordinator.data.get(ConfKeys.COVERS.value) or {}
-        for data in covers.values():
-            if key in data:
-                return data.get(key)
-        return None
-
     @cached_property
     def native_value(self) -> str | None:  # type: ignore[override]
+        if not self.coordinator.data:
+            return None
+
         resolved: ResolvedConfig = resolve_entry(self.coordinator.config_entry)
-        if not bool(resolved.enabled):
+        if not resolved.enabled:
             return "Disabled"
+
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get(ConfKeys.COVERS.value) or {}
         total = len(covers)
         moved = sum(
             1
             for d in covers.values()
-            if d.get(KEY_DESIRED_POSITION) is not None and d.get(KEY_CURRENT_POSITION) != d.get(KEY_DESIRED_POSITION)
+            if d.get(COVER_ATTR_POSITION_DESIRED) is not None and d.get(ATTR_CURRENT_POSITION) != d.get(COVER_ATTR_POSITION_DESIRED)
         )
 
         parts: list[str] = []
-        current_temp = self._first_cover_value(ATTR_TEMP_CURRENT)
+        current_temp = self.coordinator.data.get(SENSOR_ATTR_TEMP_CURRENT)
         if isinstance(current_temp, (int, float)):
-            min_temp = resolve_entry(self.coordinator.config_entry).min_temperature
-            max_temp = resolve_entry(self.coordinator.config_entry).max_temperature
-            parts.append(
-                f"Temp {float(current_temp):.1f}°C"
-                + (
-                    f" in [{float(min_temp):.1f}–{float(max_temp):.1f}]"
-                    if isinstance(min_temp, (int, float)) and isinstance(max_temp, (int, float))
-                    else ""
-                )
-            )
-        elevation = self._first_cover_value(ATTR_SUN_ELEVATION)
-        azimuth = self._first_cover_value(ATTR_SUN_AZIMUTH)
+            temp_threshold = resolve_entry(self.coordinator.config_entry).temp_threshold
+            parts.append(f"Temp {float(current_temp):.1f}°C" + (f", threshold {temp_threshold:.1f}°C"))
+        elevation = self.coordinator.data.get(SENSOR_ATTR_SUN_ELEVATION)
+        azimuth = self.coordinator.data.get(SENSOR_ATTR_SUN_AZIMUTH)
         if isinstance(elevation, (int, float)) and isinstance(azimuth, (int, float)):
             parts.append(f"Sun elev {float(elevation):.1f}°, az {float(azimuth):.0f}°")
         prefix = " • ".join(parts) if parts else "Combined"
         return f"{prefix} • moves {moved}/{total}"
 
+    #
+    # extra_state_attributes
+    #
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:  # type: ignore[override]
+        """Return sensor state attributes.
+
+        This is called by HA after coordinator._async_update_data() runs
+        to get additional attributes for the integration entity state.
+        """
+
+        if not self.coordinator.data:
+            return None
+
         resolved: ResolvedConfig = resolve_entry(self.coordinator.config_entry)
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get(ConfKeys.COVERS.value) or {}
 
-        enabled = bool(resolved.enabled)
-        temp_hyst = float(resolved.temperature_hysteresis)
-        min_delta = int(float(resolved.min_position_delta))
-        attrs: dict[str, Any] = {
-            ATTR_AUTOMATION_ENABLED: enabled,
-            ATTR_COVERS_NUM_TOTAL: len(covers),
-            ATTR_COVERS_NUM_MOVED: sum(
-                1
-                for d in covers.values()
-                if d.get(KEY_DESIRED_POSITION) is not None and d.get(KEY_CURRENT_POSITION) != d.get(KEY_DESIRED_POSITION)
-            ),
-            ATTR_TEMP_HYSTERESIS: temp_hyst,
-            ATTR_MIN_POSITION_DELTA: min_delta,
-        }
-
-        # Combined-only attributes
-        attrs.update(
-            {
-                # Temperature-related
-                ATTR_TEMP_SENSOR_ENTITY_ID: resolved.temp_sensor_entity_id,
-                ATTR_TEMP_MIN_THRESH: resolved.min_temperature,
-                ATTR_TEMP_MAX_THRESH: resolved.max_temperature,
-                ATTR_TEMP_CURRENT: self._first_cover_value(ATTR_TEMP_CURRENT),
-                # Sun-related
-                ATTR_SUN_ELEVATION: self._first_cover_value(ATTR_SUN_ELEVATION),
-                ATTR_SUN_AZIMUTH: self._first_cover_value(ATTR_SUN_AZIMUTH),
-                ATTR_SUN_ELEVATION_THRESH: resolved.sun_elevation_threshold,
-                ConfKeys.MAX_CLOSURE.value: int(float(resolved.max_closure)),
-            }
+        num_covers_moved = sum(
+            1
+            for d in covers.values()
+            if d.get(COVER_ATTR_POSITION_DESIRED) is not None and d.get(ATTR_CURRENT_POSITION) != d.get(COVER_ATTR_POSITION_DESIRED)
         )
 
-        # Include per-cover snapshots for debugging/visibility
+        # Store sensor attributes
+        attrs: dict[str, Any] = {
+            SENSOR_ATTR_AUTOMATION_ENABLED: resolved.enabled,
+            SENSOR_ATTR_COVERS_MAX_CLOSURE_POS: resolved.covers_max_closure,
+            SENSOR_ATTR_COVERS_MIN_POSITION_DELTA: resolved.covers_min_position_delta,
+            SENSOR_ATTR_COVERS_NUM_MOVED: num_covers_moved,
+            SENSOR_ATTR_COVERS_NUM_TOTAL: len(covers),
+            SENSOR_ATTR_SUN_AZIMUTH: self.coordinator.data.get(SENSOR_ATTR_SUN_AZIMUTH),
+            SENSOR_ATTR_SUN_ELEVATION: self.coordinator.data.get(SENSOR_ATTR_SUN_ELEVATION),
+            SENSOR_ATTR_SUN_ELEVATION_THRESH: resolved.sun_elevation_threshold,
+            SENSOR_ATTR_TEMP_CURRENT: self.coordinator.data.get(SENSOR_ATTR_TEMP_CURRENT),
+            SENSOR_ATTR_TEMP_HOT: self.coordinator.data.get(SENSOR_ATTR_TEMP_HOT),
+            SENSOR_ATTR_TEMP_HYSTERESIS: resolved.temp_hysteresis,
+            SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID: resolved.temp_sensor_entity_id,
+            SENSOR_ATTR_TEMP_THRESHOLD: resolved.temp_threshold,
+        }
+
+        # Include per-cover attributes for debugging/visibility
         attrs[ConfKeys.COVERS.value] = covers
+
         return attrs

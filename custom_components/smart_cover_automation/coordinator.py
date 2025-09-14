@@ -18,7 +18,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator as Ba
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from . import const
-from .config import CONF_SPECS, ConfKeys, ResolvedConfig, resolve_entry
+from .config import ConfKeys, ResolvedConfig, resolve_entry
 from .util import to_float_or_none
 
 if TYPE_CHECKING:
@@ -111,7 +111,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         # Adjust log level if verbose logging is enabled
         try:
-            if bool(resolved.verbose_logging):
+            if resolved.verbose_logging:
                 const.LOGGER.setLevel(logging.DEBUG)
                 const.LOGGER.debug("Verbose logging enabled")
         except Exception:
@@ -138,6 +138,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         - Periodically at update_interval
         - Manual refresh
         - Integration reload
+
+        Returns:
+        Dict that stores details of the last automation run.
+        Dict entries are converted to HA entity attributes which are visible
+        in the integration's automation sensor.
         """
         try:
             const.LOGGER.info("Starting cover automation update")
@@ -154,7 +159,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 raise ConfigurationError("No covers configured")
 
             # Get the enabled state
-            enabled = bool(resolved.enabled)
+            enabled = resolved.enabled
             if not enabled:
                 const.LOGGER.info("Automation disabled via configuration; skipping actions")
                 return {ConfKeys.COVERS.value: {}}
@@ -164,9 +169,6 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             available_covers = sum(1 for s in states.values() if s is not None)
             if available_covers == 0:
                 raise AllCoversUnavailableError()
-            for entity_id, state in states.items():
-                if state is None:
-                    const.LOGGER.warning(f"Cover {entity_id} is unavailable")
 
             return await self._handle_automation(states, config)
 
@@ -176,6 +178,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             raise ConfigurationError(str(err)) from err
         except (OSError, ValueError, TypeError) as err:
             raise UpdateFailed(f"System error during automation update: {err}") from err
+        finally:
+            const.LOGGER.info("Finished cover automation update")
 
     #
     # _handle_automation
@@ -196,184 +200,122 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         resolved = self._resolved_settings()
 
         # Temperature input
-        temp_available = False
-        current_temp: float | None = None
-        max_temp = float(resolved.max_temperature)
-        min_temp = float(resolved.min_temperature)
+        temp_threshold = resolved.temp_threshold
         sensor_entity_id = resolved.temp_sensor_entity_id
+        temp_hysteresis = resolved.temp_hysteresis
         temp_state = self.hass.states.get(sensor_entity_id)
         if temp_state is None:
-            # Required temp sensor missing
             raise TempSensorNotFoundError(sensor_entity_id)
         try:
-            current_temp = float(temp_state.state)
-            temp_available = True
+            temp_current = float(temp_state.state)
         except (ValueError, TypeError) as err:
             raise InvalidSensorReadingError(temp_state.entity_id, str(temp_state.state)) from err
 
-        temp_hysteresis = float(resolved.temperature_hysteresis)
-        min_position_delta = int(float(resolved.min_position_delta))
+        # Temperature above threshold?
+        temp_hot = False
+        if temp_current > temp_threshold + temp_hysteresis:
+            temp_hot = True
+
+        # Cover settings
+        covers_min_position_delta = resolved.covers_min_position_delta
 
         # Sun input
-        sun_available = False
-        elevation: float | None = None
-        azimuth: float | None = None
-        threshold = float(resolved.sun_elevation_threshold)
-        sensor_entity_id = const.SUN_ENTITY_ID
+        sun_elevation: float | None = None
+        sun_azimuth: float | None = None
+        sun_elevation_threshold = resolved.sun_elevation_threshold
+        sensor_entity_id = const.HA_SUN_ENTITY_ID
         sun_state = self.hass.states.get(sensor_entity_id)
         if sun_state is None:
             # Required sun entity missing
             raise SunSensorNotFoundError(sensor_entity_id)
+
         try:
-            elevation = float(sun_state.attributes.get(const.SUN_ATTR_ELEVATION, 0))
-            azimuth = float(sun_state.attributes.get(const.SUN_ATTR_AZIMUTH, 0))
-            sun_available = True
+            sun_elevation = float(sun_state.attributes.get(const.HA_SUN_ATTR_ELEVATION, 0))
+            sun_azimuth = float(sun_state.attributes.get(const.HA_SUN_ATTR_AZIMUTH, 0))
         except (ValueError, TypeError) as err:
             raise InvalidSensorReadingError(sun_state.entity_id, str(sun_state.state)) from err
 
-        # Iterate covers
+        # Store sensor attributes
+        result.update(
+            {
+                const.SENSOR_ATTR_SUN_AZIMUTH: sun_azimuth,
+                const.SENSOR_ATTR_SUN_ELEVATION: sun_elevation,
+                const.SENSOR_ATTR_TEMP_CURRENT: temp_current,
+                const.SENSOR_ATTR_TEMP_HOT: temp_hot,
+            }
+        )
+
+        # Copy result without covers for logging
+        result_copy = {k: v for k, v in result.items() if k != ConfKeys.COVERS.value}
+        const.LOGGER.info(f"Calculated sensor states: {str(result_copy)}")
+
+        # Iterate over covers
+        const.LOGGER.debug("Starting cover evaluation")
         for entity_id, state in states.items():
-            if not state:
-                const.LOGGER.warning(f"Skipping unavailable cover: {entity_id}")
+            if state is None:
+                const.LOGGER.warning(f"[{entity_id}] Cover unavailable, skipping")
                 continue
 
+            # Get cover features (e.g., SET_POSITION), defaulting to 0
             features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
+
+            # Get the current position, defaulting to fully open
             current_pos = state.attributes.get(ATTR_CURRENT_POSITION)
+            if current_pos is None:
+                const.LOGGER.warning(f"[{entity_id}] Cover has no current_position attribute, assuming fully open")
+                current_pos = const.COVER_POS_FULLY_OPEN
 
-            desired_from_temp: int | None = None
-            desired_from_sun: int | None = None
-            temp_hot: bool = False
+            # Outputs to determine
             sun_hitting: bool = False
-            details: dict[str, Any] = {}
+            attrs: dict[str, Any] = {}
 
-            # Temperature contribution
-            if temp_available and current_temp is not None:
-                if current_temp > max_temp + temp_hysteresis:
-                    desired_from_temp = const.COVER_POS_FULLY_CLOSED
-                    temp_hot = True
-                elif current_temp < min_temp - temp_hysteresis:
-                    desired_from_temp = const.COVER_POS_FULLY_OPEN
-                else:
-                    desired_from_temp = current_pos
-                details.update(
-                    {
-                        const.ATTR_TEMP_CURRENT: current_temp,
-                        const.ATTR_TEMP_MAX_THRESH: max_temp,
-                        const.ATTR_TEMP_MIN_THRESH: min_temp,
-                        const.ATTR_TEMP_HYSTERESIS: temp_hysteresis,
-                        "desired_from_temp": desired_from_temp,
-                        "temp_hot": temp_hot,
-                    }
-                )
-                const.LOGGER.debug(
-                    "Temp eval %s: current=%.2f, range=[%.2f, %.2f], hysteresis=%.2f => desired_from_temp=%s, temp_hot=%s",
-                    entity_id,
-                    current_temp,
-                    min_temp,
-                    max_temp,
-                    temp_hysteresis,
-                    desired_from_temp,
-                    temp_hot,
-                )
+            # Cover azimuth
+            cover_azimuth_raw = config.get(f"{entity_id}_{const.COVER_SFX_AZIMUTH}")
+            cover_azimuth: float | None = to_float_or_none(cover_azimuth_raw)
+            if cover_azimuth is None:
+                error = f"[{entity_id}] Cover has invalid or missing azimuth (direction), skipping"
+                const.LOGGER.warning(error)
+                attrs[const.COVER_ATTR_ERROR] = error
+                continue
+
+            # Is the sun hitting the window?
+            sun_azimuth_difference = self._calculate_angle_difference(sun_azimuth, cover_azimuth)
+            if sun_elevation >= sun_elevation_threshold:
+                sun_hitting = sun_azimuth_difference < resolved.sun_azimuth_tolerance
             else:
-                details["temp_unavailable"] = True
+                sun_hitting = False
 
-            # Sun contribution
-            if sun_available and elevation is not None and azimuth is not None:
-                # Per-cover direction remains dynamic and stored in config by entity_id
-                direction_raw = config.get(f"{entity_id}_{const.COVER_AZIMUTH}")
-                direction_azimuth: float | None = to_float_or_none(direction_raw)
-
-                if direction_azimuth is not None:
-                    tolerance = int(float(resolved.azimuth_tolerance))
-                    # Compute sun desired position and whether the sun is hitting the window
-                    angle_difference = None
-                    if elevation >= threshold:
-                        angle_difference = self._calculate_angle_difference(azimuth, direction_azimuth)
-                        sun_hitting = angle_difference < tolerance
-                    else:
-                        sun_hitting = False
-
-                    desired_from_sun = self._calculate_desired_position(elevation, azimuth, threshold, direction_azimuth, entity_id)
-                    details.update(
-                        {
-                            const.ATTR_SUN_ELEVATION: elevation,
-                            const.ATTR_SUN_AZIMUTH: azimuth,
-                            const.ATTR_SUN_ELEVATION_THRESH: threshold,
-                            "window_direction_azimuth": direction_azimuth,
-                            "angle_difference": angle_difference,
-                            "desired_from_sun": desired_from_sun,
-                            "sun_hitting": sun_hitting,
-                        }
-                    )
-                    const.LOGGER.debug(
-                        f"Sun eval {entity_id}: elev={elevation:.2f}(threshold={threshold:.2f}) azimuth={azimuth:.2f} window={direction_azimuth:.2f} angle_diff={angle_difference} hit={sun_hitting} => desired_from_sun={desired_from_sun}"
-                    )
-                else:
-                    const.LOGGER.warning(f"Cover {entity_id}: invalid or missing direction for sun logic")
-                    details["sun_direction_invalid"] = True
+            # Calculate the cover position
+            if temp_hot and sun_hitting:
+                # Close the cover (but respect max closure limit)
+                desired_pos = max(const.COVER_POS_FULLY_CLOSED, resolved.covers_max_closure)
             else:
-                details["sun_unavailable"] = True
+                # Open the cover
+                desired_pos = const.COVER_POS_FULLY_OPEN
 
-            desired_pos = current_pos
-
-            # Determine which automations are active
-            include_temp = desired_from_temp is not None
-            include_sun = desired_from_sun is not None and not details.get("sun_direction_invalid")
-
-            if include_temp and not include_sun:
-                # Temperature-only automation
-                desired_pos = desired_from_temp
-            elif include_sun and not include_temp:
-                # Sun-only automation
-                desired_pos = desired_from_sun
-            elif include_temp and include_sun:
-                # Combined automation: Close when both want to close, open when either wants to open
-                if temp_hot and sun_hitting:
-                    # Both conditions want to close
-                    desired_pos = desired_from_sun  # Use sun's desired position (typically closed)
-                elif (desired_from_temp == const.COVER_POS_FULLY_OPEN) or (desired_from_sun == const.COVER_POS_FULLY_OPEN):
-                    # At least one condition wants to open
-                    desired_pos = const.COVER_POS_FULLY_OPEN
-                else:
-                    # Neither condition is clearly wanting to close or open (comfortable temps, etc.)
-                    desired_pos = current_pos  # Keep current position
-            elif details.get("sun_direction_invalid") and include_temp:
-                # Fallback: if sun direction invalid, behave as temperature-only
-                desired_pos = desired_from_temp
+            # Cover movement
+            if desired_pos == current_pos:
+                message = "No movement needed"
+            elif abs(desired_pos - current_pos) < covers_min_position_delta:
+                message = "Skipping minor adjustment"
             else:
-                # No valid automation configured
-                desired_pos = current_pos
-
-            const.LOGGER.debug(
-                f"Combine {entity_id}: temp_hot={temp_hot} sun_hitting={sun_hitting} desired_temp={desired_from_temp} desired_sun={desired_from_sun} => desired={desired_pos} (close_when_both_hot_and_hitting, open_when_either_wants_open)"
-            )
-
-            # Act with min delta
-            if (
-                desired_pos is not None
-                and current_pos is not None
-                and desired_pos != current_pos
-                and abs(desired_pos - current_pos) < min_position_delta
-            ):
-                const.LOGGER.debug(
-                    f"Skip small adjust {entity_id}: current={current_pos} desired={desired_pos} delta={abs(desired_pos - current_pos)} < min_delta={min_position_delta}"
-                )
-            elif desired_pos is not None and desired_pos != current_pos:
-                const.LOGGER.info(f"[{entity_id}] Action: current={current_pos} desired={desired_pos} (features={features})")
+                message = "Moving cover"
                 await self._set_cover_position(entity_id, desired_pos, features)
 
-            details.update(
-                {
-                    "current_position": current_pos,
-                    "desired_position": desired_pos,
-                    const.ATTR_MIN_POSITION_DELTA: min_position_delta,
-                    ConfKeys.MAX_CLOSURE.value: int(float(resolved.max_closure)),
-                    "combined_strategy": "close_and_open_or",
-                }
-            )
+            # Log and store per-cover attributes
+            # TODO: also log the current position
+            cover_attrs = {
+                const.COVER_ATTR_COVER_AZIMUTH: cover_azimuth,
+                const.COVER_ATTR_POSITION_DESIRED: desired_pos,
+                const.COVER_ATTR_SUN_AZIMUTH_DIFF: sun_azimuth_difference,
+                const.COVER_ATTR_SUN_HITTING: sun_hitting,
+            }
+            const.LOGGER.info(f"[{entity_id}] {message} {str(cover_attrs)}")
 
-            result[ConfKeys.COVERS.value][entity_id] = details
+            attrs.update(cover_attrs)
+            result[ConfKeys.COVERS.value][entity_id] = attrs
+
+        const.LOGGER.debug("Finished cover evaluation")
 
         return result
 
@@ -401,42 +343,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             const.LOGGER.error(f"Failed to control cover {entity_id}: {err}")
 
     #
-    # _calculate_desired_position
+    # _calculate_angle_difference
     #
-    def _calculate_desired_position(
-        self,
-        elevation: float,
-        azimuth: float,
-        threshold: float,
-        direction_azimuth: float,
-        entity_id: str,
-    ) -> int:
-        """Calculate desired cover position for sun logic."""
-        resolved = self._resolved_settings()
-        try:
-            max_closure = int(float(resolved.max_closure))
-        except (TypeError, ValueError):
-            max_closure = int(CONF_SPECS[ConfKeys.MAX_CLOSURE].default)
-
-        if elevation < threshold:
-            # Sun is low, open covers
-            const.LOGGER.debug(
-                f"Desired {entity_id} (sun low): elevation={elevation:.2f}<threshold={threshold:.2f} => {const.COVER_POS_FULLY_OPEN}"
-            )
-            return const.COVER_POS_FULLY_OPEN
-
-        # Calculate angle between sun and window
-        angle_diff = self._calculate_angle_difference(azimuth, direction_azimuth)
-        tolerance = int(float(self._resolved_settings().azimuth_tolerance))
-        if angle_diff < tolerance:
-            desired_pos = max(const.COVER_POS_FULLY_CLOSED, const.COVER_POS_FULLY_OPEN - max_closure)
-        else:
-            desired_pos = const.COVER_POS_FULLY_OPEN
-        const.LOGGER.debug(
-            f"Desired {entity_id} (sun): angle_diff={angle_diff:.2f} tol={tolerance} max_closure={max_closure} => {desired_pos}"
-        )
-        return round(desired_pos)
-
-    def _calculate_angle_difference(self, azimuth: float, direction_azimuth: float) -> float:
+    def _calculate_angle_difference(self, sun_azimuth: float, cover_azimuth: float) -> float:
         """Calculate minimal absolute angle difference between two azimuths."""
-        return abs(((azimuth - direction_azimuth + 180) % 360) - 180)
+        return abs(((sun_azimuth - cover_azimuth + 180) % 360) - 180)

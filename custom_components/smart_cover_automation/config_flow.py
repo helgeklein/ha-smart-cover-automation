@@ -69,28 +69,6 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                 errors["base"] = const.ERROR_INVALID_COVER
                 const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
 
-            # Validate temperature thresholds
-            max_key = ConfKeys.MAX_TEMPERATURE.value
-            min_key = ConfKeys.MIN_TEMPERATURE.value
-            has_max = max_key in user_input
-            has_min = min_key in user_input
-
-            # If only one threshold is provided, mark the counterpart as required
-            if has_max ^ has_min:
-                if has_max:
-                    errors[min_key] = const.ERROR_REQUIRED_WITH_MAX_TEMPERATURE
-                    const.LOGGER.error(f"{min_key} required when {max_key} is provided")
-                else:
-                    errors[max_key] = const.ERROR_REQUIRED_WITH_MIN_TEMPERATURE
-                    const.LOGGER.error(f"{max_key} required when {min_key} is provided")
-            # If both are provided, validate the range
-            elif has_max and has_min:
-                max_temp = user_input[max_key]
-                min_temp = user_input[min_key]
-                if max_temp <= min_temp:
-                    errors["base"] = const.ERROR_INVALID_TEMPERATURE_RANGE
-                    const.LOGGER.error(f"Invalid temperature range: max={max_temp} <= min={min_temp}")
-
             if not errors:
                 # Create a permanent unique ID for this config entry
                 unique_id = str(uuid.uuid4())
@@ -119,38 +97,29 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
+                    # Covers
                     vol.Required(ConfKeys.COVERS.value): selector.EntitySelector(
                         selector.EntitySelectorConfig(
                             domain=Platform.COVER,
                             multiple=True,
                         ),
                     ),
-                    # Optional temperature thresholds
+                    # Temperature threshold
                     vol.Optional(
-                        ConfKeys.MAX_TEMPERATURE.value,
-                        default=CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
+                        ConfKeys.TEMP_THRESHOLD.value,
+                        default=CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
                     ): selector.NumberSelector(
                         selector.NumberSelectorConfig(
-                            min=0,
+                            min=-10,
                             max=40,
                             step=0.5,
                             unit_of_measurement=UnitOfTemperature.CELSIUS,
                         ),
                     ),
+                    # Azimuth tolerance
                     vol.Optional(
-                        ConfKeys.MIN_TEMPERATURE.value,
-                        default=CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
-                    ): selector.NumberSelector(
-                        selector.NumberSelectorConfig(
-                            min=0,
-                            max=40,
-                            step=0.5,
-                            unit_of_measurement=UnitOfTemperature.CELSIUS,
-                        ),
-                    ),
-                    vol.Optional(
-                        ConfKeys.AZIMUTH_TOLERANCE.value,
-                        default=CONF_SPECS[ConfKeys.AZIMUTH_TOLERANCE].default,
+                        ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
+                        default=CONF_SPECS[ConfKeys.SUN_AZIMUTH_TOLERANCE].default,
                     ): selector.NumberSelector(
                         selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°"),
                     ),
@@ -191,7 +160,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         covers: list[str] = list(resolved_settings.covers)
         direction_fields: dict[vol.Marker, object] = {}
         for cover in covers:
-            key = f"{cover}_{const.COVER_AZIMUTH}"
+            key = f"{cover}_{const.COVER_SFX_AZIMUTH}"
             raw = options.get(key, data.get(key))
             direction_azimuth: float | None = to_float_or_none(raw)
 
@@ -204,16 +173,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     selector.NumberSelectorConfig(min=0, max=359, step=0.1, unit_of_measurement="°")
                 )
 
-        enabled_default = bool(resolved_settings.enabled)
-        temp_sensor_default = str(resolved_settings.temp_sensor_entity_id)
-        threshold_default = float(resolved_settings.sun_elevation_threshold)
-        azimuth_tol_default = int(resolved_settings.azimuth_tolerance)
+        enabled_default = resolved_settings.enabled
+        temp_sensor_default = resolved_settings.temp_sensor_entity_id
+        threshold_default = resolved_settings.sun_elevation_threshold
+        azimuth_tol_default = resolved_settings.sun_azimuth_tolerance
 
         schema_dict: dict[vol.Marker, object] = {
             vol.Optional(ConfKeys.ENABLED.value, default=enabled_default): selector.BooleanSelector(),
             vol.Optional(
                 ConfKeys.VERBOSE_LOGGING.value,
-                default=bool(resolved_settings.verbose_logging),
+                default=resolved_settings.verbose_logging,
             ): selector.BooleanSelector(),
             # Allow editing the list of covers without changing the unique_id
             vol.Optional(
@@ -234,16 +203,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 default=threshold_default,
             ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=90, step=1)),
             vol.Optional(
-                ConfKeys.AZIMUTH_TOLERANCE.value,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
                 default=azimuth_tol_default,
             ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°")),
         }
 
-        # Compute safe default for max_closure
-        max_closure_default = int(resolved_settings.max_closure)
-
-        schema_dict[vol.Optional(ConfKeys.MAX_CLOSURE.value, default=max_closure_default)] = selector.NumberSelector(
-            selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%")
+        schema_dict[vol.Optional(ConfKeys.COVERS_MAX_CLOSURE.value, default=resolved_settings.covers_max_closure)] = (
+            selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%"))
         )
 
         # Add dynamic direction fields at the end

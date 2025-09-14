@@ -6,6 +6,7 @@ from typing import Iterable, cast
 from unittest.mock import MagicMock
 
 import pytest
+from homeassistant.components.cover import ATTR_CURRENT_POSITION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
@@ -31,8 +32,8 @@ async def test_automation_status_combined_summary_present() -> None:
     coordinator.data = {
         ConfKeys.COVERS.value: {
             "cover.one": {
-                "current_position": 50,
-                "desired_position": 50,
+                ATTR_CURRENT_POSITION: 50,
+                "sca_cover_desired_position": 50,
             }
         }
     }

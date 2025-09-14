@@ -6,11 +6,11 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from homeassistant.components.cover import CoverEntityFeature
+from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
-from custom_components.smart_cover_automation.const import COVER_AZIMUTH, DOMAIN
+from custom_components.smart_cover_automation.const import COVER_SFX_AZIMUTH, DOMAIN
 
 # Test data
 MOCK_COVER_ENTITY_ID = "cover.test_cover"
@@ -51,8 +51,7 @@ def mock_config_entry() -> MagicMock:
     entry.entry_id = "test_entry_id"
     entry.data = {
         ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-        ConfKeys.MAX_TEMPERATURE.value: CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
-        ConfKeys.MIN_TEMPERATURE.value: CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
+        ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
     }
     entry.runtime_data = MagicMock()
     entry.runtime_data.config = entry.data
@@ -69,8 +68,8 @@ def mock_config_entry_sun() -> MagicMock:
         ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
         # Use numeric azimuths (degrees) for directions
-        f"{MOCK_COVER_ENTITY_ID}_{COVER_AZIMUTH}": 180.0,
-        f"{MOCK_COVER_ENTITY_ID_2}_{COVER_AZIMUTH}": 0.0,
+        f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": 180.0,
+        f"{MOCK_COVER_ENTITY_ID_2}_{COVER_SFX_AZIMUTH}": 0.0,
     }
     entry.runtime_data = MagicMock()
     entry.runtime_data.config = entry.data
@@ -84,7 +83,7 @@ def mock_cover_state() -> MagicMock:
     state.entity_id = MOCK_COVER_ENTITY_ID
     state.state = "open"
     state.attributes = {
-        "current_position": 100,
+        ATTR_CURRENT_POSITION: 100,
         "supported_features": CoverEntityFeature.SET_POSITION,
     }
     return state
@@ -97,7 +96,7 @@ def mock_cover_state_2() -> MagicMock:
     state.entity_id = MOCK_COVER_ENTITY_ID_2
     state.state = "closed"
     state.attributes = {
-        "current_position": 0,
+        ATTR_CURRENT_POSITION: 0,
         "supported_features": CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE,
     }
     return state
@@ -158,33 +157,30 @@ def create_sun_config(
         ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: threshold,
         # Since both automations are now always configured, include temp defaults
-        ConfKeys.MAX_TEMPERATURE.value: CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
-        ConfKeys.MIN_TEMPERATURE.value: CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
+        ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
     }
     # Add directions for each cover
     for cover in config[ConfKeys.COVERS.value]:
         # Default to south-facing (180°) as numeric azimuth
-        config[f"{cover}_{COVER_AZIMUTH}"] = 180.0
+        config[f"{cover}_{COVER_SFX_AZIMUTH}"] = 180.0
     return config
 
 
 def create_temperature_config(
     covers: list[str] | None = None,
-    max_temp: float = CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
-    min_temp: float = CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
+    temp_threshold: float = CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
 ) -> dict[str, Any]:
     """Create temperature automation config."""
     config = {
         ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
-        ConfKeys.MAX_TEMPERATURE.value: max_temp,
-        ConfKeys.MIN_TEMPERATURE.value: min_temp,
+        ConfKeys.TEMP_THRESHOLD.value: temp_threshold,
         # Since both automations are now always configured, include sun defaults
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
     }
     # Add directions for each cover (needed for sun automation)
     for cover in config[ConfKeys.COVERS.value]:
         # Default to south-facing (180°) as numeric azimuth
-        config[f"{cover}_{COVER_AZIMUTH}"] = 180.0
+        config[f"{cover}_{COVER_SFX_AZIMUTH}"] = 180.0
     return config
 
 
@@ -266,7 +262,7 @@ def create_combined_state_mock(
         cover_mock = MagicMock()
         cover_mock.entity_id = MOCK_COVER_ENTITY_ID
         cover_mock.attributes = {
-            "current_position": 100,
+            ATTR_CURRENT_POSITION: 100,
             "supported_features": CoverEntityFeature.SET_POSITION,
         }
         state_mapping[MOCK_COVER_ENTITY_ID] = cover_mock
@@ -279,20 +275,19 @@ def create_combined_and_scenario(
     current_position: int = 100,
     temp_hot: bool = True,
     sun_hitting: bool = True,
-    max_closure: int = 100,
+    covers_max_closure: int = 100,
 ) -> tuple[dict[str, Any], dict[str, MagicMock]]:
     """Create a scenario for combined AND logic testing.
 
-    Since both automations are now always active, this helper creates scenarios
-    that work with the new combined AND logic where both temp_hot and sun_hitting
-    must be true for covers to close.
+    Since both automations are always active, this helper creates scenarios
+    where both temp_hot and sun_hitting must be true for covers to close.
 
     Args:
         cover_id: Cover entity ID
         current_position: Current cover position
         temp_hot: Whether temperature should be hot (>24°C)
         sun_hitting: Whether sun should be hitting the window
-        max_closure: Maximum closure percentage
+        covers_max_closure: Maximum closure percentage
 
     Returns:
         Tuple of (config, state_mapping)
@@ -300,11 +295,10 @@ def create_combined_and_scenario(
     # Create config with both temperature and sun automation
     config = {
         ConfKeys.COVERS.value: [cover_id],
-        ConfKeys.MAX_TEMPERATURE.value: 24.0,
-        ConfKeys.MIN_TEMPERATURE.value: 21.0,
+        ConfKeys.TEMP_THRESHOLD.value: 23.0,
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
-        ConfKeys.MAX_CLOSURE.value: max_closure,
-        f"{cover_id}_{COVER_AZIMUTH}": 180.0,
+        ConfKeys.COVERS_MAX_CLOSURE.value: covers_max_closure,
+        f"{cover_id}_{COVER_SFX_AZIMUTH}": 180.0,
     }
 
     # Set temperature based on temp_hot flag
@@ -320,7 +314,7 @@ def create_combined_and_scenario(
         sun_azimuth=sun_azimuth,
         cover_states={
             cover_id: {
-                "current_position": current_position,
+                ATTR_CURRENT_POSITION: current_position,
                 "supported_features": CoverEntityFeature.SET_POSITION,
             }
         },

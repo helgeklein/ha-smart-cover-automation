@@ -2,7 +2,7 @@
 
 This module defines a typo-safe enum of setting keys, a registry of specs with
 defaults and coercion, and helpers to resolve effective settings from a
-ConfigEntry (options → data → defaults). Legacy classes have been removed.
+ConfigEntry (options → data → defaults).
 """
 
 from __future__ import annotations
@@ -21,15 +21,15 @@ class _ConfSpec(Generic[T]):
     """Metadata for a configuration setting.
 
     Attributes:
-    default: The default value for the setting.
-    converter: A callable that converts a raw value to the desired type T.
+    - default: The default value for the setting.
+    - converter: A callable that converts a raw value to the desired type T.
     """
 
     default: T
     converter: Callable[[Any], T]
 
     def __post_init__(self) -> None:
-        # Disallow None defaults to ensure ResolvedConfig fields are always concrete
+        # Disallow None default values to ensure ResolvedConfig fields are always concrete.
         if self.default is None:
             raise ValueError("_ConfSpec.default must not be None")
 
@@ -42,14 +42,13 @@ class ConfKeys(StrEnum):
 
     ENABLED = "enabled"  # Global on/off for all automation.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
+    COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
+    COVERS_MIN_POSITION_DELTA = "covers_min_position_delta"  # Ignore smaller position changes (%).
+    TEMP_HYSTERESIS = "temp_hysteresis"  # Deadband around thresholds (°C).
     TEMP_SENSOR_ENTITY_ID = "temp_sensor_entity_id"  # Temperature sensor entity_id.
-    MAX_TEMPERATURE = "max_temperature"  # Close when hotter than this (°C).
-    MIN_TEMPERATURE = "min_temperature"  # Open when cooler than this (°C).
-    TEMPERATURE_HYSTERESIS = "temperature_hysteresis"  # Deadband around thresholds (°C).
-    MIN_POSITION_DELTA = "min_position_delta"  # Ignore smaller position changes (%).
+    TEMP_THRESHOLD = "temp_threshold"  # Temperature threshold at which heat protection activates (°C).
+    SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
-    AZIMUTH_TOLERANCE = "azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
-    MAX_CLOSURE = "max_closure"  # Cap on closure when sun hits (%).
     VERBOSE_LOGGING = "verbose_logging"  # Enable DEBUG logs for this entry.
 
 
@@ -99,14 +98,13 @@ if TYPE_CHECKING:  # pragma: no cover - type checking only
 CONF_SPECS: dict[ConfKeys, _ConfSpec] = {
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
+    ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int),
+    ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
+    ConfKeys.TEMP_HYSTERESIS: _ConfSpec(default=0.5, converter=_Converters.to_float),
     ConfKeys.TEMP_SENSOR_ENTITY_ID: _ConfSpec(default="sensor.temperature", converter=_Converters.to_str),
-    ConfKeys.MAX_TEMPERATURE: _ConfSpec(default=24.0, converter=_Converters.to_float),
-    ConfKeys.MIN_TEMPERATURE: _ConfSpec(default=21.0, converter=_Converters.to_float),
-    ConfKeys.TEMPERATURE_HYSTERESIS: _ConfSpec(default=0.5, converter=_Converters.to_float),
-    ConfKeys.MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
+    ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=23.0, converter=_Converters.to_float),
+    ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=20.0, converter=_Converters.to_float),
-    ConfKeys.AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
-    ConfKeys.MAX_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int),
     ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool),
 }
 
@@ -128,14 +126,13 @@ __all__ = [
 class ResolvedConfig:
     enabled: bool
     covers: tuple[str, ...]
+    covers_max_closure: int
+    covers_min_position_delta: int
+    temp_hysteresis: float
     temp_sensor_entity_id: str
-    max_temperature: float
-    min_temperature: float
-    temperature_hysteresis: float
-    min_position_delta: int
+    temp_threshold: float
+    sun_azimuth_tolerance: int
     sun_elevation_threshold: float
-    azimuth_tolerance: int
-    max_closure: int
     verbose_logging: bool
 
     def get(self, key: ConfKeys) -> Any:

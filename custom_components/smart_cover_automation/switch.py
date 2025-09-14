@@ -67,7 +67,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
     @cached_property
     def is_on(self) -> bool | None:  # type: ignore[override]
         """Return true if the switch is on."""
-        return bool(resolve_entry(self.coordinator.config_entry).enabled)
+        return resolve_entry(self.coordinator.config_entry).enabled
 
     async def async_turn_on(self, **_: Any) -> None:
         """Turn on the switch."""

@@ -6,10 +6,9 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
-from homeassistant.components.cover import CoverEntityFeature
+from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.const import ATTR_TEMP_CURRENT
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
 )
@@ -48,7 +47,7 @@ class TestCoordinatorExtra:
         # Temperature below minimum threshold to trigger opening
         cover_state = MagicMock()
         cover_state.attributes = {
-            "current_position": CLOSED_POSITION,
+            ATTR_CURRENT_POSITION: CLOSED_POSITION,
             "supported_features": CoverEntityFeature.SET_POSITION,
         }
 
@@ -70,8 +69,8 @@ class TestCoordinatorExtra:
         # Verify - should open due to cold temp OR sun not hitting
         assert result is not None
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data[ATTR_TEMP_CURRENT] == float(COLD_TEMP)
-        assert cover_data["desired_position"] == OPEN_POSITION
+        assert result["temp_current"] == float(COLD_TEMP)
+        assert cover_data["sca_cover_desired_position"] == OPEN_POSITION
 
         # Verify service call
         await assert_service_called(
@@ -90,7 +89,7 @@ class TestCoordinatorExtra:
         """Test combined logic with comfortable temperature."""
         cover_state = MagicMock()
         cover_state.attributes = {
-            "current_position": OPEN_POSITION,
+            ATTR_CURRENT_POSITION: OPEN_POSITION,
             "supported_features": CoverEntityFeature.SET_POSITION,
         }
 
@@ -111,7 +110,7 @@ class TestCoordinatorExtra:
 
         # Verify - should maintain current position
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data["desired_position"] == OPEN_POSITION  # No change
+        assert cover_data["sca_cover_desired_position"] == OPEN_POSITION  # No change
 
         # Verify no service call
         mock_hass.services.async_call.assert_not_called()

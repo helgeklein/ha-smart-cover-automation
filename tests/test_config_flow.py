@@ -45,8 +45,7 @@ class TestConfigFlow:
 
         user_input = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-            ConfKeys.MAX_TEMPERATURE.value: 25.0,
-            ConfKeys.MIN_TEMPERATURE.value: 20.0,
+            ConfKeys.TEMP_THRESHOLD.value: 25.0,
         }
 
         with (
@@ -69,8 +68,7 @@ class TestConfigFlow:
 
         user_input = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            ConfKeys.MAX_TEMPERATURE.value: CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
-            ConfKeys.MIN_TEMPERATURE.value: CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
+            ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
         }
 
         with (
@@ -101,68 +99,6 @@ class TestConfigFlow:
         assert result["type"] == FlowResultType.FORM
         assert result["errors"]["base"] == "invalid_cover"
 
-    async def test_user_step_invalid_temperature_range(
-        self,
-        flow_handler: FlowHandler,
-        mock_hass_with_covers: MagicMock,
-    ) -> None:
-        """Test error when max temp <= min temp."""
-        flow_handler.hass = mock_hass_with_covers
-
-        user_input = {
-            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            ConfKeys.MAX_TEMPERATURE.value: 20.0,  # Less than min_temp
-            ConfKeys.MIN_TEMPERATURE.value: 25.0,
-        }
-
-        result = await flow_handler.async_step_user(user_input)
-        result = self._as_dict(result)
-
-        assert result["type"] == FlowResultType.FORM
-        assert result["errors"]["base"] == "invalid_temperature_range"
-
-    async def test_user_step_only_max_temperature_requires_min(
-        self,
-        flow_handler: FlowHandler,
-        mock_hass_with_covers: MagicMock,
-    ) -> None:
-        """When only max_temperature is provided, min_temperature should be required with field error."""
-        flow_handler.hass = mock_hass_with_covers
-
-        user_input = {
-            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            ConfKeys.MAX_TEMPERATURE.value: 25.0,
-            # MIN_TEMPERATURE intentionally omitted
-        }
-
-        result = await flow_handler.async_step_user(user_input)
-        result = self._as_dict(result)
-
-        assert result["type"] == FlowResultType.FORM
-        # Expect field-specific error on min_temperature
-        assert result["errors"][ConfKeys.MIN_TEMPERATURE.value] == "required_with_max_temperature"
-
-    async def test_user_step_only_min_temperature_requires_max(
-        self,
-        flow_handler: FlowHandler,
-        mock_hass_with_covers: MagicMock,
-    ) -> None:
-        """When only min_temperature is provided, max_temperature should be required with field error."""
-        flow_handler.hass = mock_hass_with_covers
-
-        user_input = {
-            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            ConfKeys.MIN_TEMPERATURE.value: 20.0,
-            # MAX_TEMPERATURE intentionally omitted
-        }
-
-        result = await flow_handler.async_step_user(user_input)
-        result = self._as_dict(result)
-
-        assert result["type"] == FlowResultType.FORM
-        # Expect field-specific error on max_temperature
-        assert result["errors"][ConfKeys.MAX_TEMPERATURE.value] == "required_with_min_temperature"
-
     async def test_user_step_unavailable_cover_warning(
         self,
         flow_handler: FlowHandler,
@@ -176,8 +112,7 @@ class TestConfigFlow:
 
         user_input = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            ConfKeys.MAX_TEMPERATURE.value: CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
-            ConfKeys.MIN_TEMPERATURE.value: CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
+            ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
         }
 
         with (
@@ -228,8 +163,7 @@ class TestConfigFlow:
 
         user_input = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID_2, MOCK_COVER_ENTITY_ID],  # Unsorted
-            ConfKeys.MAX_TEMPERATURE.value: CONF_SPECS[ConfKeys.MAX_TEMPERATURE].default,
-            ConfKeys.MIN_TEMPERATURE.value: CONF_SPECS[ConfKeys.MIN_TEMPERATURE].default,
+            ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
         }
 
         with (

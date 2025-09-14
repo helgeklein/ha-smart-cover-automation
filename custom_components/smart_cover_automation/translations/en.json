@@ -5,12 +5,10 @@
                 "title": "Smart Cover Automation",
                 "description": "Configure automatic cover control based on temperature or sun position. For detailed help, see: https://github.com/helgeklein/ha-smart_cover_automation",
                 "data": {
-                    "automation_type": "Automation Type",
                     "covers": "Covers to automate",
-                    "max_temperature": "Maximum temperature (when to close covers)",
-                    "min_temperature": "Minimum temperature (when to open covers)",
+                    "temp_threshold": "Temperature threshold (°C)",
                     "sun_elevation_threshold": "Sun elevation threshold (degrees)",
-                    "azimuth_tolerance": "Azimuth tolerance (degrees)",
+                    "sun_azimuth_tolerance": "Azimuth tolerance (degrees)",
                     "cover_azimuth": "Window azimuth (degrees)"
                 }
             }
@@ -19,8 +17,6 @@
             "invalid_cover": "One or more selected covers are not available",
             "no_direction": "Window azimuth must be set for sun-based automation",
             "invalid_temperature_range": "Maximum temperature must be higher than minimum temperature",
-            "required_with_max_temperature": "Minimum temperature is required when a maximum temperature is set",
-            "required_with_min_temperature": "Maximum temperature is required when a minimum temperature is set",
             "invalid_config": "Invalid configuration provided"
         },
         "abort": {
@@ -34,16 +30,13 @@
                 "title": "Smart Cover Configuration",
                 "description": "Adjust automation settings",
                 "data": {
-                    "automation_type": "Automation Type",
                     "enabled": "Enable automation",
                     "verbose_logging": "Verbose logging",
                     "covers": "Covers to automate",
                     "temp_sensor_entity_id": "Temperature sensor",
-                    "max_temperature": "Maximum temperature",
-                    "min_temperature": "Minimum temperature",
                     "sun_elevation_threshold": "Sun elevation threshold",
-                    "azimuth_tolerance": "Azimuth tolerance (degrees)",
-                    "max_closure": "Maximum closure (%)"
+                    "sun_azimuth_tolerance": "Azimuth tolerance (degrees)",
+                    "covers_max_closure": "Maximum closure position (0 = fully closed, 100 = fully open)"
                 }
             }
         }
@@ -53,31 +46,6 @@
             "options": {
                 "temperature": "Temperature-based",
                 "sun": "Sun-based"
-            }
-        }
-    },
-    "entity": {
-        "binary_sensor": {
-            "automation_active": {
-                "name": "Automation Active",
-                "state": {
-                    "on": "Active",
-                    "off": "Inactive"
-                }
-            }
-        },
-        "switch": {
-            "automation_enabled": {
-                "name": "Enable Automation"
-            }
-        },
-        "sensor": {
-            "automation_type": {
-                "name": "Automation Type",
-                "state": {
-                    "temperature": "Temperature Control",
-                    "sun": "Sun Position"
-                }
             }
         }
     }

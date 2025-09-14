@@ -30,24 +30,24 @@ def test_list_covers_normalized_via_resolve():
 def test_resolve_priority_and_coercion_with_defaults_fallback():
     # options take priority over data
     data = {
-        ConfKeys.MAX_TEMPERATURE.value: "18.5",  # will coerce to float 18.5 if chosen
-        ConfKeys.ENABLED.value: 0,  # bool(0) -> False
+        ConfKeys.TEMP_THRESHOLD.value: "18.5",
+        ConfKeys.ENABLED.value: 0,
     }
     options = {
-        ConfKeys.MAX_TEMPERATURE.value: "20.0",  # chosen over data
-        ConfKeys.MIN_POSITION_DELTA.value: "not-an-int",  # coercion fails -> default 5
+        ConfKeys.TEMP_THRESHOLD.value: "20.0",  # chosen over data
+        ConfKeys.COVERS_MIN_POSITION_DELTA.value: "not-an-int",  # coercion fails -> default 5
     }
 
     rs: ResolvedConfig = resolve(options, data)
 
     # Priority: options over data
-    assert rs.max_temperature == 20.0
+    assert rs.temp_threshold == 20.0
 
     # Coercion success from data for enabled (not overridden in options)
     assert rs.enabled is False
 
     # Coercion failure falls back to default and coerces that
-    assert rs.min_position_delta == 5
+    assert rs.covers_min_position_delta == 5
 
 
 @pytest.mark.parametrize(
@@ -81,20 +81,20 @@ def test_resolved_settings_accessors():
     rs = resolve(
         {
             ConfKeys.ENABLED.value: True,
-            ConfKeys.MAX_TEMPERATURE.value: 30,
+            ConfKeys.TEMP_THRESHOLD.value: 30,
         },
         {},
     )
 
     # get() reads by enum; as_enum_dict returns mapping by enum
-    assert rs.get(ConfKeys.MAX_TEMPERATURE) == 30.0
+    assert rs.get(ConfKeys.TEMP_THRESHOLD) == 30.0
     enum_dict = rs.as_enum_dict()
     assert set(enum_dict.keys()) == set(ConfKeys)
     assert enum_dict[ConfKeys.ENABLED] is True
 
 
 def test_resolve_entry_reads_from_attributes():
-    entry = SimpleNamespace(options={ConfKeys.ENABLED.value: False}, data={ConfKeys.MAX_TEMPERATURE.value: 22})
+    entry = SimpleNamespace(options={ConfKeys.ENABLED.value: False}, data={ConfKeys.TEMP_THRESHOLD.value: 22})
     rs = resolve_entry(entry)
     assert rs.enabled is False
-    assert rs.max_temperature == 22.0
+    assert rs.temp_threshold == 22.0
