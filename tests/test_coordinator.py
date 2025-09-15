@@ -699,55 +699,6 @@ class TestDataUpdateCoordinator:
         assert result[SENSOR_ATTR_TEMP_HOT] is not None
         assert COVER_ATTR_SUN_HITTING in cover1_data
 
-    async def test_set_cover_position_warning_branch_no_features_partial(
-        self,
-        mock_hass: MagicMock,
-        mock_sun_state: MagicMock,
-    ) -> None:
-        """When cover lacks position and open/close for partial desired, no service is called."""
-        # Create a combined config with both temperature and sun automation
-        config = create_sun_config()
-        # Add temperature configuration
-        config[ConfKeys.TEMP_THRESHOLD.value] = 24.0
-        # Ensure direct-sun partial closure is not 100% (so desired != 0)
-        config[ConfKeys.COVERS_MAX_CLOSURE.value] = 90
-        config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Sun conditions to produce a partial desired position (10)
-        mock_sun_state.attributes = {
-            "elevation": HIGH_ELEVATION,
-            "azimuth": DIRECT_AZIMUTH,
-        }
-
-        # Cover with no supported features
-        cover_state = MagicMock()
-        cover_state.attributes = {
-            ATTR_CURRENT_POSITION: OPEN_POSITION,  # 100
-            "supported_features": 0,
-        }
-
-        state_mapping = create_combined_state_mock(
-            temp_state="25.0",  # Hot temp so temp wants to close (0)
-            cover_states={
-                MOCK_COVER_ENTITY_ID: cover_state.attributes
-                if hasattr(cover_state, "attributes")
-                else {ATTR_CURRENT_POSITION: 100, "supported_features": 15}
-            },
-        )
-        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
-
-        await coordinator.async_refresh()
-        result = coordinator.data
-
-        # With hot temp (wants close=0) and sun wanting partial closure (10),
-        # combined logic: temp_hot=True, sun_hitting=True -> both want to close -> use sun's desired (10)
-        assert result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]["sca_cover_desired_position"] not in (
-            OPEN_POSITION,
-            CLOSED_POSITION,
-        )
-        mock_hass.services.async_call.assert_not_called()
-
     async def test_missing_config_keys_raise_configuration_error(
         self,
         mock_hass: MagicMock,

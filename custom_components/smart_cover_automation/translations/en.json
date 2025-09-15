@@ -48,5 +48,17 @@
                 "sun": "Sun-based"
             }
         }
+    },
+    "entity": {
+        "sensor": {
+            "automation_status": {
+                "name": "Automation Status"
+            }
+        },
+        "binary_sensor": {
+            "smart_cover_automation": {
+                "name": "Smart Cover Automation Availability"
+            }
+        }
     }
 }

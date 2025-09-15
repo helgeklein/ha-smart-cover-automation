@@ -13,6 +13,7 @@ from homeassistant.helpers.entity import Entity
 from custom_components.smart_cover_automation.config import (
     ConfKeys,
 )
+from custom_components.smart_cover_automation.const import SENSOR_KEY_AUTOMATION_STATUS
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.sensor import (
@@ -47,7 +48,7 @@ async def test_automation_status_combined_summary_present() -> None:
 
     await async_setup_entry_sensor(hass, cast(IntegrationConfigEntry, config_entry), add_entities)
 
-    status = next(e for e in captured if getattr(getattr(e, "entity_description"), "key", "") == "automation_status")
+    status = next(e for e in captured if getattr(getattr(e, "entity_description"), "key", "") == SENSOR_KEY_AUTOMATION_STATUS)
 
     summary = cast(str, getattr(status, "native_value"))
     assert "moves" in summary and "/" in summary

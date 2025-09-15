@@ -293,27 +293,43 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 # Open the cover
                 desired_pos = const.COVER_POS_FULLY_OPEN
 
-            # Cover movement
+            # Determine if cover movement is necessary
+            movement_needed = False
             if desired_pos == current_pos:
                 message = "No movement needed"
             elif abs(desired_pos - current_pos) < covers_min_position_delta:
                 message = "Skipping minor adjustment"
             else:
                 message = "Moving cover"
-                await self._set_cover_position(entity_id, desired_pos, features)
+                movement_needed = True
 
-            # Log and store per-cover attributes
-            # TODO: also log the current position
+            # Store and log per-cover attributes
             cover_attrs = {
                 const.COVER_ATTR_COVER_AZIMUTH: cover_azimuth,
                 const.COVER_ATTR_POSITION_DESIRED: desired_pos,
                 const.COVER_ATTR_SUN_AZIMUTH_DIFF: sun_azimuth_difference,
                 const.COVER_ATTR_SUN_HITTING: sun_hitting,
             }
-            const.LOGGER.info(f"[{entity_id}] {message} {str(cover_attrs)}")
-
             attrs.update(cover_attrs)
             result[ConfKeys.COVERS.value][entity_id] = attrs
+
+            # Log the attributes including current position
+            cover_attrs[ATTR_CURRENT_POSITION] = current_pos
+            cover_attrs[ATTR_SUPPORTED_FEATURES] = features
+            const.LOGGER.debug(f"[{entity_id}] {message} {str(cover_attrs)}")
+
+            if movement_needed:
+                try:
+                    await self._set_cover_position(entity_id, desired_pos, features)
+                except ServiceCallError as err:
+                    # Log the error but continue with other covers
+                    const.LOGGER.error(f"[{entity_id}] Failed to control cover: {err}")
+                    attrs[const.COVER_ATTR_ERROR] = str(err)
+                except (ValueError, TypeError) as err:
+                    # Parameter validation errors
+                    error_msg = f"Invalid parameters for cover control: {err}"
+                    const.LOGGER.error(f"[{entity_id}] {error_msg}")
+                    attrs[const.COVER_ATTR_ERROR] = error_msg
 
         const.LOGGER.debug("Finished cover evaluation")
 
@@ -323,24 +339,61 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
     # _set_cover_position
     #
     async def _set_cover_position(self, entity_id: str, desired_pos: int, features: int) -> None:
+        """Set cover position using the most appropriate service call.
+
+        Args:
+            entity_id: The cover entity ID to control
+            desired_pos: Target position (0-100, where 0=closed, 100=open)
+            features: Cover's supported features bitmask
+
+        Raises:
+            ServiceCallError: If the service call fails
+            ValueError: If desired_pos is outside valid range (0-100)
+        """
+
+        # Validate position parameter
+        if not (const.COVER_POS_FULLY_CLOSED <= desired_pos <= const.COVER_POS_FULLY_OPEN):
+            raise ValueError(
+                f"desired_pos must be between {const.COVER_POS_FULLY_CLOSED} and {const.COVER_POS_FULLY_OPEN}, got {desired_pos}"
+            )
+
         try:
             if features & CoverEntityFeature.SET_POSITION:
-                const.LOGGER.info(f"[{entity_id}] Using set_cover_position to {desired_pos} (features={features})")
-                await self.hass.services.async_call(
-                    Platform.COVER,
-                    SERVICE_SET_COVER_POSITION,
-                    {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos},
-                )
-            elif desired_pos == const.COVER_POS_FULLY_CLOSED:
-                const.LOGGER.info(f"[{entity_id}] Closing cover")
-                await self.hass.services.async_call(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
-            elif desired_pos == const.COVER_POS_FULLY_OPEN:
-                const.LOGGER.info(f"[{entity_id}] Opening cover")
-                await self.hass.services.async_call(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
+                # The cover supports setting a specific position
+                service = SERVICE_SET_COVER_POSITION
+                service_data = {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos}
+                const.LOGGER.debug(f"[{entity_id}] Using set_position service to move to {desired_pos}%")
             else:
-                const.LOGGER.warning(f"Cannot set cover {entity_id} position: desired={desired_pos}, features={features}")
-        except (OSError, ValueError, TypeError, RuntimeError) as err:
-            const.LOGGER.error(f"Failed to control cover {entity_id}: {err}")
+                # Fallback to open/close
+                if desired_pos == const.COVER_POS_FULLY_OPEN:
+                    service = SERVICE_OPEN_COVER
+                    service_data = {ATTR_ENTITY_ID: entity_id}
+                    const.LOGGER.debug(f"[{entity_id}] Using open_cover service (no position support)")
+                else:
+                    service = SERVICE_CLOSE_COVER
+                    service_data = {ATTR_ENTITY_ID: entity_id}
+                    const.LOGGER.debug(f"[{entity_id}] Using close_cover service (no position support)")
+
+            # Call the service
+            await self.hass.services.async_call(Platform.COVER, service, service_data)
+
+        except (OSError, ConnectionError, TimeoutError) as err:
+            # Network/communication errors
+            error_msg = f"Communication error while controlling cover: {err}"
+            const.LOGGER.error(f"[{entity_id}] {error_msg}")
+            raise ServiceCallError(service, entity_id, str(err)) from err
+
+        except (ValueError, TypeError) as err:
+            # Invalid parameters or data type issues
+            error_msg = f"Invalid parameters for cover control: {err}"
+            const.LOGGER.error(f"[{entity_id}] {error_msg}")
+            raise ServiceCallError(service, entity_id, str(err)) from err
+
+        except Exception as err:
+            # Catch-all for unexpected errors
+            error_msg = f"Unexpected error during cover control: {err}"
+            const.LOGGER.error(f"[{entity_id}] {error_msg}")
+            raise ServiceCallError(service, entity_id, str(err)) from err
 
     #
     # _calculate_angle_difference

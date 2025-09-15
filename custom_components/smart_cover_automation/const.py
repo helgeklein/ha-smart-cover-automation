@@ -27,6 +27,9 @@ INTEGRATION_NAME: Final = "Smart Cover Automation"
 # Per-cover configuration key suffixes
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
 
+# Sensor entity keys
+SENSOR_KEY_AUTOMATION_STATUS: Final[str] = "automation_status"  # Key for the automation status sensor entity
+
 # Sensor attribute keys (exposed on the automation status sensor)
 SENSOR_ATTR_AUTOMATION_ENABLED: Final[str] = "automation_enabled"  # Whether the automation is currently enabled
 SENSOR_ATTR_COVERS_NUM_TOTAL: Final[str] = "covers__num_total"  # Total number of configured covers
@@ -55,9 +58,6 @@ ERROR_INVALID_COVER: Final[str] = "invalid_cover"
 ERROR_INVALID_CONFIG: Final[str] = "invalid_config"
 
 ABORT_SINGLE_INSTANCE_ALLOWED: Final[str] = "single_instance_allowed"
-
-# Coordinator data keys and values (internal but shared across modules/tests)
-KEY_BODY: Final[str] = "body"
 
 # Home Assistant string literals
 HA_SUN_ENTITY_ID: Final[str] = "sun.sun"

@@ -10,10 +10,12 @@
 ## Testing instructions
 
 - Add or update tests for new or changed code.
+- When asked to fix test, only change tests, not the code they're testing.
 
 ## Coding style
 
 - Add docstrings and inline comments for non-obvious code.
+- Don't use magic strings or magic numbers. Use centrally defined constants, enums, or similar instead.
 
 ## Documentation
 

@@ -23,6 +23,7 @@ from custom_components.smart_cover_automation.const import (
     SENSOR_ATTR_TEMP_HYSTERESIS,
     SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID,
     SENSOR_ATTR_TEMP_THRESHOLD,
+    SENSOR_KEY_AUTOMATION_STATUS,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
@@ -55,7 +56,7 @@ async def _capture_entities(hass: HomeAssistant, config: dict[str, object]) -> l
 
 
 def _get_status_entity(entities: list[Entity]) -> Entity:
-    return next(e for e in entities if getattr(getattr(e, "entity_description"), "key", "") == "automation_status")
+    return next(e for e in entities if getattr(getattr(e, "entity_description"), "key", "") == SENSOR_KEY_AUTOMATION_STATUS)
 
 
 @pytest.mark.asyncio
