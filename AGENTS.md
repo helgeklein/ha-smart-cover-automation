@@ -3,6 +3,10 @@
 - This file contains instructions for autonomous coding agents.
 - Read this before writing, editing, or executing anything in this repo.
 
+## Lint
+
+- Always run lint after making changes to code files.
+
 ## Testing instructions
 
 - Add or update tests for new or changed code.
