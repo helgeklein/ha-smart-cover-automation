@@ -56,34 +56,3 @@ class TestDataUpdateCoordinatorBase:
         assert coordinator is not None
         assert coordinator.data is None  # No data until first refresh
         assert coordinator.last_exception is None  # No errors initially
-
-
-# Test class inheritance examples for each test category
-class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
-    """Test class for temperature automation tests (inherits shared fixtures)."""
-
-    pass
-
-
-class TestSunAutomation(TestDataUpdateCoordinatorBase):
-    """Test class for sun automation tests (inherits shared fixtures)."""
-
-    pass
-
-
-class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
-    """Test class for combined automation tests (inherits shared fixtures)."""
-
-    pass
-
-
-class TestErrorHandling(TestDataUpdateCoordinatorBase):
-    """Test class for error handling tests (inherits shared fixtures)."""
-
-    pass
-
-
-class TestEdgeCases(TestDataUpdateCoordinatorBase):
-    """Test class for edge case tests (inherits shared fixtures)."""
-
-    pass

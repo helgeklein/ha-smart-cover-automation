@@ -439,32 +439,6 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
         assert result[SENSOR_ATTR_TEMP_HOT] is not None
         assert COVER_ATTR_SUN_HITTING in cover1_data
 
-    async def test_angle_calculation(
-        self,
-        sun_coordinator: DataUpdateCoordinator,
-    ) -> None:
-        """Test angle difference calculation for azimuth alignment.
-
-        Validates the mathematical accuracy of angle difference calculations,
-        including edge cases like wraparound (0° and 350° being 10° apart).
-
-        Test scenarios:
-        - Direct alignment: 180° vs 180° = 0°
-        - Standard difference: 180° vs 135° = 45°
-        - Wraparound case: 0° vs 350° = 10°
-        """
-        # Test direct alignment
-        diff = sun_coordinator._calculate_angle_difference(TEST_DIRECT_AZIMUTH, TEST_DIRECT_AZIMUTH)
-        assert diff == 0.0
-
-        # Test 45 degree difference
-        diff = sun_coordinator._calculate_angle_difference(TEST_DIRECT_AZIMUTH, 135.0)
-        assert diff == 45.0
-
-        # Test wraparound (0° and 350° should be 10° apart)
-        diff = sun_coordinator._calculate_angle_difference(0.0, 350.0)
-        assert diff == 10.0
-
     @pytest.mark.asyncio
     async def test_sun_automation_angle_matrix(
         self,

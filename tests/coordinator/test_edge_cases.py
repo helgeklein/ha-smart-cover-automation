@@ -55,12 +55,14 @@ class TestEdgeCases(TestDataUpdateCoordinatorBase):
 
         Validates the mathematical accuracy of the angle difference calculation
         utility used for determining if the sun is hitting windows. Tests
-        include standard cases and edge cases like wraparound at 0°/360°.
+        include comprehensive edge cases like wraparound at 0°/360°.
 
         Test scenarios:
         - Direct alignment: 180° vs 180° = 0°
         - Standard difference: 180° vs 135° = 45°
         - Wraparound case: 0° vs 350° = 10° (not 350°)
+        - Reverse wraparound: 350° vs 0° = 10°
+        - Maximum difference: 0° vs 180° = 180°
         """
         # Test direct alignment (no difference)
         diff = sun_coordinator._calculate_angle_difference(TEST_DIRECT_AZIMUTH, TEST_DIRECT_AZIMUTH)
