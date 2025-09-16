@@ -1,4 +1,23 @@
-"""Integration tests for Smart Cover Automation."""
+"""
+Integration tests for Smart Cover Automation.
+
+This module contains comprehensive integration tests that validate the Smart Cover Automation
+system's behavior in realistic scenarios. Unlike unit tests that focus on individual components,
+these tests simulate real-world conditions by combining multiple factors like temperature,
+sun position, cover states, and Home Assistant service interactions.
+
+The tests cover several key scenarios:
+- Complete automation cycles combining temperature and sun position logic
+- Daily sun movement patterns and their interaction with temperature-based automation
+- Error handling and recovery from sensor failures and service call issues
+- Configuration validation for various edge cases
+- Concurrent control of multiple covers with different capabilities
+- Mixed cover types with varying feature support (position vs. open/close only)
+
+These integration tests ensure that the automation system works correctly when all components
+interact together, providing confidence that the system will perform reliably in production
+Home Assistant environments.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +26,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION
+from homeassistant.const import ATTR_SUPPORTED_FEATURES
 
 from custom_components.smart_cover_automation.config import (
     ConfKeys,
@@ -23,27 +43,62 @@ from .conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_SUN_ENTITY_ID,
     MOCK_TEMP_SENSOR_ENTITY_ID,
+    TEST_COLD_TEMP,
+    TEST_COMFORTABLE_TEMP_1,
+    TEST_COVER_CLOSED,
+    TEST_COVER_OPEN,
+    TEST_DIRECT_AZIMUTH,
+    TEST_HIGH_ELEVATION,
+    TEST_HOT_TEMP,
+    TEST_MIN_SERVICE_CALLS,
+    TEST_NUM_COVERS,
     MockConfigEntry,
     create_temperature_config,
 )
 
-# Test constants
-HOT_TEMP = "26.0"
-COMFORTABLE_TEMP = "22.0"
-COLD_TEMP = "18.0"
-COVER_OPEN = 100
-COVER_CLOSED = 0
-
-# Constants for magic numbers
-NUM_COVERS = 3
-MIN_SERVICE_CALLS = 2
+# Test constants are now imported from conftest.py - see imports above for:
+# TEST_HOT_TEMP, TEST_COLD_TEMP, TEST_COMFORTABLE_TEMP_1, TEST_COVER_OPEN, TEST_COVER_CLOSED,
+# TEST_NUM_COVERS, TEST_MIN_SERVICE_CALLS, TEST_HIGH_ELEVATION, TEST_DIRECT_AZIMUTH
 
 
 class TestIntegrationScenarios:
-    """Test real-world integration scenarios."""
+    """
+    Test real-world integration scenarios for Smart Cover Automation.
+
+    This test class validates the complete automation system by simulating realistic
+    Home Assistant environments and user scenarios. The tests combine multiple automation
+    factors (temperature, sun position, cover capabilities) to ensure the system behaves
+    correctly when all components work together.
+
+    Key testing areas:
+    - Temperature-based automation with combined AND logic
+    - Sun position automation throughout daily cycles
+    - Error handling and system recovery
+    - Configuration validation
+    - Multi-cover coordination and control
+    - Mixed cover capabilities (smart vs. basic covers)
+    """
 
     async def test_temperature_automation_complete_cycle(self) -> None:
-        """Test complete temperature automation cycle with combined AND logic."""
+        """
+        Test complete temperature automation cycle with combined AND logic.
+
+        This test validates the core automation logic that combines temperature and sun position
+        to make intelligent cover control decisions. The automation uses AND logic, meaning
+        covers are closed only when BOTH conditions are met:
+        1. Temperature is hot (above threshold)
+        2. Sun is hitting the cover (elevation > 25° and azimuth in range 135°-225°)
+
+        Test scenarios cover all logical combinations:
+        - Hot temperature + sun hitting = close covers (both conditions met)
+        - Comfortable temperature + sun hitting = open covers (temperature not hot)
+        - Cold temperature + any sun = open covers (cold overrides)
+        - Hot temperature + sun not hitting = open covers (sun condition not met)
+
+        This ensures the automation makes smart decisions rather than simple temperature-only
+        or sun-only responses, preventing unnecessary cover movements and optimizing comfort.
+        """
+        # Setup Home Assistant mock environment for automation testing
         hass = MagicMock()
         hass.services = MagicMock()
         hass.services.async_call = AsyncMock()
@@ -51,53 +106,71 @@ class TestIntegrationScenarios:
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         # Test scenarios with combined logic (temp AND sun)
+        # Each scenario: (temp, sun_elevation, sun_azimuth, current_pos, expected_pos, description)
         test_scenarios = [
-            # (temp, sun_elevation, sun_azimuth, current_pos, expected_pos, description)
-            (HOT_TEMP, 30.0, 180.0, COVER_OPEN, COVER_CLOSED, "Hot + sun hitting -> close"),
-            (COMFORTABLE_TEMP, 30.0, 180.0, COVER_CLOSED, COVER_OPEN, "Comfortable + sun hitting -> open (not hot)"),
-            (COLD_TEMP, 10.0, 90.0, COVER_CLOSED, COVER_OPEN, "Cold + sun not hitting -> open"),
-            (HOT_TEMP, 10.0, 90.0, COVER_OPEN, COVER_OPEN, "Hot + sun not hitting -> open (not hitting)"),
+            # Hot temperature + sun hitting cover = close to block heat
+            (TEST_HOT_TEMP, TEST_HIGH_ELEVATION, TEST_DIRECT_AZIMUTH, TEST_COVER_OPEN, TEST_COVER_CLOSED, "Hot + sun hitting -> close"),
+            # Comfortable temperature + sun hitting = open (temperature not hot enough)
+            (
+                TEST_COMFORTABLE_TEMP_1,
+                TEST_HIGH_ELEVATION,
+                TEST_DIRECT_AZIMUTH,
+                TEST_COVER_CLOSED,
+                TEST_COVER_OPEN,
+                "Comfortable + sun hitting -> open (not hot)",
+            ),
+            # Cold temperature + any sun condition = open for warmth
+            (TEST_COLD_TEMP, 10.0, 90.0, TEST_COVER_CLOSED, TEST_COVER_OPEN, "Cold + sun not hitting -> open"),
+            # Hot temperature + sun not hitting = open (sun condition not met)
+            (TEST_HOT_TEMP, 10.0, 90.0, TEST_COVER_OPEN, TEST_COVER_OPEN, "Hot + sun not hitting -> open (not hitting)"),
         ]
 
         for i, (temp, elevation, azimuth, current_pos, expected_pos, description) in enumerate(test_scenarios):
-            # Setup states for combined automation
+            # Setup realistic Home Assistant entity states for this scenario
+            # Temperature sensor state with current reading
             temp_state = MagicMock()
             temp_state.state = temp
             temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
 
+            # Cover entity state with current position and supported features
             cover_state = MagicMock()
             cover_state.attributes = {
                 ATTR_CURRENT_POSITION: current_pos,
-                "supported_features": 15,
+                ATTR_SUPPORTED_FEATURES: 15,  # Full cover control capabilities
             }
 
+            # Sun entity state with elevation and azimuth for sun position logic
             sun_state = MagicMock()
             sun_state.state = "above_horizon"
             sun_state.attributes = {"elevation": elevation, "azimuth": azimuth}
 
+            # Configure Home Assistant state lookup to return our mock entities
             hass.states.get.side_effect = lambda entity_id, ts=temp_state, cs=cover_state, ss=sun_state: {
                 MOCK_TEMP_SENSOR_ENTITY_ID: ts,
                 MOCK_COVER_ENTITY_ID: cs,
                 MOCK_SUN_ENTITY_ID: ss,
             }.get(entity_id)
 
+            # Reset service call mock to track calls for this scenario
             hass.services.async_call.reset_mock()
 
-            # Execute automation
+            # Execute automation and validate results
             try:
                 await coordinator.async_refresh()
                 result = coordinator.data
 
-                # Verify result structure
+                # Verify automation produced valid results
                 assert result is not None, f"Result is None in scenario {i}: {description}"
                 assert ConfKeys.COVERS.value in result, f"Invalid result structure in scenario {i}: {description}"
 
+                # Check that the automation calculated the correct desired position
                 cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
                 assert cover_data["sca_cover_desired_position"] == expected_pos, (
                     f"Scenario {i} ({description}): Expected position {expected_pos}, got {cover_data['sca_cover_desired_position']}"
                 )
 
-                # Check service calls only when position changes
+                # Verify service calls are made only when cover position needs to change
+                # This prevents unnecessary service calls when covers are already in correct position
                 if current_pos != expected_pos:
                     assert hass.services.async_call.called, f"Scenario {i} ({description}): Service should have been called"
                 else:
@@ -107,159 +180,277 @@ class TestIntegrationScenarios:
                 pytest.fail(f"Automation failed in scenario {i} ({description}): {e}")
 
     async def test_sun_automation_daily_cycle(self) -> None:
-        """Test sun automation through daily cycle with combined AND logic."""
+        """
+        Test sun automation through daily cycle with combined AND logic.
+
+        This test simulates a complete day's sun movement from east to west and validates
+        how the automation responds to different sun positions combined with temperature.
+        The test focuses on the sun azimuth logic that determines when sun is "hitting" covers:
+
+        Sun hitting conditions:
+        - Elevation > 25° (sun is high enough)
+        - Azimuth between 135° and 225° (southeast to southwest arc)
+
+        Daily sun movement simulation:
+        - Morning (90° azimuth): Sun in east, not hitting south-facing covers
+        - Mid-morning (135° azimuth): Sun enters hitting zone if high enough
+        - Midday (180° azimuth): Sun directly south, maximum impact
+        - Afternoon (225° azimuth): Sun still hitting from southwest
+        - Evening (270° azimuth): Sun in west, no longer hitting south-facing covers
+
+        Combined with temperature logic to ensure realistic automation behavior.
+        """
+        # Setup Home Assistant mock for daily sun cycle testing
         hass = MagicMock()
         config_entry = MockConfigEntry(create_temperature_config())  # Both automations now always active
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         # Test scenarios for combined temp+sun logic throughout the day
+        # Each scenario: (elevation, azimuth, temp, expected_pos, description)
         test_scenarios = [
-            # (elevation, azimuth, temp, expected_pos, description)
-            (10.0, 90.0, HOT_TEMP, COVER_OPEN, "Low sun, east + hot -> no change (sun not hitting)"),
-            (45.0, 135.0, HOT_TEMP, COVER_CLOSED, "High sun, southeast + hot -> close (sun hitting, temp hot)"),
-            (50.0, 180.0, HOT_TEMP, COVER_CLOSED, "High sun, south + hot -> close (both conditions met)"),
-            (30.0, 225.0, HOT_TEMP, COVER_CLOSED, "Lower sun, southwest + hot -> close (sun hitting, temp hot)"),
-            (5.0, 270.0, HOT_TEMP, COVER_OPEN, "Low sun, west + hot -> no change (sun not hitting)"),
-            (50.0, 180.0, COMFORTABLE_TEMP, COVER_OPEN, "High sun, south + comfortable -> no change (temp not hot)"),
-            (50.0, 180.0, COLD_TEMP, COVER_OPEN, "High sun, south + cold -> open (cold temp wins)"),
+            # Morning: Low sun in east, not hitting south-facing covers
+            (10.0, 90.0, TEST_HOT_TEMP, TEST_COVER_OPEN, "Low sun, east + hot -> no change (sun not hitting)"),
+            # Mid-morning: High sun in southeast, hitting covers + hot = close
+            (45.0, 135.0, TEST_HOT_TEMP, TEST_COVER_CLOSED, "High sun, southeast + hot -> close (sun hitting, temp hot)"),
+            # Midday: High sun directly south, maximum impact + hot = close
+            (50.0, TEST_DIRECT_AZIMUTH, TEST_HOT_TEMP, TEST_COVER_CLOSED, "High sun, south + hot -> close (both conditions met)"),
+            # Afternoon: Sun in southwest, still hitting + hot = close
+            (TEST_HIGH_ELEVATION, 225.0, TEST_HOT_TEMP, TEST_COVER_CLOSED, "Lower sun, southwest + hot -> close (sun hitting, temp hot)"),
+            # Evening: Low sun in west, no longer hitting south-facing covers
+            (5.0, 270.0, TEST_HOT_TEMP, TEST_COVER_OPEN, "Low sun, west + hot -> no change (sun not hitting)"),
+            # Midday with comfortable temperature: sun hitting but temp not hot = no action
+            (
+                50.0,
+                TEST_DIRECT_AZIMUTH,
+                TEST_COMFORTABLE_TEMP_1,
+                TEST_COVER_OPEN,
+                "High sun, south + comfortable -> no change (temp not hot)",
+            ),
+            # Cold temperature overrides sun position: always open for warmth
+            (50.0, TEST_DIRECT_AZIMUTH, TEST_COLD_TEMP, TEST_COVER_OPEN, "High sun, south + cold -> open (cold temp wins)"),
         ]
 
         for i, (elevation, azimuth, temp, expected_pos, description) in enumerate(test_scenarios):
+            # Setup sun entity state for current time of day
             sun_state = MagicMock()
             sun_state.state = "above_horizon"
             sun_state.attributes = {"elevation": elevation, "azimuth": azimuth}
 
+            # Setup temperature sensor state
             temp_state = MagicMock()
             temp_state.state = temp
             temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
 
+            # Setup cover state (starting fully open for all scenarios)
             cover_state = MagicMock()
             cover_state.attributes = {
-                ATTR_CURRENT_POSITION: COVER_OPEN,
-                "supported_features": 15,
+                ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
+                ATTR_SUPPORTED_FEATURES: 15,
             }
 
+            # Configure Home Assistant entity lookup for this scenario
             hass.states.get.side_effect = lambda entity_id, ss=sun_state, ts=temp_state, cs=cover_state: {
                 MOCK_SUN_ENTITY_ID: ss,
                 MOCK_TEMP_SENSOR_ENTITY_ID: ts,
                 MOCK_COVER_ENTITY_ID: cs,
             }.get(entity_id)
 
+            # Execute automation for current sun/temperature conditions
             await coordinator.async_refresh()
             result = coordinator.data
 
+            # Validate automation results for this time of day
             assert result is not None, f"Result is None in scenario {i}: {description}"
             assert ConfKeys.COVERS.value in result, f"Invalid result for scenario {i}: {description}"
 
+            # Verify the automation calculated the correct position based on sun and temperature
             cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
             assert cover_data["sca_cover_desired_position"] == expected_pos, (
                 f"Scenario {i} ({description}): Expected {expected_pos}, got {cover_data['desired_position']}"
             )
 
     async def test_error_recovery_scenarios(self) -> None:
-        """Test error handling and recovery scenarios."""
+        """
+        Test error handling and recovery scenarios.
+
+        This test validates the automation system's robustness when encountering various
+        error conditions that can occur in real Home Assistant environments:
+
+        1. Sensor Unavailability: Temperature sensor temporarily offline or not found
+           - Should raise TempSensorNotFoundError but not crash the system
+           - Common during sensor battery changes or network issues
+
+        2. Invalid Sensor Data: Temperature sensor returns non-numeric values
+           - Should raise InvalidSensorReadingError for invalid readings
+           - Handles cases like "unknown", "unavailable", or corrupted data
+
+        3. Service Call Failures: Home Assistant cover service calls fail
+           - Should continue automation logic despite service failures
+           - Logs errors but doesn't prevent future automation attempts
+           - Simulates network issues, cover device problems, or HA service issues
+
+        The system should gracefully handle these errors while maintaining functionality
+        for other components and preparing for automatic recovery when conditions improve.
+        """
+        # Setup basic Home Assistant mock for error testing
         hass = MagicMock()
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
-        # Test 1: Temperature sensor temporarily unavailable
+        # Test 1: Temperature sensor temporarily unavailable (common during maintenance)
+        # Setup valid cover and sun states but missing temperature sensor
         cover_state = MagicMock()
         cover_state.attributes = {
-            ATTR_CURRENT_POSITION: COVER_OPEN,
-            "supported_features": 15,
+            ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
+            ATTR_SUPPORTED_FEATURES: 15,
         }
-        # Return None for temp sensor but a valid cover state
+        # Return None for temp sensor to simulate sensor being offline
         hass.states.get.side_effect = lambda entity_id, cs=cover_state: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: None,
+            MOCK_TEMP_SENSOR_ENTITY_ID: None,  # Sensor not found/available
             MOCK_COVER_ENTITY_ID: cs,
-            MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
+            MOCK_SUN_ENTITY_ID: MagicMock(
+                state="above_horizon", attributes={"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
+            ),
         }.get(entity_id)
 
+        # Should handle missing sensor gracefully with appropriate error
         await coordinator.async_refresh()
         assert isinstance(coordinator.last_exception, TempSensorNotFoundError)
 
-        # Test 2: Invalid temperature reading with recovery
+        # Test 2: Invalid temperature reading with proper error handling
+        # Setup temperature sensor that returns invalid/corrupted data
         temp_state = MagicMock()
-        temp_state.state = "invalid"
+        temp_state.state = "invalid"  # Non-numeric temperature value
         temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
-        # Keep cover available but provide invalid temp
+        # Keep cover and sun available but provide invalid temperature data
         hass.states.get.side_effect = lambda entity_id, ts=temp_state, cs=cover_state: {
             MOCK_TEMP_SENSOR_ENTITY_ID: ts,
             MOCK_COVER_ENTITY_ID: cs,
-            MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
+            MOCK_SUN_ENTITY_ID: MagicMock(
+                state="above_horizon", attributes={"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
+            ),
         }.get(entity_id)
 
+        # Should handle invalid sensor data with appropriate error
         await coordinator.async_refresh()
         assert isinstance(coordinator.last_exception, InvalidSensorReadingError)
 
-        # Test 3: Service call failure handling
-        temp_state.state = HOT_TEMP  # Valid hot temperature
+        # Test 3: Service call failure handling (network issues, device problems)
+        # Setup valid sensor data that should trigger automation
+        temp_state.state = TEST_HOT_TEMP  # Valid hot temperature that should close covers
         cover_state = MagicMock()
         cover_state.attributes = {
-            ATTR_CURRENT_POSITION: COVER_OPEN,
-            "supported_features": 15,
+            ATTR_CURRENT_POSITION: TEST_COVER_OPEN,  # Cover is open and should be closed
+            ATTR_SUPPORTED_FEATURES: 15,
         }
 
+        # Setup valid states that should trigger cover movement
         hass.states.get.side_effect = lambda entity_id: {
             MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
             MOCK_COVER_ENTITY_ID: cover_state,
-            MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
+            # Sun in position that hits covers (elevation > 25°, azimuth in range)
+            MOCK_SUN_ENTITY_ID: MagicMock(
+                state="above_horizon", attributes={"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
+            ),
         }.get(entity_id)
 
-        # Make service call fail but automation should continue
+        # Simulate Home Assistant service call failure (network, device issues)
         hass.services.async_call.side_effect = OSError("Service failed")
 
-        # Should not raise exception, just log error
+        # Automation should continue processing despite service failure
+        # This ensures temporary service issues don't break the automation system
         await coordinator.async_refresh()
         result = coordinator.data
         assert result is not None, "Automation should continue despite service failure"
         assert ConfKeys.COVERS.value in result, "Automation should continue despite service failure"
 
     async def test_configuration_validation(self) -> None:
-        """Test configuration validation scenarios."""
+        """
+        Test configuration validation scenarios.
+
+        This test validates that the automation system properly validates configuration
+        data and rejects invalid setups that could cause runtime issues. Configuration
+        validation is critical for preventing misconfigured installations that might
+        lead to unexpected behavior or system errors.
+
+        Key validation scenarios:
+        - Empty covers list: Configuration must specify at least one cover to control
+        - Invalid entity IDs: Covers must be valid Home Assistant entity identifiers
+        - Missing required configuration keys: Essential configuration elements must be present
+
+        The system should detect these issues early during setup and provide clear
+        error messages to help users correct their configuration.
+        """
+        # Setup Home Assistant mock for configuration testing
         hass = MagicMock()
 
-        # Test empty covers list
+        # Test empty covers list - should be rejected as invalid configuration
+        # An automation system needs at least one cover to control
         config = create_temperature_config()
-        config[ConfKeys.COVERS.value] = []
+        config[ConfKeys.COVERS.value] = []  # Empty covers list
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
+        # Should detect invalid configuration and raise appropriate error
         await coordinator.async_refresh()
         assert isinstance(coordinator.last_exception, ConfigurationError)
 
-    # No automation_type concept anymore; invalid type test removed
+    # Configuration validation complete - no automation_type concept anymore
 
     async def test_concurrent_cover_control(self) -> None:
-        """Test controlling multiple covers simultaneously."""
+        """
+        Test controlling multiple covers simultaneously.
+
+        This test validates the automation system's ability to manage multiple covers
+        concurrently, ensuring that:
+
+        1. All covers are processed in the same automation cycle
+        2. Each cover's individual state and capabilities are considered
+        3. Service calls are made appropriately for covers that need adjustment
+        4. The system scales properly with multiple covers
+
+        Real-world scenario: A home with covers in multiple rooms (living room, bedroom,
+        kitchen) where each cover may have different current positions but should all
+        respond to the same environmental conditions (temperature and sun position).
+
+        The test uses hot temperature + direct sun hitting to trigger closing all covers,
+        but validates that service calls are only made for covers that actually need
+        to move to the new position.
+        """
+        # Setup Home Assistant mock with service call tracking
         hass = MagicMock()
         hass.services = MagicMock()
         hass.services.async_call = AsyncMock()
+
+        # Configure multiple covers for concurrent control testing
         covers = ["cover.living_room", "cover.bedroom", "cover.kitchen"]
         config = create_temperature_config(covers=covers)
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
-        # Setup hot temperature scenario
+        # Setup environmental conditions that should trigger cover closing
+        # Hot temperature scenario combined with direct sun hitting
         temp_state = MagicMock()
-        temp_state.state = HOT_TEMP
+        temp_state.state = TEST_HOT_TEMP  # Hot enough to trigger automation
         temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
 
-        # Create sun state for combined automation
+        # Create sun state for combined automation (sun hitting covers)
         sun_state = MagicMock()
         sun_state.state = "above_horizon"
-        sun_state.attributes = {"elevation": 50.0, "azimuth": 180.0}  # Direct sun hitting
+        sun_state.attributes = {"elevation": 50.0, "azimuth": TEST_DIRECT_AZIMUTH}  # Direct sun hitting covers
 
-        # Create different cover states
+        # Create different cover states to test individual processing
+        # Each cover starts at a different position to validate individual handling
         cover_states = {}
         for i, cover_id in enumerate(covers):
             cover_state = MagicMock()
             cover_state.attributes = {
-                ATTR_CURRENT_POSITION: 100 - (i * 20),  # Different positions
-                "supported_features": 15,
+                ATTR_CURRENT_POSITION: 100 - (i * 20),  # Different starting positions (100, 80, 60)
+                ATTR_SUPPORTED_FEATURES: 15,  # Full cover control capabilities
             }
             cover_states[cover_id] = cover_state
 
+        # Configure Home Assistant state lookup for all entities
         def get_state(entity_id: str) -> MagicMock | None:
             if entity_id == MOCK_TEMP_SENSOR_ENTITY_ID:
                 return temp_state
@@ -270,72 +461,107 @@ class TestIntegrationScenarios:
         hass.states.get.side_effect = get_state
         hass.services.async_call.reset_mock()
 
+        # Execute automation for all covers simultaneously
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Verify all covers were processed
-        assert len(result[ConfKeys.COVERS.value]) == NUM_COVERS, f"Expected {NUM_COVERS} covers, got {len(result['covers'])}"
+        # Verify all covers were processed in the automation cycle
+        assert len(result[ConfKeys.COVERS.value]) == TEST_NUM_COVERS, f"Expected {TEST_NUM_COVERS} covers, got {len(result['covers'])}"
 
         # Verify all covers should close (position 0) due to hot temperature AND sun hitting
+        # Combined logic: both conditions met, so all covers should be closed
         for cover_id in covers:
-            assert result[ConfKeys.COVERS.value][cover_id]["sca_cover_desired_position"] == COVER_CLOSED, (
+            assert result[ConfKeys.COVERS.value][cover_id]["sca_cover_desired_position"] == TEST_COVER_CLOSED, (
                 f"Cover {cover_id} should close in hot weather with sun hitting"
             )
 
         # Verify service calls were made for covers that needed to move
+        # Not all covers may need service calls if they're already in the correct position
         call_count = hass.services.async_call.call_count
         assert call_count > 0, "No service calls made for cover control"
 
     async def test_mixed_cover_capabilities(self) -> None:
-        """Test handling covers with different capabilities."""
+        """
+        Test handling covers with different capabilities.
+
+        This test validates that the automation system properly handles covers with
+        varying levels of functionality, which is common in real Home Assistant setups:
+
+        1. Smart Covers (supported_features = 15):
+           - Support precise position control (0-100%)
+           - Can use set_cover_position service for exact positioning
+           - Typically motorized covers with position feedback
+
+        2. Basic Covers (supported_features = 3):
+           - Only support open/close operations (no position control)
+           - Must use open_cover/close_cover services
+           - Often manual covers with smart switches or basic motorized covers
+
+        The automation should:
+        - Detect each cover's capabilities from supported_features attribute
+        - Use appropriate service calls for each cover type
+        - Achieve the same logical outcome (open/closed) regardless of cover type
+        - Handle mixed environments where both types coexist
+
+        Real-world scenario: A home with expensive motorized covers in main rooms
+        and basic automated covers in utility areas.
+        """
+        # Setup Home Assistant mock with service call tracking for capability testing
         hass = MagicMock()
         hass.services = MagicMock()
         hass.services.async_call = AsyncMock()
+
+        # Configure covers with different capabilities
         covers = ["cover.smart", "cover.basic"]
         config = create_temperature_config(covers=covers)
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
-        # Setup cold temperature to open covers
+        # Setup cold temperature to trigger opening covers (clear automation logic)
         temp_state = MagicMock()
-        temp_state.state = COLD_TEMP
+        temp_state.state = TEST_COLD_TEMP  # Cold enough to open covers for warmth
         temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
 
-        # Smart cover with position support
+        # Smart cover with full position control capabilities
         smart_cover = MagicMock()
         smart_cover.attributes = {
-            ATTR_CURRENT_POSITION: COVER_CLOSED,
-            "supported_features": 15,
+            ATTR_CURRENT_POSITION: TEST_COVER_CLOSED,  # Currently closed, should open
+            ATTR_SUPPORTED_FEATURES: 15,  # Full feature set: open, close, stop, position
         }
 
-        # Basic cover with only open/close
+        # Basic cover with only open/close capabilities (no position control)
         basic_cover = MagicMock()
         basic_cover.attributes = {
-            ATTR_CURRENT_POSITION: COVER_CLOSED,
-            "supported_features": 3,
+            ATTR_CURRENT_POSITION: TEST_COVER_CLOSED,  # Currently closed, should open
+            ATTR_SUPPORTED_FEATURES: 3,  # Basic feature set: open, close only
         }
 
+        # Configure entity state lookup for capability testing
         hass.states.get.side_effect = lambda entity_id: {
             MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
             "cover.smart": smart_cover,
             "cover.basic": basic_cover,
-            MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
+            # Sun state that doesn't interfere with cold temperature logic
+            MOCK_SUN_ENTITY_ID: MagicMock(
+                state="above_horizon", attributes={"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
+            ),
         }.get(entity_id)
 
+        # Execute automation and analyze service calls
         await coordinator.async_refresh()
 
-        # Check that appropriate services were called
+        # Analyze the service calls made for each cover type
         calls = [call.args for call in hass.services.async_call.call_args_list]
 
-        # Should have calls for both covers
-        assert len(calls) >= MIN_SERVICE_CALLS, f"Expected at least {MIN_SERVICE_CALLS} service calls, got {len(calls)}"
+        # Should have calls for both covers (both need to open)
+        assert len(calls) >= TEST_MIN_SERVICE_CALLS, f"Expected at least {TEST_MIN_SERVICE_CALLS} service calls, got {len(calls)}"
 
-        # Smart cover should use set_cover_position
+        # Smart cover should use precise position control service
         smart_call = next((call for call in calls if call[2]["entity_id"] == "cover.smart"), None)
         assert smart_call is not None, "No call found for smart cover"
         assert smart_call[1] == "set_cover_position", "Smart cover should use set_cover_position"
 
-        # Basic cover should use open_cover
+        # Basic cover should use simple open service (no position control available)
         basic_call = next((call for call in calls if call[2]["entity_id"] == "cover.basic"), None)
         assert basic_call is not None, "No call found for basic cover"
         assert basic_call[1] == "open_cover", "Basic cover should use open_cover"

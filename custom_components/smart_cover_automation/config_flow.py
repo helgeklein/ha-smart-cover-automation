@@ -105,6 +105,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                         ),
                     ),
                     # Temperature threshold
+                    # TODO: needs to be changeable later, too (options flow)
                     vol.Optional(
                         ConfKeys.TEMP_THRESHOLD.value,
                         default=CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,

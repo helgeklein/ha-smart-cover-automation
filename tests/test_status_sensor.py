@@ -1,4 +1,30 @@
-"""Tests for the Automation Status sensor."""
+"""Tests for the Automation Status sensor.
+
+This module contains comprehensive tests for the Smart Cover Automation status sensor,
+which provides users with real-time visibility into the automation system's current
+state and activity. The status sensor is a critical user interface component that
+displays human-readable summaries and detailed attributes about the automation.
+
+Key testing areas include:
+1. **Summary Generation**: Tests human-readable status text creation that summarizes
+   current automation activity, cover positions, and environmental conditions
+2. **Attribute Exposure**: Tests comprehensive state attributes that provide detailed
+   information for automation dashboards and debugging
+3. **Combined Mode Operation**: Tests unified temperature and sun automation status
+4. **Environmental Data Integration**: Tests temperature and sun position reporting
+5. **Cover Movement Tracking**: Tests counting and reporting of covers being moved
+6. **Disabled State Handling**: Tests proper status reporting when automation is disabled
+
+The status sensor serves multiple purposes:
+- **User Visibility**: Provides at-a-glance understanding of automation activity
+- **Debugging Aid**: Exposes internal state for troubleshooting configuration issues
+- **Dashboard Integration**: Supplies data for Home Assistant dashboards and automations
+- **Historical Tracking**: Enables logging and analysis of automation behavior over time
+
+These tests ensure the status sensor accurately reflects the automation system's
+state and provides meaningful information to users regardless of configuration
+or environmental conditions.
+"""
 
 from __future__ import annotations
 
@@ -31,40 +57,103 @@ from custom_components.smart_cover_automation.sensor import (
     async_setup_entry as async_setup_entry_sensor,
 )
 
-from .conftest import MockConfigEntry, create_sun_config, create_temperature_config
+from .conftest import (
+    TEST_COMFORTABLE_TEMP_2,
+    TEST_DIRECT_AZIMUTH,
+    TEST_HIGH_ELEVATION,
+    MockConfigEntry,
+    create_sun_config,
+    create_temperature_config,
+)
 
 
 async def _capture_entities(hass: HomeAssistant, config: dict[str, object]) -> list[Entity]:
-    """Helper to set up the sensor platform and capture created entities."""
+    """Helper function to set up the sensor platform and capture created entities.
+
+    This utility function streamlines the test setup process by:
+    1. Creating a mock config entry with the provided configuration
+    2. Setting up a coordinator with successful state
+    3. Executing the sensor platform setup process
+    4. Capturing and returning all created entities
+
+    This pattern is reused across multiple tests to ensure consistent
+    setup and reduce code duplication while testing various sensor scenarios.
+
+    Args:
+        hass: Mock Home Assistant instance
+        config: Configuration dictionary for the integration
+
+    Returns:
+        List of entities created by the sensor platform
+    """
     hass_mock = cast(MagicMock, hass)
     entry = MockConfigEntry(config)
 
+    # Setup coordinator with basic successful state
     coordinator = DataUpdateCoordinator(hass_mock, cast(IntegrationConfigEntry, entry))
     coordinator.data = {}
     coordinator.last_update_success = True  # type: ignore[attr-defined]
     entry.runtime_data.coordinator = coordinator
 
+    # Capture entities that would be added to Home Assistant
     captured: list[Entity] = []
 
     def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:  # noqa: ARG001
+        """Mock entity addition function that captures created entities."""
         captured.extend(list(new_entities))
 
-    # Execute platform setup
+    # Execute platform setup to create sensor entities
     await async_setup_entry_sensor(hass_mock, cast(IntegrationConfigEntry, entry), add_entities)
 
     return captured
 
 
 def _get_status_entity(entities: list[Entity]) -> Entity:
+    """Helper function to extract the automation status sensor from a list of entities.
+
+    Finds and returns the automation status sensor entity by matching its
+    entity description key. This helper ensures tests can reliably access
+    the specific sensor they need to test.
+
+    Args:
+        entities: List of entities to search through
+
+    Returns:
+        The automation status sensor entity
+
+    Raises:
+        StopIteration: If no status sensor is found in the entity list
+    """
     return next(e for e in entities if getattr(getattr(e, "entity_description"), "key", "") == SENSOR_KEY_AUTOMATION_STATUS)
 
 
 @pytest.mark.asyncio
 async def test_status_sensor_combined_summary_and_attributes() -> None:
-    """Validate summary and attributes for combined mode."""
+    """Test status sensor summary generation and attribute exposure for temperature automation.
+
+    This test verifies that the automation status sensor correctly generates
+    human-readable summaries and exposes comprehensive state attributes when
+    operating in temperature-based automation mode.
+
+    Test scenario:
+    - Temperature-based automation configuration
+    - Two covers: one moving (50% → 40%), one stationary (100% → 100%)
+    - Current temperature: 22.5°C (comfortable range)
+    - Custom configuration values for hysteresis and position delta
+
+    Expected behavior:
+    - Summary includes temperature information and cover movement count
+    - Attributes expose all relevant configuration and state values
+    - Cover movement tracking shows 1 out of 2 covers moving
+    - No deprecated automation_type attribute present (unified mode only)
+
+    This test ensures users can see automation activity at a glance and access
+    detailed information for troubleshooting and dashboard integration.
+    """
+    # Setup mock Home Assistant environment
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
-    # Add tuning/options to config
+    # Add custom tuning/options to test attribute exposure
     config[ConfKeys.TEMP_SENSOR_ENTITY_ID.value] = "sensor.temperature"
     config[ConfKeys.TEMP_HYSTERESIS.value] = 0.7
     config[ConfKeys.COVERS_MIN_POSITION_DELTA.value] = 10
@@ -72,98 +161,143 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     entities = await _capture_entities(hass, config)
     status = _get_status_entity(entities)
 
-    # Simulate coordinator data for two covers (one will move)
+    # Simulate coordinator data with realistic automation scenario
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
-    # Combined is the only mode; no automation_type key is used anymore.
+    # Combined mode is the only mode; no automation_type key is used anymore
     coordinator.data = {
-        SENSOR_ATTR_TEMP_CURRENT: 22.5,
+        SENSOR_ATTR_TEMP_CURRENT: 22.5,  # Current temperature reading
         ConfKeys.COVERS.value: {
             "cover.one": {
-                ATTR_CURRENT_POSITION: 50,
-                "sca_cover_desired_position": 40,  # movement
+                ATTR_CURRENT_POSITION: 50,  # Current position: 50%
+                "sca_cover_desired_position": 40,  # Target position: 40% (movement required)
             },
             "cover.two": {
-                ATTR_CURRENT_POSITION: 100,
-                "sca_cover_desired_position": 100,  # no movement
+                ATTR_CURRENT_POSITION: 100,  # Current position: 100% (fully open)
+                "sca_cover_desired_position": 100,  # Target position: 100% (no movement)
             },
         },
     }
 
-    # Summary string (robust to symbol differences)
+    # Verify summary string contains expected information
     summary = cast(str, getattr(status, "native_value"))
-    assert "Temp " in summary
-    assert "22.5" in summary
-    assert "moves 1/2" in summary
+    assert "Temp " in summary  # Temperature information present
+    assert TEST_COMFORTABLE_TEMP_2 in summary  # Comfortable temperature reference
+    assert "moves 1/2" in summary  # Cover movement count (1 out of 2)
 
-    # Attributes
+    # Verify comprehensive state attributes are exposed
     attrs = cast(dict, getattr(status, "extra_state_attributes"))
-    assert attrs[SENSOR_ATTR_AUTOMATION_ENABLED] is True
-    assert "automation_type" not in attrs
-    assert attrs[SENSOR_ATTR_COVERS_NUM_TOTAL] == 2
-    assert attrs[SENSOR_ATTR_COVERS_NUM_MOVED] == 1
-    assert attrs[SENSOR_ATTR_TEMP_HYSTERESIS] == 0.7
-    assert attrs[SENSOR_ATTR_COVERS_MIN_POSITION_DELTA] == 10
-    assert attrs[SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID] == "sensor.temperature"
-    assert attrs[SENSOR_ATTR_TEMP_THRESHOLD] == config[ConfKeys.TEMP_THRESHOLD.value]
-    assert attrs[SENSOR_ATTR_TEMP_CURRENT] == 22.5
-    assert isinstance(attrs[ConfKeys.COVERS.value], dict)
+    assert attrs[SENSOR_ATTR_AUTOMATION_ENABLED] is True  # Automation is enabled
+    assert "automation_type" not in attrs  # Deprecated attribute removed
+    assert attrs[SENSOR_ATTR_COVERS_NUM_TOTAL] == 2  # Total cover count
+    assert attrs[SENSOR_ATTR_COVERS_NUM_MOVED] == 1  # Covers being moved
+    assert attrs[SENSOR_ATTR_TEMP_HYSTERESIS] == 0.7  # Temperature hysteresis setting
+    assert attrs[SENSOR_ATTR_COVERS_MIN_POSITION_DELTA] == 10  # Minimum position change threshold
+    assert attrs[SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID] == "sensor.temperature"  # Temperature sensor entity
+    assert attrs[SENSOR_ATTR_TEMP_THRESHOLD] == config[ConfKeys.TEMP_THRESHOLD.value]  # Temperature threshold
+    assert attrs[SENSOR_ATTR_TEMP_CURRENT] == 22.5  # Current temperature
+    assert isinstance(attrs[ConfKeys.COVERS.value], dict)  # Covers data structure
 
 
 @pytest.mark.asyncio
 async def test_status_sensor_combined_sun_attributes_present() -> None:
-    """Validate sun attributes presence in combined mode."""
+    """Test status sensor summary and attributes for sun-based automation.
+
+    This test verifies that the automation status sensor correctly incorporates
+    sun position information when operating with sun-based automation logic.
+    The sensor should display sun elevation and azimuth data in both the
+    summary text and detailed attributes.
+
+    Test scenario:
+    - Sun-based automation configuration
+    - Two covers: one moving (100% → 80%), one stationary (100% → 100%)
+    - High sun elevation (above threshold for automation activation)
+    - Direct sun azimuth (aligned with cover direction)
+
+    Expected behavior:
+    - Summary includes sun elevation information
+    - Summary shows cover movement count (1 out of 2 covers)
+    - Attributes expose sun elevation, azimuth, and threshold values
+    - All configuration parameters are properly exposed
+
+    This test ensures users can monitor sun-based automation and understand
+    why covers are moving based on solar position and intensity.
+    """
+    # Setup mock Home Assistant environment for sun automation
     hass = MagicMock(spec=HomeAssistant)
     config = create_sun_config()
     entities = await _capture_entities(hass, config)
     status = _get_status_entity(entities)
 
+    # Simulate coordinator data with sun position and cover states
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
-    # Combined-only, no automation_type in config
+    # Combined-only mode, no automation_type in config
     coordinator.data = {
-        SENSOR_ATTR_SUN_ELEVATION: 35.0,
-        SENSOR_ATTR_SUN_AZIMUTH: 180.0,
+        SENSOR_ATTR_SUN_ELEVATION: TEST_HIGH_ELEVATION,  # Sun elevation above threshold
+        SENSOR_ATTR_SUN_AZIMUTH: TEST_DIRECT_AZIMUTH,  # Sun azimuth aligned with covers
         ConfKeys.COVERS.value: {
             "cover.one": {
-                ATTR_CURRENT_POSITION: 100,
-                "sca_cover_desired_position": 80,
+                ATTR_CURRENT_POSITION: 100,  # Currently fully open
+                "sca_cover_desired_position": 80,  # Target: partially closed (sun protection)
             },
             "cover.two": {
-                ATTR_CURRENT_POSITION: 100,
-                "sca_cover_desired_position": 100,
+                ATTR_CURRENT_POSITION: 100,  # Currently fully open
+                "sca_cover_desired_position": 100,  # Target: remain open (no direct sun)
             },
         },
     }
 
-    # Summary string
+    # Verify summary string includes sun information
     summary = cast(str, getattr(status, "native_value"))
-    # Summary should include Sun info when available
-    assert "Sun elev 35.0°" in summary
-    assert "moves 1/2" in summary
+    # Summary should include Sun elevation when sun automation is active
+    assert f"Sun elev {TEST_HIGH_ELEVATION}°" in summary  # Sun elevation display
+    assert "moves 1/2" in summary  # Cover movement count
 
-    # Attributes
+    # Verify sun-specific attributes are exposed
     attrs = cast(dict, getattr(status, "extra_state_attributes"))
-    assert attrs[SENSOR_ATTR_AUTOMATION_ENABLED] is True
-    assert "automation_type" not in attrs
-    assert attrs[SENSOR_ATTR_COVERS_NUM_TOTAL] == 2
-    assert attrs[SENSOR_ATTR_COVERS_NUM_MOVED] == 1
-    assert attrs[SENSOR_ATTR_SUN_ELEVATION] == 35.0
-    assert attrs[SENSOR_ATTR_SUN_AZIMUTH] == 180.0
-    assert attrs[SENSOR_ATTR_SUN_ELEVATION_THRESH] == config[ConfKeys.SUN_ELEVATION_THRESHOLD.value]
-    assert isinstance(attrs[ConfKeys.COVERS.value], dict)
+    assert attrs[SENSOR_ATTR_AUTOMATION_ENABLED] is True  # Automation enabled
+    assert "automation_type" not in attrs  # Deprecated attribute removed
+    assert attrs[SENSOR_ATTR_COVERS_NUM_TOTAL] == 2  # Total cover count
+    assert attrs[SENSOR_ATTR_COVERS_NUM_MOVED] == 1  # Covers being moved
+    assert attrs[SENSOR_ATTR_SUN_ELEVATION] == TEST_HIGH_ELEVATION  # Current sun elevation
+    assert attrs[SENSOR_ATTR_SUN_AZIMUTH] == TEST_DIRECT_AZIMUTH  # Current sun azimuth
+    assert attrs[SENSOR_ATTR_SUN_ELEVATION_THRESH] == config[ConfKeys.SUN_ELEVATION_THRESHOLD.value]  # Elevation threshold
+    assert isinstance(attrs[ConfKeys.COVERS.value], dict)  # Covers data structure
 
 
 @pytest.mark.asyncio
 async def test_status_sensor_disabled() -> None:
-    """When globally disabled, summary is 'Disabled'."""
+    """Test status sensor behavior when automation is globally disabled.
+
+    This test verifies that the automation status sensor correctly reports
+    'Disabled' status when the automation is turned off globally through
+    the enabled configuration option.
+
+    Test scenario:
+    - Temperature-based automation configuration
+    - Automation globally disabled (enabled = False)
+    - Coordinator data present but should be ignored
+
+    Expected behavior:
+    - Summary displays 'Disabled' regardless of other data
+    - Sensor short-circuits evaluation when automation is disabled
+    - No complex processing of cover states or environmental data
+
+    This test ensures users receive clear feedback when automation is
+    intentionally disabled, helping them understand why covers aren't
+    moving despite environmental conditions that would normally trigger automation.
+    """
+    # Setup mock Home Assistant environment
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
-    config[ConfKeys.ENABLED.value] = False
+    config[ConfKeys.ENABLED.value] = False  # Globally disable automation
 
     entities = await _capture_entities(hass, config)
     status = _get_status_entity(entities)
 
-    # Even with dummy data, 'enabled' False should short-circuit
+    # Even with coordinator data present, disabled state should short-circuit evaluation
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
-    coordinator.data = {ConfKeys.COVERS.value: {}}
+    coordinator.data = {ConfKeys.COVERS.value: {}}  # Minimal data structure
+
+    # Verify sensor reports disabled status
     val = cast(str, getattr(status, "native_value"))
     assert val == "Disabled"
