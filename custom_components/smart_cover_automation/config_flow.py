@@ -148,6 +148,25 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """
         # Subsequent calls: user_input has form data -> store the options and finish
         if user_input is not None:
+            # Clean up any orphaned cover-specific settings if covers were removed
+            # Only do this if the user actually modified the covers list
+            if ConfKeys.COVERS.value in user_input:
+                covers_in_input = user_input.get(ConfKeys.COVERS.value, [])
+                cleaned_input = dict(user_input)
+
+                # Remove azimuth settings for covers that are no longer configured
+                keys_to_remove = []
+                for key in cleaned_input.keys():
+                    if key.endswith(f"_{const.COVER_SFX_AZIMUTH}"):
+                        cover_entity = key.replace(f"_{const.COVER_SFX_AZIMUTH}", "")
+                        if cover_entity not in covers_in_input:
+                            keys_to_remove.append(key)
+
+                for key in keys_to_remove:
+                    cleaned_input.pop(key, None)
+
+                user_input = cleaned_input
+
             # Persist options; HA will trigger entry update and reload
             return self.async_create_entry(title="Options", data=user_input)
 
@@ -160,61 +179,74 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Build dynamic fields for per-cover directions as numeric azimuth angles (0-359)
         covers: list[str] = list(resolved_settings.covers)
         direction_fields: dict[vol.Marker, object] = {}
+
         for cover in covers:
             key = f"{cover}_{const.COVER_SFX_AZIMUTH}"
             raw = options.get(key, data.get(key))
             direction_azimuth: float | None = to_float_or_none(raw)
 
-            if direction_azimuth is not None:
-                direction_fields[vol.Optional(key, default=direction_azimuth)] = selector.NumberSelector(
-                    selector.NumberSelectorConfig(min=0, max=359, step=0.1, unit_of_measurement="°")
-                )
-            else:
-                direction_fields[vol.Optional(key)] = selector.NumberSelector(
-                    selector.NumberSelectorConfig(min=0, max=359, step=0.1, unit_of_measurement="°")
-                )
+            # Create a more user-friendly label for the field
+            cover_name = cover.replace("cover.", "").replace("_", " ").title()
+            description = f"Azimuth direction for {cover_name}"
 
+            # Use a consistent selector configuration
+            number_selector = selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=359, step=0.1, unit_of_measurement="°", mode=selector.NumberSelectorMode.BOX)
+            )
+
+            if direction_azimuth is not None:
+                direction_fields[vol.Optional(key, default=direction_azimuth, description=description)] = number_selector
+            else:
+                direction_fields[vol.Optional(key, description=description)] = number_selector
+
+        # Extract default values from resolved settings
         enabled_default = resolved_settings.enabled
         temp_sensor_default = resolved_settings.temp_sensor_entity_id
         threshold_default = resolved_settings.sun_elevation_threshold
         azimuth_tol_default = resolved_settings.sun_azimuth_tolerance
 
-        schema_dict: dict[vol.Marker, object] = {
-            vol.Optional(ConfKeys.ENABLED.value, default=enabled_default): selector.BooleanSelector(),
-            vol.Optional(
-                ConfKeys.VERBOSE_LOGGING.value,
-                default=resolved_settings.verbose_logging,
-            ): selector.BooleanSelector(),
-            # Allow editing the list of covers without changing the unique_id
-            vol.Optional(
-                ConfKeys.COVERS.value,
-                default=covers,
-            ): selector.EntitySelector(
-                selector.EntitySelectorConfig(
-                    domain=Platform.COVER,
-                    multiple=True,
-                ),
-            ),
-            vol.Optional(
-                ConfKeys.TEMP_SENSOR_ENTITY_ID.value,
-                default=temp_sensor_default,
-            ): selector.EntitySelector(selector.EntitySelectorConfig(domain=Platform.SENSOR)),
-            vol.Optional(
-                ConfKeys.SUN_ELEVATION_THRESHOLD.value,
-                default=threshold_default,
-            ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=90, step=1)),
-            vol.Optional(
-                ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
-                default=azimuth_tol_default,
-            ): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°")),
-        }
+        # Build the schema with logical field grouping
+        schema_dict: dict[vol.Marker, object] = {}
 
+        # === GLOBAL AUTOMATION SETTINGS ===
+        schema_dict[vol.Optional(ConfKeys.ENABLED.value, default=enabled_default)] = selector.BooleanSelector()
+        schema_dict[vol.Optional(ConfKeys.VERBOSE_LOGGING.value, default=resolved_settings.verbose_logging)] = selector.BooleanSelector()
+
+        # === COVER CONFIGURATION ===
+        # Allow editing the list of covers without changing the unique_id
+        schema_dict[vol.Optional(ConfKeys.COVERS.value, default=covers)] = selector.EntitySelector(
+            selector.EntitySelectorConfig(
+                domain=Platform.COVER,
+                multiple=True,
+            ),
+        )
+
+        # === TEMPERATURE SETTINGS ===
+        schema_dict[vol.Optional(ConfKeys.TEMP_SENSOR_ENTITY_ID.value, default=temp_sensor_default)] = selector.EntitySelector(
+            selector.EntitySelectorConfig(domain=Platform.SENSOR)
+        )
+
+        # === SUN POSITION SETTINGS ===
+        schema_dict[vol.Optional(ConfKeys.SUN_ELEVATION_THRESHOLD.value, default=threshold_default)] = selector.NumberSelector(
+            selector.NumberSelectorConfig(min=0, max=90, step=1, unit_of_measurement="°")
+        )
+        schema_dict[vol.Optional(ConfKeys.SUN_AZIMUTH_TOLERANCE.value, default=azimuth_tol_default)] = selector.NumberSelector(
+            selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°")
+        )
+
+        # === COVER BEHAVIOR SETTINGS ===
         schema_dict[vol.Optional(ConfKeys.COVERS_MAX_CLOSURE.value, default=resolved_settings.covers_max_closure)] = (
             selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%"))
         )
 
-        # Add dynamic direction fields at the end
-        schema_dict.update(direction_fields)
+        # === PER-COVER AZIMUTH DIRECTIONS ===
+        # Add dynamic direction fields, sorted for consistent ordering
+        if direction_fields:
+            # Sort covers alphabetically for better user experience
+            sorted_direction_items = sorted(direction_fields.items(), key=lambda x: str(x[0]))
+
+            for field_key, field_selector in sorted_direction_items:
+                schema_dict[field_key] = field_selector
 
         return self.async_show_form(
             step_id="init",
