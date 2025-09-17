@@ -201,3 +201,96 @@ async def test_options_flow_direction_field_defaults_and_parsing() -> None:
     # Invalid input should not yield a numeric default (graceful degradation)
     val3 = _resolve_default(marker_three)
     assert not isinstance(val3, (int, float))  # "west" → non-numeric fallback
+
+
+@pytest.mark.asyncio
+async def test_options_flow_simulation_mode_default_and_submit() -> None:
+    """Test simulation mode configuration in the options flow.
+
+    This test verifies that simulation mode is properly included in the options form
+    with correct default values and that user input for simulation mode is correctly
+    processed and stored.
+
+    Test scenarios:
+    1. Default simulation mode state (False) appears in form
+    2. User can enable simulation mode via options form
+    3. Simulation mode setting is properly stored in config entry
+    """
+    # Start with basic configuration
+    data = {ConfKeys.COVERS.value: ["cover.living_room"]}
+    flow = OptionsFlowHandler(_mock_entry(data))
+
+    # First, check that simulation mode appears in the form with correct default
+    result = await flow.async_step_init()
+    result_dict = cast(dict[str, Any], result)
+    schema = result_dict["data_schema"].schema
+
+    # Verify simulation mode field is present
+    simulation_key = ConfKeys.SIMULATING.value
+    assert simulation_key in schema
+
+    # Find the voluptuous marker and check default value
+    simulation_marker = next(k for k in schema.keys() if getattr(k, "schema", None) == simulation_key)
+
+    def _resolve_default(marker: object) -> Any:
+        """Helper to resolve voluptuous default values."""
+        if hasattr(marker, "default"):
+            dv = getattr(marker, "default")
+            return dv() if callable(dv) else dv
+        return None
+
+    # Default should be False (simulation disabled)
+    assert _resolve_default(simulation_marker) is False
+
+    # Now test submitting with simulation mode enabled
+    user_input = {
+        ConfKeys.ENABLED.value: True,
+        ConfKeys.SIMULATING.value: True,  # Enable simulation mode
+        ConfKeys.TEMP_SENSOR_ENTITY_ID.value: "sensor.temperature",
+        ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
+    }
+
+    result = await flow.async_step_init(user_input)
+    result_dict = cast(dict[str, Any], result)
+
+    # Verify successful submission with simulation mode enabled
+    assert result_dict["type"] == "create_entry"
+    assert result_dict["data"][ConfKeys.SIMULATING.value] is True
+
+
+@pytest.mark.asyncio
+async def test_options_flow_simulation_mode_with_existing_config() -> None:
+    """Test simulation mode handling when it's already configured in existing data/options.
+
+    This test verifies that existing simulation mode configuration is properly
+    read from data/options and displayed as defaults in the options form.
+    """
+    # Start with simulation mode already enabled in data
+    data = {
+        ConfKeys.COVERS.value: ["cover.test"],
+        ConfKeys.SIMULATING.value: True,
+    }
+
+    # Override with simulation disabled in options
+    options = {
+        ConfKeys.SIMULATING.value: False,
+    }
+
+    flow = OptionsFlowHandler(_mock_entry(data, options))
+
+    # Generate form and check that options value takes precedence
+    result = await flow.async_step_init()
+    result_dict = cast(dict[str, Any], result)
+    schema = result_dict["data_schema"].schema
+
+    simulation_marker = next(k for k in schema.keys() if getattr(k, "schema", None) == ConfKeys.SIMULATING.value)
+
+    def _resolve_default(marker: object) -> Any:
+        """Helper to resolve voluptuous default values."""
+        if hasattr(marker, "default"):
+            dv = getattr(marker, "default")
+            return dv() if callable(dv) else dv
+        return None
+
+    # Should use options value (False) instead of data value (True)
+    assert _resolve_default(simulation_marker) is False

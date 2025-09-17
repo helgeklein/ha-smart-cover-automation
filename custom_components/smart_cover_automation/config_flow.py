@@ -201,6 +201,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Extract default values from resolved settings
         enabled_default = resolved_settings.enabled
+        simulating_default = resolved_settings.simulating
         temp_sensor_default = resolved_settings.temp_sensor_entity_id
         threshold_default = resolved_settings.sun_elevation_threshold
         azimuth_tol_default = resolved_settings.sun_azimuth_tolerance
@@ -210,6 +211,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # === GLOBAL AUTOMATION SETTINGS ===
         schema_dict[vol.Optional(ConfKeys.ENABLED.value, default=enabled_default)] = selector.BooleanSelector()
+        schema_dict[vol.Optional(ConfKeys.SIMULATING.value, default=simulating_default)] = selector.BooleanSelector()
         schema_dict[vol.Optional(ConfKeys.VERBOSE_LOGGING.value, default=resolved_settings.verbose_logging)] = selector.BooleanSelector()
 
         # === COVER CONFIGURATION ===

@@ -32,13 +32,13 @@ SENSOR_KEY_AUTOMATION_STATUS: Final[str] = "automation_status"  # Key for the au
 
 # Sensor attribute keys (exposed on the automation status sensor)
 SENSOR_ATTR_AUTOMATION_ENABLED: Final[str] = "automation_enabled"  # Whether the automation is currently enabled
+SENSOR_ATTR_SIMULATION_ENABLED: Final[str] = "simulation_enabled"  # Whether the simulation is currently enabled
 SENSOR_ATTR_COVERS_NUM_TOTAL: Final[str] = "covers__num_total"  # Total number of configured covers
 SENSOR_ATTR_COVERS_NUM_MOVED: Final[str] = "covers_num_moved"  # Number of covers adjusted in the last cycle
 SENSOR_ATTR_COVERS_MAX_CLOSURE_POS: Final[str] = "covers_max_closure_pos"  # Maximum closure position (%) when sun is hitting
 SENSOR_ATTR_COVERS_MIN_POSITION_DELTA: Final[str] = "covers_min_position_delta"  # Minimum position change (%) required to move
 SENSOR_ATTR_TEMP_CURRENT: Final[str] = "temp_current"  # Current measured temperature (°C)
 SENSOR_ATTR_TEMP_HOT: Final[str] = "temp_hot"  # Whether the current temperature is above the threshold
-SENSOR_ATTR_TEMP_HYSTERESIS: Final[str] = "temp_hysteresis"  # Temperature hysteresis (°C) to prevent oscillation
 SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID: Final[str] = "temp_sensor_entity_id"  # Entity ID of the temperature sensor
 SENSOR_ATTR_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Temperature threshold (°C)
 SENSOR_ATTR_SUN_ELEVATION: Final[str] = "sun_elevation"  # Current sun elevation (°)

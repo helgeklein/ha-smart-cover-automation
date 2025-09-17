@@ -244,7 +244,6 @@ class TestConfigFlow:
         - The correct form is displayed (FORM result type)
         - The form has the expected step ID ("user")
         - Required fields are present in the form schema
-        - Deprecated fields are not present (automation_type was removed)
         """
         # Request the initial configuration form (no user input)
         result = await flow_handler.async_step_user(None)
@@ -254,10 +253,6 @@ class TestConfigFlow:
         assert result["type"] == FlowResultType.FORM
         assert result["step_id"] == "user"
         assert ConfKeys.COVERS.value in result["data_schema"].schema
-
-        # Verify deprecated automation type field is not present
-        schema = result["data_schema"].schema
-        assert "automation_type" not in schema
 
     async def test_user_step_configuration_error(
         self,

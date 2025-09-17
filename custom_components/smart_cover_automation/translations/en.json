@@ -7,7 +7,7 @@
                 "data": {
                     "covers": "Covers to automate",
                     "temp_threshold": "Temperature threshold (°C)",
-                    "sun_elevation_threshold": "Sun elevation threshold (degrees)",
+                    "sun_elevation_threshold": "Minimal sun elevation above horizon (degrees)",
                     "sun_azimuth_tolerance": "Azimuth tolerance (degrees)",
                     "cover_azimuth": "Window azimuth (degrees)"
                 }
@@ -15,22 +15,20 @@
         },
         "error": {
             "invalid_cover": "One or more selected covers are not available",
-            "no_direction": "Window azimuth must be set for sun-based automation",
-            "invalid_temperature_range": "Maximum temperature must be higher than minimum temperature",
             "invalid_config": "Invalid configuration provided"
         },
         "abort": {
-            "already_configured": "These covers are already configured in another automation",
             "single_instance_allowed": "Only one instance of this integration can be configured"
         }
     },
     "options": {
         "step": {
             "init": {
-                "title": "Smart Cover Configuration",
-                "description": "Adjust automation settings",
+                "title": "Smart Cover Automation Configuration",
+                "description": "Adjust settings",
                 "data": {
                     "enabled": "Enable automation",
+                    "simulating": "Simulation mode",
                     "verbose_logging": "Verbose logging",
                     "covers": "Covers to automate",
                     "temp_sensor_entity_id": "Temperature sensor",
@@ -38,14 +36,6 @@
                     "sun_azimuth_tolerance": "Azimuth tolerance (degrees)",
                     "covers_max_closure": "Maximum closure position (0 = fully closed, 100 = fully open)"
                 }
-            }
-        }
-    },
-    "selector": {
-        "automation_type": {
-            "options": {
-                "temperature": "Temperature-based",
-                "sun": "Sun-based"
             }
         }
     },

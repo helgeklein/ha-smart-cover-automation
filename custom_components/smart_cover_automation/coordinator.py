@@ -202,7 +202,6 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Temperature input
         temp_threshold = resolved.temp_threshold
         sensor_entity_id = resolved.temp_sensor_entity_id
-        temp_hysteresis = resolved.temp_hysteresis
         temp_state = self.hass.states.get(sensor_entity_id)
         if temp_state is None:
             raise TempSensorNotFoundError(sensor_entity_id)
@@ -213,7 +212,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         # Temperature above threshold?
         temp_hot = False
-        if temp_current > temp_threshold + temp_hysteresis:
+        if temp_current > temp_threshold:
             temp_hot = True
 
         # Cover settings
@@ -374,8 +373,15 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     service_data = {ATTR_ENTITY_ID: entity_id}
                     const.LOGGER.debug(f"[{entity_id}] Using close_cover service (no position support)")
 
-            # Call the service
-            await self.hass.services.async_call(Platform.COVER, service, service_data)
+            resolved = self._resolved_settings()
+            if resolved.simulating:
+                # If simulation mode is enabled, skip the actual service call
+                const.LOGGER.info(
+                    f"[{entity_id}] Simulation mode enabled; skipping actual {service} call; would have moved to {desired_pos}%"
+                )
+            else:
+                # Call the service
+                await self.hass.services.async_call(Platform.COVER, service, service_data)
 
         except (OSError, ConnectionError, TimeoutError) as err:
             # Network/communication errors

@@ -42,11 +42,11 @@ from custom_components.smart_cover_automation.const import (
     SENSOR_ATTR_COVERS_MIN_POSITION_DELTA,
     SENSOR_ATTR_COVERS_NUM_MOVED,
     SENSOR_ATTR_COVERS_NUM_TOTAL,
+    SENSOR_ATTR_SIMULATION_ENABLED,
     SENSOR_ATTR_SUN_AZIMUTH,
     SENSOR_ATTR_SUN_ELEVATION,
     SENSOR_ATTR_SUN_ELEVATION_THRESH,
     SENSOR_ATTR_TEMP_CURRENT,
-    SENSOR_ATTR_TEMP_HYSTERESIS,
     SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID,
     SENSOR_ATTR_TEMP_THRESHOLD,
     SENSOR_KEY_AUTOMATION_STATUS,
@@ -145,7 +145,6 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     - Summary includes temperature information and cover movement count
     - Attributes expose all relevant configuration and state values
     - Cover movement tracking shows 1 out of 2 covers moving
-    - No deprecated automation_type attribute present (unified mode only)
 
     This test ensures users can see automation activity at a glance and access
     detailed information for troubleshooting and dashboard integration.
@@ -155,7 +154,6 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     config = create_temperature_config()
     # Add custom tuning/options to test attribute exposure
     config[ConfKeys.TEMP_SENSOR_ENTITY_ID.value] = "sensor.temperature"
-    config[ConfKeys.TEMP_HYSTERESIS.value] = 0.7
     config[ConfKeys.COVERS_MIN_POSITION_DELTA.value] = 10
 
     entities = await _capture_entities(hass, config)
@@ -163,7 +161,6 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
 
     # Simulate coordinator data with realistic automation scenario
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
-    # Combined mode is the only mode; no automation_type key is used anymore
     coordinator.data = {
         SENSOR_ATTR_TEMP_CURRENT: 22.5,  # Current temperature reading
         ConfKeys.COVERS.value: {
@@ -187,10 +184,8 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     # Verify comprehensive state attributes are exposed
     attrs = cast(dict, getattr(status, "extra_state_attributes"))
     assert attrs[SENSOR_ATTR_AUTOMATION_ENABLED] is True  # Automation is enabled
-    assert "automation_type" not in attrs  # Deprecated attribute removed
     assert attrs[SENSOR_ATTR_COVERS_NUM_TOTAL] == 2  # Total cover count
     assert attrs[SENSOR_ATTR_COVERS_NUM_MOVED] == 1  # Covers being moved
-    assert attrs[SENSOR_ATTR_TEMP_HYSTERESIS] == 0.7  # Temperature hysteresis setting
     assert attrs[SENSOR_ATTR_COVERS_MIN_POSITION_DELTA] == 10  # Minimum position change threshold
     assert attrs[SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID] == "sensor.temperature"  # Temperature sensor entity
     assert attrs[SENSOR_ATTR_TEMP_THRESHOLD] == config[ConfKeys.TEMP_THRESHOLD.value]  # Temperature threshold
@@ -230,7 +225,6 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
 
     # Simulate coordinator data with sun position and cover states
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
-    # Combined-only mode, no automation_type in config
     coordinator.data = {
         SENSOR_ATTR_SUN_ELEVATION: TEST_HIGH_ELEVATION,  # Sun elevation above threshold
         SENSOR_ATTR_SUN_AZIMUTH: TEST_DIRECT_AZIMUTH,  # Sun azimuth aligned with covers
@@ -255,7 +249,6 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     # Verify sun-specific attributes are exposed
     attrs = cast(dict, getattr(status, "extra_state_attributes"))
     assert attrs[SENSOR_ATTR_AUTOMATION_ENABLED] is True  # Automation enabled
-    assert "automation_type" not in attrs  # Deprecated attribute removed
     assert attrs[SENSOR_ATTR_COVERS_NUM_TOTAL] == 2  # Total cover count
     assert attrs[SENSOR_ATTR_COVERS_NUM_MOVED] == 1  # Covers being moved
     assert attrs[SENSOR_ATTR_SUN_ELEVATION] == TEST_HIGH_ELEVATION  # Current sun elevation
@@ -301,3 +294,72 @@ async def test_status_sensor_disabled() -> None:
     # Verify sensor reports disabled status
     val = cast(str, getattr(status, "native_value"))
     assert val == "Disabled"
+
+
+async def test_status_sensor_simulation_mode_enabled() -> None:
+    """Test that status sensor properly reports simulation mode when enabled.
+
+    This test verifies that when simulation mode is active, the status sensor:
+    1. Includes "Simulation mode enabled" in the summary text
+    2. Exposes the simulation_enabled attribute as True
+    3. Still reports other automation state correctly
+
+    Simulation mode is important for users to understand when the automation
+    is running in test mode without actually moving covers.
+    """
+    # Setup mock Home Assistant environment with simulation mode enabled
+    hass = MagicMock(spec=HomeAssistant)
+    config = create_temperature_config()
+    config[ConfKeys.SIMULATING.value] = True  # Enable simulation mode
+
+    entities = await _capture_entities(hass, config)
+    status = _get_status_entity(entities)
+
+    # Setup coordinator with basic automation data
+    coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
+    coordinator.data = {
+        ConfKeys.COVERS.value: {},
+        "temp_current": 22.0,  # Comfortable temperature
+    }
+
+    # Verify simulation mode is reported in status summary
+    val = cast(str, getattr(status, "native_value"))
+    assert "Simulation mode enabled" in val
+
+    # Verify simulation mode attribute is exposed
+    attrs = cast(dict[str, object], getattr(status, "extra_state_attributes"))
+    assert attrs[SENSOR_ATTR_SIMULATION_ENABLED] is True
+
+
+async def test_status_sensor_simulation_mode_disabled() -> None:
+    """Test that status sensor properly reports when simulation mode is disabled.
+
+    This test verifies that when simulation mode is inactive, the status sensor:
+    1. Does NOT include "Simulation mode enabled" in the summary text
+    2. Exposes the simulation_enabled attribute as False
+    3. Reports normal automation state
+
+    This ensures users can clearly distinguish between normal and simulation operation.
+    """
+    # Setup mock Home Assistant environment with simulation mode disabled
+    hass = MagicMock(spec=HomeAssistant)
+    config = create_temperature_config()
+    config[ConfKeys.SIMULATING.value] = False  # Explicitly disable simulation mode
+
+    entities = await _capture_entities(hass, config)
+    status = _get_status_entity(entities)
+
+    # Setup coordinator with basic automation data
+    coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
+    coordinator.data = {
+        ConfKeys.COVERS.value: {},
+        "temp_current": 22.0,  # Comfortable temperature
+    }
+
+    # Verify simulation mode is NOT reported in status summary
+    val = cast(str, getattr(status, "native_value"))
+    assert "Simulation mode enabled" not in val
+
+    # Verify simulation mode attribute is exposed as False
+    attrs = cast(dict[str, object], getattr(status, "extra_state_attributes"))
+    assert attrs[SENSOR_ATTR_SIMULATION_ENABLED] is False

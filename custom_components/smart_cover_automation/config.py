@@ -41,10 +41,10 @@ class ConfKeys(StrEnum):
     """
 
     ENABLED = "enabled"  # Global on/off for all automation.
+    SIMULATING = "simulating"  # Simulation mode: if enabled, no actual cover commands are sent.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_POSITION_DELTA = "covers_min_position_delta"  # Ignore smaller position changes (%).
-    TEMP_HYSTERESIS = "temp_hysteresis"  # Deadband around thresholds (°C).
     TEMP_SENSOR_ENTITY_ID = "temp_sensor_entity_id"  # Temperature sensor entity_id.
     TEMP_THRESHOLD = "temp_threshold"  # Temperature threshold at which heat protection activates (°C).
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
@@ -97,10 +97,10 @@ if TYPE_CHECKING:  # pragma: no cover - type checking only
 # This is the single source of truth for all settings keys and their types.
 CONF_SPECS: dict[ConfKeys, _ConfSpec] = {
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.SIMULATING: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
-    ConfKeys.TEMP_HYSTERESIS: _ConfSpec(default=0.5, converter=_Converters.to_float),
     ConfKeys.TEMP_SENSOR_ENTITY_ID: _ConfSpec(default="sensor.temperature", converter=_Converters.to_str),
     ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=23.0, converter=_Converters.to_float),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
@@ -125,10 +125,10 @@ __all__ = [
 @dataclass(frozen=True, slots=True)
 class ResolvedConfig:
     enabled: bool
+    simulating: bool
     covers: tuple[str, ...]
     covers_max_closure: int
     covers_min_position_delta: int
-    temp_hysteresis: float
     temp_sensor_entity_id: str
     temp_threshold: float
     sun_azimuth_tolerance: int

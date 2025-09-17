@@ -19,12 +19,12 @@ from .const import (
     SENSOR_ATTR_COVERS_MIN_POSITION_DELTA,
     SENSOR_ATTR_COVERS_NUM_MOVED,
     SENSOR_ATTR_COVERS_NUM_TOTAL,
+    SENSOR_ATTR_SIMULATION_ENABLED,
     SENSOR_ATTR_SUN_AZIMUTH,
     SENSOR_ATTR_SUN_ELEVATION,
     SENSOR_ATTR_SUN_ELEVATION_THRESH,
     SENSOR_ATTR_TEMP_CURRENT,
     SENSOR_ATTR_TEMP_HOT,
-    SENSOR_ATTR_TEMP_HYSTERESIS,
     SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID,
     SENSOR_ATTR_TEMP_THRESHOLD,
     SENSOR_KEY_AUTOMATION_STATUS,
@@ -91,7 +91,8 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
     - Current temperature and threshold status
     - Sun position (elevation and azimuth)
     - Number of covers moved vs total covers
-    - Overall automation state (enabled/disabled)
+    - Automation enabled
+    - Simulation mode enabled
 
     The sensor value is a human-readable summary, while detailed metrics
     are provided via extra_state_attributes for use in dashboards and automations.
@@ -136,6 +137,9 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         # Build status components for display
         parts: list[str] = []
 
+        if resolved.simulating:
+            parts.append("Simulation mode enabled")
+
         # Add temperature information if available
         current_temp = self.coordinator.data.get(SENSOR_ATTR_TEMP_CURRENT)
         if isinstance(current_temp, (int, float)):
@@ -149,7 +153,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             parts.append(f"Sun elev {float(elevation):.1f}°, az {float(azimuth):.0f}°")
 
         # Combine all parts with cover movement summary
-        prefix = " • ".join(parts) if parts else "Combined"
+        prefix = " • ".join(parts)
         return f"{prefix} • moves {moved}/{total}"
 
     #
@@ -183,10 +187,10 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         attrs: dict[str, Any] = {
             # Configuration settings
             SENSOR_ATTR_AUTOMATION_ENABLED: resolved.enabled,
+            SENSOR_ATTR_SIMULATION_ENABLED: resolved.simulating,
             SENSOR_ATTR_COVERS_MAX_CLOSURE_POS: resolved.covers_max_closure,
             SENSOR_ATTR_COVERS_MIN_POSITION_DELTA: resolved.covers_min_position_delta,
             SENSOR_ATTR_SUN_ELEVATION_THRESH: resolved.sun_elevation_threshold,
-            SENSOR_ATTR_TEMP_HYSTERESIS: resolved.temp_hysteresis,
             SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID: resolved.temp_sensor_entity_id,
             SENSOR_ATTR_TEMP_THRESHOLD: resolved.temp_threshold,
             # Current statistics

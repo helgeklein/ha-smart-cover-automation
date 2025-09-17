@@ -395,7 +395,7 @@ class TestIntegrationScenarios:
         await coordinator.async_refresh()
         assert isinstance(coordinator.last_exception, ConfigurationError)
 
-    # Configuration validation complete - no automation_type concept anymore
+    # Configuration validation complete
 
     async def test_concurrent_cover_control(self) -> None:
         """
