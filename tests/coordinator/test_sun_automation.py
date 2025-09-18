@@ -13,6 +13,7 @@ from unittest.mock import MagicMock
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
@@ -24,8 +25,6 @@ from custom_components.smart_cover_automation.const import (
 )
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
-    InvalidSensorReadingError,
-    SunSensorNotFoundError,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import (
@@ -232,16 +231,17 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
         self,
         sun_coordinator: DataUpdateCoordinator,
         mock_hass: MagicMock,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test error handling when sun entity is not found in Home Assistant.
+        """Test critical error handling when sun entity is not found in Home Assistant.
 
-        Validates that the coordinator properly handles and reports errors when the
-        sun entity doesn't exist in Home Assistant. This ensures proper error reporting
-        for missing sensor dependencies.
+        Validates that the coordinator treats missing sun entity as a critical error
+        that makes the automation non-functional. Since sun position is essential for
+        automation decisions, missing sun entity should make entities unavailable.
 
         Test scenario:
         - Sun entity: Missing from Home Assistant state registry
-        - Expected behavior: SunSensorNotFoundError raised and captured
+        - Expected behavior: Critical error logged, UpdateFailed exception raised, entities unavailable
         """
         # Create state mapping WITHOUT sun entity (to simulate missing sensor)
         cover_state = MagicMock()
@@ -259,29 +259,34 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
         await sun_coordinator.async_refresh()
 
-        # Verify sun sensor error
-        assert isinstance(sun_coordinator.last_exception, SunSensorNotFoundError)
-        assert "sun.sun" in str(sun_coordinator.last_exception)
+        # Verify critical error handling - sun sensor missing
+        assert isinstance(sun_coordinator.last_exception, UpdateFailed)  # Critical error should propagate
+        assert "Sun sensor 'sun.sun' not found" in str(sun_coordinator.last_exception)
 
     async def test_sun_automation_invalid_data(
         self,
         sun_coordinator: DataUpdateCoordinator,
         mock_hass: MagicMock,
         mock_sun_state: MagicMock,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test error handling when sun entity provides invalid data.
+        """Test critical error handling when sun entity provides invalid data.
 
-        Validates that the coordinator properly handles and reports errors when the
-        sun entity exists but provides non-numeric elevation or azimuth data.
+        Validates that the coordinator treats invalid sun sensor readings as critical errors
+        that make the automation non-functional. Since accurate sun position is essential for
+        automation decisions, invalid sun data should make entities unavailable.
 
         Test scenario:
         - Sun entity: Returns "invalid" string for elevation
-        - Expected behavior: InvalidSensorReadingError raised and captured
+        - Expected behavior: Critical error logged, UpdateFailed exception raised, entities unavailable
         """
         mock_sun_state.attributes = {"elevation": "invalid", "azimuth": TEST_DIRECT_AZIMUTH}
         mock_hass.states.get.return_value = mock_sun_state
         await sun_coordinator.async_refresh()
-        assert isinstance(sun_coordinator.last_exception, InvalidSensorReadingError)
+
+        # Verify critical error handling
+        assert isinstance(sun_coordinator.last_exception, UpdateFailed)  # Critical error should propagate
+        assert "Invalid reading" in str(sun_coordinator.last_exception)
 
     async def test_sun_automation_skips_unavailable_cover(
         self,

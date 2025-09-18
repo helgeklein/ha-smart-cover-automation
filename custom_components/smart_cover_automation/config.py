@@ -101,7 +101,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec] = {
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
-    ConfKeys.TEMP_SENSOR_ENTITY_ID: _ConfSpec(default="sensor.temperature", converter=_Converters.to_str),
+    ConfKeys.TEMP_SENSOR_ENTITY_ID: _ConfSpec(default="dummy", converter=_Converters.to_str),
     ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=23.0, converter=_Converters.to_float),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=20.0, converter=_Converters.to_float),

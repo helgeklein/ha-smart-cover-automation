@@ -7,11 +7,14 @@ automation logic categories.
 
 from __future__ import annotations
 
+import logging
 from typing import Any, cast
 from unittest.mock import MagicMock
 
+import pytest
+
+from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.coordinator import (
-    ConfigurationError,
     DataUpdateCoordinator,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
@@ -28,24 +31,34 @@ class TestEdgeCases(TestDataUpdateCoordinatorBase):
     async def test_missing_config_keys_raise_configuration_error(
         self,
         mock_hass: MagicMock,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test configuration validation with missing required keys.
+        """Test graceful configuration validation with missing required keys.
 
-        Validates that the coordinator properly validates configuration and
-        raises ConfigurationError when required configuration keys are missing.
-        This ensures proper setup validation during integration initialization.
+        Validates that the coordinator gracefully handles configuration validation
+        and reports errors when required configuration keys are missing. The system
+        should log the error but continue operation with minimal state to keep
+        integration entities available.
 
         Test scenario:
         - Configuration: Missing required 'covers' key entirely
-        - Expected behavior: ConfigurationError raised during initialization
+        - Expected behavior: Error logged, minimal state returned, no exception raised
         """
         # Build a config missing the required covers key entirely
         config: dict[str, Any] = {}
         config_entry = MockConfigEntry(config)
+
+        # Set caplog to capture warning level messages
+        caplog.set_level(logging.WARNING, logger="custom_components.smart_cover_automation")
+
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
         await coordinator.async_refresh()
-        assert isinstance(coordinator.last_exception, ConfigurationError)
+
+        # Verify graceful error handling
+        assert coordinator.last_exception is None  # No exception should propagate
+        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert "No covers configured; skipping actions" in caplog.text  # Error should be logged
 
     async def test_angle_calculation_utility(
         self,

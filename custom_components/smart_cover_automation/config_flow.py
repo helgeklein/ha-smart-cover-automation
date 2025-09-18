@@ -7,6 +7,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import STATE_UNAVAILABLE, Platform, UnitOfTemperature
 from homeassistant.helpers import selector
 
@@ -202,7 +203,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Extract default values from resolved settings
         enabled_default = resolved_settings.enabled
         simulating_default = resolved_settings.simulating
-        temp_sensor_default = resolved_settings.temp_sensor_entity_id
         threshold_default = resolved_settings.sun_elevation_threshold
         azimuth_tol_default = resolved_settings.sun_azimuth_tolerance
 
@@ -224,8 +224,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         # === TEMPERATURE SETTINGS ===
-        schema_dict[vol.Optional(ConfKeys.TEMP_SENSOR_ENTITY_ID.value, default=temp_sensor_default)] = selector.EntitySelector(
-            selector.EntitySelectorConfig(domain=Platform.SENSOR)
+        schema_dict[vol.Optional(ConfKeys.TEMP_SENSOR_ENTITY_ID.value)] = selector.EntitySelector(
+            selector.EntitySelectorConfig(
+                domain=Platform.WEATHER,
+                device_class=SensorDeviceClass.TEMPERATURE,
+            )
         )
 
         # === SUN POSITION SETTINGS ===

@@ -34,7 +34,7 @@ from custom_components.smart_cover_automation.const import (
 # Used for temperature-based and sun-based automation testing
 MOCK_COVER_ENTITY_ID = "cover.test_cover"
 MOCK_COVER_ENTITY_ID_2 = "cover.test_cover_2"
-MOCK_TEMP_SENSOR_ENTITY_ID = "sensor.temperature"
+MOCK_TEMP_SENSOR_ENTITY_ID = "dummy"
 MOCK_SUN_ENTITY_ID = "sun.sun"
 
 # Centralized test constants - shared across all test files to eliminate duplication

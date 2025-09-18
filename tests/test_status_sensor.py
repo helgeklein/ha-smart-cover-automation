@@ -47,7 +47,6 @@ from custom_components.smart_cover_automation.const import (
     SENSOR_ATTR_SUN_ELEVATION,
     SENSOR_ATTR_SUN_ELEVATION_THRESH,
     SENSOR_ATTR_TEMP_CURRENT,
-    SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID,
     SENSOR_ATTR_TEMP_THRESHOLD,
     SENSOR_KEY_AUTOMATION_STATUS,
 )
@@ -153,7 +152,6 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     hass = MagicMock(spec=HomeAssistant)
     config = create_temperature_config()
     # Add custom tuning/options to test attribute exposure
-    config[ConfKeys.TEMP_SENSOR_ENTITY_ID.value] = "sensor.temperature"
     config[ConfKeys.COVERS_MIN_POSITION_DELTA.value] = 10
 
     entities = await _capture_entities(hass, config)
@@ -187,7 +185,6 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     assert attrs[SENSOR_ATTR_COVERS_NUM_TOTAL] == 2  # Total cover count
     assert attrs[SENSOR_ATTR_COVERS_NUM_MOVED] == 1  # Covers being moved
     assert attrs[SENSOR_ATTR_COVERS_MIN_POSITION_DELTA] == 10  # Minimum position change threshold
-    assert attrs[SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID] == "sensor.temperature"  # Temperature sensor entity
     assert attrs[SENSOR_ATTR_TEMP_THRESHOLD] == config[ConfKeys.TEMP_THRESHOLD.value]  # Temperature threshold
     assert attrs[SENSOR_ATTR_TEMP_CURRENT] == 22.5  # Current temperature
     assert isinstance(attrs[ConfKeys.COVERS.value], dict)  # Covers data structure

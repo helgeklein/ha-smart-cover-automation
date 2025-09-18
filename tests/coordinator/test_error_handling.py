@@ -7,16 +7,16 @@ missing entities, invalid configurations, and cover compatibility issues.
 
 from __future__ import annotations
 
+import logging
 from typing import cast
 from unittest.mock import MagicMock
 
+import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.coordinator import (
-    AllCoversUnavailableError,
-    ConfigurationError,
     DataUpdateCoordinator,
     ServiceCallError,
 )
@@ -47,18 +47,19 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         coordinator: DataUpdateCoordinator,
         mock_hass: MagicMock,
         mock_temperature_state: MagicMock,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test error handling when all configured covers are unavailable.
+        """Test graceful error handling when all configured covers are unavailable.
 
-        Validates that the coordinator properly detects and reports when all
+        Validates that the coordinator gracefully handles and reports when all
         configured cover entities are missing from Home Assistant's state registry.
-        This ensures proper error reporting when covers are temporarily unavailable
-        or misconfigured.
+        The system should log the error but continue operation with minimal state
+        to keep integration entities available.
 
         Test scenario:
         - Temperature and sun sensors: Available
         - All cover entities: Missing from state registry
-        - Expected behavior: AllCoversUnavailableError raised and captured
+        - Expected behavior: Error logged, minimal state returned, no exception raised
         """
         # Manually create state mapping without any covers, but with temp and sun sensors
         temp_mock = MagicMock()
@@ -77,7 +78,11 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
 
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
         await coordinator.async_refresh()
-        assert isinstance(coordinator.last_exception, AllCoversUnavailableError)
+
+        # Verify graceful error handling
+        assert coordinator.last_exception is None  # No exception should propagate
+        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert "All covers unavailable; skipping actions" in caplog.text  # Error should be logged
 
     async def test_service_call_failure(
         self,
@@ -168,25 +173,33 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
     async def test_no_covers_configured(
         self,
         mock_hass: MagicMock,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test configuration validation when no covers are specified.
+        """Test graceful configuration validation when no covers are specified.
 
-        Validates that the automation properly validates configuration and reports
-        errors when the covers list is empty. This prevents the automation from
-        running without any target devices to control.
+        Validates that the automation gracefully handles configuration validation
+        and reports errors when the covers list is empty. The system should log
+        the error but continue operation with minimal state to keep integration
+        entities available.
 
         Test scenario:
         - Configuration: Empty covers list
-        - Expected behavior: ConfigurationError raised with descriptive message
+        - Expected behavior: Error logged, minimal state returned, no exception raised
         """
         config = create_temperature_config()
         config[ConfKeys.COVERS.value] = []
         config_entry = MockConfigEntry(config)
 
+        # Set caplog to capture warning level messages
+        caplog.set_level(logging.WARNING, logger="custom_components.smart_cover_automation")
+
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
         await coordinator.async_refresh()
-        assert isinstance(coordinator.last_exception, ConfigurationError)
-        assert "No covers configured" in str(coordinator.last_exception)
+
+        # Verify graceful error handling
+        assert coordinator.last_exception is None  # No exception should propagate
+        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert "No covers configured; skipping actions" in caplog.text  # Error should be logged
 
     async def test_service_call_error_class_init(self) -> None:
         """Test ServiceCallError exception class initialization.

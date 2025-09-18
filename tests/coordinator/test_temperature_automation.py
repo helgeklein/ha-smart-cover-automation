@@ -9,14 +9,14 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
-    InvalidSensorReadingError,
-    TempSensorNotFoundError,
 )
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
@@ -219,18 +219,18 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
         self,
         coordinator: DataUpdateCoordinator,
         mock_hass: MagicMock,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test error handling when temperature sensor is not found in Home Assistant.
+        """Test critical error handling when temperature sensor is not found in Home Assistant.
 
-        Validates that the coordinator properly handles and reports errors when the
-        configured temperature sensor entity doesn't exist in Home Assistant. This
-        ensures proper error reporting and prevents automation failures from causing
-        system instability.
+        Validates that the coordinator treats missing temperature sensor as a critical error
+        that makes the automation non-functional. Since temperature readings are essential for
+        automation decisions, missing temperature sensor should make entities unavailable.
 
         Test scenario:
         - Temperature sensor: Missing from Home Assistant state registry
         - Cover entities: Available and properly configured
-        - Expected behavior: TempSensorNotFoundError raised and captured
+        - Expected behavior: Critical error logged, UpdateFailed exception raised, entities unavailable
         """
         # Setup available cover entity so sensor error is the focus
         cover_state = MagicMock()
@@ -252,25 +252,27 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
 
         # Execute automation and verify error handling
         await coordinator.async_refresh()
-        # DataUpdateCoordinator captures exceptions; verify last_exception
-        assert isinstance(coordinator.last_exception, TempSensorNotFoundError)
-        assert "sensor.temperature" in str(coordinator.last_exception)
+
+        # Verify critical error handling
+        assert isinstance(coordinator.last_exception, UpdateFailed)  # Critical error should propagate
+        assert "Temperature sensor 'dummy' not found" in str(coordinator.last_exception)
 
     async def test_temperature_sensor_invalid_reading(
         self,
         coordinator: DataUpdateCoordinator,
         mock_hass: MagicMock,
         mock_temperature_state: MagicMock,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test error handling when temperature sensor provides invalid data.
+        """Test critical error handling when temperature sensor provides invalid data.
 
-        Validates that the coordinator properly handles and reports errors when the
-        temperature sensor entity exists but provides non-numeric data. This ensures
-        the automation fails gracefully rather than crashing on invalid sensor readings.
+        Validates that the coordinator treats invalid temperature sensor readings as critical errors
+        that make the automation non-functional. Since accurate temperature readings are essential for
+        automation decisions, invalid temperature data should make entities unavailable.
 
         Test scenario:
         - Temperature sensor: Returns "invalid" string instead of numeric value
-        - Expected behavior: InvalidSensorReadingError raised and captured
+        - Expected behavior: Critical error logged, UpdateFailed exception raised, entities unavailable
         """
         # Setup temperature sensor with invalid (non-numeric) reading
         mock_temperature_state.state = "invalid"
@@ -278,5 +280,7 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
 
         # Execute automation and verify error handling
         await coordinator.async_refresh()
-        assert isinstance(coordinator.last_exception, InvalidSensorReadingError)
-        assert "invalid" in str(coordinator.last_exception)
+
+        # Verify critical error handling
+        assert isinstance(coordinator.last_exception, UpdateFailed)  # Critical error should propagate
+        assert "Invalid reading from 'dummy': invalid" in str(coordinator.last_exception)
