@@ -91,9 +91,8 @@ def test_en_json_has_required_keys() -> None:
     # These labels appear when users first set up the integration
     user_data = data.get("config", {}).get("step", {}).get("user", {}).get("data", {})
     expected_user_fields = {
-        ConfKeys.COVERS.value,  # Cover entities selection
-        ConfKeys.TEMP_THRESHOLD.value,  # Temperature threshold setting
-        ConfKeys.SUN_AZIMUTH_TOLERANCE.value,  # Sun azimuth tolerance setting
+        ConfKeys.COVERS.value,
+        ConfKeys.TEMP_SENSOR_ENTITY_ID.value,
     }
     missing_user = expected_user_fields - set(user_data.keys())
     assert not missing_user, f"Missing user form labels in en.json: {sorted(missing_user)}"
@@ -102,13 +101,15 @@ def test_en_json_has_required_keys() -> None:
     # These labels appear when users modify settings through the options flow
     options_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("init", {}).get("data", {})
     expected_options_fields = {
-        ConfKeys.ENABLED.value,  # Enable/disable automation
-        ConfKeys.VERBOSE_LOGGING.value,  # Debug logging control
-        ConfKeys.COVERS.value,  # Cover entities modification
-        ConfKeys.TEMP_SENSOR_ENTITY_ID.value,  # Temperature sensor selection
-        ConfKeys.SUN_ELEVATION_THRESHOLD.value,  # Sun elevation threshold
-        ConfKeys.SUN_AZIMUTH_TOLERANCE.value,  # Sun azimuth tolerance
-        ConfKeys.COVERS_MAX_CLOSURE.value,  # Maximum cover closure limit
+        ConfKeys.ENABLED.value,
+        ConfKeys.SIMULATING.value,
+        ConfKeys.VERBOSE_LOGGING.value,
+        ConfKeys.COVERS.value,
+        ConfKeys.TEMP_SENSOR_ENTITY_ID.value,
+        ConfKeys.TEMP_THRESHOLD.value,
+        ConfKeys.SUN_ELEVATION_THRESHOLD.value,
+        ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
+        ConfKeys.COVERS_MAX_CLOSURE.value,
     }
     missing_options = expected_options_fields - set(options_data.keys())
     assert not missing_options, f"Missing options form labels in en.json: {sorted(missing_options)}"

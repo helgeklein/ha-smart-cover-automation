@@ -6,10 +6,7 @@
                 "description": "Configure automatic cover control based on temperature or sun position. For detailed help, see: https://github.com/helgeklein/ha-smart_cover_automation",
                 "data": {
                     "covers": "Covers to automate",
-                    "temp_threshold": "Temperature threshold (°C)",
-                    "sun_elevation_threshold": "Minimal sun elevation above horizon (degrees)",
-                    "sun_azimuth_tolerance": "Azimuth tolerance (degrees)",
-                    "cover_azimuth": "Window azimuth (degrees)"
+                    "temp_sensor_entity_id": "Weather forecast sensor"
                 }
             }
         },
@@ -31,10 +28,14 @@
                     "simulating": "Simulation mode",
                     "verbose_logging": "Verbose logging",
                     "covers": "Covers to automate",
-                    "temp_sensor_entity_id": "Temperature sensor",
-                    "sun_elevation_threshold": "Sun elevation threshold",
-                    "sun_azimuth_tolerance": "Azimuth tolerance (degrees)",
+                    "temp_sensor_entity_id": "Weather forecast sensor",
+                    "temp_threshold": "Minimum forecast daily high temperature at which to operate (°C)",
+                    "sun_elevation_threshold": "Minimal sun elevation at which to operate",
+                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees)",
                     "covers_max_closure": "Maximum closure position (0 = fully closed, 100 = fully open)"
+                },
+                "data_description": {
+                    "cover_azimuth": "Azimuth direction for cover (0° = North, 90° = East, etc.). Used to determine if the sun is shining on the window."
                 }
             }
         }

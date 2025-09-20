@@ -98,32 +98,19 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    # Covers
+                    # === COVER SETTINGS ===
                     vol.Required(ConfKeys.COVERS.value): selector.EntitySelector(
                         selector.EntitySelectorConfig(
                             domain=Platform.COVER,
                             multiple=True,
                         ),
                     ),
-                    # Temperature threshold
-                    # TODO: needs to be changeable later, too (options flow)
-                    vol.Optional(
-                        ConfKeys.TEMP_THRESHOLD.value,
-                        default=CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
-                    ): selector.NumberSelector(
-                        selector.NumberSelectorConfig(
-                            min=-10,
-                            max=40,
-                            step=0.5,
-                            unit_of_measurement=UnitOfTemperature.CELSIUS,
-                        ),
-                    ),
-                    # Azimuth tolerance
-                    vol.Optional(
-                        ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
-                        default=CONF_SPECS[ConfKeys.SUN_AZIMUTH_TOLERANCE].default,
-                    ): selector.NumberSelector(
-                        selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°"),
+                    # === TEMPERATURE SETTINGS ===
+                    vol.Required(ConfKeys.TEMP_SENSOR_ENTITY_ID.value): selector.EntitySelector(
+                        selector.EntitySelectorConfig(
+                            domain=Platform.WEATHER,
+                            device_class=SensorDeviceClass.TEMPERATURE,
+                        )
                     ),
                 }
             ),
@@ -141,6 +128,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         warnings in tests; keep a private reference instead.
         """
         self._config_entry = config_entry
+
+    def _get_cover_description(self) -> str:
+        """Get localized description for cover azimuth field."""
+
+        # TODO: Read from translation file
+        return "Azimuth direction for cover (0° = North, 90° = East, etc.). Used to determine if the sun is shining on the window."
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Invoked when the user clicks the gear icon to bring up the integration's options dialog.
@@ -186,9 +179,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             raw = options.get(key, data.get(key))
             direction_azimuth: float | None = to_float_or_none(raw)
 
-            # Create a more user-friendly label for the field
-            cover_name = cover.replace("cover.", "").replace("_", " ").title()
-            description = f"Azimuth direction for {cover_name}"
+            # Use helper method for localized description
+            description = self._get_cover_description()
 
             # Use a consistent selector configuration
             number_selector = selector.NumberSelector(
@@ -196,9 +188,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
 
             if direction_azimuth is not None:
-                direction_fields[vol.Optional(key, default=direction_azimuth, description=description)] = number_selector
+                direction_fields[vol.Required(key, default=direction_azimuth, description=description)] = number_selector
             else:
-                direction_fields[vol.Optional(key, description=description)] = number_selector
+                direction_fields[vol.Required(key, description=description)] = number_selector
 
         # Extract default values from resolved settings
         enabled_default = resolved_settings.enabled
@@ -210,13 +202,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         schema_dict: dict[vol.Marker, object] = {}
 
         # === GLOBAL AUTOMATION SETTINGS ===
-        schema_dict[vol.Optional(ConfKeys.ENABLED.value, default=enabled_default)] = selector.BooleanSelector()
-        schema_dict[vol.Optional(ConfKeys.SIMULATING.value, default=simulating_default)] = selector.BooleanSelector()
-        schema_dict[vol.Optional(ConfKeys.VERBOSE_LOGGING.value, default=resolved_settings.verbose_logging)] = selector.BooleanSelector()
+        schema_dict[vol.Required(ConfKeys.ENABLED.value, default=enabled_default)] = selector.BooleanSelector()
+        schema_dict[vol.Required(ConfKeys.SIMULATING.value, default=simulating_default)] = selector.BooleanSelector()
+        schema_dict[vol.Required(ConfKeys.VERBOSE_LOGGING.value, default=resolved_settings.verbose_logging)] = selector.BooleanSelector()
 
-        # === COVER CONFIGURATION ===
+        # === COVER SETTINGS ===
         # Allow editing the list of covers without changing the unique_id
-        schema_dict[vol.Optional(ConfKeys.COVERS.value, default=covers)] = selector.EntitySelector(
+        schema_dict[vol.Required(ConfKeys.COVERS.value, default=covers)] = selector.EntitySelector(
             selector.EntitySelectorConfig(
                 domain=Platform.COVER,
                 multiple=True,
@@ -224,23 +216,33 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         # === TEMPERATURE SETTINGS ===
-        schema_dict[vol.Optional(ConfKeys.TEMP_SENSOR_ENTITY_ID.value)] = selector.EntitySelector(
+        schema_dict[vol.Required(ConfKeys.TEMP_SENSOR_ENTITY_ID.value)] = selector.EntitySelector(
             selector.EntitySelectorConfig(
                 domain=Platform.WEATHER,
                 device_class=SensorDeviceClass.TEMPERATURE,
             )
         )
+        schema_dict[vol.Required(ConfKeys.TEMP_THRESHOLD.value, default=CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=-10,
+                    max=40,
+                    step=0.5,
+                    unit_of_measurement=UnitOfTemperature.CELSIUS,
+                ),
+            )
+        )
 
         # === SUN POSITION SETTINGS ===
-        schema_dict[vol.Optional(ConfKeys.SUN_ELEVATION_THRESHOLD.value, default=threshold_default)] = selector.NumberSelector(
+        schema_dict[vol.Required(ConfKeys.SUN_ELEVATION_THRESHOLD.value, default=threshold_default)] = selector.NumberSelector(
             selector.NumberSelectorConfig(min=0, max=90, step=1, unit_of_measurement="°")
         )
-        schema_dict[vol.Optional(ConfKeys.SUN_AZIMUTH_TOLERANCE.value, default=azimuth_tol_default)] = selector.NumberSelector(
+        schema_dict[vol.Required(ConfKeys.SUN_AZIMUTH_TOLERANCE.value, default=azimuth_tol_default)] = selector.NumberSelector(
             selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°")
         )
 
         # === COVER BEHAVIOR SETTINGS ===
-        schema_dict[vol.Optional(ConfKeys.COVERS_MAX_CLOSURE.value, default=resolved_settings.covers_max_closure)] = (
+        schema_dict[vol.Required(ConfKeys.COVERS_MAX_CLOSURE.value, default=resolved_settings.covers_max_closure)] = (
             selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%"))
         )
 
