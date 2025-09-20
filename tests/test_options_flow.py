@@ -49,6 +49,7 @@ def _mock_entry(data: dict[str, Any], options: dict[str, Any] | None = None) -> 
     entry = MagicMock()
     entry.data = data
     entry.options = options or {}
+    entry.hass = MagicMock()
     return entry
 
 

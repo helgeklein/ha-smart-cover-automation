@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_POSITION, CoverEntityFeature
@@ -15,6 +16,7 @@ from homeassistant.const import (
     SERVICE_SET_COVER_POSITION,
     Platform,
 )
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator as BaseCoordinator
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
@@ -169,6 +171,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 const.LOGGER.error("All covers unavailable; skipping actions")
                 return empty_result
 
+            # Run the automation logic
             return await self._handle_automation(states, config)
 
         except (SunSensorNotFoundError, TempSensorNotFoundError) as err:
@@ -210,8 +213,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         # Temperature input
         temp_threshold = resolved.temp_threshold
-        sensor_entity_id = resolved.temp_sensor_entity_id
-        temp_current = await self._get_temperature_value(sensor_entity_id)
+        temp_sensor_entity_id = resolved.temp_sensor_entity_id
+        temp_current = await self._get_temperature_value(temp_sensor_entity_id)
 
         # Temperature above threshold?
         temp_hot = False
@@ -225,11 +228,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         sun_elevation: float | None = None
         sun_azimuth: float | None = None
         sun_elevation_threshold = resolved.sun_elevation_threshold
-        sensor_entity_id = const.HA_SUN_ENTITY_ID
-        sun_state = self.hass.states.get(sensor_entity_id)
+        sun_sensor_entity_id = const.HA_SUN_ENTITY_ID
+        sun_state = self.hass.states.get(sun_sensor_entity_id)
         if sun_state is None:
             # Required sun entity missing. This is a critical error.
-            raise SunSensorNotFoundError(sensor_entity_id)
+            raise SunSensorNotFoundError(sun_sensor_entity_id)
 
         try:
             sun_elevation = float(sun_state.attributes.get(const.HA_SUN_ATTR_ELEVATION, 0))
@@ -430,32 +433,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         # For weather entities, try to get forecast max temperature
         if entity_id.startswith(f"{Platform.WEATHER}."):
-            try:
-                # Use the modern weather forecast service
-                service_data = {"entity_id": entity_id, "type": "daily"}
-                response = await self.hass.services.async_call(Platform.WEATHER, SERVICE_GET_FORECASTS, service_data, return_response=True)
-
-                # Extract today's forecast data with proper type checking
-                if response and isinstance(response, dict) and entity_id in response:
-                    entity_data = response[entity_id]
-                    if isinstance(entity_data, dict) and "forecast" in entity_data:
-                        forecast_list = entity_data["forecast"]
-                        if isinstance(forecast_list, list) and len(forecast_list) > 0:
-                            # Find today's forecast by date, not just first entry
-                            today_forecast = self._find_today_forecast(forecast_list)
-
-                            if today_forecast:
-                                # Try multiple temperature fields in order of preference
-                                max_temp = self._extract_max_temperature(today_forecast)
-                                if max_temp is not None:
-                                    const.LOGGER.debug(f"Using forecast max temperature: {max_temp}°C from {entity_id}")
-                                    return float(max_temp)
-
-                # If forecast data isn't available, fall back to current temperature
-                const.LOGGER.warning(f"Weather forecast unavailable for {entity_id}, using current temperature")
-
-            except Exception as err:
-                const.LOGGER.warning(f"Failed to get weather forecast from {entity_id}: {err}, using current temperature")
+            forecast_temp = await self._get_forecast_max_temp(entity_id)
+            if forecast_temp is not None:
+                return forecast_temp
+            # If forecast fails, fall back to current temperature
+            const.LOGGER.warning(f"Weather forecast unavailable for {entity_id}, using current temperature")
 
         # For sensor entities or weather fallback, use current state
         try:
@@ -464,6 +446,46 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             return temp_current
         except (ValueError, TypeError) as err:
             raise InvalidSensorReadingError(entity_id, str(state.state)) from err
+
+    #
+    # _get_forecast_max_temp
+    #
+    async def _get_forecast_max_temp(self, entity_id: str) -> float | None:
+        """Get the max temperature from today's weather forecast."""
+        try:
+            # Use the modern weather forecast service
+            service_data = {"entity_id": entity_id, "type": "daily"}
+            response = await self.hass.services.async_call(Platform.WEATHER, SERVICE_GET_FORECASTS, service_data, return_response=True)
+
+            # Extract today's forecast data with proper type checking
+            if not (response and isinstance(response, dict) and entity_id in response):
+                const.LOGGER.debug(f"Invalid or empty forecast response for {entity_id}")
+                return None
+
+            entity_data = response[entity_id]
+            if not (isinstance(entity_data, dict) and "forecast" in entity_data):
+                const.LOGGER.debug(f"Forecast data missing in response for {entity_id}")
+                return None
+
+            forecast_list = entity_data["forecast"]
+            if not (isinstance(forecast_list, list) and forecast_list):
+                const.LOGGER.debug(f"Forecast list is empty or not a list for {entity_id}")
+                return None
+
+            # Find today's forecast and extract the max temperature
+            today_forecast = self._find_today_forecast(forecast_list)
+            if today_forecast:
+                max_temp = self._extract_max_temperature(today_forecast)
+                if max_temp is not None:
+                    const.LOGGER.debug(f"Using forecast max temperature: {max_temp}°C from {entity_id}")
+                    return max_temp
+
+        except HomeAssistantError as err:
+            const.LOGGER.warning(f"Failed to call weather forecast service for {entity_id}: {err}")
+        except Exception as err:
+            const.LOGGER.warning(f"Unexpected error getting weather forecast from {entity_id}: {err}")
+
+        return None
 
     #
     # _calculate_angle_difference
@@ -487,8 +509,6 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         Returns:
             Today's forecast dictionary or None if not found
         """
-        from datetime import datetime, timezone
-
         if not forecast_list:
             return None
 
@@ -502,26 +522,31 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
             # Check common datetime field names
             datetime_field = forecast.get("datetime") or forecast.get("date")
-            if datetime_field:
-                try:
-                    # Parse the datetime field
-                    if isinstance(datetime_field, str):
-                        forecast_date = datetime.fromisoformat(datetime_field.replace("Z", "+00:00")).date()
-                    else:
-                        # Assume it's already a datetime object
-                        forecast_date = datetime_field.date() if hasattr(datetime_field, "date") else None
+            if not datetime_field:
+                continue
 
-                    if forecast_date == today:
-                        const.LOGGER.debug(f"Found today's forecast by date match: {datetime_field}")
-                        return forecast
-
-                except (ValueError, TypeError, AttributeError) as err:
-                    const.LOGGER.debug(f"Could not parse forecast datetime '{datetime_field}': {err}")
+            try:
+                # Parse the datetime field
+                if isinstance(datetime_field, str):
+                    forecast_date = datetime.fromisoformat(datetime_field.replace("Z", "+00:00")).date()
+                elif hasattr(datetime_field, "date"):
+                    # Assume it's a datetime object
+                    forecast_date = datetime_field.date()
+                else:
                     continue
+
+                if forecast_date == today:
+                    const.LOGGER.debug(f"Found today's forecast by date match: {datetime_field}")
+                    return forecast
+
+            except (ValueError, TypeError, AttributeError) as err:
+                const.LOGGER.debug(f"Could not parse forecast datetime '{datetime_field}': {err}")
+                continue
 
         # Fallback: use first entry and log the assumption
         const.LOGGER.debug("Could not find today's forecast by date, using first entry as fallback")
-        return forecast_list[0] if forecast_list else None
+        first_forecast = forecast_list[0]
+        return first_forecast if isinstance(first_forecast, dict) else None
 
     #
     # _extract_max_temperature

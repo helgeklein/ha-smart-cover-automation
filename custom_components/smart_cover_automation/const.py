@@ -27,6 +27,9 @@ INTEGRATION_NAME: Final = "Smart Cover Automation"
 # Per-cover configuration key suffixes
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
 
+# Cover translation keys
+COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Translation key for cover/window azimuth (°)
+
 # Sensor entity keys
 SENSOR_KEY_AUTOMATION_STATUS: Final[str] = "automation_status"  # Key for the automation status sensor entity
 

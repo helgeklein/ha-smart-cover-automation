@@ -110,6 +110,7 @@ def test_en_json_has_required_keys() -> None:
         ConfKeys.SUN_ELEVATION_THRESHOLD.value,
         ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
         ConfKeys.COVERS_MAX_CLOSURE.value,
+        const.COVER_AZIMUTH,
     }
     missing_options = expected_options_fields - set(options_data.keys())
     assert not missing_options, f"Missing options form labels in en.json: {sorted(missing_options)}"

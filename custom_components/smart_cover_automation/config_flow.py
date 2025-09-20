@@ -129,12 +129,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """
         self._config_entry = config_entry
 
-    def _get_cover_description(self) -> str:
-        """Get localized description for cover azimuth field."""
-
-        # TODO: Read from translation file
-        return "Azimuth direction for cover (0° = North, 90° = East, etc.). Used to determine if the sun is shining on the window."
-
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Invoked when the user clicks the gear icon to bring up the integration's options dialog.
 
@@ -179,18 +173,28 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             raw = options.get(key, data.get(key))
             direction_azimuth: float | None = to_float_or_none(raw)
 
-            # Use helper method for localized description
-            description = self._get_cover_description()
+            # Look up the cover's friendly name, falling back to the entity ID.
+            cover_name = cover
+            if self.hass:
+                cover_state = self.hass.states.get(cover)
+                if cover_state:
+                    cover_name = cover_state.name
 
-            # Use a consistent selector configuration
-            number_selector = selector.NumberSelector(
+            # Have the frontend look up the translation by key, passing placeholders as variables to replace in the translation file's string.
+            description_from_translation = {"key": const.COVER_AZIMUTH, "placeholder": {"cover_name": cover_name}}
+
+            # Cover azimuth number selector
+            azimuth_number_selector = selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=359, step=0.1, unit_of_measurement="°", mode=selector.NumberSelectorMode.BOX)
             )
 
+            # Build cover direction fields for the UI
             if direction_azimuth is not None:
-                direction_fields[vol.Required(key, default=direction_azimuth, description=description)] = number_selector
+                direction_fields[vol.Required(key, default=direction_azimuth, description=description_from_translation)] = (
+                    azimuth_number_selector
+                )
             else:
-                direction_fields[vol.Required(key, description=description)] = number_selector
+                direction_fields[vol.Required(key, description=description_from_translation)] = azimuth_number_selector
 
         # Extract default values from resolved settings
         enabled_default = resolved_settings.enabled
