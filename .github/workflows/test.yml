@@ -1,4 +1,6 @@
-name: Test
+# This workflow runs tests and integration checks for the project.
+# The name configured here shows up on the badge in the README.
+name: Tests
 
 on:
   push:

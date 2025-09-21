@@ -24,24 +24,24 @@ def get_coverage_color(percentage: float) -> str:
 
 def generate_badge_svg(coverage_percent: int, color: str) -> str:
     """Generate SVG badge content."""
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="104" height="20">
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="140" height="20">
   <linearGradient id="b" x2="0" y2="100%">
     <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
     <stop offset="1" stop-opacity=".1"/>
   </linearGradient>
   <clipPath id="a">
-    <rect width="104" height="20" rx="3" fill="#fff"/>
+    <rect width="140" height="20" rx="3" fill="#fff"/>
   </clipPath>
   <g clip-path="url(#a)">
-    <path fill="#555" d="M0 0h63v20H0z"/>
-    <path fill="#{color}" d="M63 0h41v20H63z"/>
-    <path fill="url(#b)" d="M0 0h104v20H0z"/>
+    <path fill="#555" d="M0 0h99v20H0z"/>
+    <path fill="#{color}" d="M99 0h41v20H99z"/>
+    <path fill="url(#b)" d="M0 0h140v20H0z"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="110">
-    <text x="325" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="530">coverage</text>
-    <text x="325" y="140" transform="scale(.1)" textLength="530">coverage</text>
-    <text x="825" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="310">{coverage_percent}%</text>
-    <text x="825" y="140" transform="scale(.1)" textLength="310">{coverage_percent}%</text>
+    <text x="505" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="890">Test coverage</text>
+    <text x="505" y="140" transform="scale(.1)" textLength="890">Test coverage</text>
+    <text x="1195" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="310">{coverage_percent}%</text>
+    <text x="1195" y="140" transform="scale(.1)" textLength="310">{coverage_percent}%</text>
   </g>
 </svg>"""
 
