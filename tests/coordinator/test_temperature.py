@@ -12,9 +12,12 @@ from homeassistant.const import Platform
 from homeassistant.core import State
 from homeassistant.exceptions import HomeAssistantError
 
+from custom_components.smart_cover_automation.const import (
+    HA_WEATHER_COND_SUNNY,
+)
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
-    TempSensorNotFoundError,
+    WeatherEntityNotFoundError,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
@@ -45,15 +48,15 @@ class TestGetMaxTemperature:
             mock_forecast.assert_awaited_once_with(WEATHER_ENTITY_ID)
 
     async def test_sensor_not_found(self, mock_hass: MagicMock, coordinator: DataUpdateCoordinator):
-        """Test that TempSensorNotFoundError is raised for a missing entity."""
+        """Test that WeatherEntityNotFoundError is raised for a missing entity."""
         mock_hass.states.get.return_value = None
-        with pytest.raises(TempSensorNotFoundError):
+        with pytest.raises(WeatherEntityNotFoundError):
             await coordinator._get_max_temperature("sensor.non_existent")
 
     async def test_invalid_sensor_state(self, mock_hass: MagicMock, coordinator: DataUpdateCoordinator):
         """Test that InvalidSensorReadingError is raised for a non-numeric state."""
         # Mock a weather entity that the method can find
-        weather_state = State(WEATHER_ENTITY_ID, "sunny")
+        weather_state = State(WEATHER_ENTITY_ID, HA_WEATHER_COND_SUNNY)
         sensor_state = State(SENSOR_ENTITY_ID, "unavailable")
 
         # Mock async_all to return the weather entity
@@ -187,7 +190,7 @@ class TestExtractMaxTemperature:
 
     def test_no_valid_field_found(self, coordinator: DataUpdateCoordinator):
         """Test that it returns None if no valid temperature field is found."""
-        forecast = {"temperature_other": 25, "condition": "sunny"}
+        forecast = {"temperature_other": 25, "condition": HA_WEATHER_COND_SUNNY}
         result = coordinator._extract_max_temperature(forecast)
         assert result is None
 

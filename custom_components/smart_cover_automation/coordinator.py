@@ -45,7 +45,7 @@ class SunSensorNotFoundError(SmartCoverError):
         self.sensor_name = sensor_name
 
 
-class TempSensorNotFoundError(SmartCoverError):
+class WeatherEntityNotFoundError(SmartCoverError):
     """Temperature sensor could not be found."""
 
     def __init__(self, sensor_name: str) -> None:
@@ -174,7 +174,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Run the automation logic
             return await self._handle_automation(states, config)
 
-        except (SunSensorNotFoundError, TempSensorNotFoundError) as err:
+        except (SunSensorNotFoundError, WeatherEntityNotFoundError) as err:
             # Critical sensor errors - these make the automation non-functional
             const.LOGGER.error(f"Critical sensor error: {err}")
             raise UpdateFailed(str(err)) from err
@@ -211,15 +211,21 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Get the resolved settings
         resolved = self._resolved_settings()
 
-        # Temperature input
+        # Temperature & sunshine input
         temp_threshold = resolved.temp_threshold
         weather_entity_id = resolved.weather_entity_id
         temp_current = await self._get_max_temperature(weather_entity_id)
+        weather_condition = self._get_weather_condition(weather_entity_id)
 
         # Temperature above threshold?
         temp_hot = False
         if temp_current > temp_threshold:
             temp_hot = True
+
+        # Sun shining?
+        weather_sunny = False
+        if weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS:
+            weather_sunny = True
 
         # Cover settings
         covers_min_position_delta = resolved.covers_min_position_delta
@@ -247,6 +253,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 const.SENSOR_ATTR_SUN_ELEVATION: sun_elevation,
                 const.SENSOR_ATTR_TEMP_CURRENT: temp_current,
                 const.SENSOR_ATTR_TEMP_HOT: temp_hot,
+                const.SENSOR_ATTR_WEATHER_SUNNY: weather_sunny,
             }
         )
 
@@ -291,7 +298,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 sun_hitting = False
 
             # Calculate the cover position
-            if temp_hot and sun_hitting:
+            if temp_hot and weather_sunny and sun_hitting:
                 # Close the cover (but respect max closure limit)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, resolved.covers_max_closure)
             else:
@@ -408,6 +415,37 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             raise ServiceCallError(service, entity_id, str(err)) from err
 
     #
+    # _get_weather_condition
+    #
+    def _get_weather_condition(self, entity_id: str) -> str:
+        """Get the current weather condition from a weather entity.
+
+        This method retrieves the current state of a weather entity, which represents
+        the current weather condition (e.g., 'sunny', 'cloudy', 'rainy', etc.).
+
+        Args:
+            entity_id: Entity ID of the weather entity.
+
+        Returns:
+            The current weather condition as a string, or None if the entity
+            doesn't exist or the state is unavailable.
+
+        Raises:
+            WeatherEntityNotFoundError: If the weather entity doesn't exist.
+            InvalidSensorReadingError: If the state is unavailable or invalid.
+        """
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            raise WeatherEntityNotFoundError(entity_id)
+
+        if state.state in (None, "unavailable", "unknown"):
+            raise InvalidSensorReadingError(entity_id, f"Weather entity {entity_id}: state is unavailable")
+
+        condition = state.state
+        const.LOGGER.debug(f"Current weather condition from {entity_id}: {condition}")
+        return condition
+
+    #
     # _get_max_temperature
     #
     async def _get_max_temperature(self, entity_id: str) -> float:
@@ -423,13 +461,13 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             The forecasted maximum temperature in degrees Celsius.
 
         Raises:
-            TempSensorNotFoundError: If the weather entity doesn't exist.
+            WeatherEntityNotFoundError: If the weather entity doesn't exist.
             InvalidSensorReadingError: If the forecast is unavailable or the
                                      temperature value cannot be parsed.
         """
         state = self.hass.states.get(entity_id)
         if state is None:
-            raise TempSensorNotFoundError(entity_id)
+            raise WeatherEntityNotFoundError(entity_id)
 
         forecast_temp = await self._get_forecast_max_temp(entity_id)
         if forecast_temp is not None:

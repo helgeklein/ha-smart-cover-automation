@@ -33,6 +33,9 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from custom_components.smart_cover_automation.config import (
     ConfKeys,
 )
+from custom_components.smart_cover_automation.const import (
+    HA_WEATHER_COND_SUNNY,
+)
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
 )
@@ -154,7 +157,7 @@ class TestIntegrationScenarios:
             # Setup realistic Home Assistant entity states for this scenario
             # Weather entity state (now using weather instead of temperature sensor)
             weather_state = MagicMock()
-            weather_state.state = "sunny"
+            weather_state.state = HA_WEATHER_COND_SUNNY
             weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
 
             # Cover entity state with current position and supported features
@@ -309,6 +312,7 @@ class TestIntegrationScenarios:
             # Create a weather entity state (required even though we use service calls)
             weather_state = MagicMock()
             weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
+            weather_state.state = HA_WEATHER_COND_SUNNY  # Set weather condition to sunny for automation to work
 
             hass.states.get.side_effect = lambda entity_id, ss=sun_state, cs=cover_state, ws=weather_state: {
                 MOCK_SUN_ENTITY_ID: ss,
@@ -327,7 +331,7 @@ class TestIntegrationScenarios:
             # Verify the automation calculated the correct position based on sun and temperature
             cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
             assert cover_data["sca_cover_desired_position"] == expected_pos, (
-                f"Scenario {i} ({description}): Expected {expected_pos}, got {cover_data['desired_position']}"
+                f"Scenario {i} ({description}): Expected {expected_pos}, got {cover_data['sca_cover_desired_position']}"
             )
 
     async def test_error_recovery_scenarios(self) -> None:
@@ -518,6 +522,7 @@ class TestIntegrationScenarios:
                 # Create a weather entity state (required even though we use service calls)
                 weather_state = MagicMock()
                 weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
+                weather_state.state = HA_WEATHER_COND_SUNNY  # Set weather condition to sunny for automation to work
                 return weather_state
             return cover_states.get(entity_id)
 

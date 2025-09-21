@@ -29,6 +29,7 @@ from custom_components.smart_cover_automation.const import (
     COVER_POS_FULLY_OPEN,
     COVER_SFX_AZIMUTH,
     DOMAIN,
+    HA_WEATHER_COND_SUNNY,
 )
 
 # Test data constants - these provide consistent entity IDs across all tests
@@ -425,7 +426,7 @@ def create_combined_state_mock(
     # Weather entity state (now using weather instead of temperature sensor)
     weather_mock = MagicMock()
     weather_mock.entity_id = MOCK_WEATHER_ENTITY_ID
-    weather_mock.state = "sunny"  # Weather entities have state like "sunny", "cloudy", etc.
+    weather_mock.state = HA_WEATHER_COND_SUNNY
 
     # Sun sensor state
     sun_mock = MagicMock()

@@ -27,6 +27,7 @@ from .const import (
     SENSOR_ATTR_TEMP_HOT,
     SENSOR_ATTR_TEMP_THRESHOLD,
     SENSOR_ATTR_WEATHER_ENTITY_ID,
+    SENSOR_ATTR_WEATHER_SUNNY,
     SENSOR_KEY_AUTOMATION_STATUS,
 )
 from .entity import IntegrationEntity
@@ -201,6 +202,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             SENSOR_ATTR_SUN_ELEVATION: self.coordinator.data.get(SENSOR_ATTR_SUN_ELEVATION),
             SENSOR_ATTR_TEMP_CURRENT: self.coordinator.data.get(SENSOR_ATTR_TEMP_CURRENT),
             SENSOR_ATTR_TEMP_HOT: self.coordinator.data.get(SENSOR_ATTR_TEMP_HOT),
+            SENSOR_ATTR_WEATHER_SUNNY: self.coordinator.data.get(SENSOR_ATTR_WEATHER_SUNNY),
         }
 
         # Include raw per-cover data for debugging and advanced automations

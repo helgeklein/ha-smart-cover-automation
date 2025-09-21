@@ -43,6 +43,7 @@ SENSOR_ATTR_COVERS_MIN_POSITION_DELTA: Final[str] = "covers_min_position_delta" 
 SENSOR_ATTR_TEMP_CURRENT: Final[str] = "temp_current"  # Current measured temperature (°C)
 SENSOR_ATTR_TEMP_HOT: Final[str] = "temp_hot"  # Whether the current temperature is above the threshold
 SENSOR_ATTR_WEATHER_ENTITY_ID: Final[str] = "weather_entity_id"  # Entity ID of the temperature sensor
+SENSOR_ATTR_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Whether the current weather condition is sunny
 SENSOR_ATTR_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Temperature threshold (°C)
 SENSOR_ATTR_SUN_ELEVATION: Final[str] = "sun_elevation"  # Current sun elevation (°)
 SENSOR_ATTR_SUN_ELEVATION_THRESH: Final[str] = "sun_elevation_threshold"  # Minimum elevation (°) to consider direct sun
@@ -65,10 +66,18 @@ ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"
 ABORT_SINGLE_INSTANCE_ALLOWED: Final[str] = "single_instance_allowed"
 
 # Home Assistant string literals
-HA_SUN_ENTITY_ID: Final[str] = "sun.sun"
-HA_SUN_ATTR_ELEVATION: Final[str] = "elevation"
-HA_SUN_ATTR_AZIMUTH: Final[str] = "azimuth"
 HA_OPTIONS: Final = "options"
+HA_SUN_ATTR_AZIMUTH: Final[str] = "azimuth"
+HA_SUN_ATTR_ELEVATION: Final[str] = "elevation"
+HA_SUN_ENTITY_ID: Final[str] = "sun.sun"
+HA_WEATHER_COND_SUNNY: Final[str] = "sunny"
+HA_WEATHER_COND_PARTCLOUDY: Final[str] = "partlycloudy"
+
+# Weather conditions that indicate sunny conditions
+WEATHER_SUNNY_CONDITIONS: Final[tuple[str, ...]] = (
+    HA_WEATHER_COND_SUNNY,
+    HA_WEATHER_COND_PARTCLOUDY,
+)
 
 # Home Assistant cover positions
 COVER_POS_FULLY_OPEN: Final = 100

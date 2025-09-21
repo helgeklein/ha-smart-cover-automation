@@ -38,6 +38,7 @@ from custom_components.smart_cover_automation.const import (
     COVER_POS_FULLY_CLOSED,
     COVER_POS_FULLY_OPEN,
     COVER_SFX_AZIMUTH,
+    HA_WEATHER_COND_SUNNY,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
@@ -192,16 +193,14 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
         ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
     }
 
-    # Setup temperature sensor indicating hot conditions
-    temp_state = MagicMock()
-    temp_state.entity_id = MOCK_WEATHER_ENTITY_ID
-    temp_state.state = "30.0"  # Hot -> should close
-
-    temp_state.state = "25.0"  # Hot temperature triggering closure in combined logic
+    # Setup weather entity indicating sunny conditions (for weather condition check)
+    weather_state = MagicMock()
+    weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
+    weather_state.state = HA_WEATHER_COND_SUNNY  # Sunny weather condition for automation to work
 
     # Configure Home Assistant state lookup
     hass.states.get.side_effect = lambda entity_id: {
-        MOCK_WEATHER_ENTITY_ID: temp_state,
+        MOCK_WEATHER_ENTITY_ID: weather_state,
         MOCK_COVER_ENTITY_ID: cover_state,
         MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
     }.get(entity_id)

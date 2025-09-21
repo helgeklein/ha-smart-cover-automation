@@ -15,6 +15,9 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.config import ConfKeys
+from custom_components.smart_cover_automation.const import (
+    HA_WEATHER_COND_SUNNY,
+)
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
 )
@@ -284,7 +287,7 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
         - Expected behavior: Critical error logged, UpdateFailed exception raised, entities unavailable
         """
         # Setup weather entity state
-        mock_temperature_state.state = "sunny"
+        mock_temperature_state.state = HA_WEATHER_COND_SUNNY
         mock_temperature_state.entity_id = MOCK_WEATHER_ENTITY_ID
         mock_hass.states.get.return_value = mock_temperature_state
 
