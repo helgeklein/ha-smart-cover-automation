@@ -1,7 +1,7 @@
 # Smart Cover Automation for Home Assistant
 
-[![Test](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml/badge.svg)](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/helgeklein/ha-smart-cover-automation/branch/main/graph/badge.svg)](https://codecov.io/gh/helgeklein/ha-smart-cover-automation)
+[![Test status](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml/badge.svg)](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml)
+[![Test coverage](https://raw.githubusercontent.com/helgeklein/ha-smart-cover-automation/main/.github/badges/coverage.svg)](htmlcov/index.html)
 
 **Current development status:** *alpha, for testing only*
 

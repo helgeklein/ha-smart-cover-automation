@@ -32,13 +32,20 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest -n auto tests/ -o addopts="--strict-markers --strict-config --cov=custom_components.smart_cover_automation --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
+          python -m pytest -n auto tests/ -o addopts="--strict-markers --strict-config --cov=custom_components.smart_cover_automation --cov-report=term-missing --cov-report=xml --cov-report=json --cov-fail-under=80"
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
+      - name: Generate coverage badge
+        run: |
+          python scripts/generate_coverage_badge.py
+
+      - name: Commit coverage badge
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .github/badges/coverage.svg
+          git diff --staged --quiet || git commit -m "Update coverage badge [skip ci]"
+          git push
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
   integration-test:
     name: Integration Test
