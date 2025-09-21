@@ -7,14 +7,13 @@ from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.exceptions import HomeAssistantError, ServiceNotFound
-from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
     ServiceCallError,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-from tests.conftest import MockConfigEntry, create_temperature_config, MOCK_COVER_ENTITY_ID
+from tests.conftest import MOCK_COVER_ENTITY_ID, MockConfigEntry, create_temperature_config
 
 
 class TestCoordinatorErrorHandling:

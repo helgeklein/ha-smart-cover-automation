@@ -11,7 +11,6 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
-from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
