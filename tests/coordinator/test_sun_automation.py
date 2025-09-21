@@ -44,6 +44,7 @@ from tests.conftest import (
     MockConfigEntry,
     create_combined_state_mock,
     create_sun_config,
+    set_weather_forecast_temp,
 )
 from tests.coordinator.test_coordinator_base import TestDataUpdateCoordinatorBase
 
@@ -75,9 +76,11 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
         # Setup cover in open position receiving direct sunlight
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
+        # Set weather forecast temperature for hot temperature
+        set_weather_forecast_temp(25.0)  # Hot for AND logic
+
         # Create environmental state: direct sun + hot temperature
         state_mapping = create_combined_state_mock(
-            temp_state="25.0",  # Hot for AND logic
             sun_elevation=TEST_HIGH_ELEVATION,
             sun_azimuth=TEST_DIRECT_AZIMUTH,
             cover_states={
@@ -129,8 +132,10 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
         }
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
+        # Set weather forecast temperature for cold temperature
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold temp so temp wants open
+
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_COLD_TEMP,  # Cold temp so temp wants open
             cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
         )
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
@@ -164,8 +169,10 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
         # Setup - sun below threshold
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_PARTIAL_POSITION
 
+        # Set weather forecast temperature for cold temperature
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold temp wants open
+
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_COLD_TEMP,  # Cold temp wants open
             sun_elevation=TEST_LOW_ELEVATION,  # Low sun elevation
             sun_azimuth=TEST_DIRECT_AZIMUTH,  # Direct azimuth
             cover_states={
@@ -214,8 +221,10 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
         # Cover is partially closed to force potential change to OPEN
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_PARTIAL_POSITION
 
+        # Set weather forecast temperature for cold temperature
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold temp so temp wants open
+
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_COLD_TEMP,  # Cold temp so temp wants open
             cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
         )
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
@@ -315,8 +324,10 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
         }
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
+        # Set weather forecast temperature for cold temperature
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold temp so temp wants open
+
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_COLD_TEMP,  # Cold temp so temp wants open
             cover_states={
                 MOCK_COVER_ENTITY_ID: mock_cover_state.attributes,
                 # MOCK_COVER_ENTITY_ID_2 intentionally omitted to make it unavailable
@@ -368,8 +379,10 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
 
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
+        # Set weather forecast temperature for cold temperature
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold temp so temp wants open
+
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_COLD_TEMP,  # Cold temp so temp wants open
             cover_states={
                 MOCK_COVER_ENTITY_ID: mock_cover_state.attributes,
                 MOCK_COVER_ENTITY_ID_2: cover2_state.attributes,
@@ -423,8 +436,10 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
         }
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
+        # Set weather forecast temperature for cold temperature
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold temp so temp wants open
+
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_COLD_TEMP,  # Cold temp so temp wants open
             cover_states={
                 MOCK_COVER_ENTITY_ID: mock_cover_state.attributes,
                 MOCK_COVER_ENTITY_ID_2: cover2_state.attributes,
@@ -493,9 +508,11 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
             # For combined logic: use hot temp when expecting close, cold temp when expecting open
             temp_for_test = TEST_HOT_TEMP if expected == TEST_COVER_CLOSED else TEST_COLD_TEMP
 
+            # Set weather forecast temperature
+            set_weather_forecast_temp(float(temp_for_test))
+
             mock_hass.services.async_call.reset_mock()
             state_mapping = create_combined_state_mock(
-                temp_state=temp_for_test,
                 sun_azimuth=sun_azimuth,
                 cover_states={MOCK_COVER_ENTITY_ID: cover_state.attributes},
             )
@@ -538,8 +555,10 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
             "azimuth": 180.0,  # Matches "180" string direction
         }
 
+        # Set weather forecast temperature for hot temperature
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))  # Hot temp supports closure
+
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_HOT_TEMP,  # Hot temp supports closure
             sun_azimuth=180.0,
             cover_states={MOCK_COVER_ENTITY_ID: cover_state.attributes},
         )

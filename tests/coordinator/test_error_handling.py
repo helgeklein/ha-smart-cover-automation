@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
-from homeassistant.const import ATTR_SUPPORTED_FEATURES
+from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.coordinator import (
@@ -35,6 +35,7 @@ from tests.conftest import (
     assert_service_called,
     create_combined_state_mock,
     create_temperature_config,
+    set_weather_forecast_temp,
 )
 from tests.coordinator.test_coordinator_base import TestDataUpdateCoordinatorBase
 
@@ -104,13 +105,22 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         """
         # Setup - temperature too hot, should close covers
         mock_temperature_state.state = TEST_HOT_TEMP
+        set_weather_forecast_temp(float(mock_temperature_state.state))
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
-        # Mock service call to fail
-        mock_hass.services.async_call.side_effect = OSError("Service failed")
+        # Mock cover service calls to fail, but allow weather service calls to succeed
+        # Get the original weather service mock from conftest
+        original_weather_mock = mock_hass._weather_service_mock
+
+        async def selective_service_failure(domain, service, service_data, **kwargs):
+            if domain == Platform.COVER:
+                raise OSError("Service failed")
+            # Delegate weather service calls to the original mock
+            return await original_weather_mock(domain, service, service_data, **kwargs)
+
+        mock_hass.services.async_call.side_effect = selective_service_failure
 
         state_mapping = create_combined_state_mock(
-            temp_state=mock_temperature_state.state,
             cover_states={
                 MOCK_COVER_ENTITY_ID: mock_cover_state.attributes,
                 MOCK_COVER_ENTITY_ID_2: mock_cover_state.attributes,
@@ -148,10 +158,10 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         # Setup cover without position support
         mock_cover_state.attributes[ATTR_SUPPORTED_FEATURES] = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
         mock_temperature_state.state = TEST_HOT_TEMP  # Too hot
+        set_weather_forecast_temp(float(mock_temperature_state.state))
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
         state_mapping = create_combined_state_mock(
-            temp_state=mock_temperature_state.state,
             cover_states={
                 MOCK_COVER_ENTITY_ID: mock_cover_state.attributes,
                 MOCK_COVER_ENTITY_ID_2: mock_cover_state.attributes,

@@ -21,12 +21,13 @@ Home Assistant environments.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION
-from homeassistant.const import ATTR_SUPPORTED_FEATURES
+from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.config import (
@@ -52,6 +53,7 @@ from .conftest import (
     TEST_NUM_COVERS,
     MockConfigEntry,
     create_temperature_config,
+    set_weather_forecast_temp,
 )
 
 # Test constants are now imported from conftest.py - see imports above for:
@@ -99,7 +101,29 @@ class TestIntegrationScenarios:
         # Setup Home Assistant mock environment for automation testing
         hass = MagicMock()
         hass.services = MagicMock()
-        hass.services.async_call = AsyncMock()
+
+        # Mock weather forecast service call
+        async def mock_weather_service(domain, service, service_data, **kwargs):
+            """Mock weather forecast service that returns temperature data."""
+            if domain == Platform.WEATHER and service == "get_forecasts":
+                entity_id = service_data.get("entity_id", "weather.forecast")
+                # Get current temperature from global variable
+                from tests.conftest import _CURRENT_WEATHER_TEMP
+
+                return {
+                    entity_id: {
+                        "forecast": [
+                            {
+                                "datetime": datetime.now(timezone.utc).isoformat(),
+                                "native_temperature": _CURRENT_WEATHER_TEMP,
+                                "temp_max": _CURRENT_WEATHER_TEMP,
+                            }
+                        ]
+                    }
+                }
+            return {}
+
+        hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
         config_entry = MockConfigEntry(create_temperature_config())  # Both automations now always active
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -124,11 +148,14 @@ class TestIntegrationScenarios:
         ]
 
         for i, (temp, elevation, azimuth, current_pos, expected_pos, description) in enumerate(test_scenarios):
+            # Set the weather forecast temperature for this scenario
+            set_weather_forecast_temp(float(temp))
+
             # Setup realistic Home Assistant entity states for this scenario
-            # Temperature sensor state with current reading
-            temp_state = MagicMock()
-            temp_state.state = temp
-            temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+            # Weather entity state (now using weather instead of temperature sensor)
+            weather_state = MagicMock()
+            weather_state.state = "sunny"
+            weather_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
 
             # Cover entity state with current position and supported features
             cover_state = MagicMock()
@@ -143,14 +170,17 @@ class TestIntegrationScenarios:
             sun_state.attributes = {"elevation": elevation, "azimuth": azimuth}
 
             # Configure Home Assistant state lookup to return our mock entities
-            hass.states.get.side_effect = lambda entity_id, ts=temp_state, cs=cover_state, ss=sun_state: {
-                MOCK_TEMP_SENSOR_ENTITY_ID: ts,
+            hass.states.get.side_effect = lambda entity_id, ws=weather_state, cs=cover_state, ss=sun_state: {
+                MOCK_TEMP_SENSOR_ENTITY_ID: ws,
                 MOCK_COVER_ENTITY_ID: cs,
                 MOCK_SUN_ENTITY_ID: ss,
             }.get(entity_id)
 
             # Reset service call mock to track calls for this scenario
+            # But preserve the weather service mock functionality
+            original_side_effect = hass.services.async_call.side_effect
             hass.services.async_call.reset_mock()
+            hass.services.async_call.side_effect = original_side_effect
 
             # Execute automation and validate results
             try:
@@ -167,12 +197,19 @@ class TestIntegrationScenarios:
                     f"Scenario {i} ({description}): Expected position {expected_pos}, got {cover_data['sca_cover_desired_position']}"
                 )
 
+                # Check for cover service calls (ignore weather service calls)
+                cover_service_calls = [
+                    call
+                    for call in hass.services.async_call.call_args_list
+                    if call[0][0] == Platform.COVER  # Only cover service calls
+                ]
+
                 # Verify service calls are made only when cover position needs to change
                 # This prevents unnecessary service calls when covers are already in correct position
                 if current_pos != expected_pos:
-                    assert hass.services.async_call.called, f"Scenario {i} ({description}): Service should have been called"
+                    assert len(cover_service_calls) > 0, f"Scenario {i} ({description}): Cover service should have been called"
                 else:
-                    assert not hass.services.async_call.called, f"Scenario {i} ({description}): Service should not have been called"
+                    assert len(cover_service_calls) == 0, f"Scenario {i} ({description}): Cover service should not have been called"
 
             except Exception as e:
                 pytest.fail(f"Automation failed in scenario {i} ({description}): {e}")
@@ -200,6 +237,30 @@ class TestIntegrationScenarios:
         """
         # Setup Home Assistant mock for daily sun cycle testing
         hass = MagicMock()
+        hass.services = MagicMock()
+
+        # Mock weather forecast service call
+        async def mock_weather_service(domain, service, service_data, **kwargs):
+            """Mock weather forecast service that returns temperature data."""
+            if domain == Platform.WEATHER and service == "get_forecasts":
+                entity_id = service_data.get("entity_id", "weather.forecast")
+                # Get current temperature from global variable
+                from tests.conftest import _CURRENT_WEATHER_TEMP
+
+                return {
+                    entity_id: {
+                        "forecast": [
+                            {
+                                "datetime": datetime.now(timezone.utc).isoformat(),
+                                "native_temperature": _CURRENT_WEATHER_TEMP,
+                                "temp_max": _CURRENT_WEATHER_TEMP,
+                            }
+                        ]
+                    }
+                }
+            return {}
+
+        hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
         config_entry = MockConfigEntry(create_temperature_config())  # Both automations now always active
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -229,15 +290,13 @@ class TestIntegrationScenarios:
         ]
 
         for i, (elevation, azimuth, temp, expected_pos, description) in enumerate(test_scenarios):
+            # Set temperature for this scenario
+            set_weather_forecast_temp(float(temp))
+
             # Setup sun entity state for current time of day
             sun_state = MagicMock()
             sun_state.state = "above_horizon"
             sun_state.attributes = {"elevation": elevation, "azimuth": azimuth}
-
-            # Setup temperature sensor state
-            temp_state = MagicMock()
-            temp_state.state = temp
-            temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
 
             # Setup cover state (starting fully open for all scenarios)
             cover_state = MagicMock()
@@ -247,10 +306,14 @@ class TestIntegrationScenarios:
             }
 
             # Configure Home Assistant entity lookup for this scenario
-            hass.states.get.side_effect = lambda entity_id, ss=sun_state, ts=temp_state, cs=cover_state: {
+            # Create a weather entity state (required even though we use service calls)
+            weather_state = MagicMock()
+            weather_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+
+            hass.states.get.side_effect = lambda entity_id, ss=sun_state, cs=cover_state, ws=weather_state: {
                 MOCK_SUN_ENTITY_ID: ss,
-                MOCK_TEMP_SENSOR_ENTITY_ID: ts,
                 MOCK_COVER_ENTITY_ID: cs,
+                MOCK_TEMP_SENSOR_ENTITY_ID: ws,
             }.get(entity_id)
 
             # Execute automation for current sun/temperature conditions
@@ -292,6 +355,30 @@ class TestIntegrationScenarios:
         """
         # Setup basic Home Assistant mock for error testing
         hass = MagicMock()
+        hass.services = MagicMock()
+
+        # Mock weather forecast service call
+        async def mock_weather_service(domain, service, service_data, **kwargs):
+            """Mock weather forecast service that returns temperature data."""
+            if domain == Platform.WEATHER and service == "get_forecasts":
+                entity_id = service_data.get("entity_id", "weather.forecast")
+                # Get current temperature from global variable
+                from tests.conftest import _CURRENT_WEATHER_TEMP
+
+                return {
+                    entity_id: {
+                        "forecast": [
+                            {
+                                "datetime": datetime.now(timezone.utc).isoformat(),
+                                "native_temperature": _CURRENT_WEATHER_TEMP,
+                                "temp_max": _CURRENT_WEATHER_TEMP,
+                            }
+                        ]
+                    }
+                }
+            return {}
+
+        hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -314,7 +401,7 @@ class TestIntegrationScenarios:
         # Should handle missing sensor as critical error
         await coordinator.async_refresh()
         assert isinstance(coordinator.last_exception, UpdateFailed)  # Critical error should be raised
-        assert "Temperature sensor 'dummy' not found" in str(coordinator.last_exception)
+        assert "Temperature sensor 'weather.forecast' not found" in str(coordinator.last_exception)
 
     async def test_configuration_validation(self) -> None:
         """
@@ -373,7 +460,29 @@ class TestIntegrationScenarios:
         # Setup Home Assistant mock with service call tracking
         hass = MagicMock()
         hass.services = MagicMock()
-        hass.services.async_call = AsyncMock()
+
+        # Mock weather forecast service call
+        async def mock_weather_service(domain, service, service_data, **kwargs):
+            """Mock weather forecast service that returns temperature data."""
+            if domain == Platform.WEATHER and service == "get_forecasts":
+                entity_id = service_data.get("entity_id", "weather.forecast")
+                # Get current temperature from global variable
+                from tests.conftest import _CURRENT_WEATHER_TEMP
+
+                return {
+                    entity_id: {
+                        "forecast": [
+                            {
+                                "datetime": datetime.now(timezone.utc).isoformat(),
+                                "native_temperature": _CURRENT_WEATHER_TEMP,
+                                "temp_max": _CURRENT_WEATHER_TEMP,
+                            }
+                        ]
+                    }
+                }
+            return {}
+
+        hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
 
         # Configure multiple covers for concurrent control testing
         covers = ["cover.living_room", "cover.bedroom", "cover.kitchen"]
@@ -383,9 +492,7 @@ class TestIntegrationScenarios:
 
         # Setup environmental conditions that should trigger cover closing
         # Hot temperature scenario combined with direct sun hitting
-        temp_state = MagicMock()
-        temp_state.state = TEST_HOT_TEMP  # Hot enough to trigger automation
-        temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))  # Hot enough to trigger automation
 
         # Create sun state for combined automation (sun hitting covers)
         sun_state = MagicMock()
@@ -405,10 +512,13 @@ class TestIntegrationScenarios:
 
         # Configure Home Assistant state lookup for all entities
         def get_state(entity_id: str) -> MagicMock | None:
-            if entity_id == MOCK_TEMP_SENSOR_ENTITY_ID:
-                return temp_state
             if entity_id == MOCK_SUN_ENTITY_ID:
                 return sun_state
+            if entity_id == MOCK_TEMP_SENSOR_ENTITY_ID:
+                # Create a weather entity state (required even though we use service calls)
+                weather_state = MagicMock()
+                weather_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+                return weather_state
             return cover_states.get(entity_id)
 
         hass.states.get.side_effect = get_state
@@ -462,7 +572,29 @@ class TestIntegrationScenarios:
         # Setup Home Assistant mock with service call tracking for capability testing
         hass = MagicMock()
         hass.services = MagicMock()
-        hass.services.async_call = AsyncMock()
+
+        # Mock weather forecast service call
+        async def mock_weather_service(domain, service, service_data, **kwargs):
+            """Mock weather forecast service that returns temperature data."""
+            if domain == Platform.WEATHER and service == "get_forecasts":
+                entity_id = service_data.get("entity_id", "weather.forecast")
+                # Get current temperature from global variable
+                from tests.conftest import _CURRENT_WEATHER_TEMP
+
+                return {
+                    entity_id: {
+                        "forecast": [
+                            {
+                                "datetime": datetime.now(timezone.utc).isoformat(),
+                                "native_temperature": _CURRENT_WEATHER_TEMP,
+                                "temp_max": _CURRENT_WEATHER_TEMP,
+                            }
+                        ]
+                    }
+                }
+            return {}
+
+        hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
 
         # Configure covers with different capabilities
         covers = ["cover.smart", "cover.basic"]
@@ -471,9 +603,7 @@ class TestIntegrationScenarios:
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         # Setup cold temperature to trigger opening covers (clear automation logic)
-        temp_state = MagicMock()
-        temp_state.state = TEST_COLD_TEMP  # Cold enough to open covers for warmth
-        temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold enough to open covers for warmth
 
         # Smart cover with full position control capabilities
         smart_cover = MagicMock()
@@ -490,10 +620,14 @@ class TestIntegrationScenarios:
         }
 
         # Configure entity state lookup for capability testing
+        # Create a weather entity state (required even though we use service calls)
+        weather_state = MagicMock()
+        weather_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+
         hass.states.get.side_effect = lambda entity_id: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
             "cover.smart": smart_cover,
             "cover.basic": basic_cover,
+            MOCK_TEMP_SENSOR_ENTITY_ID: weather_state,
             # Sun state that doesn't interfere with cold temperature logic
             MOCK_SUN_ENTITY_ID: MagicMock(
                 state="above_horizon", attributes={"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
@@ -506,15 +640,20 @@ class TestIntegrationScenarios:
         # Analyze the service calls made for each cover type
         calls = [call.args for call in hass.services.async_call.call_args_list]
 
+        # Filter out weather service calls to get only cover service calls
+        cover_calls = [call for call in calls if call[0] == Platform.COVER]
+
         # Should have calls for both covers (both need to open)
-        assert len(calls) >= TEST_MIN_SERVICE_CALLS, f"Expected at least {TEST_MIN_SERVICE_CALLS} service calls, got {len(calls)}"
+        assert len(cover_calls) >= TEST_MIN_SERVICE_CALLS, (
+            f"Expected at least {TEST_MIN_SERVICE_CALLS} service calls, got {len(cover_calls)}"
+        )
 
         # Smart cover should use precise position control service
-        smart_call = next((call for call in calls if call[2]["entity_id"] == "cover.smart"), None)
+        smart_call = next((call for call in cover_calls if call[2]["entity_id"] == "cover.smart"), None)
         assert smart_call is not None, "No call found for smart cover"
         assert smart_call[1] == "set_cover_position", "Smart cover should use set_cover_position"
 
         # Basic cover should use simple open service (no position control available)
-        basic_call = next((call for call in calls if call[2]["entity_id"] == "cover.basic"), None)
+        basic_call = next((call for call in cover_calls if call[2]["entity_id"] == "cover.basic"), None)
         assert basic_call is not None, "No call found for basic cover"
         assert basic_call[1] == "open_cover", "Basic cover should use open_cover"

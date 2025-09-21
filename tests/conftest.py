@@ -14,12 +14,13 @@ Key components:
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
-from homeassistant.const import ATTR_SUPPORTED_FEATURES
+from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
@@ -34,7 +35,7 @@ from custom_components.smart_cover_automation.const import (
 # Used for temperature-based and sun-based automation testing
 MOCK_COVER_ENTITY_ID = "cover.test_cover"
 MOCK_COVER_ENTITY_ID_2 = "cover.test_cover_2"
-MOCK_TEMP_SENSOR_ENTITY_ID = "dummy"
+MOCK_TEMP_SENSOR_ENTITY_ID = "weather.forecast"  # Now using weather entity for temperature
 MOCK_SUN_ENTITY_ID = "sun.sun"
 
 # Centralized test constants - shared across all test files to eliminate duplication
@@ -82,6 +83,16 @@ def _quiet_logs(caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.ERROR, logger="homeassistant")
 
 
+# Global variable to store current temperature for weather service mock
+_CURRENT_WEATHER_TEMP = 25.0
+
+
+def set_weather_forecast_temp(temp: float) -> None:
+    """Set the temperature that the weather service mock will return."""
+    global _CURRENT_WEATHER_TEMP
+    _CURRENT_WEATHER_TEMP = temp
+
+
 @pytest.fixture
 def mock_hass() -> MagicMock:
     """Create a mock HomeAssistant instance.
@@ -90,14 +101,36 @@ def mock_hass() -> MagicMock:
     - Mock states registry for entity state management
     - Mock services registry for service call testing
     - Mock config_entries for integration configuration
+    - Mock weather forecast service for temperature data
 
     This is the foundation for most integration tests.
     """
     hass = MagicMock(spec=HomeAssistant)
     hass.states = MagicMock()
     hass.services = MagicMock()
-    hass.services.async_call = AsyncMock()
     hass.config_entries = MagicMock()
+
+    # Mock weather forecast service call
+    async def mock_weather_service(domain, service, service_data, **kwargs):
+        """Mock weather forecast service that returns temperature data."""
+        if domain == Platform.WEATHER and service == "get_forecasts":
+            entity_id = service_data.get("entity_id", "weather.forecast")
+            return {
+                entity_id: {
+                    "forecast": [
+                        {
+                            "datetime": datetime.now(timezone.utc).isoformat(),
+                            "native_temperature": _CURRENT_WEATHER_TEMP,
+                            "temp_max": _CURRENT_WEATHER_TEMP,
+                        }
+                    ]
+                }
+            }
+        return {}
+
+    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+    # Store reference to allow temperature override in tests
+    hass._weather_service_mock = mock_weather_service
     return hass
 
 
@@ -282,6 +315,7 @@ def create_sun_config(
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: threshold,
         # Since both automations are now always configured, include temp defaults
         ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
+        ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,  # Use weather entity
     }
     # Add directions for each cover
     for cover in config[ConfKeys.COVERS.value]:
@@ -308,6 +342,7 @@ def create_temperature_config(
     """
     config = {
         ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
+        ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,  # Use weather entity for temperature
         ConfKeys.TEMP_THRESHOLD.value: temp_threshold,
         # Since both automations are now always configured, include sun defaults
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
@@ -365,7 +400,6 @@ async def assert_service_called(
 
 
 def create_combined_state_mock(
-    temp_state: str = TEST_COMFORTABLE_TEMP_1,
     sun_elevation: float = 50.0,
     sun_azimuth: float = 180.0,
     cover_states: dict[str, dict[str, Any]] | None = None,
@@ -376,8 +410,9 @@ def create_combined_state_mock(
     are always configured, so all tests need both sensor states available. It builds
     a complete entity state mapping for use with hass.states.get.side_effect.
 
+    Note: Temperature is now set globally via set_weather_forecast_temp() before calling this function.
+
     Args:
-        temp_state: Temperature sensor state value (string as sensors provide)
         sun_elevation: Sun elevation attribute in degrees
         sun_azimuth: Sun azimuth attribute in degrees
         cover_states: Optional dict mapping cover entity IDs to their state attributes
@@ -385,10 +420,10 @@ def create_combined_state_mock(
     Returns:
         Dict mapping entity IDs to their mock states for use in hass.states.get.side_effect
     """
-    # Temperature sensor state
-    temp_mock = MagicMock()
-    temp_mock.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
-    temp_mock.state = temp_state
+    # Weather entity state (now using weather instead of temperature sensor)
+    weather_mock = MagicMock()
+    weather_mock.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+    weather_mock.state = "sunny"  # Weather entities have state like "sunny", "cloudy", etc.
 
     # Sun sensor state
     sun_mock = MagicMock()
@@ -397,7 +432,7 @@ def create_combined_state_mock(
 
     # Build the state mapping
     state_mapping = {
-        MOCK_TEMP_SENSOR_ENTITY_ID: temp_mock,
+        MOCK_TEMP_SENSOR_ENTITY_ID: weather_mock,
         MOCK_SUN_ENTITY_ID: sun_mock,
     }
 
@@ -455,13 +490,14 @@ def create_combined_and_scenario(
 
     # Set temperature based on temp_hot flag
     temp_value = TEST_HOT_TEMP if temp_hot else TEST_COMFORTABLE_TEMP_1
+    # Set the weather forecast temperature globally
+    set_weather_forecast_temp(float(temp_value))
 
     # Set sun position based on sun_hitting flag
     sun_azimuth = 180.0 if sun_hitting else 90.0  # 180° hits window, 90° misses
 
     # Create state mapping
     state_mapping = create_combined_state_mock(
-        temp_state=temp_value,
         sun_elevation=45.0,  # Above threshold
         sun_azimuth=sun_azimuth,
         cover_states={

@@ -87,7 +87,7 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
     # Verify global automation options are present
     # These affect the entire integration's behavior
     assert ConfKeys.ENABLED.value in schema  # Master enable/disable switch
-    assert ConfKeys.TEMP_SENSOR_ENTITY_ID.value in schema  # Temperature sensor selection
+    assert ConfKeys.WEATHER_ENTITY_ID.value in schema  # Temperature sensor selection
     assert ConfKeys.SUN_ELEVATION_THRESHOLD.value in schema  # Sun elevation threshold
     assert ConfKeys.COVERS_MAX_CLOSURE.value in schema  # Maximum closure percentage
 
@@ -121,7 +121,7 @@ async def test_options_flow_submit_creates_entry() -> None:
     # Simulate user filling out the options form with new values
     user_input = {
         ConfKeys.ENABLED.value: False,  # Disable automation
-        ConfKeys.TEMP_SENSOR_ENTITY_ID.value: "sensor.living_room",  # Custom temperature sensor
+        ConfKeys.WEATHER_ENTITY_ID.value: "sensor.living_room",  # Custom temperature sensor
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 30,  # Higher sun threshold (30° vs default 20°)
         ConfKeys.COVERS_MAX_CLOSURE.value: 75,  # Partial closure limit (75% vs 100%)
         # Use numeric azimuth instead of legacy cardinal string
@@ -247,7 +247,7 @@ async def test_options_flow_simulation_mode_default_and_submit() -> None:
     user_input = {
         ConfKeys.ENABLED.value: True,
         ConfKeys.SIMULATING.value: True,  # Enable simulation mode
-        ConfKeys.TEMP_SENSOR_ENTITY_ID.value: "sensor.temperature",
+        ConfKeys.WEATHER_ENTITY_ID.value: "sensor.temperature",
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
     }
 

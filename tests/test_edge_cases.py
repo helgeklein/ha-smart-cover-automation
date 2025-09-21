@@ -24,12 +24,13 @@ configuration mistakes might occur.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
-from homeassistant.const import ATTR_SUPPORTED_FEATURES
+from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.config import ConfKeys
@@ -73,7 +74,26 @@ async def test_non_int_supported_features_does_not_crash() -> None:
     hass = MagicMock(spec=HomeAssistant)
     hass.states = MagicMock()
     hass.services = MagicMock()
-    hass.services.async_call = AsyncMock()
+
+    # Setup weather service mock for temperature data
+    async def mock_weather_service(domain, service, service_data, **kwargs):
+        """Mock weather forecast service that returns temperature data."""
+        if domain == Platform.WEATHER and service == "get_forecasts":
+            entity_id = service_data.get("entity_id", "weather.forecast")
+            return {
+                entity_id: {
+                    "forecast": [
+                        {
+                            "datetime": datetime.now(timezone.utc).isoformat(),
+                            "native_temperature": 22.0,  # Comfortable temperature
+                            "temp_max": 22.0,
+                        }
+                    ]
+                }
+            }
+        return {}
+
+    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
 
     # Create sun-based automation configuration
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
@@ -107,8 +127,14 @@ async def test_non_int_supported_features_does_not_crash() -> None:
     # Execute automation logic
     await coordinator.async_refresh()
 
-    # Verify no service calls made due to invalid features (graceful handling)
-    hass.services.async_call.assert_not_called()
+    # Verify no cover service calls made due to invalid features (graceful handling)
+    # Weather service calls are expected, but cover calls should not happen
+    cover_service_calls = [
+        call
+        for call in hass.services.async_call.call_args_list
+        if call[0][0] == Platform.COVER  # First positional arg is domain
+    ]
+    assert len(cover_service_calls) == 0, f"Expected no cover service calls, but got: {cover_service_calls}"
 
 
 @pytest.mark.asyncio
@@ -131,7 +157,26 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
     hass = MagicMock(spec=HomeAssistant)
     hass.states = MagicMock()
     hass.services = MagicMock()
-    hass.services.async_call = AsyncMock()
+
+    # Setup weather service mock for temperature data
+    async def mock_weather_service(domain, service, service_data, **kwargs):
+        """Mock weather forecast service that returns temperature data."""
+        if domain == Platform.WEATHER and service == "get_forecasts":
+            entity_id = service_data.get("entity_id", "weather.forecast")
+            return {
+                entity_id: {
+                    "forecast": [
+                        {
+                            "datetime": datetime.now(timezone.utc).isoformat(),
+                            "native_temperature": 25.0,  # Hot temperature triggering closure
+                            "temp_max": 25.0,
+                        }
+                    ]
+                }
+            }
+        return {}
+
+    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
 
     # Create temperature automation with duplicate cover IDs
     config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID])
@@ -164,9 +209,16 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
     # Execute automation logic
     await coordinator.async_refresh()
 
-    # Verify exactly one service call (duplicates are deduplicated by state dict keys)
+    # Verify exactly one cover service call (duplicates are deduplicated by state dict keys)
     await assert_service_called(hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=COVER_POS_FULLY_CLOSED)
-    assert hass.services.async_call.call_count == 1
+
+    # Count only cover service calls (weather calls are expected but don't count for duplication test)
+    cover_service_calls = [
+        call
+        for call in hass.services.async_call.call_args_list
+        if call[0][0] == Platform.COVER  # First positional arg is domain
+    ]
+    assert len(cover_service_calls) == 1, f"Expected exactly 1 cover service call, but got {len(cover_service_calls)}"
 
 
 @pytest.mark.asyncio
@@ -190,7 +242,26 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting() -> None:
     hass = MagicMock(spec=HomeAssistant)
     hass.states = MagicMock()
     hass.services = MagicMock()
-    hass.services.async_call = AsyncMock()
+
+    # Setup weather service mock for temperature data
+    async def mock_weather_service(domain, service, service_data, **kwargs):
+        """Mock weather forecast service that returns temperature data."""
+        if domain == Platform.WEATHER and service == "get_forecasts":
+            entity_id = service_data.get("entity_id", "weather.forecast")
+            return {
+                entity_id: {
+                    "forecast": [
+                        {
+                            "datetime": datetime.now(timezone.utc).isoformat(),
+                            "native_temperature": 22.0,  # Comfortable temperature
+                            "temp_max": 22.0,
+                        }
+                    ]
+                }
+            }
+        return {}
+
+    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
 
     # Create sun automation with window facing north
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
@@ -248,7 +319,26 @@ async def test_missing_current_position_behaves_safely() -> None:
     hass = MagicMock(spec=HomeAssistant)
     hass.states = MagicMock()
     hass.services = MagicMock()
-    hass.services.async_call = AsyncMock()
+
+    # Setup weather service mock for temperature data
+    async def mock_weather_service(domain, service, service_data, **kwargs):
+        """Mock weather forecast service that returns temperature data."""
+        if domain == Platform.WEATHER and service == "get_forecasts":
+            entity_id = service_data.get("entity_id", "weather.forecast")
+            return {
+                entity_id: {
+                    "forecast": [
+                        {
+                            "datetime": datetime.now(timezone.utc).isoformat(),
+                            "native_temperature": 5.0,  # Cold temperature should trigger opening
+                            "temp_max": 5.0,
+                        }
+                    ]
+                }
+            }
+        return {}
+
+    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
 
     # Create temperature automation configuration
     config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID], temp_threshold=24.0)
@@ -279,8 +369,14 @@ async def test_missing_current_position_behaves_safely() -> None:
     # Execute automation logic
     await coordinator.async_refresh()
 
-    # Verify no service call (desired=100 matches assumed current=100 when missing)
-    hass.services.async_call.assert_not_called()
+    # Verify no cover service call (desired=100 matches assumed current=100 when missing)
+    # Weather service calls are expected, but cover calls should not happen
+    cover_service_calls = [
+        call
+        for call in hass.services.async_call.call_args_list
+        if call[0][0] == Platform.COVER  # First positional arg is domain
+    ]
+    assert len(cover_service_calls) == 0, f"Expected no cover service calls, but got: {cover_service_calls}"
 
 
 @pytest.mark.asyncio
@@ -305,7 +401,26 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     hass = MagicMock(spec=HomeAssistant)
     hass.states = MagicMock()
     hass.services = MagicMock()
-    hass.services.async_call = AsyncMock()
+
+    # Setup weather service mock for temperature data
+    async def mock_weather_service(domain, service, service_data, **kwargs):
+        """Mock weather forecast service that returns temperature data."""
+        if domain == Platform.WEATHER and service == "get_forecasts":
+            entity_id = service_data.get("entity_id", "weather.forecast")
+            return {
+                entity_id: {
+                    "forecast": [
+                        {
+                            "datetime": datetime.now(timezone.utc).isoformat(),
+                            "native_temperature": 22.0,  # Comfortable temperature
+                            "temp_max": 22.0,
+                        }
+                    ]
+                }
+            }
+        return {}
+
+    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
 
     # Create combined sun/temperature automation with invalid direction
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
@@ -342,7 +457,14 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     result = coordinator.data
 
     # Verify cover is completely skipped due to invalid direction configuration
+    assert result is not None, "Coordinator should return data even with invalid cover configuration"
     assert MOCK_COVER_ENTITY_ID not in result[ConfKeys.COVERS.value]
 
-    # Verify no service calls made (cover skipped, comfortable temperature)
-    hass.services.async_call.assert_not_called()
+    # Verify no cover service calls made (cover skipped, comfortable temperature)
+    # Weather service calls are expected, but cover calls should not happen
+    cover_service_calls = [
+        call
+        for call in hass.services.async_call.call_args_list
+        if call[0][0] == Platform.COVER  # First positional arg is domain
+    ]
+    assert len(cover_service_calls) == 0, f"Expected no cover service calls, but got: {cover_service_calls}"

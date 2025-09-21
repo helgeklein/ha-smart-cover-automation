@@ -214,7 +214,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Temperature input
         temp_threshold = resolved.temp_threshold
         temp_sensor_entity_id = resolved.temp_sensor_entity_id
-        temp_current = await self._get_temperature_value(temp_sensor_entity_id)
+        temp_current = await self._get_max_temperature(temp_sensor_entity_id)
 
         # Temperature above threshold?
         temp_hot = False
@@ -408,44 +408,35 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             raise ServiceCallError(service, entity_id, str(err)) from err
 
     #
-    # _get_temperature_value
+    # _get_max_temperature
     #
-    async def _get_temperature_value(self, entity_id: str) -> float:
-        """Get temperature value from sensor or weather forecast.
+    async def _get_max_temperature(self, entity_id: str) -> float:
+        """Get today's maximum temperature value from a weather forecast.
 
-        For weather entities, attempts to get today's maximum forecast temperature.
-        For sensor entities, returns the current state value.
-        Falls back to current temperature if forecast is unavailable.
+        This method uses the weather forecast to get the maximum
+        temperature for the current day.
 
         Args:
-            entity_id: Entity ID of temperature sensor or weather entity
+            entity_id: Entity ID of the weather entity.
 
         Returns:
-            Temperature value in degrees Celsius
+            The forecasted maximum temperature in degrees Celsius.
 
         Raises:
-            TempSensorNotFoundError: If entity doesn't exist
-            InvalidSensorReadingError: If temperature value can't be parsed
+            TempSensorNotFoundError: If the weather entity doesn't exist.
+            InvalidSensorReadingError: If the forecast is unavailable or the
+                                     temperature value cannot be parsed.
         """
         state = self.hass.states.get(entity_id)
         if state is None:
             raise TempSensorNotFoundError(entity_id)
 
-        # For weather entities, try to get forecast max temperature
-        if entity_id.startswith(f"{Platform.WEATHER}."):
-            forecast_temp = await self._get_forecast_max_temp(entity_id)
-            if forecast_temp is not None:
-                return forecast_temp
-            # If forecast fails, fall back to current temperature
-            const.LOGGER.warning(f"Weather forecast unavailable for {entity_id}, using current temperature")
+        forecast_temp = await self._get_forecast_max_temp(entity_id)
+        if forecast_temp is not None:
+            return forecast_temp
 
-        # For sensor entities or weather fallback, use current state
-        try:
-            temp_current = float(state.state)
-            const.LOGGER.debug(f"Using current temperature: {temp_current}°C from {entity_id}")
-            return temp_current
-        except (ValueError, TypeError) as err:
-            raise InvalidSensorReadingError(entity_id, str(state.state)) from err
+        # If forecast is not available, raise an error
+        raise InvalidSensorReadingError(entity_id, "Forecast temperature unavailable")
 
     #
     # _get_forecast_max_temp

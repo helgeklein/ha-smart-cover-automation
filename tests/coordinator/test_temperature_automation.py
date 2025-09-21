@@ -7,11 +7,11 @@ and error conditions related to temperature sensors.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
-from homeassistant.const import ATTR_SUPPORTED_FEATURES
+from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.config import ConfKeys
@@ -22,6 +22,7 @@ from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_COVER_ENTITY_ID_2,
     MOCK_SUN_ENTITY_ID,
+    MOCK_TEMP_SENSOR_ENTITY_ID,
     TEST_COLD_TEMP,
     TEST_COMFORTABLE_TEMP_1,
     TEST_COMFORTABLE_TEMP_2,
@@ -34,6 +35,7 @@ from tests.conftest import (
     TEST_PARTIAL_POSITION,
     assert_service_called,
     create_combined_state_mock,
+    set_weather_forecast_temp,
 )
 from tests.coordinator.test_coordinator_base import TestDataUpdateCoordinatorBase
 
@@ -65,10 +67,12 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
         mock_temperature_state.state = TEST_HOT_TEMP  # Above 24°C max
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN  # Fully open
 
+        # Set weather forecast temperature for hot temperature
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))  # 26.0°C - above 24°C threshold
+
         # Create environmental state: hot temperature + sun hitting window
         # Both conditions met for AND logic to trigger cover closing
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_HOT_TEMP,  # 26.0°C - above 24°C threshold
             sun_elevation=TEST_HIGH_ELEVATION,  # Above 20° threshold
             sun_azimuth=TEST_DIRECT_AZIMUTH,  # Hitting south-facing window
             cover_states={
@@ -123,10 +127,12 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
         mock_temperature_state.state = TEST_COLD_TEMP  # Below 21°C min
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_CLOSED  # Fully closed
 
+        # Set weather forecast temperature for cold temperature
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # 18.0°C - below 21°C threshold
+
         # Create environmental state: cold temperature + sun not hitting window
         # Cold temperature condition met for opening (sun position secondary)
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_COLD_TEMP,  # 18.0°C - below 21°C threshold
             sun_elevation=TEST_HIGH_ELEVATION,  # Above 20° threshold but...
             sun_azimuth=TEST_INDIRECT_AZIMUTH,  # Not hitting south-facing window (180°)
             cover_states={
@@ -182,9 +188,12 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
         mock_temperature_state.state = TEST_COMFORTABLE_TEMP_2  # Between 21-24°C
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_PARTIAL_POSITION
 
+        # Set weather forecast temperature for comfortable temperature
+        temp_for_test = mock_temperature_state.state if hasattr(mock_temperature_state, "state") else TEST_COMFORTABLE_TEMP_1
+        set_weather_forecast_temp(float(temp_for_test))
+
         # Create environmental state with comfortable temperature
         state_mapping = create_combined_state_mock(
-            temp_state=mock_temperature_state.state if hasattr(mock_temperature_state, "state") else TEST_COMFORTABLE_TEMP_1,
             cover_states={
                 MOCK_COVER_ENTITY_ID: mock_cover_state.attributes
                 if hasattr(mock_cover_state, "attributes")
@@ -255,7 +264,7 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
 
         # Verify critical error handling
         assert isinstance(coordinator.last_exception, UpdateFailed)  # Critical error should propagate
-        assert "Temperature sensor 'dummy' not found" in str(coordinator.last_exception)
+        assert "Temperature sensor 'weather.forecast' not found" in str(coordinator.last_exception)
 
     async def test_temperature_sensor_invalid_reading(
         self,
@@ -264,23 +273,32 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
         mock_temperature_state: MagicMock,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test critical error handling when temperature sensor provides invalid data.
+        """Test critical error handling when weather forecast is unavailable.
 
-        Validates that the coordinator treats invalid temperature sensor readings as critical errors
+        Validates that the coordinator treats unavailable weather forecast as critical errors
         that make the automation non-functional. Since accurate temperature readings are essential for
-        automation decisions, invalid temperature data should make entities unavailable.
+        automation decisions, unavailable forecast data should make entities unavailable.
 
         Test scenario:
-        - Temperature sensor: Returns "invalid" string instead of numeric value
+        - Weather entity: Available but forecast service returns no data
         - Expected behavior: Critical error logged, UpdateFailed exception raised, entities unavailable
         """
-        # Setup temperature sensor with invalid (non-numeric) reading
-        mock_temperature_state.state = "invalid"
+        # Setup weather entity state
+        mock_temperature_state.state = "sunny"
+        mock_temperature_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
         mock_hass.states.get.return_value = mock_temperature_state
+
+        # Mock weather service to return no forecast data (simulating service failure)
+        async def mock_weather_service_error(domain, service, service_data, **kwargs):
+            if domain == Platform.WEATHER and service == "get_forecasts":
+                return {}  # Empty response simulating forecast unavailable
+            return {}
+
+        mock_hass.services.async_call = AsyncMock(side_effect=mock_weather_service_error)
 
         # Execute automation and verify error handling
         await coordinator.async_refresh()
 
         # Verify critical error handling
         assert isinstance(coordinator.last_exception, UpdateFailed)  # Critical error should propagate
-        assert "Invalid reading from 'dummy': invalid" in str(coordinator.last_exception)
+        assert "Forecast temperature unavailable" in str(coordinator.last_exception)

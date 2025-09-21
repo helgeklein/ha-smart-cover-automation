@@ -35,6 +35,7 @@ from tests.conftest import (
     MockConfigEntry,
     create_combined_state_mock,
     create_temperature_config,
+    set_weather_forecast_temp,
 )
 from tests.coordinator.test_coordinator_base import TestDataUpdateCoordinatorBase
 
@@ -74,23 +75,37 @@ class TestSimulationMode(TestDataUpdateCoordinatorBase):
         mock_temperature_state.state = TEST_HOT_TEMP  # Hot temperature (above threshold)
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN  # Fully open cover
 
+        # Set weather forecast temperature
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))
+
         # Create environmental state: hot temperature + sun hitting window
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_HOT_TEMP,  # Above threshold - should trigger automation
             sun_elevation=TEST_HIGH_ELEVATION,  # Above threshold
             sun_azimuth=TEST_DIRECT_AZIMUTH,  # Hitting window
             cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
         )
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
-        # Track service calls before running automation
-        initial_call_count = mock_hass.services.async_call.call_count
+        # Track cover service calls specifically (simulation should prevent these)
+        cover_service_calls = []
+
+        # Preserve existing weather service mock while tracking cover calls
+        original_weather_mock = mock_hass._weather_service_mock
+
+        async def track_service_calls(domain, service, service_data, **kwargs):
+            if domain == "cover":  # Only track cover service calls
+                cover_service_calls.append((domain, service, service_data))
+            else:
+                # For non-cover services (like weather), use the original weather mock
+                return await original_weather_mock(domain, service, service_data, **kwargs)
+
+        mock_hass.services.async_call.side_effect = track_service_calls
 
         # Run automation cycle
         await simulation_coordinator.async_refresh()
 
-        # Verify no additional service calls were made
-        assert mock_hass.services.async_call.call_count == initial_call_count
+        # Verify no cover service calls were made (simulation mode should prevent them)
+        assert len(cover_service_calls) == 0, f"Expected no cover service calls in simulation mode, but got: {cover_service_calls}"
 
         # But verify that the coordinator still processed the automation logic
         result = simulation_coordinator.data
@@ -120,22 +135,36 @@ class TestSimulationMode(TestDataUpdateCoordinatorBase):
         mock_temperature_state.state = TEST_HOT_TEMP
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
+        # Set weather forecast temperature
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))
+
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_HOT_TEMP,
             sun_elevation=TEST_HIGH_ELEVATION,
             sun_azimuth=TEST_DIRECT_AZIMUTH,
             cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
         )
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
-        # Track service calls before running automation
-        initial_call_count = mock_hass.services.async_call.call_count
+        # Track cover service calls specifically (simulation should prevent these)
+        cover_service_calls = []
+
+        # Preserve existing weather service mock while tracking cover calls
+        original_weather_mock = mock_hass._weather_service_mock
+
+        async def track_service_calls(domain, service, service_data, **kwargs):
+            if domain == "cover":  # Only track cover service calls
+                cover_service_calls.append((domain, service, service_data))
+            else:
+                # For non-cover services (like weather), use the original weather mock
+                return await original_weather_mock(domain, service, service_data, **kwargs)
+
+        mock_hass.services.async_call.side_effect = track_service_calls
 
         # Run automation cycle
         await simulation_coordinator.async_refresh()
 
-        # Verify no service calls were made (simulation mode)
-        assert mock_hass.services.async_call.call_count == initial_call_count
+        # Verify no cover service calls were made (simulation mode)
+        assert len(cover_service_calls) == 0, f"Expected no cover service calls in simulation mode, but got: {cover_service_calls}"
 
         # Verify the coordinator processed the automation correctly
         result = simulation_coordinator.data

@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
-from homeassistant.const import ATTR_SUPPORTED_FEATURES
+from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
@@ -24,6 +24,7 @@ from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_COVER_ENTITY_ID_2,
+    MOCK_TEMP_SENSOR_ENTITY_ID,
     TEST_COLD_TEMP,
     TEST_COMFORTABLE_TEMP_2,
     TEST_COVER_CLOSED,
@@ -36,6 +37,7 @@ from tests.conftest import (
     assert_service_called,
     create_combined_state_mock,
     create_sun_config,
+    set_weather_forecast_temp,
 )
 from tests.coordinator.test_coordinator_base import TestDataUpdateCoordinatorBase
 
@@ -62,6 +64,9 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         - Sun azimuth: 180° (south)
         - Expected: Cover 1 closes, Cover 2 opens
         """
+        # Set weather forecast temperature to hot for this test
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))
+
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
         config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = TEST_DIRECT_AZIMUTH
         config[f"{MOCK_COVER_ENTITY_ID_2}_{COVER_SFX_AZIMUTH}"] = TEST_INDIRECT_AZIMUTH
@@ -81,7 +86,6 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
 
         mock_sun_state.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_HOT_TEMP,  # Hot temp for close cases
             sun_azimuth=TEST_DIRECT_AZIMUTH,  # Sun hitting test_cover directly
             cover_states={
                 MOCK_COVER_ENTITY_ID: cover1_state.attributes,
@@ -122,6 +126,9 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         - Temperature: Hot (supports closure)
         - Expected: Covers close (threshold equality treated as above)
         """
+        # Set weather forecast temperature to hot for this test
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))
+
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
         config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = TEST_DIRECT_AZIMUTH
         config_entry = MockConfigEntry(config)
@@ -136,7 +143,6 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         mock_sun_state.attributes = {"elevation": 20.0, "azimuth": TEST_DIRECT_AZIMUTH}
 
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_HOT_TEMP,  # Hot temp for close case
             sun_azimuth=TEST_DIRECT_AZIMUTH,  # Sun hitting directly (angle_diff = 0 = threshold)
             cover_states={MOCK_COVER_ENTITY_ID: cover_state.attributes},
         )
@@ -164,6 +170,9 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         - Temperature: Cold (favors opening)
         - Expected: Combined logic results in open position
         """
+        # Set weather forecast temperature to cold for this test
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))
+
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
         config[ConfKeys.COVERS_MAX_CLOSURE.value] = 60  # 60% close => desired position 40
         config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = TEST_DIRECT_AZIMUTH
@@ -178,7 +187,6 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         mock_sun_state.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
 
         state_mapping = create_combined_state_mock(
-            temp_state=TEST_COLD_TEMP,  # Cold temp so temp wants open
             cover_states={MOCK_COVER_ENTITY_ID: cover_state.attributes},
         )
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
@@ -207,10 +215,14 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         - Sun azimuth: Not hitting window (90° vs 180° window)
         - Expected: No cover movement (AND condition not fully satisfied)
         """
+        # Set weather forecast temperature to hot for this test
+        set_weather_forecast_temp(float(mock_temperature_state.state))
+
         config = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             ConfKeys.TEMP_THRESHOLD.value: 24.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,
             f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": TEST_DIRECT_AZIMUTH,
         }
         config_entry = MockConfigEntry(config)
@@ -222,7 +234,6 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
         state_mapping = create_combined_state_mock(
-            temp_state=mock_temperature_state.state,
             sun_azimuth=TEST_INDIRECT_AZIMUTH,  # Sun azimuth far from window direction (180°)
             cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
         )
@@ -231,8 +242,9 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["sca_cover_desired_position"] == TEST_COVER_OPEN
-        # AND semantics: no action when sun not hitting
-        mock_hass.services.async_call.assert_not_called()
+        # AND semantics: no action when sun not hitting - verify no cover service calls
+        cover_calls = [call for call in mock_hass.services.async_call.call_args_list if call[0][0] != Platform.WEATHER]
+        assert len(cover_calls) == 0, f"Expected no cover service calls, got: {cover_calls}"
 
     @pytest.mark.asyncio
     async def test_combined_comfortable_direct_sun_no_change_with_and_logic(
@@ -254,11 +266,15 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         - Sun azimuth: Direct hit (180° matching window)
         - Expected: No cover movement (temperature not hot enough)
         """
+        # Set weather forecast temperature to comfortable for this test
+        set_weather_forecast_temp(float(mock_temperature_state.state))
+
         config = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             ConfKeys.TEMP_THRESHOLD.value: 24.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
             ConfKeys.COVERS_MAX_CLOSURE.value: 60,  # partial closure => desired 40
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,
             f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": TEST_DIRECT_AZIMUTH,
         }
         config_entry = MockConfigEntry(config)
@@ -269,7 +285,6 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
         state_mapping = create_combined_state_mock(
-            temp_state=mock_temperature_state.state,
             cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
         )
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
@@ -277,8 +292,9 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["sca_cover_desired_position"] == TEST_COVER_OPEN
-        # AND semantics: no action when temperature is not hot
-        mock_hass.services.async_call.assert_not_called()
+        # AND semantics: no action when temperature is not hot - verify no cover service calls
+        cover_calls = [call for call in mock_hass.services.async_call.call_args_list if call[0][0] != Platform.WEATHER]
+        assert len(cover_calls) == 0, f"Expected no cover service calls, got: {cover_calls}"
 
     @pytest.mark.asyncio
     async def test_combined_cold_direct_sun_no_change_with_and_logic(
@@ -300,10 +316,14 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         - Sun azimuth: Direct hit (180° matching window)
         - Expected: No cover movement (cold temp wants open, not close)
         """
+        # Set weather forecast temperature to cold for this test
+        set_weather_forecast_temp(float(mock_temperature_state.state))
+
         config = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             ConfKeys.TEMP_THRESHOLD.value: 24.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,
             f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": TEST_DIRECT_AZIMUTH,
         }
         config_entry = MockConfigEntry(config)
@@ -314,7 +334,6 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
         state_mapping = create_combined_state_mock(
-            temp_state=mock_temperature_state.state,
             cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
         )
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
@@ -322,8 +341,9 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["sca_cover_desired_position"] == TEST_COVER_OPEN
-        # AND semantics: no action when temperature is cold
-        mock_hass.services.async_call.assert_not_called()
+        # AND semantics: no action when temperature is cold - verify no cover service calls
+        cover_calls = [call for call in mock_hass.services.async_call.call_args_list if call[0][0] != Platform.WEATHER]
+        assert len(cover_calls) == 0, f"Expected no cover service calls, got: {cover_calls}"
 
     @pytest.mark.asyncio
     async def test_combined_missing_direction_uses_temp_only(
@@ -346,10 +366,14 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         - Cover configuration: Missing direction/azimuth setting
         - Expected: Cover skipped from automation (missing config)
         """
+        # Set weather forecast temperature to hot for this test
+        set_weather_forecast_temp(float(mock_temperature_state.state))
+
         config = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             ConfKeys.TEMP_THRESHOLD.value: 24.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,
             # Intentionally omit direction key
         }
         config_entry = MockConfigEntry(config)
@@ -360,7 +384,6 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
 
         state_mapping = create_combined_state_mock(
-            temp_state=mock_temperature_state.state,
             cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
         )
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)

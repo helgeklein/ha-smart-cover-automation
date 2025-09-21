@@ -7,7 +7,6 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import STATE_UNAVAILABLE, Platform, UnitOfTemperature
 from homeassistant.helpers import selector
 
@@ -106,10 +105,9 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                         ),
                     ),
                     # === TEMPERATURE SETTINGS ===
-                    vol.Required(ConfKeys.TEMP_SENSOR_ENTITY_ID.value): selector.EntitySelector(
+                    vol.Required(ConfKeys.WEATHER_ENTITY_ID.value): selector.EntitySelector(
                         selector.EntitySelectorConfig(
                             domain=Platform.WEATHER,
-                            device_class=SensorDeviceClass.TEMPERATURE,
                         )
                     ),
                 }
@@ -220,10 +218,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         # === TEMPERATURE SETTINGS ===
-        schema_dict[vol.Required(ConfKeys.TEMP_SENSOR_ENTITY_ID.value)] = selector.EntitySelector(
+        schema_dict[vol.Required(ConfKeys.WEATHER_ENTITY_ID.value)] = selector.EntitySelector(
             selector.EntitySelectorConfig(
                 domain=Platform.WEATHER,
-                device_class=SensorDeviceClass.TEMPERATURE,
             )
         )
         schema_dict[vol.Required(ConfKeys.TEMP_THRESHOLD.value, default=CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default)] = (
