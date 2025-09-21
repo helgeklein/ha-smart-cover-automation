@@ -40,10 +40,10 @@ All relevant settings are available from the UI.
 - **Enabled:** turn the automation on or off via a switch.
 - **Cover selection:** choose which covers you want the integration to control.
 - **Window direction:** set each window's horizontal angle from north (azimuth).
-- **Temperature threshold:** minimal average outside temperature at which to operate.
+- **Temperature threshold:** The automation only operates on hot days, i.e., if the forecasted daily high temperature is above a threshold.
 - **Sun:**
 	- Minimal sun elevation above the horizon.
-	- Maximum angle at which the sun may shine on a windows for it to be considered for heat protection.
+	- Maximum angle at which the sun is considered to be shining on the window.
 - **Covers:**
 	- Maximum closure (never close more than this).
 
@@ -58,7 +58,6 @@ The integration helps you understand what's going on in the following ways:
 
 ## TODO
 
-- Temperature threshold: replace current temp with average
 - Weather: is the sun shining?
 - Plant light:
 	- Global: min position
