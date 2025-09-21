@@ -23,6 +23,7 @@ from __future__ import annotations
 from typing import cast
 
 import pytest
+from unittest.mock import MagicMock
 
 from custom_components.smart_cover_automation import async_get_options_flow
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
@@ -53,6 +54,8 @@ async def test_async_get_options_flow_returns_handler() -> None:
     """
     # Create a mock configuration entry with temperature automation settings
     entry = MockConfigEntry(create_temperature_config())
+    entry.hass = MagicMock()
+    entry.hass.states = MagicMock()
 
     # Request options flow handler from the integration
     flow = await async_get_options_flow(cast(IntegrationConfigEntry, entry))

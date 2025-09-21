@@ -41,7 +41,7 @@ from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from .conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_SUN_ENTITY_ID,
-    MOCK_TEMP_SENSOR_ENTITY_ID,
+    MOCK_WEATHER_ENTITY_ID,
     TEST_COLD_TEMP,
     TEST_COMFORTABLE_TEMP_1,
     TEST_COVER_CLOSED,
@@ -155,7 +155,7 @@ class TestIntegrationScenarios:
             # Weather entity state (now using weather instead of temperature sensor)
             weather_state = MagicMock()
             weather_state.state = "sunny"
-            weather_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+            weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
 
             # Cover entity state with current position and supported features
             cover_state = MagicMock()
@@ -171,7 +171,7 @@ class TestIntegrationScenarios:
 
             # Configure Home Assistant state lookup to return our mock entities
             hass.states.get.side_effect = lambda entity_id, ws=weather_state, cs=cover_state, ss=sun_state: {
-                MOCK_TEMP_SENSOR_ENTITY_ID: ws,
+                MOCK_WEATHER_ENTITY_ID: ws,
                 MOCK_COVER_ENTITY_ID: cs,
                 MOCK_SUN_ENTITY_ID: ss,
             }.get(entity_id)
@@ -308,12 +308,12 @@ class TestIntegrationScenarios:
             # Configure Home Assistant entity lookup for this scenario
             # Create a weather entity state (required even though we use service calls)
             weather_state = MagicMock()
-            weather_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+            weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
 
             hass.states.get.side_effect = lambda entity_id, ss=sun_state, cs=cover_state, ws=weather_state: {
                 MOCK_SUN_ENTITY_ID: ss,
                 MOCK_COVER_ENTITY_ID: cs,
-                MOCK_TEMP_SENSOR_ENTITY_ID: ws,
+                MOCK_WEATHER_ENTITY_ID: ws,
             }.get(entity_id)
 
             # Execute automation for current sun/temperature conditions
@@ -391,7 +391,7 @@ class TestIntegrationScenarios:
         }
         # Return None for temp sensor to simulate sensor being offline
         hass.states.get.side_effect = lambda entity_id, cs=cover_state: {
-            MOCK_TEMP_SENSOR_ENTITY_ID: None,  # Sensor not found/available
+            MOCK_WEATHER_ENTITY_ID: None,  # Sensor not found/available
             MOCK_COVER_ENTITY_ID: cs,
             MOCK_SUN_ENTITY_ID: MagicMock(
                 state="above_horizon", attributes={"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
@@ -514,10 +514,10 @@ class TestIntegrationScenarios:
         def get_state(entity_id: str) -> MagicMock | None:
             if entity_id == MOCK_SUN_ENTITY_ID:
                 return sun_state
-            if entity_id == MOCK_TEMP_SENSOR_ENTITY_ID:
+            if entity_id == MOCK_WEATHER_ENTITY_ID:
                 # Create a weather entity state (required even though we use service calls)
                 weather_state = MagicMock()
-                weather_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+                weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
                 return weather_state
             return cover_states.get(entity_id)
 
@@ -622,12 +622,12 @@ class TestIntegrationScenarios:
         # Configure entity state lookup for capability testing
         # Create a weather entity state (required even though we use service calls)
         weather_state = MagicMock()
-        weather_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+        weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
 
         hass.states.get.side_effect = lambda entity_id: {
             "cover.smart": smart_cover,
             "cover.basic": basic_cover,
-            MOCK_TEMP_SENSOR_ENTITY_ID: weather_state,
+            MOCK_WEATHER_ENTITY_ID: weather_state,
             # Sun state that doesn't interfere with cold temperature logic
             MOCK_SUN_ENTITY_ID: MagicMock(
                 state="above_horizon", attributes={"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}

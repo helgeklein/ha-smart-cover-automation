@@ -24,7 +24,7 @@ from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_COVER_ENTITY_ID_2,
-    MOCK_TEMP_SENSOR_ENTITY_ID,
+    MOCK_WEATHER_ENTITY_ID,
     TEST_COLD_TEMP,
     TEST_COMFORTABLE_TEMP_2,
     TEST_COVER_CLOSED,
@@ -222,7 +222,7 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             ConfKeys.TEMP_THRESHOLD.value: 24.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
-            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": TEST_DIRECT_AZIMUTH,
         }
         config_entry = MockConfigEntry(config)
@@ -274,7 +274,7 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
             ConfKeys.TEMP_THRESHOLD.value: 24.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
             ConfKeys.COVERS_MAX_CLOSURE.value: 60,  # partial closure => desired 40
-            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": TEST_DIRECT_AZIMUTH,
         }
         config_entry = MockConfigEntry(config)
@@ -323,7 +323,7 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             ConfKeys.TEMP_THRESHOLD.value: 24.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
-            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": TEST_DIRECT_AZIMUTH,
         }
         config_entry = MockConfigEntry(config)
@@ -373,7 +373,7 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             ConfKeys.TEMP_THRESHOLD.value: 24.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
-            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             # Intentionally omit direction key
         }
         config_entry = MockConfigEntry(config)

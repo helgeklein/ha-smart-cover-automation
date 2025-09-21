@@ -45,7 +45,7 @@ class ConfKeys(StrEnum):
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_POSITION_DELTA = "covers_min_position_delta"  # Ignore smaller position changes (%).
-    WEATHER_ENTITY_ID = "temp_sensor_entity_id"  # Temperature sensor entity_id.
+    WEATHER_ENTITY_ID = "weather_entity_id"  # Weather entity_id.
     TEMP_THRESHOLD = "temp_threshold"  # Temperature threshold at which heat protection activates (°C).
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
@@ -129,7 +129,7 @@ class ResolvedConfig:
     covers: tuple[str, ...]
     covers_max_closure: int
     covers_min_position_delta: int
-    temp_sensor_entity_id: str
+    weather_entity_id: str
     temp_threshold: float
     sun_azimuth_tolerance: int
     sun_elevation_threshold: float

@@ -35,7 +35,7 @@ from custom_components.smart_cover_automation.const import (
 # Used for temperature-based and sun-based automation testing
 MOCK_COVER_ENTITY_ID = "cover.test_cover"
 MOCK_COVER_ENTITY_ID_2 = "cover.test_cover_2"
-MOCK_TEMP_SENSOR_ENTITY_ID = "weather.forecast"  # Now using weather entity for temperature
+MOCK_WEATHER_ENTITY_ID = "weather.forecast"  # Now using weather entity for temperature
 MOCK_SUN_ENTITY_ID = "sun.sun"
 
 # Centralized test constants - shared across all test files to eliminate duplication
@@ -228,7 +228,7 @@ def mock_temperature_state() -> MagicMock:
     - Standard sensor state structure for automation logic
     """
     state = MagicMock()
-    state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+    state.entity_id = MOCK_WEATHER_ENTITY_ID
     state.state = TEST_COMFORTABLE_TEMP_2
     state.attributes = {}
     return state
@@ -292,6 +292,8 @@ class MockConfigEntry:
         self.runtime_data.config = data
         self.add_update_listener = MagicMock(return_value=MagicMock())
         self.async_on_unload = MagicMock()
+        self.hass = MagicMock()
+        self.hass.states = MagicMock()
 
 
 def create_sun_config(
@@ -315,7 +317,7 @@ def create_sun_config(
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: threshold,
         # Since both automations are now always configured, include temp defaults
         ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
-        ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,  # Use weather entity
+        ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,  # Use weather entity
     }
     # Add directions for each cover
     for cover in config[ConfKeys.COVERS.value]:
@@ -342,7 +344,7 @@ def create_temperature_config(
     """
     config = {
         ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
-        ConfKeys.WEATHER_ENTITY_ID.value: MOCK_TEMP_SENSOR_ENTITY_ID,  # Use weather entity for temperature
+        ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,  # Use weather entity for temperature
         ConfKeys.TEMP_THRESHOLD.value: temp_threshold,
         # Since both automations are now always configured, include sun defaults
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
@@ -422,7 +424,7 @@ def create_combined_state_mock(
     """
     # Weather entity state (now using weather instead of temperature sensor)
     weather_mock = MagicMock()
-    weather_mock.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+    weather_mock.entity_id = MOCK_WEATHER_ENTITY_ID
     weather_mock.state = "sunny"  # Weather entities have state like "sunny", "cloudy", etc.
 
     # Sun sensor state
@@ -432,7 +434,7 @@ def create_combined_state_mock(
 
     # Build the state mapping
     state_mapping = {
-        MOCK_TEMP_SENSOR_ENTITY_ID: weather_mock,
+        MOCK_WEATHER_ENTITY_ID: weather_mock,
         MOCK_SUN_ENTITY_ID: sun_mock,
     }
 

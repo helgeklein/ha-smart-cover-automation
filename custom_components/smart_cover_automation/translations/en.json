@@ -6,16 +6,19 @@
                 "description": "Configure automatic cover control based on temperature or sun position. For detailed help, see: https://github.com/helgeklein/ha-smart_cover_automation",
                 "data": {
                     "covers": "Covers to automate",
-                    "temp_sensor_entity_id": "Weather forecast sensor"
+                    "weather_entity_id": "Weather forecast sensor"
                 }
             }
         },
         "error": {
-            "invalid_cover": "One or more selected covers are not available",
-            "invalid_config": "Invalid configuration provided"
+            "invalid_cover": "One or more selected covers are invalid or unavailable.",
+            "invalid_weather_entity": "The selected weather entity does not support daily forecasts.",
+            "invalid_config": "Invalid configuration.",
+            "single_instance_allowed": "Only one instance of Smart Cover Automation is allowed."
         },
         "abort": {
-            "single_instance_allowed": "Only one instance of this integration can be configured"
+            "single_instance_allowed": "Only one instance of this integration can be configured",
+            "invalid_weather_entity": "The selected weather entity does not support daily forecasts. Please select a different entity."
         }
     },
     "options": {
@@ -28,7 +31,7 @@
                     "simulating": "Simulation mode",
                     "verbose_logging": "Verbose logging",
                     "covers": "Covers to automate",
-                    "temp_sensor_entity_id": "Weather forecast sensor",
+                    "weather_entity_id": "Weather forecast sensor",
                     "temp_threshold": "Temperature threshold",
                     "sun_elevation_threshold": "Minimal sun elevation",
                     "sun_azimuth_tolerance": "Sun azimuth tolerance",

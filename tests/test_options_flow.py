@@ -49,7 +49,11 @@ def _mock_entry(data: dict[str, Any], options: dict[str, Any] | None = None) -> 
     entry = MagicMock()
     entry.data = data
     entry.options = options or {}
-    entry.hass = MagicMock()
+
+    # Create a mock hass object with a states attribute
+    hass = MagicMock()
+    hass.states = MagicMock()
+    entry.hass = hass
     return entry
 
 
@@ -121,7 +125,7 @@ async def test_options_flow_submit_creates_entry() -> None:
     # Simulate user filling out the options form with new values
     user_input = {
         ConfKeys.ENABLED.value: False,  # Disable automation
-        ConfKeys.WEATHER_ENTITY_ID.value: "sensor.living_room",  # Custom temperature sensor
+        ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",  # Custom weather entity
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 30,  # Higher sun threshold (30° vs default 20°)
         ConfKeys.COVERS_MAX_CLOSURE.value: 75,  # Partial closure limit (75% vs 100%)
         # Use numeric azimuth instead of legacy cardinal string
@@ -247,7 +251,7 @@ async def test_options_flow_simulation_mode_default_and_submit() -> None:
     user_input = {
         ConfKeys.ENABLED.value: True,
         ConfKeys.SIMULATING.value: True,  # Enable simulation mode
-        ConfKeys.WEATHER_ENTITY_ID.value: "sensor.temperature",
+        ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
     }
 

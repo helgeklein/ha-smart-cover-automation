@@ -42,7 +42,7 @@ SENSOR_ATTR_COVERS_MAX_CLOSURE_POS: Final[str] = "covers_max_closure_pos"  # Max
 SENSOR_ATTR_COVERS_MIN_POSITION_DELTA: Final[str] = "covers_min_position_delta"  # Minimum position change (%) required to move
 SENSOR_ATTR_TEMP_CURRENT: Final[str] = "temp_current"  # Current measured temperature (°C)
 SENSOR_ATTR_TEMP_HOT: Final[str] = "temp_hot"  # Whether the current temperature is above the threshold
-SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID: Final[str] = "temp_sensor_entity_id"  # Entity ID of the temperature sensor
+SENSOR_ATTR_WEATHER_ENTITY_ID: Final[str] = "weather_entity_id"  # Entity ID of the temperature sensor
 SENSOR_ATTR_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Temperature threshold (°C)
 SENSOR_ATTR_SUN_ELEVATION: Final[str] = "sun_elevation"  # Current sun elevation (°)
 SENSOR_ATTR_SUN_ELEVATION_THRESH: Final[str] = "sun_elevation_threshold"  # Minimum elevation (°) to consider direct sun
@@ -57,9 +57,11 @@ COVER_ATTR_SUN_AZIMUTH_DIFF: Final[str] = "sca_sun_azimuth_diff"  # Difference b
 COVER_ATTR_SUN_HITTING: Final[str] = "sca_sun_hitting"  # Whether the sun is hitting the window
 
 # Translation keys used by config flows and tests
-ERROR_INVALID_COVER: Final[str] = "invalid_cover"
 ERROR_INVALID_CONFIG: Final[str] = "invalid_config"
+ERROR_INVALID_COVER: Final[str] = "invalid_cover"
+ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"
 
+# Abort reasons
 ABORT_SINGLE_INSTANCE_ALLOWED: Final[str] = "single_instance_allowed"
 
 # Home Assistant string literals

@@ -45,7 +45,7 @@ from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from .conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_SUN_ENTITY_ID,
-    MOCK_TEMP_SENSOR_ENTITY_ID,
+    MOCK_WEATHER_ENTITY_ID,
     TEST_COMFORTABLE_TEMP_1,
     MockConfigEntry,
     assert_service_called,
@@ -121,7 +121,7 @@ async def test_non_int_supported_features_does_not_crash() -> None:
     hass.states.get.side_effect = lambda entity_id: {
         MOCK_SUN_ENTITY_ID: sun_state,
         MOCK_COVER_ENTITY_ID: cover_state,
-        MOCK_TEMP_SENSOR_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),
+        MOCK_WEATHER_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),
     }.get(entity_id)
 
     # Execute automation logic
@@ -194,14 +194,14 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
 
     # Setup temperature sensor indicating hot conditions
     temp_state = MagicMock()
-    temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+    temp_state.entity_id = MOCK_WEATHER_ENTITY_ID
     temp_state.state = "30.0"  # Hot -> should close
 
     temp_state.state = "25.0"  # Hot temperature triggering closure in combined logic
 
     # Configure Home Assistant state lookup
     hass.states.get.side_effect = lambda entity_id: {
-        MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
+        MOCK_WEATHER_ENTITY_ID: temp_state,
         MOCK_COVER_ENTITY_ID: cover_state,
         MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
     }.get(entity_id)
@@ -288,7 +288,7 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting() -> None:
     hass.states.get.side_effect = lambda entity_id: {
         MOCK_SUN_ENTITY_ID: sun_state,
         MOCK_COVER_ENTITY_ID: cover_state,
-        MOCK_TEMP_SENSOR_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),
+        MOCK_WEATHER_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),
     }.get(entity_id)
 
     # Execute automation logic
@@ -356,12 +356,12 @@ async def test_missing_current_position_behaves_safely() -> None:
 
     # Setup temperature sensor indicating cold conditions
     temp_state = MagicMock()
-    temp_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+    temp_state.entity_id = MOCK_WEATHER_ENTITY_ID
     temp_state.state = "5.0"  # Cold temperature should trigger opening
 
     # Configure Home Assistant state lookup
     hass.states.get.side_effect = lambda entity_id: {
-        MOCK_TEMP_SENSOR_ENTITY_ID: temp_state,
+        MOCK_WEATHER_ENTITY_ID: temp_state,
         MOCK_COVER_ENTITY_ID: cover_state,
         MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
     }.get(entity_id)
@@ -449,7 +449,7 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     hass.states.get.side_effect = lambda entity_id: {
         MOCK_SUN_ENTITY_ID: sun_state,
         MOCK_COVER_ENTITY_ID: cover_state,
-        MOCK_TEMP_SENSOR_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),  # Comfortable temperature
+        MOCK_WEATHER_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),  # Comfortable temperature
     }.get(entity_id)
 
     # Execute automation logic

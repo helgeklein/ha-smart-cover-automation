@@ -25,7 +25,7 @@ from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_COVER_ENTITY_ID_2,
     MOCK_SUN_ENTITY_ID,
-    MOCK_TEMP_SENSOR_ENTITY_ID,
+    MOCK_WEATHER_ENTITY_ID,
     TEST_COMFORTABLE_TEMP_1,
     TEST_COVER_OPEN,
     TEST_DIRECT_AZIMUTH,
@@ -64,7 +64,7 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         """
         # Manually create state mapping without any covers, but with temp and sun sensors
         temp_mock = MagicMock()
-        temp_mock.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+        temp_mock.entity_id = MOCK_WEATHER_ENTITY_ID
         temp_mock.state = mock_temperature_state.state if hasattr(mock_temperature_state, "state") else TEST_COMFORTABLE_TEMP_1
 
         sun_mock = MagicMock()
@@ -72,7 +72,7 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         sun_mock.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
 
         state_mapping = {
-            MOCK_TEMP_SENSOR_ENTITY_ID: temp_mock,
+            MOCK_WEATHER_ENTITY_ID: temp_mock,
             MOCK_SUN_ENTITY_ID: sun_mock,
             # No covers in state mapping - they will be unavailable
         }

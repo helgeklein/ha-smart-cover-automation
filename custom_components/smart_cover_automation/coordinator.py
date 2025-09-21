@@ -213,8 +213,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         # Temperature input
         temp_threshold = resolved.temp_threshold
-        temp_sensor_entity_id = resolved.temp_sensor_entity_id
-        temp_current = await self._get_max_temperature(temp_sensor_entity_id)
+        weather_entity_id = resolved.weather_entity_id
+        temp_current = await self._get_max_temperature(weather_entity_id)
 
         # Temperature above threshold?
         temp_hot = False

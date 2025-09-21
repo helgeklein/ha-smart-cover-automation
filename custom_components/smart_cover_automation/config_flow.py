@@ -7,6 +7,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.components.weather.const import WeatherEntityFeature
 from homeassistant.const import STATE_UNAVAILABLE, Platform, UnitOfTemperature
 from homeassistant.helpers import selector
 
@@ -69,6 +70,20 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                 errors["base"] = const.ERROR_INVALID_COVER
                 const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
 
+            # Validate weather entity
+            weather_entity_id = user_input.get(ConfKeys.WEATHER_ENTITY_ID.value)
+            if weather_entity_id:
+                weather_state = self.hass.states.get(weather_entity_id)
+                if weather_state:
+                    supported_features = weather_state.attributes.get("supported_features", 0)
+                    if not supported_features & WeatherEntityFeature.FORECAST_DAILY:
+                        errors["base"] = const.ERROR_INVALID_WEATHER_ENTITY
+                        const.LOGGER.error(f"Weather entity {weather_entity_id} does not support daily forecasts")
+                else:
+                    # This case is unlikely as the selector should prevent it
+                    errors["base"] = const.ERROR_INVALID_WEATHER_ENTITY
+                    const.LOGGER.error(f"Weather entity {weather_entity_id} not found")
+
             if not errors:
                 # Create a permanent unique ID for this config entry
                 unique_id = str(uuid.uuid4())
@@ -104,7 +119,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                             multiple=True,
                         ),
                     ),
-                    # === TEMPERATURE SETTINGS ===
+                    # === WEATHER SETTINGS ===
                     vol.Required(ConfKeys.WEATHER_ENTITY_ID.value): selector.EntitySelector(
                         selector.EntitySelectorConfig(
                             domain=Platform.WEATHER,
@@ -125,6 +140,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         Avoid assigning to OptionsFlow.config_entry directly to prevent frame-helper
         warnings in tests; keep a private reference instead.
         """
+        self.hass = config_entry.hass  # type: ignore
         self._config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
@@ -134,6 +150,22 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """
         # Subsequent calls: user_input has form data -> store the options and finish
         if user_input is not None:
+            # Validate weather entity in options flow
+            weather_entity_id = user_input.get(ConfKeys.WEATHER_ENTITY_ID.value)
+            if weather_entity_id:
+                weather_state = self.hass.states.get(weather_entity_id)
+                if weather_state:
+                    supported_features = weather_state.attributes.get("supported_features", 0)
+                    if not supported_features & WeatherEntityFeature.FORECAST_DAILY:
+                        # This is not a perfect solution, as we cannot show an error on the options form easily.
+                        # The best we can do is log an error and prevent the options from being saved with an
+                        # invalid entity. A better approach would be to filter the selector, but that is not
+                        # currently possible for supported_features as it's not a string.
+                        const.LOGGER.error(f"Weather entity {weather_entity_id} does not support daily forecasts. Options not saved.")
+                        # Aborting the flow is not ideal, but it prevents saving invalid options.
+                        # A friendlier way would require changes to the options flow handling in HA core.
+                        return self.async_abort(reason=const.ERROR_INVALID_WEATHER_ENTITY)
+
             # Clean up any orphaned cover-specific settings if covers were removed
             # Only do this if the user actually modified the covers list
             if ConfKeys.COVERS.value in user_input:
@@ -217,21 +249,24 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             ),
         )
 
-        # === TEMPERATURE SETTINGS ===
+        # === TEMPERATURE & WEATHER SETTINGS ===
         schema_dict[vol.Required(ConfKeys.WEATHER_ENTITY_ID.value)] = selector.EntitySelector(
             selector.EntitySelectorConfig(
                 domain=Platform.WEATHER,
             )
         )
-        schema_dict[vol.Required(ConfKeys.TEMP_THRESHOLD.value, default=CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default)] = (
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=-10,
-                    max=40,
-                    step=0.5,
-                    unit_of_measurement=UnitOfTemperature.CELSIUS,
-                ),
+        schema_dict[
+            vol.Required(
+                ConfKeys.TEMP_THRESHOLD.value,
+                default=CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
             )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=-10,
+                max=40,
+                step=0.5,
+                unit_of_measurement=UnitOfTemperature.CELSIUS,
+            ),
         )
 
         # === SUN POSITION SETTINGS ===

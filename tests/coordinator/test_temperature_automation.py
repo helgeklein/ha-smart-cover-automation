@@ -22,7 +22,7 @@ from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_COVER_ENTITY_ID_2,
     MOCK_SUN_ENTITY_ID,
-    MOCK_TEMP_SENSOR_ENTITY_ID,
+    MOCK_WEATHER_ENTITY_ID,
     TEST_COLD_TEMP,
     TEST_COMFORTABLE_TEMP_1,
     TEST_COMFORTABLE_TEMP_2,
@@ -254,7 +254,7 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
             MOCK_SUN_ENTITY_ID: MagicMock(
                 entity_id=MOCK_SUN_ENTITY_ID, attributes={"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
             ),
-            # MOCK_TEMP_SENSOR_ENTITY_ID is intentionally missing
+            # MOCK_WEATHER_ENTITY_ID is intentionally missing
         }
 
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
@@ -285,7 +285,7 @@ class TestTemperatureAutomation(TestDataUpdateCoordinatorBase):
         """
         # Setup weather entity state
         mock_temperature_state.state = "sunny"
-        mock_temperature_state.entity_id = MOCK_TEMP_SENSOR_ENTITY_ID
+        mock_temperature_state.entity_id = MOCK_WEATHER_ENTITY_ID
         mock_hass.states.get.return_value = mock_temperature_state
 
         # Mock weather service to return no forecast data (simulating service failure)

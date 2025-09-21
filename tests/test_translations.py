@@ -120,6 +120,7 @@ def test_en_json_has_required_keys() -> None:
     error_data = data.get("config", {}).get("error", {})
     expected_errors = {
         const.ERROR_INVALID_COVER,  # Invalid cover entity selection
+        const.ERROR_INVALID_WEATHER_ENTITY,  # Invalid weather entity selection
         const.ERROR_INVALID_CONFIG,  # General configuration validation failure
     }
     missing_errors = expected_errors - set(error_data.keys())
@@ -128,6 +129,9 @@ def test_en_json_has_required_keys() -> None:
     # Test 4: Required abort reasons used by config flow termination
     # These messages explain why the setup process was terminated
     abort_data = data.get("config", {}).get("abort", {})
-    expected_abort = {const.ABORT_SINGLE_INSTANCE_ALLOWED}  # Multiple instances not allowed
+    expected_abort = {
+        const.ABORT_SINGLE_INSTANCE_ALLOWED,  # Multiple instances not allowed
+        const.ERROR_INVALID_WEATHER_ENTITY,  # Invalid weather entity in options
+    }
     missing_abort = expected_abort - set(abort_data.keys())
     assert not missing_abort, f"Missing abort strings in en.json: {sorted(missing_abort)}"

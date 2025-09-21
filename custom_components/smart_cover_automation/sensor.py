@@ -25,7 +25,7 @@ from .const import (
     SENSOR_ATTR_SUN_ELEVATION_THRESH,
     SENSOR_ATTR_TEMP_CURRENT,
     SENSOR_ATTR_TEMP_HOT,
-    SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID,
+    SENSOR_ATTR_WEATHER_ENTITY_ID,
     SENSOR_ATTR_TEMP_THRESHOLD,
     SENSOR_KEY_AUTOMATION_STATUS,
 )
@@ -191,7 +191,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
             SENSOR_ATTR_COVERS_MAX_CLOSURE_POS: resolved.covers_max_closure,
             SENSOR_ATTR_COVERS_MIN_POSITION_DELTA: resolved.covers_min_position_delta,
             SENSOR_ATTR_SUN_ELEVATION_THRESH: resolved.sun_elevation_threshold,
-            SENSOR_ATTR_TEMP_SENSOR_ENTITY_ID: resolved.temp_sensor_entity_id,
+            SENSOR_ATTR_WEATHER_ENTITY_ID: resolved.weather_entity_id,
             SENSOR_ATTR_TEMP_THRESHOLD: resolved.temp_threshold,
             # Current statistics
             SENSOR_ATTR_COVERS_NUM_MOVED: num_covers_moved,

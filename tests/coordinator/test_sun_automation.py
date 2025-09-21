@@ -30,7 +30,7 @@ from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_COVER_ENTITY_ID_2,
-    MOCK_TEMP_SENSOR_ENTITY_ID,
+    MOCK_WEATHER_ENTITY_ID,
     TEST_COLD_TEMP,
     TEST_COMFORTABLE_TEMP_1,
     TEST_COVER_CLOSED,
@@ -261,7 +261,7 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
 
         state_mapping = {
             MOCK_COVER_ENTITY_ID: cover_state,
-            MOCK_TEMP_SENSOR_ENTITY_ID: MagicMock(entity_id=MOCK_TEMP_SENSOR_ENTITY_ID, state=TEST_COMFORTABLE_TEMP_1),
+            MOCK_WEATHER_ENTITY_ID: MagicMock(entity_id=MOCK_WEATHER_ENTITY_ID, state=TEST_COMFORTABLE_TEMP_1),
             # MOCK_SUN_ENTITY_ID is intentionally missing
         }
 

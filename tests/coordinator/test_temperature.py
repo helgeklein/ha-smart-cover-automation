@@ -22,7 +22,6 @@ from ..conftest import MockConfigEntry
 
 MOCK_CONFIG = {
     "covers": ["cover.test_cover"],
-    "temp_sensor": "sensor.temperature",
 }
 WEATHER_ENTITY_ID = "weather.test"
 SENSOR_ENTITY_ID = "sensor.temperature"
