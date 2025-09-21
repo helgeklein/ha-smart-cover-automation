@@ -12,9 +12,13 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -40,11 +44,15 @@ jobs:
 
       - name: Commit coverage badge
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add .github/badges/coverage.svg
-          git diff --staged --quiet || git commit -m "Update coverage badge [skip ci]"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to coverage badge"
+          else
+            git commit -m "Update coverage badge [skip ci]"
+            git push
+          fi
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
   integration-test:
