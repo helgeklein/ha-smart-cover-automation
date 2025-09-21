@@ -9,17 +9,17 @@ from pathlib import Path
 def get_coverage_color(percentage: float) -> str:
     """Determine badge color based on coverage percentage."""
     if percentage >= 90:
-        return "brightgreen"
+        return "#4c1"  # Bright green
     elif percentage >= 80:
-        return "green"
+        return "#97ca00"  # Green
     elif percentage >= 70:
-        return "yellowgreen"
+        return "#a4a61d"  # Yellow-green
     elif percentage >= 60:
-        return "yellow"
+        return "#dfb317"  # Yellow
     elif percentage >= 50:
-        return "orange"
+        return "#fe7d37"  # Orange
     else:
-        return "red"
+        return "#e05d44"  # Red
 
 
 def generate_badge_svg(coverage_percent: int, color: str) -> str:
@@ -34,7 +34,7 @@ def generate_badge_svg(coverage_percent: int, color: str) -> str:
   </clipPath>
   <g clip-path="url(#a)">
     <path fill="#555" d="M0 0h99v20H0z"/>
-    <path fill="#{color}" d="M99 0h41v20H99z"/>
+    <path fill="{color}" d="M99 0h41v20H99z"/>
     <path fill="url(#b)" d="M0 0h140v20H0z"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="110">
