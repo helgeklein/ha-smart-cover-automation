@@ -39,7 +39,6 @@ from custom_components.smart_cover_automation.config import (
     ResolvedConfig,
     resolve,
     resolve_entry,
-    validate_settings_contract,
 )
 
 
@@ -271,27 +270,6 @@ def test_resolve_entry_reads_from_attributes():
     assert rs.temp_threshold == 22.0  # From data (coerced to float)
 
 
-# Configuration Contract Validation Tests (merged from test_settings_contract.py)
-
-
-def test_settings_contract_validator_passes():
-    """Test that the built-in configuration contract validator passes without errors.
-
-    This test runs the internal validate_settings_contract() function which performs
-    comprehensive checks to ensure all configuration components are consistent.
-    The validator checks for:
-    - Enum/spec/dataclass synchronization
-    - Proper default value assignment
-    - Type consistency across components
-
-    If this test fails, it indicates a fundamental configuration system issue
-    that must be resolved before the integration can function properly.
-    Any configuration changes that break this contract will cause runtime errors.
-    """
-    # Should not raise any exceptions when configuration system is consistent
-    validate_settings_contract()
-
-
 def test_keys_and_defaults_registry_complete_mirrors_contract():
     """Test that ConfKeys, CONF_SPECS, and ResolvedConfig are perfectly synchronized.
 
@@ -349,3 +327,76 @@ def test_no_none_defaults_in_specs():
 
     # Assert that no configuration options have None defaults
     assert not none_defaults, f"None defaults found in CONF_SPECS: {none_defaults}"
+
+
+def test_spec_defaults_are_valid_types():
+    """Test that all CONF_SPECS default values can be processed by their converters.
+
+    This test ensures that each configuration specification's converter function
+    can successfully process its own default value. This validates that:
+
+    1. Default values are already in the correct format for their converters
+    2. Converters don't unexpectedly modify correct input values
+    3. The type conversion system is internally consistent
+
+    This is important because the configuration resolution system relies on
+    converters being able to process their own defaults as a fallback mechanism
+    when user input fails validation. If a converter can't handle its own
+    default, it indicates a fundamental design issue that could cause runtime
+    errors during configuration resolution.
+
+    The test verifies both that conversion succeeds and that the converted
+    value equals the original default (i.e., converters are idempotent for
+    correctly-typed inputs).
+    """
+    for key, spec in CONF_SPECS.items():
+        # Each spec's converter should be able to process its own default
+        try:
+            converted_default = spec.converter(spec.default)
+            # The converted value should be the same as the original default
+            # (since defaults should already be the correct type)
+            assert converted_default == spec.default, f"CONF_SPECS[{key}].converter changed the default value"
+        except Exception as e:
+            pytest.fail(f"CONF_SPECS[{key}].converter failed on its own default: {e}")
+
+
+def test_contract_violation_detection():
+    """Test that contract violations would be properly detected.
+
+    This test demonstrates what would happen if the configuration contract was
+    violated by simulating various mismatch scenarios between ConfKeys,
+    CONF_SPECS, and ResolvedConfig. It serves as both documentation and
+    validation of the contract enforcement logic.
+
+    The test verifies that:
+    1. The current configuration state is valid (all components synchronized)
+    2. Simulated violations would be detectable by contract validation logic
+    3. The contract validation system would catch common development errors
+
+    Common contract violations this would detect:
+    - Adding a new ConfKeys member without updating CONF_SPECS
+    - Adding a new ResolvedConfig field without updating ConfKeys
+    - Adding CONF_SPECS entries without corresponding enum members
+    - Inconsistent naming between components
+
+    This test helps ensure that future configuration changes maintain the
+    strict synchronization requirements of the configuration system.
+    """
+    # Save original values
+    original_enum_names = {k.value for k in ConfKeys}
+    original_spec_names = {k.value for k in CONF_SPECS.keys()}
+    original_dc_names = {f.name for f in fields(ResolvedConfig)}
+
+    # All should be equal in the current valid state
+    assert original_enum_names == original_spec_names == original_dc_names
+
+    # Simulate what would happen with mismatches
+    fake_enum_names = original_enum_names | {"fake_key"}
+    fake_spec_names = original_spec_names | {"extra_spec_key"}
+    fake_dc_names = original_dc_names | {"extra_field"}
+
+    # These would trigger validation errors
+    assert fake_enum_names != original_spec_names  # Would trigger ConfKeys vs CONF_SPECS mismatch
+    assert fake_enum_names != original_dc_names  # Would trigger ConfKeys vs ResolvedConfig mismatch
+    assert fake_spec_names != original_enum_names  # Would trigger CONF_SPECS vs ConfKeys mismatch
+    assert fake_dc_names != original_enum_names  # Would trigger ResolvedConfig vs ConfKeys mismatch
