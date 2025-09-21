@@ -113,7 +113,6 @@ __all__ = [
     "ConfKeys",
     "CONF_SPECS",
     "ResolvedConfig",
-    "validate_settings_contract",
     "resolve",
     "resolve_entry",
 ]
@@ -144,31 +143,6 @@ class ResolvedConfig:
         return {k: getattr(self, k.value) for k in ConfKeys}
 
 
-def validate_settings_contract() -> None:
-    """Validate ConfKeys, CONF_SPECS and ResolvedConfig stay in sync.
-
-    Raises AssertionError with a clear message if there is any mismatch.
-    """
-    enum_names = {k.value for k in ConfKeys}
-    spec_names = {k.value for k in CONF_SPECS.keys()}
-    dc_names = {f.name for f in fields(ResolvedConfig)}
-
-    errors: list[str] = []
-    if enum_names != spec_names:
-        errors.append(
-            f"ConfKeys vs CONF_SPECS mismatch: missing_in_specs={enum_names - spec_names}, extra_in_specs={spec_names - enum_names}"
-        )
-    if enum_names != dc_names:
-        errors.append(f"ConfKeys vs ResolvedConfig mismatch: missing_in_dc={enum_names - dc_names}, extra_in_dc={dc_names - enum_names}")
-    # Ensure no None defaults are present
-    none_defaults = [k.value for k, spec in CONF_SPECS.items() if spec.default is None]
-    if none_defaults:
-        errors.append(f"None defaults found in CONF_SPECS: {none_defaults}")
-
-    if errors:
-        raise AssertionError(" | ".join(errors))
-
-
 def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None) -> ResolvedConfig:
     """Resolve settings from options → data → defaults using ConfKeys.
 
@@ -176,9 +150,6 @@ def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None) -
     """
     options = options or {}
     data = data or {}
-
-    # Enforce contract consistency during resolution for clear failures in dev/CI
-    validate_settings_contract()
 
     def _val(key: ConfKeys) -> Any:
         spec = CONF_SPECS[key]

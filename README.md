@@ -1,4 +1,7 @@
-# Smart Cover Automation for Home Assistant
+# Smart Cover Automation for Home Assistant
+
+[![Test](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml/badge.svg)](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/helgeklein/ha-smart-cover-automation/branch/main/graph/badge.svg)](https://codecov.io/gh/helgeklein/ha-smart-cover-automation)
 
 **Current development status:** *alpha, for testing only*
 
@@ -58,7 +61,6 @@ The integration helps you understand what's going on in the following ways:
 
 ## TODO
 
-- Weather: is the sun shining?
 - Plant light:
 	- Global: min position
     - Per cover: min/max positions
