@@ -21,9 +21,9 @@ and that the options flow handler is correctly instantiated and functional.
 from __future__ import annotations
 
 from typing import cast
+from unittest.mock import MagicMock
 
 import pytest
-from unittest.mock import MagicMock
 
 from custom_components.smart_cover_automation import async_get_options_flow
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
