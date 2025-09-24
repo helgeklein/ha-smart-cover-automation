@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: Installation
+nav_order: 2
+description: "Complete installation guide for HA Smart Cover Automation via HACS or manual installation."
 permalink: /installation/
 ---
 

@@ -1,25 +1,34 @@
---- --- @import "minima";
+--- ---
+/* Custom styles for HA Smart Cover Automation docs - Just the Docs theme */
 
-/* Custom styles for HA Smart Cover Automation docs */
+/* Custom branding colors */
+:root {
+    --custom-blue: #0366d6;
+    --custom-blue-hover: #0256cc;
+    --custom-gray: #586069;
+    --custom-light-gray: #f6f8fa;
+    --custom-border: #e1e4e8;
+}
 
-/* Header improvements */
+/* Header customizations */
 .site-header {
-    border-bottom: 2px solid #0366d6;
+    border-bottom: 2px solid var(--custom-blue);
 }
 
-.site-title {
+.site-title,
+.site-logo {
     font-weight: 600;
-    color: #0366d6 !important;
+    color: var(--custom-blue) !important;
 }
 
-/* Navigation styling */
-.site-nav .page-link {
-    color: #586069;
+/* Main navigation styling */
+.main-nav a {
+    color: var(--custom-gray);
     font-weight: 500;
 }
 
-.site-nav .page-link:hover {
-    color: #0366d6;
+.main-nav a:hover {
+    color: var(--custom-blue);
 }
 
 /* Home page styling */

@@ -1,0 +1,129 @@
+//
+// helgeklein.com inspired color scheme for Just the Docs
+//
+
+// Core colors as specified
+$hk-text: #000000; // Black for all text and headings
+$hk-h3: #00CC9E; // Specific green for H3 headings
+$hk-link: #D1004D; // Pink/magenta for all link states
+$hk-text-light: #666666; // Gray for secondary text
+$hk-background: #ffffff; // Clean white background
+$hk-surface: #f8f9fa; // Light gray for surfaces
+$hk-border: #ecf0f1; // Very light gray for borders
+$hk-code-bg: #f4f4f4; // Light background for code
+
+// Success, warning, and error colors
+$hk-success: #27ae60; // Green for success states
+$hk-warning: #f39c12; // Orange for warnings
+$hk-error: #e74c3c; // Red for errors
+
+// Apply to Just the Docs variables
+
+// Base colors
+$body-background-color: $hk-background;
+$sidebar-color: $hk-surface;
+$search-background-color: $hk-background;
+$table-background-color: $hk-background;
+$code-background-color: $hk-code-bg;
+
+// Text colors
+$body-text-color: $hk-text;
+$body-heading-color: $hk-text;
+$nav-child-link-color: $hk-text-light;
+$link-color: $hk-link;
+$btn-primary-color: $hk-background;
+$base-button-color: $hk-surface;
+
+// Interactive states
+$link-color-hover: $hk-link;
+$nav-child-link-color-hover: $hk-link;
+
+// Border and structural colors
+$border-color: $hk-border;
+$accent-color: $hk-link;
+
+// Navigation specific
+$nav-list-item-color: $hk-text-light;
+$nav-list-item-color-hover: $hk-link;
+$site-title-color: $hk-text;
+
+// Code and syntax highlighting
+$code-color: $hk-text;
+$search-result-preview-color: $hk-text-light;
+
+// Table styling
+$table-header-background-color: $hk-surface;
+$table-border-color: $hk-border;
+
+// Button styling
+$btn-primary-background-color: $hk-link;
+$btn-primary-background-color-hover: $hk-link;
+
+// Search styling
+$search-input-background-color: $hk-background;
+$search-input-border-color: $hk-border;
+
+// Footer
+$footer-background-color: $hk-surface;
+$footer-text-color: $hk-text-light;
+
+// Breadcrumb
+$breadcrumb-nav-color: $hk-text-light;
+$breadcrumb-nav-color-hover: $hk-link;
+
+// Labels and badges
+$label-primary-color: $hk-link;
+$label-success-color: $hk-success;
+$label-warning-color: $hk-warning;
+$label-danger-color: $hk-error;
+
+// Custom CSS rules for specific color requirements
+h3,
+.main-content h3 {
+    color: $hk-h3 !important;
+}
+
+// Make all headings bold
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.main-content h1,
+.main-content h2,
+.main-content h3,
+.main-content h4,
+.main-content h5,
+.main-content h6 {
+    font-weight: bold !important;
+}
+
+// All link states with specified color
+a,
+.main-content a,
+.nav-list-link,
+.aux-nav-list-item a {
+    color: $hk-link !important;
+}
+
+a:hover,
+.main-content a:hover,
+.nav-list-link:hover,
+.aux-nav-list-item a:hover {
+    color: $hk-link !important;
+}
+
+a:visited,
+.main-content a:visited,
+.nav-list-link:visited,
+.aux-nav-list-item a:visited {
+    color: $hk-link !important;
+}
+
+a:active,
+.main-content a:active,
+.nav-list-link:active,
+.aux-nav-list-item a:active {
+    color: $hk-link !important;
+}

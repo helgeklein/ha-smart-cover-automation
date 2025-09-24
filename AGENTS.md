@@ -23,3 +23,7 @@
     - Contributing.md
     - Readme.md
     - Testing.md
+
+## Git Commits
+
+- Never commit your changes. That will be done manually.

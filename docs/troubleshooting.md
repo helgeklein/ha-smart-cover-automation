@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: Troubleshooting
+nav_order: 4
+description: "Common issues and solutions for HA Smart Cover Automation."
 permalink: /troubleshooting/
 ---
 

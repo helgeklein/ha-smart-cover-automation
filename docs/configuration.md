@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: Configuration
+nav_order: 3
+description: "Complete configuration guide for HA Smart Cover Automation with examples and options."
 permalink: /configuration/
 ---
 

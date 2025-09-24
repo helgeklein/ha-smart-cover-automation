@@ -1,17 +1,44 @@
 # Jekyll configuration for HA Smart Cover Automation
-title: HA Smart Cover Automation
+title: Smart Cover Automation for Home Assistant
 description: >-
-  A comprehensive Home Assistant integration for automated cover control
-  based on weather conditions, time schedules, and user preferences.
+  A Home Assistant integration to automate the control of your smart home's window covers with a focus is on quality, reliability, and flexibility.
 baseurl: "/ha-smart-cover-automation"
 url: "https://helgeklein.github.io"
 
 # Theme
-theme: minima
-# remote_theme: pages-themes/minimal@v0.2.0
+remote_theme: just-the-docs/just-the-docs
+
+# Search functionality
+search_enabled: true
+search:
+  heading_level: 2
+  previews: 3
+  preview_words_before: 5
+  preview_words_after: 10
+  tokenizer_separator: /[\s/]+/
+  rel_url: true
+  button: false
+
+# Auxiliary links in header
+aux_links:
+  "GitHub Repository":
+    - "https://github.com/helgeklein/ha-smart-cover-automation"
+# Open aux links in a new tab.
+aux_links_new_tab: true
+
+# Color scheme - custom helgeklein.com inspired theme
+color_scheme: helgeklein
+
+# Enable back to top link
+back_to_top: true
+back_to_top_text: "Back to top"
+
+# Heading anchor links
+heading_anchors: true
 
 # Plugins
 plugins:
+  - jekyll-remote-theme
   - jekyll-feed
   - jekyll-sitemap
   - jekyll-seo-tag
@@ -22,20 +49,14 @@ highlighter: rouge
 kramdown:
   input: GFM
   syntax_highlighter_opts:
-    default_lang: yaml
+    block:
+      line_numbers: false
 
 # Collections
 collections:
   docs:
     output: true
     permalink: /:collection/:name/
-
-# Navigation
-header_pages:
-  - index.md
-  - installation.md
-  - configuration.md
-  - troubleshooting.md
 
 # GitHub repository info
 github:

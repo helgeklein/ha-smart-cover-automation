@@ -1,6 +1,9 @@
 ---
-layout: home
-title: Home Assistant Smart Cover Automation
+layout: default
+title: Home
+nav_order: 1
+description: "Home Assistant Smart Cover Automation - Intelligent automation for covers based on weather conditions, time schedules, and user preferences."
+permalink: /
 ---
 
 # Smart Cover Automation for Home Assistant
