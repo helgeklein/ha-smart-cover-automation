@@ -3,6 +3,10 @@
 [![Test status](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml/badge.svg)](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml)
 [![Test coverage](https://raw.githubusercontent.com/helgeklein/ha-smart-cover-automation/main/.github/badges/coverage.svg)](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml)
 
+**📖 [Visit the Project Documentation Website](https://helgeklein.github.io/ha-smart-cover-automation/)**
+
+> Complete installation guides, configuration examples, and troubleshooting help are available on our documentation site.
+
 **Current development status:** *alpha, for testing only*
 
 This is a stable and well-tested Home Assistant integration to automate the control of your smart home's window covers. The focus is on quality, reliability, and flexibility. In other words: it needs to "just work" and it needs to work the way you want it to.

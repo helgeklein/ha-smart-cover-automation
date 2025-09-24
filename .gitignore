@@ -16,3 +16,12 @@ coverage.xml
 # Home Assistant configuration
 config/*
 !config/configuration.yaml
+
+# Jekyll build artifacts and dependencies
+docs/_site/
+docs/.sass-cache/
+docs/.jekyll-cache/
+docs/.jekyll-metadata
+docs/vendor/
+docs/.bundle/
+docs/Gemfile.lock

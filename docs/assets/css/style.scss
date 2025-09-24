@@ -1,0 +1,155 @@
+--- --- @import "minima";
+
+/* Custom styles for HA Smart Cover Automation docs */
+
+/* Header improvements */
+.site-header {
+    border-bottom: 2px solid #0366d6;
+}
+
+.site-title {
+    font-weight: 600;
+    color: #0366d6 !important;
+}
+
+/* Navigation styling */
+.site-nav .page-link {
+    color: #586069;
+    font-weight: 500;
+}
+
+.site-nav .page-link:hover {
+    color: #0366d6;
+}
+
+/* Home page styling */
+.home h1 {
+    color: #24292e;
+    font-size: 2.5em;
+    margin-bottom: 1em;
+}
+
+/* Badge styling */
+img[alt*="Badge"] {
+    margin: 0 2px;
+}
+
+/* Button styling */
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #0366d6;
+    color: white !important;
+    text-decoration: none !important;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.btn:hover {
+    background-color: #0256cc;
+}
+
+.center {
+    text-align: center;
+    margin: 2em 0;
+}
+
+/* Table improvements */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+}
+
+th,
+td {
+    border: 1px solid #d1d5da;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f6f8fa;
+    font-weight: 600;
+}
+
+/* Code block improvements */
+.highlight {
+    margin: 1em 0;
+}
+
+/* Responsive design */
+@media screen and (max-width: 600px) {
+    .home h1 {
+        font-size: 2em;
+    }
+
+    table {
+        font-size: 0.9em;
+    }
+
+    .btn {
+        display: block;
+        margin: 1em auto;
+        text-align: center;
+        max-width: 200px;
+    }
+}
+
+/* Feature list styling */
+.home ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.home ul li {
+    padding: 0.5em 0;
+    position: relative;
+    padding-left: 1.5em;
+}
+
+.home ul li:before {
+    content: "✨";
+    position: absolute;
+    left: 0;
+}
+
+/* Documentation improvements */
+.post-content h2 {
+    color: #24292e;
+    border-bottom: 1px solid #e1e4e8;
+    padding-bottom: 0.3em;
+    margin-top: 2em;
+}
+
+.post-content h3 {
+    color: #586069;
+    margin-top: 1.5em;
+}
+
+/* Alert boxes */
+.alert {
+    padding: 1em;
+    margin: 1em 0;
+    border-left: 4px solid;
+    border-radius: 4px;
+}
+
+.alert-info {
+    background-color: #e6f3ff;
+    border-left-color: #0366d6;
+    color: #0366d6;
+}
+
+.alert-warning {
+    background-color: #fff8e6;
+    border-left-color: #f66a0a;
+    color: #f66a0a;
+}
+
+.alert-danger {
+    background-color: #ffe6e6;
+    border-left-color: #d73a49;
+    color: #d73a49;
+}
