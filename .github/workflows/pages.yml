@@ -32,7 +32,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: '3.3'
           bundler-cache: true
           cache-version: 0
           working-directory: '${{ github.workspace }}/docs'
@@ -42,9 +42,8 @@ jobs:
         uses: actions/configure-pages@v4
 
       - name: Build with Jekyll
-        run: |
-          cd docs
-          bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        working-directory: ./docs
         env:
           JEKYLL_ENV: production
 
