@@ -2,67 +2,73 @@
 layout: default
 title: Home
 nav_order: 1
-description: "Home Assistant Smart Cover Automation - Intelligent automation for covers based on weather conditions, time schedules, and user preferences."
+description: "A Home Assistant integration to automate the control of your smart home's window covers with a focus is on quality, reliability, and flexibility."
 permalink: /
 ---
 
 # Smart Cover Automation for Home Assistant
 
-[![HACS Badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/release/helgeklein/ha-smart-cover-automation.svg)](https://github.com/helgeklein/ha-smart-cover-automation/releases)
-[![License](https://img.shields.io/github/license/helgeklein/ha-smart-cover-automation.svg)](LICENSE)
+[![Test status](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml/badge.svg)](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml)
+[![Test coverage](https://raw.githubusercontent.com/helgeklein/ha-smart-cover-automation/main/.github/badges/coverage.svg)](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml)
 
-A comprehensive Home Assistant integration that provides intelligent automation for covers (blinds, shutters, curtains) based on weather conditions, time schedules, and user preferences.
+**Current development status:** *alpha, for testing only*
 
-## ✨ Features
+This is a stable and well-tested Home Assistant integration to automate the control of your smart home's window covers. The focus is on quality, reliability, and flexibility. In other words: it needs to "just work" and it needs to work the way you want it to.
 
-- **Weather-Based Control**: Automatically adjust covers based on weather conditions
-- **Time-Based Scheduling**: Set custom schedules for different times of day
-- **Multiple Entity Support**: Control multiple covers with individual settings
-- **Smart Algorithms**: Intelligent decision-making for optimal comfort and energy efficiency
-- **Easy Configuration**: Simple setup through Home Assistant UI
-- **Comprehensive Monitoring**: Built-in sensors and status tracking
+## Functionality
 
-## 🚀 Quick Start
+- **Easy to use**:
+	- Simple to configure, transparent and reliable operation.
+- **Sun heat protection:**
+	- Close covers while the sun shines on a window to prevent the house from heating up.
+	- Open covers when there's no direct sunlight to minimize dark cave feeling.
+	- Conditionals: weather (sunshine, temperature), sun elevation.
+- **Lockout protection:**
+	- Pause automations for a cover if the door/window is open.
+- **Manual override detection:**
+	- Detect manual adjustments and pause automation to avoid conflicts.
+- **Night silence**:
+	- Don't move the covers when people are sleeping.
+- **Prepositioning before silent phases:**
+	- Move the covers to the position they need to be in ahead of time so that there's silence at night but the covers are closed when the sun starts shining in the morning.
+- **Plant light:**
+	- Define min/max positions for the covers so that plants on the windowsill still receive enough light.
+- **Comfort:**
+	- Micro-adjustments are avoided.
+- **Supported covers:** Works with any cover entity that supports open/close or position control.
 
-### Prerequisites
-- Home Assistant 2023.1.0 or newer
-- At least one cover entity configured in Home Assistant
+## Configuration Options
 
-### Installation via HACS (Recommended)
+All relevant settings are available from the UI.
 
-1. Open HACS in your Home Assistant instance
-2. Click on "Integrations"
-3. Click the three dots in the top right corner
-4. Select "Custom repositories"
-5. Add `https://github.com/helgeklein/ha-smart-cover-automation` as repository
-6. Select "Integration" as category
-7. Click "ADD"
-8. Search for "Smart Cover Automation" and install
+- **Enabled:** turn the automation on or off via a switch.
+- **Cover selection:** choose which covers you want the integration to control.
+- **Window direction:** set each window's horizontal angle from north (azimuth).
+- **Temperature threshold:** The automation only operates on hot days, i.e., if the forecasted daily high temperature is above a threshold.
+- **Sun:**
+	- Minimal sun elevation above the horizon.
+	- Maximum angle at which the sun is considered to be shining on the window.
+- **Covers:**
+	- Maximum closure (never close more than this).
 
-### Manual Installation
+## Monitoring the Integration's Operation
 
-1. Download the latest release from [GitHub Releases](https://github.com/helgeklein/ha-smart-cover-automation/releases)
-2. Extract the `smart_cover_automation` folder to your `custom_components` directory
-3. Restart Home Assistant
+The integration helps you understand what's going on in the following ways:
 
-## 📖 Documentation
+- **Simulation mode** showing exactly what the integration would do without actually moving the covers.
+- **Log file** showing the integration's workings in detail.
+- Binary **availability sensor** showing if the integration is working correctly or if there's a problem.
+- Automation **status sensor** summarizing the recent activity.
 
-- [Installation Guide](installation) - Detailed installation instructions
-- [Configuration](configuration) - How to configure the integration
-- [Troubleshooting](troubleshooting) - Common issues and solutions
+## TODO
 
-## 🛠️ Development
-
-This project is open source and welcomes contributions!
-
-- [Contributing Guidelines](https://github.com/helgeklein/ha-smart-cover-automation/blob/main/CONTRIBUTING.md)
-- [View Source Code](https://github.com/helgeklein/ha-smart-cover-automation)
-- [Report Issues](https://github.com/helgeklein/ha-smart-cover-automation/issues)
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/helgeklein/ha-smart-cover-automation/blob/main/LICENSE) file for details.
+- Plant light:
+	- Global: min position
+    - Per cover: min/max positions
+- Lockout protection
+- Manual override detection
+- Night silence
+- Prepositioning before silent phases
 
 ---
 

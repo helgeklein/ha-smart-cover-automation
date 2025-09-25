@@ -35,10 +35,6 @@ aux_links_new_tab: true
 # Color scheme - custom helgeklein.com inspired theme
 color_scheme: helgeklein
 
-# Enable back to top link
-back_to_top: true
-back_to_top_text: "Back to top"
-
 # Heading anchor links
 heading_anchors: true
 
