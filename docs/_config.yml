@@ -5,6 +5,12 @@ description: >-
 baseurl: "/ha-smart-cover-automation"
 url: "https://helgeklein.github.io"
 
+# Logo configuration
+logo: "/assets/img/logo.png"
+
+# Favicon configuration
+favicon: "/assets/img/favicon-32.png"
+
 # Theme
 remote_theme: just-the-docs/just-the-docs
 
