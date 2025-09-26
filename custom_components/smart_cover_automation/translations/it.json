@@ -1,0 +1,63 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Smart Cover Automation",
+                "description": "Controllo automatico delle tapparelle. Documentazione: https://helgeklein.github.io/ha-smart-cover-automation/",
+                "data": {
+                    "covers": "Tapparelle da automatizzare",
+                    "weather_entity_id": "Sensore previsioni meteorologiche"
+                }
+            }
+        },
+        "error": {
+            "invalid_cover": "Una o più tapparelle selezionate non sono valide o non sono disponibili.",
+            "invalid_weather_entity": "L'entità meteorologica selezionata non supporta le previsioni giornaliere.",
+            "invalid_config": "Configurazione non valida."
+        },
+        "abort": {
+            "single_instance_allowed": "È possibile configurare solo un'istanza di questa integrazione"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Configurazione Smart Cover Automation",
+                "description": "Regola impostazioni",
+                "data": {
+                    "enabled": "Abilita automazione",
+                    "simulating": "Modalità simulazione",
+                    "verbose_logging": "Registrazione dettagliata",
+                    "covers": "Tapparelle da automatizzare",
+                    "weather_entity_id": "Sensore previsioni meteorologiche",
+                    "temp_threshold": "Soglia di temperatura",
+                    "sun_elevation_threshold": "Elevazione solare minima",
+                    "sun_azimuth_tolerance": "Tolleranza azimut solare",
+                    "covers_max_closure": "Posizione massima di chiusura tapparelle",
+                    "cover_azimuth": "Azimut di **{cover_name}**"
+                },
+                "data_description": {
+                    "simulating": "Se abilitata, l'automazione esegue tutti i calcoli senza muovere effettivamente le tapparelle.",
+                    "covers": "Seleziona le tapparelle che l'automazione deve controllare.",
+                    "temp_threshold": "L'automazione funziona solo nelle giornate calde, cioè se la temperatura massima giornaliera prevista è superiore a questa soglia (°C).",
+                    "sun_elevation_threshold": "L'automazione inizia a funzionare quando l'elevazione del sole è superiore a questa soglia (gradi sopra l'orizzonte).",
+                    "sun_azimuth_tolerance": "Angolo orizzontale massimo al quale il sole è considerato brillare sulla finestra (gradi).",
+                    "covers_max_closure": "Non chiudere mai più di questo per far sempre entrare un po' di luce (0 = completamente chiuso, 100 = completamente aperto).",
+                    "cover_azimuth": "Direzione verso cui è orientata la finestra (0°=Nord, 90°=Est, ecc.). Utilizzato per calcolare se il sole colpisce la finestra."
+                }
+            }
+        }
+    },
+    "entity": {
+        "sensor": {
+            "automation_status": {
+                "name": "Stato Automazione"
+            }
+        },
+        "binary_sensor": {
+            "smart_cover_automation": {
+                "name": "Disponibilità Smart Cover Automation"
+            }
+        }
+    }
+}

@@ -1,0 +1,63 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Smart Cover Automation",
+                "description": "Controlo automático de estores. Documentação: https://helgeklein.github.io/ha-smart-cover-automation/.",
+                "data": {
+                    "covers": "Estores para automatizar",
+                    "weather_entity_id": "Sensor de previsão meteorológica"
+                }
+            }
+        },
+        "error": {
+            "invalid_cover": "Um ou mais estores selecionados são inválidos ou indisponíveis.",
+            "invalid_weather_entity": "A entidade meteorológica selecionada não suporta previsões diárias.",
+            "invalid_config": "Configuração inválida."
+        },
+        "abort": {
+            "single_instance_allowed": "Apenas uma instância desta integração pode ser configurada"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Configuração do Smart Cover Automation",
+                "description": "Ajustar configurações",
+                "data": {
+                    "enabled": "Activar automação",
+                    "simulating": "Modo de simulação",
+                    "verbose_logging": "Registo detalhado",
+                    "covers": "Estores para automatizar",
+                    "weather_entity_id": "Sensor de previsão meteorológica",
+                    "temp_threshold": "Limite de temperatura",
+                    "sun_elevation_threshold": "Elevação mínima do sol",
+                    "sun_azimuth_tolerance": "Tolerância do azimute solar",
+                    "covers_max_closure": "Posição máxima de fecho",
+                    "cover_azimuth": "Azimute do **{cover_name}**"
+                },
+                "data_description": {
+                    "simulating": "Se activado, a automação executa todos os cálculos sem realmente mover os estores.",
+                    "covers": "Seleccione os estores que a automação deve controlar.",
+                    "temp_threshold": "A automação opera apenas em dias quentes, ou seja, se a temperatura máxima diária prevista estiver acima deste limite (°C).",
+                    "sun_elevation_threshold": "A automação começa a operar quando a elevação do sol está acima deste limite (graus acima do horizonte).",
+                    "sun_azimuth_tolerance": "Ângulo horizontal máximo no qual o sol é considerado como incidindo na janela (graus).",
+                    "covers_max_closure": "Nunca fechar mais que isto para sempre permitir a entrada de alguma luz (0 = totalmente fechado, 100 = totalmente aberto).",
+                    "cover_azimuth": "Direcção para a qual a janela está voltada (0°=Norte, 90°=Este, etc.). Usado para calcular se o sol está a incidir na janela."
+                }
+            }
+        }
+    },
+    "entity": {
+        "sensor": {
+            "automation_status": {
+                "name": "Estado da Automação"
+            }
+        },
+        "binary_sensor": {
+            "smart_cover_automation": {
+                "name": "Disponibilidade do Smart Cover Automation"
+            }
+        }
+    }
+}

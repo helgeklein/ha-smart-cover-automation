@@ -1,0 +1,63 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Smart Cover Automation",
+                "description": "Automatyczne sterowanie roletami okiennymi. Dokumentacja: https://helgeklein.github.io/ha-smart-cover-automation/.",
+                "data": {
+                    "covers": "Rolety do automatyzacji",
+                    "weather_entity_id": "Czujnik prognozy pogody"
+                }
+            }
+        },
+        "error": {
+            "invalid_cover": "Jedna lub więcej wybranych rolet jest nieprawidłowych lub niedostępnych.",
+            "invalid_weather_entity": "Wybrana jednostka pogodowa nie obsługuje prognoz dziennych.",
+            "invalid_config": "Nieprawidłowa konfiguracja."
+        },
+        "abort": {
+            "single_instance_allowed": "Można skonfigurować tylko jedną instancję tej integracji"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Konfiguracja Smart Cover Automation",
+                "description": "Dostosuj ustawienia",
+                "data": {
+                    "enabled": "Włącz automatyzację",
+                    "simulating": "Tryb symulacji",
+                    "verbose_logging": "Szczegółowe logowanie",
+                    "covers": "Rolety do automatyzacji",
+                    "weather_entity_id": "Czujnik prognozy pogody",
+                    "temp_threshold": "Próg temperatury",
+                    "sun_elevation_threshold": "Minimalna wysokość słońca",
+                    "sun_azimuth_tolerance": "Tolerancja azymutu słonecznego",
+                    "covers_max_closure": "Maksymalna pozycja zamknięcia rolet",
+                    "cover_azimuth": "Azymut **{cover_name}**"
+                },
+                "data_description": {
+                    "simulating": "Jeśli włączone, automatyzacja wykonuje wszystkie obliczenia bez rzeczywistego przesuwania rolet.",
+                    "covers": "Wybierz rolety, którymi ma sterować automatyzacja.",
+                    "temp_threshold": "Automatyzacja działa tylko w gorące dni, tj. gdy prognozowana maksymalna temperatura dzienna przekracza ten próg (°C).",
+                    "sun_elevation_threshold": "Automatyzacja zaczyna działać, gdy wysokość słońca przekracza ten próg (stopnie nad horyzontem).",
+                    "sun_azimuth_tolerance": "Maksymalny kąt poziomy, przy którym słońce jest uważane za świecące na okno (stopnie).",
+                    "covers_max_closure": "Nigdy nie zamykaj bardziej niż to, aby zawsze wpuścić trochę światła (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
+                    "cover_azimuth": "Kierunek, w którym zwrócone jest okno (0°=Północ, 90°=Wschód, itp.). Używane do obliczenia, czy słońce świeci na okno."
+                }
+            }
+        }
+    },
+    "entity": {
+        "sensor": {
+            "automation_status": {
+                "name": "Status automatyzacji"
+            }
+        },
+        "binary_sensor": {
+            "smart_cover_automation": {
+                "name": "Dostępność Smart Cover Automation"
+            }
+        }
+    }
+}

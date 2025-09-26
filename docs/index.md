@@ -36,6 +36,7 @@ This is a stable and well-tested Home Assistant integration to automate the cont
 - **Comfort:**
 	- Micro-adjustments are avoided.
 - **Supported covers:** Works with any cover entity that supports open/close or position control.
+- **Rich language support:** UI translations available for English, German, French, Spanish, Dutch, Italian, Portuguese, Chinese, Swedish, Polish.
 
 ## Configuration Options
 

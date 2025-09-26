@@ -1,0 +1,63 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Smart Cover Automation",
+                "description": "Control automático de persianas. Documentación: https://helgeklein.github.io/ha-smart-cover-automation/",
+                "data": {
+                    "covers": "Persianas a automatizar",
+                    "weather_entity_id": "Sensor de pronóstico meteorológico"
+                }
+            }
+        },
+        "error": {
+            "invalid_cover": "Una o más persianas seleccionadas son inválidas o no están disponibles.",
+            "invalid_weather_entity": "La entidad meteorológica seleccionada no admite pronósticos diarios.",
+            "invalid_config": "Configuración inválida."
+        },
+        "abort": {
+            "single_instance_allowed": "Solo se puede configurar una instancia de esta integración"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Configuración Smart Cover Automation",
+                "description": "Ajustar configuración",
+                "data": {
+                    "enabled": "Habilitar automatización",
+                    "simulating": "Modo simulación",
+                    "verbose_logging": "Registro detallado",
+                    "covers": "Persianas a automatizar",
+                    "weather_entity_id": "Sensor de pronóstico meteorológico",
+                    "temp_threshold": "Umbral de temperatura",
+                    "sun_elevation_threshold": "Elevación solar mínima",
+                    "sun_azimuth_tolerance": "Tolerancia de azimut solar",
+                    "covers_max_closure": "Posición máxima de cierre de persianas",
+                    "cover_azimuth": "Azimut de **{cover_name}**"
+                },
+                "data_description": {
+                    "simulating": "Si está habilitado, la automatización ejecuta todos los cálculos sin mover realmente las persianas.",
+                    "covers": "Seleccione las persianas que la automatización debe controlar.",
+                    "temp_threshold": "La automatización solo funciona en días calurosos, es decir, si la temperatura máxima diaria pronosticada está por encima de este umbral (°C).",
+                    "sun_elevation_threshold": "La automatización comienza a funcionar cuando la elevación del sol está por encima de este umbral (grados sobre el horizonte).",
+                    "sun_azimuth_tolerance": "Ángulo horizontal máximo en el que se considera que el sol brilla sobre la ventana (grados).",
+                    "covers_max_closure": "Nunca cerrar más que esto para siempre dejar entrar algo de luz (0 = completamente cerrado, 100 = completamente abierto).",
+                    "cover_azimuth": "Dirección hacia la que está orientada la ventana (0°=Norte, 90°=Este, etc.). Se usa para calcular si el sol incide sobre la ventana."
+                }
+            }
+        }
+    },
+    "entity": {
+        "sensor": {
+            "automation_status": {
+                "name": "Estado de Automatización"
+            }
+        },
+        "binary_sensor": {
+            "smart_cover_automation": {
+                "name": "Disponibilidad Smart Cover Automation"
+            }
+        }
+    }
+}

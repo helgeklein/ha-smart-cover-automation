@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Smart Cover Automation",
-                "description": "Configure automatic cover control based on temperature or sun position. For detailed help, see: https://github.com/helgeklein/ha-smart_cover_automation",
+                "description": "Automatic window cover control. Documentation: https://helgeklein.github.io/ha-smart-cover-automation/.",
                 "data": {
                     "covers": "Covers to automate",
                     "weather_entity_id": "Weather forecast sensor"
@@ -13,12 +13,10 @@
         "error": {
             "invalid_cover": "One or more selected covers are invalid or unavailable.",
             "invalid_weather_entity": "The selected weather entity does not support daily forecasts.",
-            "invalid_config": "Invalid configuration.",
-            "single_instance_allowed": "Only one instance of Smart Cover Automation is allowed."
+            "invalid_config": "Invalid configuration."
         },
         "abort": {
-            "single_instance_allowed": "Only one instance of this integration can be configured",
-            "invalid_weather_entity": "The selected weather entity does not support daily forecasts. Please select a different entity."
+            "single_instance_allowed": "Only one instance of this integration can be configured"
         }
     },
     "options": {
@@ -35,7 +33,7 @@
                     "temp_threshold": "Temperature threshold",
                     "sun_elevation_threshold": "Minimal sun elevation",
                     "sun_azimuth_tolerance": "Sun azimuth tolerance",
-                    "covers_max_closure": "Maximum cover closure",
+                    "covers_max_closure": "Maximum cover closure position",
                     "cover_azimuth": "**{cover_name}** azimuth"
                 },
                 "data_description": {
@@ -43,7 +41,7 @@
                     "covers": "Select the covers the automation should control.",
                     "temp_threshold": "The automation only operates on hot days, i.e., if the forecasted daily high temperature is above this threshold (°C).",
                     "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
-                    "sun_azimuth_tolerance": "Maximum angle at which the sun is considered to be shining on the window (degrees).",
+                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
                     "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
                     "cover_azimuth": "Direction the window is facing (0°=North, 90°=East, etc.). Used to calculate if the sun is hitting the window."
                 }
