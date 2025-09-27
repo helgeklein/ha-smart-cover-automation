@@ -302,8 +302,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 # Close the cover (but respect max closure limit)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, resolved.covers_max_closure)
             else:
-                # Open the cover
-                desired_pos = const.COVER_POS_FULLY_OPEN
+                # Open the cover (but respect min closure limit)
+                desired_pos = min(const.COVER_POS_FULLY_OPEN, resolved.covers_min_closure)
 
             # Determine if cover movement is necessary
             movement_needed = False

@@ -34,6 +34,7 @@
                     "sun_elevation_threshold": "Élévation solaire minimale",
                     "sun_azimuth_tolerance": "Tolérance d'azimut solaire",
                     "covers_max_closure": "Position de fermeture maximale des volets",
+                    "covers_min_closure": "Position de fermeture minimale des volets",
                     "cover_azimuth": "Azimut de **{cover_name}**"
                 },
                 "data_description": {
@@ -43,6 +44,7 @@
                     "sun_elevation_threshold": "L'automatisation commence à fonctionner lorsque l'élévation du soleil est supérieure à ce seuil (degrés au-dessus de l'horizon).",
                     "sun_azimuth_tolerance": "Angle horizontal maximal auquel le soleil est considéré comme brillant sur la fenêtre (degrés).",
                     "covers_max_closure": "Ne jamais fermer plus que cela pour toujours laisser entrer un peu de lumière (0 = complètement fermé, 100 = complètement ouvert).",
+                    "covers_min_closure": "Ne jamais ouvrir plus que cela pour toujours fournir un minimum d'ombre (0 = complètement fermé, 100 = complètement ouvert).",
                     "cover_azimuth": "Direction vers laquelle la fenêtre est orientée (0°=Nord, 90°=Est, etc.). Utilisé pour calculer si le soleil frappe la fenêtre."
                 }
             }

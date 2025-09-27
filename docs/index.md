@@ -51,6 +51,7 @@ All relevant settings are available from the UI.
 	- Maximum angle at which the sun is considered to be shining on the window.
 - **Covers:**
 	- Maximum closure (never close more than this).
+	- Minimum closure (never open more than this).
 
 ## Monitoring the Integration's Operation
 
@@ -64,7 +65,6 @@ The integration helps you understand what's going on in the following ways:
 ## TODO
 
 - Plant light:
-	- Global: min position
     - Per cover: min/max positions
 - Lockout protection
 - Manual override detection

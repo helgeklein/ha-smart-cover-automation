@@ -34,6 +34,7 @@
                     "sun_elevation_threshold": "Minimal solhöjd",
                     "sun_azimuth_tolerance": "Solazimuttolerans",
                     "covers_max_closure": "Maximal fönsterlucksposition",
+                    "covers_min_closure": "Minimal fönsterlucksposition",
                     "cover_azimuth": "**{cover_name}** azimut"
                 },
                 "data_description": {
@@ -43,6 +44,7 @@
                     "sun_elevation_threshold": "Automatiseringen börjar fungera när solens höjd är över denna tröskel (grader över horisonten).",
                     "sun_azimuth_tolerance": "Maximal horisontell vinkel där solen anses lysa på fönstret (grader).",
                     "covers_max_closure": "Stäng aldrig mer än detta för att alltid släppa in lite ljus (0 = helt stängd, 100 = helt öppen).",
+                    "covers_min_closure": "Öppna aldrig mer än detta för att alltid ge ett minimum av skugga (0 = helt stängd, 100 = helt öppen).",
                     "cover_azimuth": "Riktning som fönstret vetter åt (0°=Nord, 90°=Öst, osv.). Används för att beräkna om solen träffar fönstret."
                 }
             }

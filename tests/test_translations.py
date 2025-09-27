@@ -138,6 +138,7 @@ def test_translation_has_required_keys(language_code: str) -> None:
         ConfKeys.SUN_ELEVATION_THRESHOLD.value,
         ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
         ConfKeys.COVERS_MAX_CLOSURE.value,
+        ConfKeys.COVERS_MIN_CLOSURE.value,
         const.COVER_AZIMUTH,
     }
     missing_options = expected_options_fields - set(options_data.keys())

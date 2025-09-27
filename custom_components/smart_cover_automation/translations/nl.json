@@ -34,6 +34,7 @@
                     "sun_elevation_threshold": "Minimale zonhoogte",
                     "sun_azimuth_tolerance": "Zon azimut tolerantie",
                     "covers_max_closure": "Maximale rolluik sluitingspositie",
+                    "covers_min_closure": "Minimale rolluik sluitingspositie",
                     "cover_azimuth": "**{cover_name}** azimut"
                 },
                 "data_description": {
@@ -43,6 +44,7 @@
                     "sun_elevation_threshold": "De automatisering begint te werken wanneer de zonhoogte boven deze drempel ligt (graden boven de horizon).",
                     "sun_azimuth_tolerance": "Maximale horizontale hoek waarbij de zon wordt beschouwd als schijnend op het raam (graden).",
                     "covers_max_closure": "Sluit nooit meer dan dit om altijd wat licht binnen te laten (0 = volledig gesloten, 100 = volledig open).",
+                    "covers_min_closure": "Open nooit meer dan dit om altijd een minimum aan schaduw te bieden (0 = volledig gesloten, 100 = volledig open).",
                     "cover_azimuth": "Richting waarin het raam is gericht (0°=Noord, 90°=Oost, enz.). Gebruikt om te berekenen of de zon op het raam schijnt."
                 }
             }

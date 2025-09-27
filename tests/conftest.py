@@ -465,6 +465,7 @@ def create_combined_and_scenario(
     temp_hot: bool = True,
     sun_hitting: bool = True,
     covers_max_closure: int = COVER_POS_FULLY_OPEN,
+    covers_min_closure: int = COVER_POS_FULLY_CLOSED,
 ) -> tuple[dict[str, Any], dict[str, MagicMock]]:
     """Create a scenario for testing combined temperature AND sun automation logic.
 
@@ -478,6 +479,7 @@ def create_combined_and_scenario(
         temp_hot: Whether temperature should be above threshold (>24°C)
         sun_hitting: Whether sun should be hitting the window (matching azimuth)
         covers_max_closure: Maximum closure percentage (0-100)
+        covers_min_closure: Minimum closure percentage (0-100)
 
     Returns:
         Tuple of (configuration_dict, state_mapping_dict) ready for test setup
@@ -488,6 +490,7 @@ def create_combined_and_scenario(
         ConfKeys.TEMP_THRESHOLD.value: 23.0,
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
         ConfKeys.COVERS_MAX_CLOSURE.value: covers_max_closure,
+        ConfKeys.COVERS_MIN_CLOSURE.value: covers_min_closure,
         f"{cover_id}_{COVER_SFX_AZIMUTH}": 180.0,
     }
 

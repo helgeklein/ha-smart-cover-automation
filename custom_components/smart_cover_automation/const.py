@@ -39,6 +39,7 @@ SENSOR_ATTR_SIMULATION_ENABLED: Final[str] = "simulation_enabled"  # Whether the
 SENSOR_ATTR_COVERS_NUM_TOTAL: Final[str] = "covers__num_total"  # Total number of configured covers
 SENSOR_ATTR_COVERS_NUM_MOVED: Final[str] = "covers_num_moved"  # Number of covers adjusted in the last cycle
 SENSOR_ATTR_COVERS_MAX_CLOSURE_POS: Final[str] = "covers_max_closure_pos"  # Maximum closure position (%) when sun is hitting
+SENSOR_ATTR_COVERS_MIN_CLOSURE_POS: Final[str] = "covers_min_closure_pos"  # Minimum closure position (%) when sun is hitting
 SENSOR_ATTR_COVERS_MIN_POSITION_DELTA: Final[str] = "covers_min_position_delta"  # Minimum position change (%) required to move
 SENSOR_ATTR_TEMP_CURRENT: Final[str] = "temp_current"  # Current measured temperature (°C)
 SENSOR_ATTR_TEMP_HOT: Final[str] = "temp_hot"  # Whether the current temperature is above the threshold

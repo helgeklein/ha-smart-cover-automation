@@ -34,6 +34,7 @@
                     "sun_elevation_threshold": "Minimale Sonnenhöhe",
                     "sun_azimuth_tolerance": "Sonnen-Azimut-Toleranz",
                     "covers_max_closure": "Maximale Rollladenposition",
+                    "covers_min_closure": "Minimale Rollladenposition",
                     "cover_azimuth": "**{cover_name}** Azimut"
                 },
                 "data_description": {
@@ -43,6 +44,7 @@
                     "sun_elevation_threshold": "Die Automatisierung startet, wenn die Sonnenhöhe über diesem Schwellenwert liegt (Grad über dem Horizont).",
                     "sun_azimuth_tolerance": "Maximaler horizontaler Winkel, bei dem die Sonne als auf das Fenster scheinend betrachtet wird (Grad).",
                     "covers_max_closure": "Niemals mehr als dies schließen, um immer etwas Licht hereinzulassen (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
+                    "covers_min_closure": "Niemals mehr als dies öffnen, um immer etwas Schatten zu gewährleisten (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
                     "cover_azimuth": "Richtung, in die das Fenster zeigt (0°=Nord, 90°=Ost, usw.). Wird verwendet, um zu berechnen, ob die Sonne auf das Fenster trifft."
                 }
             }

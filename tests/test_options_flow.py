@@ -90,10 +90,11 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
 
     # Verify global automation options are present
     # These affect the entire integration's behavior
-    assert ConfKeys.ENABLED.value in schema  # Master enable/disable switch
-    assert ConfKeys.WEATHER_ENTITY_ID.value in schema  # Temperature sensor selection
-    assert ConfKeys.SUN_ELEVATION_THRESHOLD.value in schema  # Sun elevation threshold
-    assert ConfKeys.COVERS_MAX_CLOSURE.value in schema  # Maximum closure percentage
+    assert ConfKeys.ENABLED.value in schema
+    assert ConfKeys.WEATHER_ENTITY_ID.value in schema
+    assert ConfKeys.SUN_ELEVATION_THRESHOLD.value in schema
+    assert ConfKeys.COVERS_MAX_CLOSURE.value in schema
+    assert ConfKeys.COVERS_MIN_CLOSURE.value in schema
 
     # Verify dynamic per-cover direction fields are present
     # These allow individual cover azimuth configuration
@@ -127,7 +128,8 @@ async def test_options_flow_submit_creates_entry() -> None:
         ConfKeys.ENABLED.value: False,  # Disable automation
         ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",  # Custom weather entity
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 30,  # Higher sun threshold (30° vs default 20°)
-        ConfKeys.COVERS_MAX_CLOSURE.value: 75,  # Partial closure limit (75% vs 100%)
+        ConfKeys.COVERS_MAX_CLOSURE.value: 25,  # Partial closure limit (25 vs. 0)
+        ConfKeys.COVERS_MIN_CLOSURE.value: 75,  # Partial opening limit (75 vs 100)
         # Use numeric azimuth instead of legacy cardinal string
         f"cover.one_{COVER_SFX_AZIMUTH}": 180,  # South-facing window
     }

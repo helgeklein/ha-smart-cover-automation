@@ -34,6 +34,7 @@
                     "sun_elevation_threshold": "Minimalna wysokość słońca",
                     "sun_azimuth_tolerance": "Tolerancja azymutu słonecznego",
                     "covers_max_closure": "Maksymalna pozycja zamknięcia rolet",
+                    "covers_min_closure": "Minimalna pozycja zamknięcia rolet",
                     "cover_azimuth": "Azymut **{cover_name}**"
                 },
                 "data_description": {
@@ -43,6 +44,7 @@
                     "sun_elevation_threshold": "Automatyzacja zaczyna działać, gdy wysokość słońca przekracza ten próg (stopnie nad horyzontem).",
                     "sun_azimuth_tolerance": "Maksymalny kąt poziomy, przy którym słońce jest uważane za świecące na okno (stopnie).",
                     "covers_max_closure": "Nigdy nie zamykaj bardziej niż to, aby zawsze wpuścić trochę światła (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
+                    "covers_min_closure": "Nigdy nie otwieraj bardziej niż to, aby zawsze zapewnić minimum cienia (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
                     "cover_azimuth": "Kierunek, w którym zwrócone jest okno (0°=Północ, 90°=Wschód, itp.). Używane do obliczenia, czy słońce świeci na okno."
                 }
             }

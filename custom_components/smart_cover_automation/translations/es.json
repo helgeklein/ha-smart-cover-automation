@@ -34,6 +34,7 @@
                     "sun_elevation_threshold": "Elevación solar mínima",
                     "sun_azimuth_tolerance": "Tolerancia de azimut solar",
                     "covers_max_closure": "Posición máxima de cierre de persianas",
+                    "covers_min_closure": "Posición mínima de cierre de persianas",
                     "cover_azimuth": "Azimut de **{cover_name}**"
                 },
                 "data_description": {
@@ -43,6 +44,7 @@
                     "sun_elevation_threshold": "La automatización comienza a funcionar cuando la elevación del sol está por encima de este umbral (grados sobre el horizonte).",
                     "sun_azimuth_tolerance": "Ángulo horizontal máximo en el que se considera que el sol brilla sobre la ventana (grados).",
                     "covers_max_closure": "Nunca cerrar más que esto para siempre dejar entrar algo de luz (0 = completamente cerrado, 100 = completamente abierto).",
+                    "covers_min_closure": "Nunca abrir más que esto para siempre proporcionar un mínimo de sombra (0 = completamente cerrado, 100 = completamente abierto).",
                     "cover_azimuth": "Dirección hacia la que está orientada la ventana (0°=Norte, 90°=Este, etc.). Se usa para calcular si el sol incide sobre la ventana."
                 }
             }

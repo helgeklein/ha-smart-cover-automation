@@ -19,7 +19,6 @@ from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
     COVER_ATTR_SUN_AZIMUTH_DIFF,
     COVER_ATTR_SUN_HITTING,
-    COVER_POS_FULLY_OPEN,
     COVER_SFX_AZIMUTH,
     SENSOR_ATTR_TEMP_HOT,
 )
@@ -99,52 +98,6 @@ class TestSunAutomation(TestDataUpdateCoordinatorBase):
         assert result["sun_elevation"] == TEST_HIGH_ELEVATION
         assert result["sun_azimuth"] == TEST_DIRECT_AZIMUTH
         assert cover_data["sca_cover_desired_position"] == TEST_COVER_CLOSED
-
-    async def test_sun_automation_respects_max_closure_option(
-        self,
-        mock_hass: MagicMock,
-        mock_cover_state: MagicMock,
-        mock_sun_state: MagicMock,
-    ) -> None:
-        """Test that sun automation respects the configured maximum closure percentage.
-
-        Validates that when direct sunlight hits the window, the automation uses the
-        configured `covers_max_closure` setting instead of fully closing the covers.
-        This allows users to block most sunlight while still maintaining some visibility
-        and natural light.
-
-        Test scenario:
-        - Sun elevation: 45° (above threshold)
-        - Sun azimuth: 180° (direct hit)
-        - Configuration: covers_max_closure = 60% (instead of default 100%)
-        - Expected action: Close covers to 60% (not fully closed)
-        """
-        # Create configuration with custom maximum closure setting
-        config = create_sun_config()
-        config[ConfKeys.COVERS_MAX_CLOSURE.value] = 60  # cap direct hit to 60%
-        config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Setup sun directly hitting window
-        mock_sun_state.attributes = {
-            "elevation": TEST_HIGH_ELEVATION,
-            "azimuth": TEST_DIRECT_AZIMUTH,
-        }
-        mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
-
-        # Set weather forecast temperature for cold temperature
-        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold temp so temp wants open
-
-        state_mapping = create_combined_state_mock(
-            cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
-        )
-        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
-
-        await coordinator.async_refresh()
-        result = coordinator.data
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        # With covers_max_closure=60 and direct hit, desired = 100 - 60 = 40
-        assert cover_data["sca_cover_desired_position"] == COVER_POS_FULLY_OPEN
 
     async def test_sun_automation_low_sun(
         self,

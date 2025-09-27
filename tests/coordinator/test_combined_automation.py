@@ -16,7 +16,6 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
-    COVER_POS_FULLY_OPEN,
     COVER_SFX_AZIMUTH,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
@@ -152,29 +151,52 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["sca_cover_desired_position"] == TEST_COVER_CLOSED
 
+    @pytest.mark.parametrize(
+        "sun_azimuth,max_closure,min_closure,expected_position,test_description",
+        [
+            # Direct sun hit scenarios
+            (TEST_DIRECT_AZIMUTH, 0, 100, 0, "Direct sun, full closure allowed"),
+            (TEST_DIRECT_AZIMUTH, 20, 100, 20, "Direct sun, limited max closure"),
+            (TEST_DIRECT_AZIMUTH, 50, 100, 50, "Direct sun, moderate max closure"),
+            (TEST_DIRECT_AZIMUTH, 0, 80, 0, "Direct sun, min closure limit ignored when closing"),
+            (TEST_DIRECT_AZIMUTH, 30, 70, 30, "Direct sun, max closure within min range"),
+            # Indirect sun scenarios (sun not hitting window)
+            (TEST_INDIRECT_AZIMUTH, 0, 100, 100, "Indirect sun, full opening allowed"),
+            (TEST_INDIRECT_AZIMUTH, 20, 100, 100, "Indirect sun, max closure irrelevant"),
+            (TEST_INDIRECT_AZIMUTH, 50, 80, 80, "Indirect sun, min closure enforced"),
+            (TEST_INDIRECT_AZIMUTH, 0, 60, 60, "Indirect sun, min closure limits opening"),
+            (TEST_INDIRECT_AZIMUTH, 30, 40, 40, "Indirect sun, min closure tighter than max"),
+        ],
+    )
     @pytest.mark.asyncio
-    async def test_sun_automation_max_closure_with_numeric_angle(
+    async def test_sun_automation_closure_position_matrix(
         self,
         mock_hass: MagicMock,
         mock_sun_state: MagicMock,
+        sun_azimuth: float,
+        max_closure: int,
+        min_closure: int,
+        expected_position: int,
+        test_description: str,
     ) -> None:
-        """Test partial closure with maximum closure percentage configuration.
+        """Test closure position matrix with various sun positions and min/max settings.
 
-        Validates that when the covers_max_closure setting is less than 100%,
-        the automation respects this limit and only partially closes covers
-        even during direct sun hits, maintaining some visibility and light.
+        Validates that the automation correctly applies min/max closure limits based on
+        sun position and configuration. When sun hits directly, max_closure limits how
+        much covers close. When sun doesn't hit, min_closure limits how much covers open.
 
-        Test scenario:
-        - Maximum closure: 60% (desired position = 40)
-        - Sun: Direct hit at high elevation
-        - Temperature: Cold (favors opening)
-        - Expected: Combined logic results in open position
+        Test matrix covers:
+        - Direct sun hits with various max_closure limits
+        - Indirect sun with various min_closure limits
+        - Edge cases where min/max ranges overlap
+        - Full closure/opening boundary conditions
         """
-        # Set weather forecast temperature to cold for this test
-        set_weather_forecast_temp(float(TEST_COLD_TEMP))
+        # Set weather forecast temperature to hot for direct sun scenarios
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))
 
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
-        config[ConfKeys.COVERS_MAX_CLOSURE.value] = 60  # 60% close => desired position 40
+        config[ConfKeys.COVERS_MAX_CLOSURE.value] = max_closure
+        config[ConfKeys.COVERS_MIN_CLOSURE.value] = min_closure
         config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = TEST_DIRECT_AZIMUTH
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -184,16 +206,22 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
             ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
             ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
         }
-        mock_sun_state.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
+        mock_sun_state.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": sun_azimuth}
 
         state_mapping = create_combined_state_mock(
+            sun_azimuth=sun_azimuth,
             cover_states={MOCK_COVER_ENTITY_ID: cover_state.attributes},
         )
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data["sca_cover_desired_position"] == COVER_POS_FULLY_OPEN  # Combined logic: cold temp overrides sun closure
+
+        assert cover_data["sca_cover_desired_position"] == expected_position, (
+            f"Test case: {test_description}\n"
+            f"Sun azimuth: {sun_azimuth}, Max closure: {max_closure}, Min closure: {min_closure}\n"
+            f"Expected: {expected_position}, Got: {cover_data['sca_cover_desired_position']}"
+        )
 
     @pytest.mark.asyncio
     async def test_combined_hot_sun_not_hitting_no_change_with_and_logic(
@@ -273,7 +301,7 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             ConfKeys.TEMP_THRESHOLD.value: 24.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
-            ConfKeys.COVERS_MAX_CLOSURE.value: 60,  # partial closure => desired 40
+            ConfKeys.COVERS_MAX_CLOSURE.value: 60,  # partial closure
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": TEST_DIRECT_AZIMUTH,
         }
@@ -292,7 +320,7 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
         assert cover_data["sca_cover_desired_position"] == TEST_COVER_OPEN
-        # AND semantics: no action when temperature is not hot - verify no cover service calls
+        # No action when temperature is not hot - verify no cover service calls
         cover_calls = [call for call in mock_hass.services.async_call.call_args_list if call[0][0] != Platform.WEATHER]
         assert len(cover_calls) == 0, f"Expected no cover service calls, got: {cover_calls}"
 

@@ -281,6 +281,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         schema_dict[vol.Required(ConfKeys.COVERS_MAX_CLOSURE.value, default=resolved_settings.covers_max_closure)] = (
             selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%"))
         )
+        schema_dict[vol.Required(ConfKeys.COVERS_MIN_CLOSURE.value, default=resolved_settings.covers_min_closure)] = (
+            selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%"))
+        )
 
         # === PER-COVER AZIMUTH DIRECTIONS ===
         # Add dynamic direction fields, sorted for consistent ordering

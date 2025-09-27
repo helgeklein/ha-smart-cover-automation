@@ -34,6 +34,7 @@
                     "sun_elevation_threshold": "Elevazione solare minima",
                     "sun_azimuth_tolerance": "Tolleranza azimut solare",
                     "covers_max_closure": "Posizione massima di chiusura tapparelle",
+                    "covers_min_closure": "Posizione minima di chiusura tapparelle",
                     "cover_azimuth": "Azimut di **{cover_name}**"
                 },
                 "data_description": {
@@ -43,6 +44,7 @@
                     "sun_elevation_threshold": "L'automazione inizia a funzionare quando l'elevazione del sole è superiore a questa soglia (gradi sopra l'orizzonte).",
                     "sun_azimuth_tolerance": "Angolo orizzontale massimo al quale il sole è considerato brillare sulla finestra (gradi).",
                     "covers_max_closure": "Non chiudere mai più di questo per far sempre entrare un po' di luce (0 = completamente chiuso, 100 = completamente aperto).",
+                    "covers_min_closure": "Non aprire mai più di questo per fornire sempre un minimo di ombra (0 = completamente chiuso, 100 = completamente aperto).",
                     "cover_azimuth": "Direzione verso cui è orientata la finestra (0°=Nord, 90°=Est, ecc.). Utilizzato per calcolare se il sole colpisce la finestra."
                 }
             }
