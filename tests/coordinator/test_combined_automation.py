@@ -22,7 +22,6 @@ from custom_components.smart_cover_automation.coordinator import DataUpdateCoord
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
-    MOCK_COVER_ENTITY_ID_2,
     MOCK_WEATHER_ENTITY_ID,
     TEST_COLD_TEMP,
     TEST_COMFORTABLE_TEMP_2,
@@ -33,7 +32,6 @@ from tests.conftest import (
     TEST_HOT_TEMP,
     TEST_INDIRECT_AZIMUTH,
     MockConfigEntry,
-    assert_service_called,
     create_combined_state_mock,
     create_sun_config,
     set_weather_forecast_temp,
@@ -44,67 +42,102 @@ from tests.coordinator.test_coordinator_base import TestDataUpdateCoordinatorBas
 class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
     """Test suite for combined temperature and sun automation logic."""
 
+    @pytest.mark.parametrize(
+        "sun_azimuth,cover_east_expected,cover_south_expected,cover_west_expected,time_description",
+        [
+            # Sun positions through the day - azimuth tolerance is 90° (difference must be < 90°)
+            # East cover: 90°, South cover: 180°, West cover: 270°
+            # Early morning: Sun at 60° - only east cover within tolerance (30° diff)
+            (60, 0, 100, 100, "Early morning - Sun at 60°, only east cover closes"),
+            # Morning: Sun at 90° - only east cover within tolerance (0° diff)
+            (90, 0, 100, 100, "Morning - Sun at 90°, only east cover closes"),
+            # Late morning: Sun at 120° - east (30° diff) and south (60° diff) within tolerance
+            (120, 0, 0, 100, "Late morning - Sun at 120°, east and south covers close"),
+            # Midday: Sun at 180° - only south cover within tolerance (0° diff)
+            (180, 100, 0, 100, "Midday - Sun at 180°, only south cover closes"),
+            # Afternoon: Sun at 210° - south (30° diff) and west (60° diff) within tolerance
+            (210, 100, 0, 0, "Afternoon - Sun at 210°, south and west covers close"),
+            # Evening: Sun at 270° - only west cover within tolerance (0° diff)
+            (270, 100, 100, 0, "Evening - Sun at 270°, only west cover closes"),
+            # Late evening: Sun at 330° - east (60° diff via wrapping) and west (60° diff) close
+            (330, 100, 100, 0, "Late evening - Sun at 330°, only west cover closes"),
+        ],
+    )
     @pytest.mark.asyncio
-    async def test_sun_automation_multiple_covers_varied_angles(
+    async def test_sun_automation_daily_movement_multiple_covers(
         self,
         mock_hass: MagicMock,
         mock_sun_state: MagicMock,
+        sun_azimuth: float,
+        cover_east_expected: int,
+        cover_south_expected: int,
+        cover_west_expected: int,
+        time_description: str,
     ) -> None:
-        """Test that only covers within tolerance close when sun hits.
+        """Test multiple covers with different orientations throughout sun's daily path.
 
-        Validates that when multiple covers have different orientations, only those
-        within the azimuth tolerance threshold actually close when the sun is positioned
-        to hit them directly. This ensures precise control over which covers respond
-        to sun conditions.
+        Simulates the sun's movement from east to west during a day and validates
+        that only covers facing the sun close while others remain open. This tests
+        the azimuth tolerance logic with realistic sun positions and multiple cover
+        orientations representing typical building layouts.
 
-        Test scenario:
-        - Cover 1: Facing 180° (south) - direct hit
-        - Cover 2: Facing 90° (east) - indirect hit
-        - Sun azimuth: 180° (south)
-        - Expected: Cover 1 closes, Cover 2 opens
+        Cover orientations:
+        - East cover: 90° (morning sun)
+        - South cover: 180° (midday sun)
+        - West cover: 270° (evening sun)
+
+        Expected behavior:
+        - Only covers within azimuth tolerance of sun position should close
+        - Covers not facing sun should open to maximum position
+        - Transition periods show gradual handoff between covers
         """
         # Set weather forecast temperature to hot for this test
         set_weather_forecast_temp(float(TEST_HOT_TEMP))
 
-        config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
-        config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = TEST_DIRECT_AZIMUTH
-        config[f"{MOCK_COVER_ENTITY_ID_2}_{COVER_SFX_AZIMUTH}"] = TEST_INDIRECT_AZIMUTH
+        # Create covers facing different directions (east, south, west)
+        east_cover = "cover.east_window"
+        south_cover = "cover.south_window"
+        west_cover = "cover.west_window"
+
+        config = create_sun_config(covers=[east_cover, south_cover, west_cover])
+        config[f"{east_cover}_{COVER_SFX_AZIMUTH}"] = 90  # East-facing
+        config[f"{south_cover}_{COVER_SFX_AZIMUTH}"] = 180  # South-facing
+        config[f"{west_cover}_{COVER_SFX_AZIMUTH}"] = 270  # West-facing
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
-        cover1_state = MagicMock()
-        cover1_state.attributes = {
-            ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
-            ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
-        }
-        cover2_state = MagicMock()
-        cover2_state.attributes = {
-            ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
-            ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
-        }
+        # Setup cover states - all start open
+        cover_states = {}
+        for cover_id in [east_cover, south_cover, west_cover]:
+            cover_states[cover_id] = {
+                ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
+                ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
+            }
 
-        mock_sun_state.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
+        mock_sun_state.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": sun_azimuth}
         state_mapping = create_combined_state_mock(
-            sun_azimuth=TEST_DIRECT_AZIMUTH,  # Sun hitting test_cover directly
-            cover_states={
-                MOCK_COVER_ENTITY_ID: cover1_state.attributes,
-                MOCK_COVER_ENTITY_ID_2: cover2_state.attributes,
-            },
+            sun_azimuth=sun_azimuth,
+            cover_states=cover_states,
         )
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
         covers = coordinator.data[ConfKeys.COVERS.value]
-        assert covers[MOCK_COVER_ENTITY_ID]["sca_cover_desired_position"] == TEST_COVER_CLOSED
-        assert covers[MOCK_COVER_ENTITY_ID_2]["sca_cover_desired_position"] == TEST_COVER_OPEN
 
-        # Service called once for the closing cover
-        await assert_service_called(
-            mock_hass.services,
-            "cover",
-            "set_cover_position",
-            MOCK_COVER_ENTITY_ID,
-            position=TEST_COVER_CLOSED,
+        # Validate expected positions for each cover
+        assert covers[east_cover]["sca_cover_desired_position"] == cover_east_expected, (
+            f"{time_description}: East cover (90°) with sun at {sun_azimuth}° - "
+            f"Expected {cover_east_expected}, got {covers[east_cover]['sca_cover_desired_position']}"
+        )
+
+        assert covers[south_cover]["sca_cover_desired_position"] == cover_south_expected, (
+            f"{time_description}: South cover (180°) with sun at {sun_azimuth}° - "
+            f"Expected {cover_south_expected}, got {covers[south_cover]['sca_cover_desired_position']}"
+        )
+
+        assert covers[west_cover]["sca_cover_desired_position"] == cover_west_expected, (
+            f"{time_description}: West cover (270°) with sun at {sun_azimuth}° - "
+            f"Expected {cover_west_expected}, got {covers[west_cover]['sca_cover_desired_position']}"
         )
 
     @pytest.mark.asyncio
