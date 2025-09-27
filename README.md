@@ -12,4 +12,4 @@ This repository contains the source code for the integration. For user documenta
 
 ### Setting Up a Development Environment
 
-Please see [this blog post](https://helgeklein.com/blog/developing-custom-integrations-for-home-assistant-getting-started/) for details on how to set up your own development environment for this integration (or even for Home assistant integrations in general).
+Please see [this blog post](https://helgeklein.com/blog/developing-custom-integrations-for-home-assistant-getting-started/) for details on how to set up your own development environment for this integration (or even for Home Assistant integrations in general).
