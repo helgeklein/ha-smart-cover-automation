@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from typing import cast
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from homeassistant.const import Platform
 from homeassistant.exceptions import HomeAssistantError, ServiceNotFound
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
@@ -266,3 +268,48 @@ class TestCoordinatorErrorHandling:
 
         # Should either return None or empty covers due to weather service error
         assert result is None or "covers" in result
+
+    @pytest.mark.asyncio
+    async def test_weather_forecast_temperature_unavailable(self) -> None:
+        """Test critical error handling when weather forecast temperature is unavailable.
+
+        Validates that the coordinator treats unavailable weather forecast as critical errors
+        that make the automation non-functional. Since accurate temperature readings are essential for
+        automation decisions, unavailable forecast data should make entities unavailable.
+
+        Test scenario:
+        - Weather entity: Available but forecast service returns no temperature data
+        - Expected behavior: Critical error logged, UpdateFailed exception raised, entities unavailable
+        """
+        hass = MagicMock()
+        hass.services = MagicMock()
+        hass.states = MagicMock()
+
+        config_entry = MockConfigEntry(create_temperature_config())
+        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+
+        # Setup weather entity state
+        weather_state = MagicMock()
+        weather_state.state = "sunny"
+        weather_state.entity_id = "weather.forecast"
+
+        hass.states.get.side_effect = lambda entity_id: {
+            "weather.forecast": weather_state,
+            "sun.sun": MagicMock(state="above_horizon", attributes={"elevation": 45, "azimuth": 180}),
+            MOCK_COVER_ENTITY_ID: MagicMock(attributes={"current_position": 100, "supported_features": 15}),
+        }.get(entity_id)
+
+        # Mock weather service to return no forecast data (simulating service failure)
+        async def mock_weather_service_error(domain, service, service_data, **kwargs):
+            if domain == Platform.WEATHER and service == "get_forecasts":
+                return {}  # Empty response simulating forecast unavailable
+            return {}
+
+        hass.services.async_call = AsyncMock(side_effect=mock_weather_service_error)
+
+        # Execute automation and verify error handling
+        await coordinator.async_refresh()
+
+        # Verify critical error handling
+        assert isinstance(coordinator.last_exception, UpdateFailed)  # Critical error should propagate
+        assert "Forecast temperature unavailable" in str(coordinator.last_exception)

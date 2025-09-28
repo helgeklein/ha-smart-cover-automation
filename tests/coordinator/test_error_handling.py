@@ -16,6 +16,11 @@ from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFea
 from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
+from custom_components.smart_cover_automation.const import (
+    COVER_ATTR_SUN_HITTING,
+    COVER_SFX_AZIMUTH,
+    SENSOR_ATTR_TEMP_HOT,
+)
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
     ServiceCallError,
@@ -26,6 +31,7 @@ from tests.conftest import (
     MOCK_COVER_ENTITY_ID_2,
     MOCK_SUN_ENTITY_ID,
     MOCK_WEATHER_ENTITY_ID,
+    TEST_COLD_TEMP,
     TEST_COMFORTABLE_TEMP_1,
     TEST_COVER_OPEN,
     TEST_DIRECT_AZIMUTH,
@@ -34,6 +40,7 @@ from tests.conftest import (
     MockConfigEntry,
     assert_service_called,
     create_combined_state_mock,
+    create_sun_config,
     create_temperature_config,
     set_weather_forecast_temp,
 )
@@ -226,3 +233,192 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         assert "Failed to call" in str(err)
         assert err.service == "cover.set_cover_position"
         assert err.entity_id == "cover.test"
+
+    async def test_sun_entity_missing(
+        self,
+        mock_hass: MagicMock,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test critical error handling when sun entity is not found in Home Assistant.
+
+        Validates that the coordinator treats missing sun entity as a critical error
+        that makes the automation non-functional. Since sun position is essential for
+        automation decisions, missing sun entity should make entities unavailable.
+
+        Test scenario:
+        - Sun entity: Missing from Home Assistant state registry
+        - Expected behavior: Critical error logged, UpdateFailed exception raised, entities unavailable
+        """
+        from homeassistant.helpers.update_coordinator import UpdateFailed
+
+        config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+
+        # Create state mapping WITHOUT sun entity (to simulate missing sensor)
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
+            ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
+        }
+
+        state_mapping = {
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_WEATHER_ENTITY_ID: MagicMock(entity_id=MOCK_WEATHER_ENTITY_ID, state=TEST_COMFORTABLE_TEMP_1),
+            # MOCK_SUN_ENTITY_ID is intentionally missing
+        }
+
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
+        await coordinator.async_refresh()
+
+        # Verify critical error handling - sun sensor missing
+        assert isinstance(coordinator.last_exception, UpdateFailed)  # Critical error should propagate
+        assert "Sun sensor 'sun.sun' not found" in str(coordinator.last_exception)
+
+    async def test_sun_entity_invalid_data(
+        self,
+        mock_hass: MagicMock,
+        mock_sun_state: MagicMock,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test critical error handling when sun entity provides invalid data.
+
+        Validates that the coordinator treats invalid sun sensor readings as critical errors
+        that make the automation non-functional. Since accurate sun position is essential for
+        automation decisions, invalid sun data should make entities unavailable.
+
+        Test scenario:
+        - Sun entity: Returns "invalid" string for elevation
+        - Expected behavior: Critical error logged, UpdateFailed exception raised, entities unavailable
+        """
+        from homeassistant.helpers.update_coordinator import UpdateFailed
+
+        config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+
+        mock_sun_state.attributes = {"elevation": "invalid", "azimuth": TEST_DIRECT_AZIMUTH}
+        mock_hass.states.get.return_value = mock_sun_state
+        await coordinator.async_refresh()
+
+        # Verify critical error handling
+        assert isinstance(coordinator.last_exception, UpdateFailed)  # Critical error should propagate
+        assert "Invalid reading" in str(coordinator.last_exception)
+
+    async def test_cover_missing_azimuth_configuration(
+        self,
+        mock_hass: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """Test that covers without azimuth configuration are skipped in sun automation.
+
+        Validates that covers missing window orientation configuration are excluded
+        from sun automation but can still participate in temperature automation.
+
+        Test scenario:
+        - Two covers configured
+        - Second cover missing azimuth/direction configuration
+        - Expected behavior: Second cover skipped from sun automation
+        """
+        # Build a sun config for two covers, remove direction for second cover
+        config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
+        # Remove direction for cover 2 to trigger skip
+        config.pop(f"{MOCK_COVER_ENTITY_ID_2}_{COVER_SFX_AZIMUTH}", None)
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+
+        # Sun above threshold, direct hit
+        mock_sun_state.attributes = {
+            "elevation": TEST_HIGH_ELEVATION,
+            "azimuth": TEST_DIRECT_AZIMUTH,
+        }
+
+        # Both covers available
+        cover2_state = MagicMock()
+        cover2_state.attributes = {
+            ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
+            ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
+        }
+
+        mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
+
+        # Set weather forecast temperature for cold temperature
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold temp so temp wants open
+
+        state_mapping = create_combined_state_mock(
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes,
+                MOCK_COVER_ENTITY_ID_2: cover2_state.attributes,
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
+
+        await coordinator.async_refresh()
+        result = coordinator.data
+
+        # Only cover 1 should appear (cover 2 is skipped due to missing azimuth)
+        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
+
+        # Cover 1 should have both temperature and sun automation data
+        cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        assert result[SENSOR_ATTR_TEMP_HOT] is not None
+        assert COVER_ATTR_SUN_HITTING in cover1_data
+
+    async def test_cover_invalid_azimuth_configuration(
+        self,
+        mock_hass: MagicMock,
+        mock_cover_state: MagicMock,
+        mock_sun_state: MagicMock,
+    ) -> None:
+        """Test that covers with invalid azimuth configuration are skipped.
+
+        Validates that covers with invalid direction strings (non-numeric, non-cardinal)
+        are excluded from sun automation with proper error handling.
+
+        Test scenario:
+        - Two covers configured
+        - Second cover has invalid azimuth ("upwards")
+        - Expected behavior: Second cover skipped from sun automation
+        """
+        config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2])
+        # Set an invalid direction string for cover 2
+        config[f"{MOCK_COVER_ENTITY_ID_2}_{COVER_SFX_AZIMUTH}"] = "upwards"
+        config_entry = MockConfigEntry(config)
+        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+
+        mock_sun_state.attributes = {
+            "elevation": TEST_HIGH_ELEVATION,
+            "azimuth": TEST_DIRECT_AZIMUTH,
+        }
+
+        cover2_state = MagicMock()
+        cover2_state.attributes = {
+            ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
+            ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
+        }
+        mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
+
+        # Set weather forecast temperature for cold temperature
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold temp so temp wants open
+
+        state_mapping = create_combined_state_mock(
+            cover_states={
+                MOCK_COVER_ENTITY_ID: mock_cover_state.attributes,
+                MOCK_COVER_ENTITY_ID_2: cover2_state.attributes,
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
+
+        await coordinator.async_refresh()
+        result = coordinator.data
+
+        # Only cover 1 should appear (cover 2 is skipped due to invalid azimuth)
+        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
+
+        # Cover 1 should have both temperature and sun automation data
+        cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        assert result[SENSOR_ATTR_TEMP_HOT] is not None
+        assert COVER_ATTR_SUN_HITTING in cover1_data
