@@ -42,9 +42,9 @@ This is a stable and well-tested Home Assistant integration to automate the cont
 
 All relevant settings are available from the UI.
 
-- **Enabled:** turn the automation on or off via a switch.
-- **Cover selection:** choose which covers you want the integration to control.
-- **Window direction:** set each window's horizontal angle from north (azimuth).
+- **Enabled:** Turn the automation on or off via a switch.
+- **Cover selection:** Choose which covers you want the integration to control.
+- **Window direction:** Set each window's horizontal angle from north (azimuth).
 - **Temperature threshold:** The automation only operates on hot days, i.e., if the forecasted daily high temperature is above a threshold.
 - **Sun:**
 	- Minimal sun elevation above the horizon.

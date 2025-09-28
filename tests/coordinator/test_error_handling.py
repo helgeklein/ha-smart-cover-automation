@@ -357,9 +357,14 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Only cover 1 should appear (cover 2 is skipped due to missing azimuth)
+        # Both covers should appear - cover 1 with normal data, cover 2 with error
         assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 in result[ConfKeys.COVERS.value]
+
+        # Cover 2 should have error due to missing azimuth
+        cover2_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID_2]
+        assert "sca_cover_error" in cover2_data
+        assert "invalid or missing azimuth" in cover2_data["sca_cover_error"]
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -414,9 +419,14 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Only cover 1 should appear (cover 2 is skipped due to invalid azimuth)
+        # Both covers should appear - cover 1 with normal data, cover 2 with error
         assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 in result[ConfKeys.COVERS.value]
+
+        # Cover 2 should have error due to invalid azimuth
+        cover2_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID_2]
+        assert "sca_cover_error" in cover2_data
+        assert "invalid or missing azimuth" in cover2_data["sca_cover_error"]
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]

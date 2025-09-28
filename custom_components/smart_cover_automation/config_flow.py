@@ -285,6 +285,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%"))
         )
 
+        duration_default = {
+            "hours": resolved_settings.manual_override_duration // 3600,
+            "minutes": (resolved_settings.manual_override_duration % 3600) // 60,
+            "seconds": resolved_settings.manual_override_duration % 60,
+        }
+        schema_dict[vol.Required(ConfKeys.MANUAL_OVERRIDE_DURATION.value, default=duration_default)] = selector.DurationSelector(
+            selector.DurationSelectorConfig()
+        )
+
         # === PER-COVER AZIMUTH DIRECTIONS ===
         # Add dynamic direction fields, sorted for consistent ordering
         if direction_fields:

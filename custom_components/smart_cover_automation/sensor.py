@@ -8,20 +8,22 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.components.cover import ATTR_CURRENT_POSITION
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 
 from .config import ConfKeys, ResolvedConfig, resolve_entry
 from .const import (
-    COVER_ATTR_POSITION_DESIRED,
+    COVER_ATTR_POS_CURRENT,
+    COVER_ATTR_POS_TARGET_FINAL,
     SENSOR_ATTR_AUTOMATION_ENABLED,
     SENSOR_ATTR_COVERS_MAX_CLOSURE_POS,
     SENSOR_ATTR_COVERS_MIN_CLOSURE_POS,
     SENSOR_ATTR_COVERS_MIN_POSITION_DELTA,
     SENSOR_ATTR_COVERS_NUM_MOVED,
     SENSOR_ATTR_COVERS_NUM_TOTAL,
+    SENSOR_ATTR_MANUAL_OVERRIDE_DURATION,
     SENSOR_ATTR_SIMULATION_ENABLED,
     SENSOR_ATTR_SUN_AZIMUTH,
+    SENSOR_ATTR_SUN_AZIMUTH_TOLERANCE,
     SENSOR_ATTR_SUN_ELEVATION,
     SENSOR_ATTR_SUN_ELEVATION_THRESH,
     SENSOR_ATTR_TEMP_CURRENT,
@@ -41,12 +43,15 @@ if TYPE_CHECKING:
     from .data import IntegrationConfigEntry
 
 
+#
+# _count_moved_covers
+#
 def _count_moved_covers(covers: dict[str, dict[str, Any]]) -> int:
-    """Count covers that have been moved (desired position differs from current position)."""
+    """Count covers that have been moved (target position differs from current position)."""
     return sum(
         1
         for d in covers.values()
-        if d.get(COVER_ATTR_POSITION_DESIRED) is not None and d.get(ATTR_CURRENT_POSITION) != d.get(COVER_ATTR_POSITION_DESIRED)
+        if d.get(COVER_ATTR_POS_TARGET_FINAL) is not None and d.get(COVER_ATTR_POS_CURRENT) != d.get(COVER_ATTR_POS_TARGET_FINAL)
     )
 
 
@@ -86,7 +91,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class AutomationStatusSensor(IntegrationEntity, SensorEntity):
+class AutomationStatusSensor(IntegrationEntity, SensorEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
     """Comprehensive status sensor for smart cover automation.
 
     This sensor provides a detailed overview of the automation system including:
@@ -110,19 +115,36 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         self.entity_description = entity_description
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}-{entity_description.key}"
 
+    # Note: We inherit the 'available' property from IntegrationEntity/CoordinatorEntity
+    # which provides the correct coordinator-based availability logic.
+    # No override is needed since the default behavior is exactly what we want.
+
+    #
+    # native_value
+    #
     @cached_property
-    def available(self) -> bool | None:  # type: ignore[override]
-        """Return availability; delegates to coordinator status via parent classes."""
-        return super().available
+    def native_value(self) -> str | None:
+        """Return the sensor's main state value as a human-readable summary.
 
-    @cached_property
-    def native_value(self) -> str | None:  # type: ignore[override]
-        """Return a human-readable summary of the automation status.
+        Provides a concise, human-readable status string that summarizes the current
+        automation state. The format varies based on configuration and conditions:
 
-        Combines temperature, sun position, and cover movement information
-        into a concise status string. Returns None if no coordinator data available.
+        - "Disabled" - when automation is disabled in configuration
+        - "Simulation mode enabled • [details] • moves X/Y" - when simulation mode is active
+        - "[temp info] • [sun info] • moves X/Y" - normal operation summary
 
-        This is called by HA after coordinator._async_update_data() runs.
+        The summary includes:
+        - Current temperature vs threshold (when available)
+        - Sun elevation and azimuth (when available)
+        - Number of covers moved vs total covers configured
+
+        Returns:
+            A formatted status string, or None if coordinator data is unavailable.
+
+        Examples:
+            "Temp 24.5°C, threshold 22.0°C • Sun elev 45.0°, az 180° • moves 2/4"
+            "Simulation mode enabled • Temp 26.1°C, threshold 22.0°C • moves 0/2"
+            "Disabled"
         """
         if not self.coordinator.data:
             return None
@@ -161,8 +183,8 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
     #
     # extra_state_attributes
     #
-    @property
-    def extra_state_attributes(self) -> dict[str, Any] | None:  # type: ignore[override]
+    @cached_property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return detailed sensor state attributes for the automation status.
 
         Provides comprehensive metrics and configuration values that can be used
@@ -182,20 +204,22 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):
         resolved: ResolvedConfig = resolve_entry(self.coordinator.config_entry)
         covers: dict[str, dict[str, Any]] = self.coordinator.data.get(ConfKeys.COVERS.value) or {}
 
-        # Count covers that have been moved (desired position differs from current)
+        # Count covers that have been moved
         num_covers_moved = _count_moved_covers(covers)
 
         # Compile all automation metrics and configuration for external access
         attrs: dict[str, Any] = {
             # Configuration settings
             SENSOR_ATTR_AUTOMATION_ENABLED: resolved.enabled,
-            SENSOR_ATTR_SIMULATION_ENABLED: resolved.simulating,
             SENSOR_ATTR_COVERS_MAX_CLOSURE_POS: resolved.covers_max_closure,
             SENSOR_ATTR_COVERS_MIN_CLOSURE_POS: resolved.covers_min_closure,
             SENSOR_ATTR_COVERS_MIN_POSITION_DELTA: resolved.covers_min_position_delta,
+            SENSOR_ATTR_MANUAL_OVERRIDE_DURATION: resolved.manual_override_duration,
+            SENSOR_ATTR_SIMULATION_ENABLED: resolved.simulating,
+            SENSOR_ATTR_SUN_AZIMUTH_TOLERANCE: resolved.sun_azimuth_tolerance,
             SENSOR_ATTR_SUN_ELEVATION_THRESH: resolved.sun_elevation_threshold,
-            SENSOR_ATTR_WEATHER_ENTITY_ID: resolved.weather_entity_id,
             SENSOR_ATTR_TEMP_THRESHOLD: resolved.temp_threshold,
+            SENSOR_ATTR_WEATHER_ENTITY_ID: resolved.weather_entity_id,
             # Current statistics
             SENSOR_ATTR_COVERS_NUM_MOVED: num_covers_moved,
             SENSOR_ATTR_COVERS_NUM_TOTAL: len(covers),

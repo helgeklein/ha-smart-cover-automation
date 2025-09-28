@@ -62,3 +62,29 @@ ignore = [
     "SIM102",  # collapsible if
     "TC003",   # type-checking import placement
 ]
+
+[tool.mypy]
+python_version = "3.13"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+explicit_package_bases = true
+# Allow override incompatibilities for Home Assistant base classes
+disable_error_code = ["override"]
+
+# Home Assistant specific exclusions
+exclude = [
+    "tests/",  # Tests can be less strict
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "homeassistant.*",
+    "pytest_homeassistant_custom_component.*",
+]
+ignore_missing_imports = true

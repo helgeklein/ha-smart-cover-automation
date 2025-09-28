@@ -455,9 +455,12 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     await coordinator.async_refresh()
     result = coordinator.data
 
-    # Verify cover is completely skipped due to invalid direction configuration
+    # Verify cover is present with error due to invalid direction configuration
     assert result is not None, "Coordinator should return data even with invalid cover configuration"
-    assert MOCK_COVER_ENTITY_ID not in result[ConfKeys.COVERS.value]
+    assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
+    cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+    assert "sca_cover_error" in cover_data
+    assert "invalid or missing azimuth" in cover_data["sca_cover_error"]
 
     # Verify no cover service calls made (cover skipped, comfortable temperature)
     # Weather service calls are expected, but cover calls should not happen

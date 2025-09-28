@@ -16,6 +16,7 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
+    COVER_ATTR_POS_TARGET_DESIRED,
     COVER_SFX_AZIMUTH,
     HA_WEATHER_COND_PARTCLOUDY,
     HA_WEATHER_COND_SUNNY,
@@ -253,11 +254,11 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
 
-        assert cover_data["sca_cover_desired_position"] == expected_position, (
+        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_position, (
             f"Test case: {test_description}\n"
             f"Sun azimuth: {sun_azimuth}°, Temperature: {forecast_temp}°C, Weather: {weather_condition}\n"
             f"Max closure: {max_closure}%, Min closure: {min_closure}%\n"
-            f"Expected position: {expected_position}%, Got: {cover_data['sca_cover_desired_position']}%"
+            f"Expected position: {expected_position}%, Got: {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}%"
         )
 
     @pytest.mark.asyncio
@@ -306,5 +307,8 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Cover should be skipped due to missing direction
-        assert MOCK_COVER_ENTITY_ID not in result[ConfKeys.COVERS.value]
+        # Cover should be present with error due to missing direction
+        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        assert "sca_cover_error" in cover_data
+        assert "invalid or missing azimuth" in cover_data["sca_cover_error"]

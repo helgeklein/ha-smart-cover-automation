@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
     InvalidSensorReadingError,
@@ -187,7 +188,7 @@ class TestWeatherCondition:
 
         # Even with hot temperature and sun hitting, cover should stay open due to cloudy weather
         cover_data = result["covers"]["cover.test_cover"]
-        assert cover_data["sca_cover_desired_position"] == 100  # Should stay open
+        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == 100  # Should stay open
 
     @pytest.mark.asyncio
     async def test_sunny_weather_conditions_variations(self) -> None:
@@ -232,4 +233,4 @@ class TestWeatherCondition:
 
             # With hot temp + sunny weather + sun hitting, cover should close
             cover_data = result["covers"]["cover.test_cover"]
-            assert cover_data["sca_cover_desired_position"] == 0, f"Failed for condition: {condition}"
+            assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == 0, f"Failed for condition: {condition}"

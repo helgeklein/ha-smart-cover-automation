@@ -25,27 +25,29 @@
                 "title": "Smart Cover Automation Konfiguration",
                 "description": "Einstellungen anpassen",
                 "data": {
-                    "enabled": "Automatisierung aktivieren",
-                    "simulating": "Simulationsmodus",
-                    "verbose_logging": "Ausführliche Protokollierung",
+                    "cover_azimuth": "**{cover_name}** Azimut",
                     "covers": "Rollläden zum Automatisieren",
-                    "weather_entity_id": "Wettervorhersage-Sensor",
-                    "temp_threshold": "Temperaturschwelle",
-                    "sun_elevation_threshold": "Minimale Sonnenhöhe",
-                    "sun_azimuth_tolerance": "Sonnen-Azimut-Toleranz",
                     "covers_max_closure": "Maximale Rollladenposition",
                     "covers_min_closure": "Minimale Rollladenposition",
-                    "cover_azimuth": "**{cover_name}** Azimut"
+                    "enabled": "Automatisierung aktivieren",
+                    "manual_override_duration": "Dauer der manuellen Übersteuerung",
+                    "simulating": "Simulationsmodus",
+                    "sun_azimuth_tolerance": "Sonnen-Azimut-Toleranz",
+                    "sun_elevation_threshold": "Minimale Sonnenhöhe",
+                    "temp_threshold": "Temperaturschwelle",
+                    "verbose_logging": "Ausführliche Protokollierung",
+                    "weather_entity_id": "Wettervorhersage-Sensor"
                 },
                 "data_description": {
-                    "simulating": "Falls aktiviert, führt die Automatisierung alle Berechnungen durch, ohne die Rollläden tatsächlich zu bewegen.",
+                    "cover_azimuth": "Richtung, in die das Fenster zeigt (0°=Nord, 90°=Ost, usw.). Wird verwendet, um zu berechnen, ob die Sonne auf das Fenster trifft.",
                     "covers": "Wählen Sie die Rollläden aus, die von der Automatisierung gesteuert werden sollen.",
-                    "temp_threshold": "Die Automatisierung arbeitet nur an heißen Tagen, d.h. wenn die vorhergesagte Tageshöchsttemperatur über diesem Schwellenwert liegt (°C).",
-                    "sun_elevation_threshold": "Die Automatisierung startet, wenn die Sonnenhöhe über diesem Schwellenwert liegt (Grad über dem Horizont).",
-                    "sun_azimuth_tolerance": "Maximaler horizontaler Winkel, bei dem die Sonne als auf das Fenster scheinend betrachtet wird (Grad).",
                     "covers_max_closure": "Niemals mehr als dies schließen, um immer etwas Licht hereinzulassen (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
                     "covers_min_closure": "Niemals mehr als dies öffnen, um immer etwas Schatten zu gewährleisten (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
-                    "cover_azimuth": "Richtung, in die das Fenster zeigt (0°=Nord, 90°=Ost, usw.). Wird verwendet, um zu berechnen, ob die Sonne auf das Fenster trifft."
+                    "manual_override_duration": "Wie lange soll ein Rollladen übersprungen werden, nachdem er manuell verstellt wurde (0 = kein Überspringen).",
+                    "simulating": "Falls aktiviert, führt die Automatisierung alle Berechnungen durch, ohne die Rollläden tatsächlich zu bewegen.",
+                    "sun_azimuth_tolerance": "Maximaler horizontaler Winkel, bei dem die Sonne als auf das Fenster scheinend betrachtet wird (Grad).",
+                    "sun_elevation_threshold": "Die Automatisierung startet, wenn die Sonnenhöhe über diesem Schwellenwert liegt (Grad über dem Horizont).",
+                    "temp_threshold": "Die Automatisierung arbeitet nur an heißen Tagen, d.h. wenn die vorhergesagte Tageshöchsttemperatur über diesem Schwellenwert liegt (°C)."
                 }
             }
         }

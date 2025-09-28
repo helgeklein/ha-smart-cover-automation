@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "Running static type checking with mypy..."
+python3 -m mypy custom_components/smart_cover_automation/
+
+echo "Type checking completed!"

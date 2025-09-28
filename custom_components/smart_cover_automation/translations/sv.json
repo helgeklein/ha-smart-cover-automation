@@ -25,27 +25,29 @@
                 "title": "Smart Cover Automation Konfiguration",
                 "description": "Justera inställningar",
                 "data": {
-                    "enabled": "Aktivera automatisering",
-                    "simulating": "Simuleringsläge",
-                    "verbose_logging": "Utförlig loggning",
+                    "cover_azimuth": "**{cover_name}** azimut",
                     "covers": "Fönsterluckor att automatisera",
-                    "weather_entity_id": "Väderprognosensor",
-                    "temp_threshold": "Temperaturtröskel",
-                    "sun_elevation_threshold": "Minimal solhöjd",
-                    "sun_azimuth_tolerance": "Solazimuttolerans",
                     "covers_max_closure": "Maximal fönsterlucksposition",
                     "covers_min_closure": "Minimal fönsterlucksposition",
-                    "cover_azimuth": "**{cover_name}** azimut"
+                    "enabled": "Aktivera automation",
+                    "manual_override_duration": "Manuell åsidosättningens varaktighet",
+                    "simulating": "Simulationsläge",
+                    "sun_azimuth_tolerance": "Solens azimuttolerans",
+                    "sun_elevation_threshold": "Minimal solhöjd",
+                    "temp_threshold": "Temperaturtröskel",
+                    "verbose_logging": "Utförlig loggning",
+                    "weather_entity_id": "Väderprognosensor"
                 },
                 "data_description": {
-                    "simulating": "Om aktiverat kör automatiseringen alla beräkningar utan att faktiskt flytta fönsterluckorna.",
+                    "cover_azimuth": "Riktning som fönstret vetter åt (0°=Nord, 90°=Öst, osv.). Används för att beräkna om solen träffar fönstret.",
                     "covers": "Välj de fönsterluckor som automatiseringen ska styra.",
-                    "temp_threshold": "Automatiseringen arbetar endast på varma dagar, det vill säga om den prognostiserade dagliga högsta temperaturen ligger över denna tröskel (°C).",
-                    "sun_elevation_threshold": "Automatiseringen börjar fungera när solens höjd är över denna tröskel (grader över horisonten).",
-                    "sun_azimuth_tolerance": "Maximal horisontell vinkel där solen anses lysa på fönstret (grader).",
                     "covers_max_closure": "Stäng aldrig mer än detta för att alltid släppa in lite ljus (0 = helt stängd, 100 = helt öppen).",
                     "covers_min_closure": "Öppna aldrig mer än detta för att alltid ge ett minimum av skugga (0 = helt stängd, 100 = helt öppen).",
-                    "cover_azimuth": "Riktning som fönstret vetter åt (0°=Nord, 90°=Öst, osv.). Används för att beräkna om solen träffar fönstret."
+                    "manual_override_duration": "Hur länge ska man hoppa över en rullgardin efter att den har flyttats manuellt (0 = hoppa inte över).",
+                    "simulating": "Om aktiverat kör automatiseringen alla beräkningar utan att faktiskt flytta fönsterluckorna.",
+                    "sun_azimuth_tolerance": "Maximal horisontell vinkel där solen anses lysa på fönstret (grader).",
+                    "sun_elevation_threshold": "Automatiseringen börjar fungera när solens höjd är över denna tröskel (grader över horisonten).",
+                    "temp_threshold": "Automatiseringen arbetar endast på varma dagar, det vill säga om den prognostiserade dagliga högsta temperaturen ligger över denna tröskel (°C)."
                 }
             }
         }

@@ -17,6 +17,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.sensor import ENTITY_DESCRIPTIONS, AutomationStatusSensor
@@ -130,7 +131,7 @@ async def test_sensor_with_valid_coordinator_data() -> None:
         "covers": {
             "cover.test": {
                 "position": 50,
-                "sca_cover_desired_position": 75,
+                COVER_ATTR_POS_TARGET_DESIRED: 75,
             }
         },
         "temp_current": 22.5,

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# Exit immediately if a command exits with a non-zero status
 set -e
 
 cd "$(dirname "$0")/.."
@@ -7,6 +8,10 @@ cd "$(dirname "$0")/.."
 # Install test dependencies
 echo "Installing test dependencies..."
 python3 -m pip install -r requirements-test.txt
+
+# Run static type checking
+echo "Running static type checking..."
+python3 -m mypy custom_components/smart_cover_automation/
 
 # Run the tests
 echo "Running tests..."

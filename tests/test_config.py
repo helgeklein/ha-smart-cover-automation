@@ -400,3 +400,123 @@ def test_contract_violation_detection():
     assert fake_enum_names != original_dc_names  # Would trigger ConfKeys vs ResolvedConfig mismatch
     assert fake_spec_names != original_enum_names  # Would trigger CONF_SPECS vs ConfKeys mismatch
     assert fake_dc_names != original_enum_names  # Would trigger ResolvedConfig vs ConfKeys mismatch
+
+
+def test_duration_converter_with_integer_input():
+    """Test to_duration_seconds converter with integer input (seconds)."""
+    from custom_components.smart_cover_automation.config import _Converters
+
+    # Test positive integers
+    assert _Converters.to_duration_seconds(0) == 0
+    assert _Converters.to_duration_seconds(30) == 30
+    assert _Converters.to_duration_seconds(1800) == 1800
+    assert _Converters.to_duration_seconds(3600) == 3600
+
+    # Test negative integers (should return 0)
+    assert _Converters.to_duration_seconds(-1) == 0
+    assert _Converters.to_duration_seconds(-100) == 0
+
+
+def test_duration_converter_with_ha_duration_format():
+    """Test to_duration_seconds converter with Home Assistant duration format."""
+    from custom_components.smart_cover_automation.config import _Converters
+
+    # Test individual components
+    assert _Converters.to_duration_seconds({"seconds": 30}) == 30
+    assert _Converters.to_duration_seconds({"minutes": 5}) == 300
+    assert _Converters.to_duration_seconds({"hours": 1}) == 3600
+    assert _Converters.to_duration_seconds({"days": 1}) == 86400
+
+    # Test combinations
+    assert _Converters.to_duration_seconds({"minutes": 30}) == 1800
+    assert _Converters.to_duration_seconds({"hours": 1, "minutes": 30}) == 5400
+    assert _Converters.to_duration_seconds({"hours": 1, "minutes": 30, "seconds": 45}) == 5445
+    assert _Converters.to_duration_seconds({"days": 1, "hours": 2, "minutes": 30, "seconds": 15}) == 95415
+
+    # Test with zero values (should be ignored)
+    assert _Converters.to_duration_seconds({"hours": 0, "minutes": 30, "seconds": 0}) == 1800
+    assert _Converters.to_duration_seconds({"days": 0, "hours": 0, "minutes": 0, "seconds": 0}) == 0
+
+    # Test with missing keys (should default to 0)
+    assert _Converters.to_duration_seconds({}) == 0
+    assert _Converters.to_duration_seconds({"minutes": 10}) == 600  # missing days, hours, seconds
+
+
+def test_duration_converter_edge_cases():
+    """Test to_duration_seconds converter with edge cases and error conditions."""
+    from custom_components.smart_cover_automation.config import _Converters
+
+    # Test with negative values in dict (should be handled gracefully)
+    assert _Converters.to_duration_seconds({"minutes": -10}) == 0
+    assert _Converters.to_duration_seconds({"hours": 1, "minutes": -30}) == 1800  # 1 hour - 30 min = 30 min
+
+    # Test with float values (should convert to int)
+    assert _Converters.to_duration_seconds({"minutes": 30.5, "seconds": 15.7}) == 1845
+    assert _Converters.to_duration_seconds({"hours": 1.5}) == 5400  # 1.5 hours = 90 minutes = 5400 seconds
+
+    # Test large values
+    assert _Converters.to_duration_seconds({"days": 365}) == 31536000  # 1 year in seconds
+
+    # Test common real-world scenarios
+    assert _Converters.to_duration_seconds({"minutes": 1}) == 60  # 1 minute
+    assert _Converters.to_duration_seconds({"minutes": 15}) == 900  # 15 minutes
+    assert _Converters.to_duration_seconds({"minutes": 30}) == 1800  # 30 minutes (default)
+    assert _Converters.to_duration_seconds({"hours": 2}) == 7200  # 2 hours
+
+
+def test_duration_converter_integration_with_conf_specs():
+    """Test that the duration converter works correctly with CONF_SPECS."""
+    from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
+
+    # Get the manual override duration spec
+    spec = CONF_SPECS[ConfKeys.MANUAL_OVERRIDE_DURATION]
+
+    # Test that the default value is handled correctly
+    assert spec.converter(spec.default) == 1800  # Default should be 1800 seconds
+
+    # Test that the converter is the correct function
+    assert spec.converter.__name__ == "to_duration_seconds"
+
+    # Test various inputs through the spec converter
+    assert spec.converter({"minutes": 45}) == 2700
+    assert spec.converter(3600) == 3600
+    assert spec.converter({"hours": 1, "minutes": 15}) == 4500
+
+
+@pytest.mark.parametrize(
+    "duration_input,expected_seconds",
+    [
+        # Integer inputs
+        (0, 0),
+        (60, 60),
+        (1800, 1800),
+        (3600, 3600),
+        # HA duration format - single values
+        ({"seconds": 45}, 45),
+        ({"minutes": 10}, 600),
+        ({"hours": 2}, 7200),
+        ({"days": 1}, 86400),
+        # HA duration format - combinations
+        ({"minutes": 5, "seconds": 30}, 330),
+        ({"hours": 1, "minutes": 30}, 5400),
+        ({"hours": 2, "minutes": 15, "seconds": 45}, 8145),
+        ({"days": 1, "hours": 1, "minutes": 1, "seconds": 1}, 90061),
+        # Edge cases
+        ({}, 0),
+        ({"hours": 0, "minutes": 0, "seconds": 0}, 0),
+        ({"minutes": 30.5}, 1830),  # Float values
+        # Common use cases
+        ({"minutes": 1}, 60),  # 1 minute
+        ({"minutes": 15}, 900),  # 15 minutes
+        ({"minutes": 30}, 1800),  # 30 minutes (default)
+        ({"hours": 1}, 3600),  # 1 hour
+        ({"hours": 2}, 7200),  # 2 hours
+    ],
+)
+def test_duration_converter_parametrized(duration_input, expected_seconds):
+    """Parametrized test for duration converter with various inputs."""
+    from custom_components.smart_cover_automation.config import _Converters
+
+    result = _Converters.to_duration_seconds(duration_input)
+    assert result == expected_seconds
+    assert isinstance(result, int)

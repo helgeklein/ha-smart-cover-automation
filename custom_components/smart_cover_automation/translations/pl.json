@@ -25,27 +25,29 @@
                 "title": "Konfiguracja Smart Cover Automation",
                 "description": "Dostosuj ustawienia",
                 "data": {
-                    "enabled": "Włącz automatyzację",
-                    "simulating": "Tryb symulacji",
-                    "verbose_logging": "Szczegółowe logowanie",
+                    "cover_azimuth": "Azymut **{cover_name}**",
                     "covers": "Rolety do automatyzacji",
-                    "weather_entity_id": "Czujnik prognozy pogody",
-                    "temp_threshold": "Próg temperatury",
-                    "sun_elevation_threshold": "Minimalna wysokość słońca",
-                    "sun_azimuth_tolerance": "Tolerancja azymutu słonecznego",
                     "covers_max_closure": "Maksymalna pozycja zamknięcia rolet",
                     "covers_min_closure": "Minimalna pozycja zamknięcia rolet",
-                    "cover_azimuth": "Azymut **{cover_name}**"
+                    "enabled": "Włącz automatyzację",
+                    "manual_override_duration": "Czas ręcznego zastąpienia",
+                    "simulating": "Tryb symulacji",
+                    "sun_azimuth_tolerance": "Tolerancja azymutu słonecznego",
+                    "sun_elevation_threshold": "Minimalna wysokość słońca",
+                    "temp_threshold": "Próg temperatury",
+                    "verbose_logging": "Szczegółowe logowanie",
+                    "weather_entity_id": "Czujnik prognozy pogody"
                 },
                 "data_description": {
-                    "simulating": "Jeśli włączone, automatyzacja wykonuje wszystkie obliczenia bez rzeczywistego przesuwania rolet.",
+                    "cover_azimuth": "Kierunek, w którym zwrócone jest okno (0°=Północ, 90°=Wschód, itp.). Używane do obliczenia, czy słońce świeci na okno.",
                     "covers": "Wybierz rolety, którymi ma sterować automatyzacja.",
-                    "temp_threshold": "Automatyzacja działa tylko w gorące dni, tj. gdy prognozowana maksymalna temperatura dzienna przekracza ten próg (°C).",
-                    "sun_elevation_threshold": "Automatyzacja zaczyna działać, gdy wysokość słońca przekracza ten próg (stopnie nad horyzontem).",
-                    "sun_azimuth_tolerance": "Maksymalny kąt poziomy, przy którym słońce jest uważane za świecące na okno (stopnie).",
                     "covers_max_closure": "Nigdy nie zamykaj bardziej niż to, aby zawsze wpuścić trochę światła (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
                     "covers_min_closure": "Nigdy nie otwieraj bardziej niż to, aby zawsze zapewnić minimum cienia (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
-                    "cover_azimuth": "Kierunek, w którym zwrócone jest okno (0°=Północ, 90°=Wschód, itp.). Używane do obliczenia, czy słońce świeci na okno."
+                    "manual_override_duration": "Jak długo pomijać roletę po tym, jak została przesunięta ręcznie (0 = nie pomijaj).",
+                    "simulating": "Jeśli włączone, automatyzacja wykonuje wszystkie obliczenia bez rzeczywistego przesuwania rolet.",
+                    "sun_azimuth_tolerance": "Maksymalny kąt poziomy, przy którym słońce jest uważane za świecące na okno (stopnie).",
+                    "sun_elevation_threshold": "Automatyzacja zaczyna działać, gdy wysokość słońca przekracza ten próg (stopnie nad horyzontem).",
+                    "temp_threshold": "Automatyzacja działa tylko w gorące dni, tj. gdy prognozowana maksymalna temperatura dzienna przekracza ten próg (°C)."
                 }
             }
         }

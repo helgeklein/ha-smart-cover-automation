@@ -62,7 +62,7 @@ async def async_setup_entry(
     )
 
 
-class IntegrationSwitch(IntegrationEntity, SwitchEntity):
+class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
     """Smart cover automation master enable/disable switch.
 
     This switch controls the global enabled state of the automation system.
@@ -90,24 +90,19 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):
         super().__init__(coordinator)
         self.entity_description = entity_description
 
-    @cached_property
-    def available(self) -> bool | None:  # type: ignore[override]
-        """Return availability status.
-
-        Delegates to parent classes which provide availability based on coordinator status.
-        Uses type ignore to resolve type checker warnings from multiple inheritance.
-        """
-        return super().available
+    # Note: We inherit the 'available' property from IntegrationEntity/CoordinatorEntity
+    # which provides the correct coordinator-based availability logic.
+    # No override is needed since the default behavior is exactly what we want.
 
     @cached_property
-    def is_on(self) -> bool | None:  # type: ignore[override]
+    def is_on(self) -> bool:
         """Return whether the automation is currently enabled.
 
-        Reads the enabled state from the resolved configuration. This state
-        is stored in the integration's options and can be modified by toggling
-        this switch or through the integration's configuration UI.
+        Reads from the resolved settings to get the current enabled state.
+        This reflects changes made through the integration's options flow.
         """
-        return resolve_entry(self.coordinator.config_entry).enabled
+        resolved = resolve_entry(self.coordinator.config_entry)
+        return resolved.enabled
 
     async def async_turn_on(self, **_: Any) -> None:
         """Enable the smart cover automation.

@@ -18,7 +18,6 @@ This allows users to:
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING
 
 from homeassistant.components.binary_sensor import (
@@ -74,7 +73,7 @@ async def async_setup_entry(
     )
 
 
-class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):
+class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
     """Binary sensor entity for Smart Cover Automation system health monitoring.
 
     This class creates a connectivity-style binary sensor that indicates whether
@@ -110,21 +109,8 @@ class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):
         # Store the entity description that defines this sensor's characteristics
         self.entity_description = entity_description
 
-    @cached_property
-    def available(self) -> bool | None:  # type: ignore[override]
-        """Return the availability status of this binary sensor.
-
-        This property determines whether the binary sensor entity is available
-        in Home Assistant. It uses a cached property for performance and
-        delegates to the parent class implementation for consistency.
-
-        Availability data flow:
-        - The DataUpdateCoordinator in coordinator.py manages data updates and error states
-        - CoordinatorEntity.available reflects the coordinator's last update status
-        - super().available picks up CoordinatorEntity.available
-        """
-        # Delegate to the parent class implementation from the MRO
-        # (Method Resolution Order). This ensures we use the coordinator-based
-        # availability logic from IntegrationEntity while maintaining proper
-        # type annotations for Home Assistant's binary sensor requirements.
-        return super().available
+    # Note: Multiple inheritance from IntegrationEntity (CoordinatorEntity) and
+    # BinarySensorEntity causes a Pylance conflict on the 'available' property.
+    # Both base classes define it differently, but they're compatible at runtime.
+    # The CoordinatorEntity's implementation provides the correct coordinator-based
+    # availability logic we want, so no override is needed.

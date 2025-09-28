@@ -34,6 +34,7 @@ from custom_components.smart_cover_automation.config import (
     ConfKeys,
 )
 from custom_components.smart_cover_automation.const import (
+    COVER_ATTR_POS_TARGET_DESIRED,
     HA_WEATHER_COND_SUNNY,
 )
 from custom_components.smart_cover_automation.coordinator import (
@@ -196,8 +197,8 @@ class TestIntegrationScenarios:
 
                 # Check that the automation calculated the correct desired position
                 cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-                assert cover_data["sca_cover_desired_position"] == expected_pos, (
-                    f"Scenario {i} ({description}): Expected position {expected_pos}, got {cover_data['sca_cover_desired_position']}"
+                assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_pos, (
+                    f"Scenario {i} ({description}): Expected position {expected_pos}, got {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}"
                 )
 
                 # Check for cover service calls (ignore weather service calls)
@@ -330,8 +331,8 @@ class TestIntegrationScenarios:
 
             # Verify the automation calculated the correct position based on sun and temperature
             cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-            assert cover_data["sca_cover_desired_position"] == expected_pos, (
-                f"Scenario {i} ({description}): Expected {expected_pos}, got {cover_data['sca_cover_desired_position']}"
+            assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_pos, (
+                f"Scenario {i} ({description}): Expected {expected_pos}, got {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}"
             )
 
     async def test_error_recovery_scenarios(self) -> None:
@@ -539,7 +540,7 @@ class TestIntegrationScenarios:
         # Verify all covers should close (position 0) due to hot temperature AND sun hitting
         # Combined logic: both conditions met, so all covers should be closed
         for cover_id in covers:
-            assert result[ConfKeys.COVERS.value][cover_id]["sca_cover_desired_position"] == TEST_COVER_CLOSED, (
+            assert result[ConfKeys.COVERS.value][cover_id][COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED, (
                 f"Cover {cover_id} should close in hot weather with sun hitting"
             )
 

@@ -40,17 +40,18 @@ class ConfKeys(StrEnum):
     Each key corresponds to a setting that can be configured via options or data.
     """
 
-    ENABLED = "enabled"  # Global on/off for all automation.
-    SIMULATING = "simulating"  # Simulation mode: if enabled, no actual cover commands are sent.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_CLOSURE = "covers_min_closure"  # Minimum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_POSITION_DELTA = "covers_min_position_delta"  # Ignore smaller position changes (%).
-    WEATHER_ENTITY_ID = "weather_entity_id"  # Weather entity_id.
-    TEMP_THRESHOLD = "temp_threshold"  # Temperature threshold at which heat protection activates (°C).
+    ENABLED = "enabled"  # Global on/off for all automation.
+    MANUAL_OVERRIDE_DURATION = "manual_override_duration"  # Duration (seconds) to skip a cover's automation after manual cover move.
+    SIMULATING = "simulating"  # Simulation mode: if enabled, no actual cover commands are sent.
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
+    TEMP_THRESHOLD = "temp_threshold"  # Temperature threshold at which heat protection activates (°C).
     VERBOSE_LOGGING = "verbose_logging"  # Enable DEBUG logs for this entry.
+    WEATHER_ENTITY_ID = "weather_entity_id"  # Weather entity_id.
 
 
 class _Converters:
@@ -83,9 +84,32 @@ class _Converters:
             return tuple(str(x) for x in v)
         # Fallback: mirror prior behavior (tuple(v)), which turns a string into chars
         try:
-            return tuple(v)  # type: ignore[arg-type]
+            return tuple(v)
         except Exception:
             return ()
+
+    @staticmethod
+    def to_duration_seconds(v: int | dict[str, Any]) -> int:
+        """Convert HA duration format to total seconds (int).
+
+        Accepts:
+        - int: treated as seconds directly
+        - dict: HA duration format like {"hours": 1, "minutes": 30, "seconds": 0}
+
+        Returns total seconds as integer.
+        """
+        if isinstance(v, int):
+            return max(0, v)
+
+        if isinstance(v, dict):
+            # HA duration format: {"days": 0, "hours": 1, "minutes": 30, "seconds": 0}
+            days = v.get("days", 0)
+            hours = v.get("hours", 0)
+            minutes = v.get("minutes", 0)
+            seconds = v.get("seconds", 0)
+
+            total_seconds = (days * 24 * 60 * 60) + (hours * 60 * 60) + (minutes * 60) + seconds
+            return max(0, int(total_seconds))
 
 
 # Type-only aliases so annotations can refer without exporting helpers.
@@ -96,18 +120,19 @@ if TYPE_CHECKING:  # pragma: no cover - type checking only
 
 # Central registry of settings with defaults and coercion (type conversion).
 # This is the single source of truth for all settings keys and their types.
-CONF_SPECS: dict[ConfKeys, _ConfSpec] = {
-    ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
-    ConfKeys.SIMULATING: _ConfSpec(default=False, converter=_Converters.to_bool),
+CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int),
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
-    ConfKeys.WEATHER_ENTITY_ID: _ConfSpec(default="dummy", converter=_Converters.to_str),
-    ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=23.0, converter=_Converters.to_float),
+    ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds),
+    ConfKeys.SIMULATING: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=20.0, converter=_Converters.to_float),
+    ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=23.0, converter=_Converters.to_float),
     ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.WEATHER_ENTITY_ID: _ConfSpec(default="dummy", converter=_Converters.to_str),
 }
 
 # Public API of this module (keep helper class internal)
@@ -125,17 +150,18 @@ __all__ = [
 # without changing existing callers. Consumers can migrate to this over time.
 @dataclass(frozen=True, slots=True)
 class ResolvedConfig:
-    enabled: bool
-    simulating: bool
     covers: tuple[str, ...]
     covers_max_closure: int
     covers_min_closure: int
     covers_min_position_delta: int
-    weather_entity_id: str
-    temp_threshold: float
+    enabled: bool
+    manual_override_duration: int
+    simulating: bool
     sun_azimuth_tolerance: int
     sun_elevation_threshold: float
+    temp_threshold: float
     verbose_logging: bool
+    weather_entity_id: str
 
     def get(self, key: ConfKeys) -> Any:
         # Generic access: ConfKeys values match dataclass field names

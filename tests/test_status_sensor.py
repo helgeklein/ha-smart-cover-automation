@@ -38,6 +38,8 @@ from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
+    COVER_ATTR_POS_CURRENT,
+    COVER_ATTR_POS_TARGET_FINAL,
     SENSOR_ATTR_AUTOMATION_ENABLED,
     SENSOR_ATTR_COVERS_MIN_POSITION_DELTA,
     SENSOR_ATTR_COVERS_NUM_MOVED,
@@ -164,11 +166,13 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
         ConfKeys.COVERS.value: {
             "cover.one": {
                 ATTR_CURRENT_POSITION: 50,  # Current position: 50%
-                "sca_cover_desired_position": 40,  # Target position: 40% (movement required)
+                COVER_ATTR_POS_CURRENT: 50,  # Current position in SCA format
+                COVER_ATTR_POS_TARGET_FINAL: 40,  # Target position: 40% (movement required)
             },
             "cover.two": {
                 ATTR_CURRENT_POSITION: 100,  # Current position: 100% (fully open)
-                "sca_cover_desired_position": 100,  # Target position: 100% (no movement)
+                COVER_ATTR_POS_CURRENT: 100,  # Current position in SCA format
+                COVER_ATTR_POS_TARGET_FINAL: 100,  # Target position: 100% (no movement)
             },
         },
     }
@@ -228,11 +232,13 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
         ConfKeys.COVERS.value: {
             "cover.one": {
                 ATTR_CURRENT_POSITION: 100,  # Currently fully open
-                "sca_cover_desired_position": 80,  # Target: partially closed (sun protection)
+                COVER_ATTR_POS_CURRENT: 100,  # Current position in SCA format
+                COVER_ATTR_POS_TARGET_FINAL: 80,  # Target: partially closed (sun protection)
             },
             "cover.two": {
                 ATTR_CURRENT_POSITION: 100,  # Currently fully open
-                "sca_cover_desired_position": 100,  # Target: remain open (no direct sun)
+                COVER_ATTR_POS_CURRENT: 100,  # Current position in SCA format
+                COVER_ATTR_POS_TARGET_FINAL: 100,  # Target: remain open (no direct sun)
             },
         },
     }

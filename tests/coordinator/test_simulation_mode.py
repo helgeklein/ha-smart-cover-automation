@@ -23,6 +23,7 @@ import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION
 
 from custom_components.smart_cover_automation.config import ConfKeys
+from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import (
@@ -114,7 +115,7 @@ class TestSimulationMode(TestDataUpdateCoordinatorBase):
 
         # The automation should have calculated a desired position even in simulation mode
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data["sca_cover_desired_position"] == TEST_COVER_CLOSED
+        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED
 
     async def test_simulation_mode_logging(
         self,
@@ -175,7 +176,7 @@ class TestSimulationMode(TestDataUpdateCoordinatorBase):
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
 
         # Should have calculated that cover needs to close due to hot temperature
-        assert cover_data["sca_cover_desired_position"] == TEST_COVER_CLOSED
+        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED
 
         # Verify simulation mode is active
         resolved = simulation_coordinator._resolved_settings()

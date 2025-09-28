@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
@@ -277,4 +278,4 @@ class TestCoverControlEdgeCases:
         assert "covers" in result
         assert "cover.test_cover" in result["covers"]
         cover_data = result["covers"]["cover.test_cover"]
-        assert cover_data["sca_cover_desired_position"] == 100  # Should open due to cold
+        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == 100  # Should open due to cold
