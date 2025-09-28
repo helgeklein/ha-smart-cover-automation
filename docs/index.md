@@ -23,16 +23,16 @@ This is a stable and well-tested Home Assistant integration to automate the cont
 	- Close covers while the sun shines on a window to prevent the house from heating up.
 	- Open covers when there's no direct sunlight to minimize dark cave feeling.
 	- Conditionals: weather (sunshine, temperature), sun elevation.
-- **Lockout protection:**
+- **Lockout protection:** (TODO)
 	- Pause automations for a cover if the door/window is open.
-- **Manual override detection:**
+- **Manual override detection:** (TODO)
 	- Detect manual adjustments and pause automation to avoid conflicts.
-- **Night silence**:
+- **Night silence**: (TODO)
 	- Don't move the covers when people are sleeping.
-- **Prepositioning before silent phases:**
+- **Prepositioning before silent phases:** (TODO)
 	- Move the covers to the position they need to be in ahead of time so that there's silence at night but the covers are closed when the sun starts shining in the morning.
 - **Plant light:**
-	- Define min/max positions for the covers so that plants on the windowsill still receive enough light.
+	- Define min/max positions for the covers so that plants on the windowsill receive enough light.
 - **Comfort:**
 	- Micro-adjustments are avoided.
 - **Supported covers:** Works with any cover entity that supports open/close or position control.
