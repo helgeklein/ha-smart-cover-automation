@@ -1,0 +1,13 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.autopep8",
+        "charliermarsh.ruff",
+        "ryanluker.vscode-coverage-gutters"
+    ],
+    "unwantedRecommendations": [
+        "ms-python.flake8",
+        "ms-python.pylint"
+    ]
+}

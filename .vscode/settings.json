@@ -1,0 +1,47 @@
+{
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    // Pylance performance optimizations
+    "python.analysis.indexing": true,
+    "python.analysis.packageIndexDepths": [
+        {
+            "name": "homeassistant",
+            "depth": 2,
+            "includeAllSymbols": false
+        }
+    ],
+    "python.analysis.autoImportCompletions": false,
+    "python.analysis.autoFormatStrings": false,
+    "python.analysis.memory.keepLibraryAst": false,
+    "python.analysis.exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "**/.*",
+        "htmlcov/**",
+        "coverage.json"
+    ],
+    // File watching optimizations
+    "files.watcherExclude": {
+        "**/__pycache__/**": true,
+        "**/htmlcov/**": true,
+        "coverage.json": true,
+        "coverage.xml": true,
+        "**/.git/**": true
+    },
+    // Editor performance
+    "editor.quickSuggestions": {
+        "strings": false,
+        "comments": false,
+        "other": true
+    },
+    "editor.suggest.localityBonus": true,
+    "editor.suggest.shareSuggestSelections": false,
+    // Disable resource-intensive features during editing
+    "python.analysis.inlayHints.functionReturnTypes": false,
+    "python.analysis.inlayHints.variableTypes": false,
+    "editor.codeLens": false,
+    "editor.hover.delay": 1000
+}

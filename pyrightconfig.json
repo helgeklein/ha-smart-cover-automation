@@ -1,0 +1,12 @@
+{
+    "exclude": [
+        "**/homeassistant/components/**",
+        "**/site-packages/homeassistant/**",
+        "htmlcov/**",
+        "**/__pycache__/**",
+        "coverage.json"
+    ],
+    "useLibraryCodeForTypes": false,
+    "autoImportCompletions": false,
+    "indexing": true
+}
