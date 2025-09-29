@@ -28,11 +28,9 @@ import pytest
 from custom_components.smart_cover_automation import async_get_options_flow
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
-from .conftest import MockConfigEntry, create_temperature_config
-
 
 @pytest.mark.asyncio
-async def test_async_get_options_flow_returns_handler() -> None:
+async def test_async_get_options_flow_returns_handler(mock_config_entry_basic, mock_basic_hass) -> None:
     """Test that the integration properly creates and returns an options flow handler.
 
     Validates that the async_get_options_flow function correctly instantiates
@@ -52,13 +50,12 @@ async def test_async_get_options_flow_returns_handler() -> None:
     This ensures users can modify integration settings through the Home Assistant
     UI without requiring complete reconfiguration or integration removal/re-addition.
     """
-    # Create a mock configuration entry with temperature automation settings
-    entry = MockConfigEntry(create_temperature_config())
-    entry.hass = MagicMock()
-    entry.hass.states = MagicMock()
+    # Configure the mock config entry and hass
+    mock_config_entry_basic.hass = mock_basic_hass
+    mock_basic_hass.states = MagicMock()
 
     # Request options flow handler from the integration
-    flow = await async_get_options_flow(cast(IntegrationConfigEntry, entry))
+    flow = await async_get_options_flow(cast(IntegrationConfigEntry, mock_config_entry_basic))
 
     # Verify the handler has the required method for Home Assistant options flow
     assert hasattr(flow, "async_step_init")

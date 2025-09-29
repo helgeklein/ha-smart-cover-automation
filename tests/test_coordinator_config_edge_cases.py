@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from typing import cast
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -51,7 +51,7 @@ async def test_disabled_automation_config(mock_basic_hass) -> None:
     assert coordinator.hass is mock_basic_hass
 
 
-def test_coordinator_verbose_logging_configuration() -> None:
+def test_coordinator_verbose_logging_configuration(mock_basic_hass) -> None:
     """Test coordinator verbose logging configuration setup.
 
     This test verifies that when verbose_logging is enabled in configuration,
@@ -59,9 +59,6 @@ def test_coordinator_verbose_logging_configuration() -> None:
 
     Coverage target: coordinator.py lines 115-118 (verbose logging setup)
     """
-    # Create mock Home Assistant instance
-    hass = MagicMock()
-
     # Create configuration with verbose logging enabled
     config = create_temperature_config()
     config[ConfKeys.VERBOSE_LOGGING.value] = True  # Enable verbose logging
@@ -70,7 +67,7 @@ def test_coordinator_verbose_logging_configuration() -> None:
     # Mock the logger to verify it gets configured
     with patch("custom_components.smart_cover_automation.const.LOGGER") as mock_logger:
         # Create coordinator (this should trigger logging configuration)
-        DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+        DataUpdateCoordinator(mock_basic_hass, cast(IntegrationConfigEntry, config_entry))
 
         # Verify verbose logging was configured
         mock_logger.setLevel.assert_called_with(logging.DEBUG)
