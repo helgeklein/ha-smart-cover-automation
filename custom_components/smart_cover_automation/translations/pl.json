@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Smart Cover Automation",
-                "description": "Automatyczne sterowanie roletami okiennymi. Dokumentacja: https://helgeklein.github.io/ha-smart-cover-automation/.",
+                "description": "Automatyczne sterowanie roletami/żaluzjami okiennymi. Dokumentacja: https://helgeklein.github.io/ha-smart-cover-automation/.",
                 "data": {
                     "covers": "Rolety do automatyzacji",
                     "weather_entity_id": "Czujnik prognozy pogody"
@@ -11,7 +11,7 @@
             }
         },
         "error": {
-            "invalid_cover": "Jedna lub więcej wybranych rolet jest nieprawidłowych lub niedostępnych.",
+            "invalid_cover": "Jedna lub więcej wybranych rolet/żaluzji jest nieprawidłowych lub niedostępnych.",
             "invalid_weather_entity": "Wybrana jednostka pogodowa nie obsługuje prognoz dziennych.",
             "invalid_config": "Nieprawidłowa konfiguracja."
         },
@@ -40,7 +40,7 @@
                 },
                 "data_description": {
                     "cover_azimuth": "Kierunek, w którym zwrócone jest okno (0°=Północ, 90°=Wschód, itp.). Używane do obliczenia, czy słońce świeci na okno.",
-                    "covers": "Wybierz rolety, którymi ma sterować automatyzacja.",
+                    "covers": "Wybierz rolety/żaluzje, którymi ma sterować automatyzacja.",
                     "covers_max_closure": "Nigdy nie zamykaj bardziej niż to, aby zawsze wpuścić trochę światła (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
                     "covers_min_closure": "Nigdy nie otwieraj bardziej niż to, aby zawsze zapewnić minimum cienia (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
                     "manual_override_duration": "Jak długo pomijać roletę po tym, jak została przesunięta ręcznie (0 = nie pomijaj).",

@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Smart Cover Automation",
-                "description": "Automatische rolluikbesturing. Documentatie: https://helgeklein.github.io/ha-smart-cover-automation/",
+                "description": "Automatische rolluik- en jaloeziebediening. Documentatie: https://helgeklein.github.io/ha-smart-cover-automation/",
                 "data": {
                     "covers": "Rolluiken om te automatiseren",
                     "weather_entity_id": "Weersvoorspelling sensor"
@@ -11,7 +11,7 @@
             }
         },
         "error": {
-            "invalid_cover": "Een of meer geselecteerde rolluiken zijn ongeldig of niet beschikbaar.",
+            "invalid_cover": "Een of meer geselecteerde rolluiken/jaloeziën zijn ongeldig of niet beschikbaar.",
             "invalid_weather_entity": "De geselecteerde weersentiteit ondersteunt geen dagelijkse voorspellingen.",
             "invalid_config": "Ongeldige configuratie."
         },
@@ -40,7 +40,7 @@
                 },
                 "data_description": {
                     "cover_azimuth": "Richting waarin het raam is gericht (0°=Noord, 90°=Oost, enz.). Gebruikt om te berekenen of de zon op het raam schijnt.",
-                    "covers": "Selecteer de rolluiken die de automatisering moet besturen.",
+                    "covers": "Selecteer de rolluiken/jaloeziën die de automatisering moet besturen.",
                     "covers_max_closure": "Sluit nooit meer dan dit om altijd wat licht binnen te laten (0 = volledig gesloten, 100 = volledig open).",
                     "covers_min_closure": "Open nooit meer dan dit om altijd een minimum aan schaduw te bieden (0 = volledig gesloten, 100 = volledig open).",
                     "manual_override_duration": "Hoe lang een rolluik overslaan nadat het handmatig is bewogen (0 = niet overslaan).",

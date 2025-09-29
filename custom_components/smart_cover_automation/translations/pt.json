@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Smart Cover Automation",
-                "description": "Controlo automático de estores. Documentação: https://helgeklein.github.io/ha-smart-cover-automation/.",
+                "description": "Controlo automático de estores e persianas. Documentação: https://helgeklein.github.io/ha-smart-cover-automation/.",
                 "data": {
                     "covers": "Estores para automatizar",
                     "weather_entity_id": "Sensor de previsão meteorológica"
@@ -11,7 +11,7 @@
             }
         },
         "error": {
-            "invalid_cover": "Um ou mais estores selecionados são inválidos ou indisponíveis.",
+            "invalid_cover": "Um ou mais estores/persianas selecionados são inválidos ou indisponíveis.",
             "invalid_weather_entity": "A entidade meteorológica selecionada não suporta previsões diárias.",
             "invalid_config": "Configuração inválida."
         },
@@ -40,7 +40,7 @@
                 },
                 "data_description": {
                     "cover_azimuth": "Direcção para a qual a janela está voltada (0°=Norte, 90°=Este, etc.). Usado para calcular se o sol está a incidir na janela.",
-                    "covers": "Seleccione os estores que a automação deve controlar.",
+                    "covers": "Seleccione os estores/persianas que a automação deve controlar.",
                     "covers_max_closure": "Nunca fechar mais que isto para sempre permitir a entrada de alguma luz (0 = totalmente fechado, 100 = totalmente aberto).",
                     "covers_min_closure": "Nunca abrir mais que isto para sempre fornecer um mínimo de sombra (0 = totalmente fechado, 100 = totalmente aberto).",
                     "manual_override_duration": "Por quanto tempo ignorar uma persiana depois de ter sido movida manualmente (0 = nunca ignorar).",

@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Smart Cover Automation",
-                "description": "Control automático de persianas. Documentación: https://helgeklein.github.io/ha-smart-cover-automation/",
+                "description": "Control automático de persianas y toldos. Documentación: https://helgeklein.github.io/ha-smart-cover-automation/",
                 "data": {
                     "covers": "Persianas a automatizar",
                     "weather_entity_id": "Sensor de pronóstico meteorológico"
@@ -11,7 +11,7 @@
             }
         },
         "error": {
-            "invalid_cover": "Una o más persianas seleccionadas son inválidas o no están disponibles.",
+            "invalid_cover": "Una o más persianas/toldos seleccionados son inválidos o no están disponibles.",
             "invalid_weather_entity": "La entidad meteorológica seleccionada no admite pronósticos diarios.",
             "invalid_config": "Configuración inválida."
         },
@@ -40,7 +40,7 @@
                 },
                 "data_description": {
                     "cover_azimuth": "Dirección hacia la que está orientada la ventana (0°=Norte, 90°=Este, etc.). Se usa para calcular si el sol incide sobre la ventana.",
-                    "covers": "Seleccione las persianas que la automatización debe controlar.",
+                    "covers": "Seleccione las persianas/toldos que la automatización debe controlar.",
                     "covers_max_closure": "Nunca cerrar más que esto para siempre dejar entrar algo de luz (0 = completamente cerrado, 100 = completamente abierto).",
                     "covers_min_closure": "Nunca abrir más que esto para siempre proporcionar un mínimo de sombra (0 = completamente cerrado, 100 = completamente abierto).",
                     "manual_override_duration": "Cuánto tiempo omitir una persiana después de que se haya movido manualmente (0 = no omitir).",
