@@ -21,7 +21,6 @@ Home Assistant environments.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
@@ -56,6 +55,7 @@ from .conftest import (
     TEST_MIN_SERVICE_CALLS,
     TEST_NUM_COVERS,
     MockConfigEntry,
+    create_mock_weather_service,
     create_temperature_config,
     set_weather_forecast_temp,
 )
@@ -107,27 +107,7 @@ class TestIntegrationScenarios:
         hass.services = MagicMock()
 
         # Mock weather forecast service call
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            """Mock weather forecast service that returns temperature data."""
-            if domain == Platform.WEATHER and service == "get_forecasts":
-                entity_id = service_data.get("entity_id", "weather.forecast")
-                # Get current temperature from global variable
-                from tests.conftest import _CURRENT_WEATHER_TEMP
-
-                return {
-                    entity_id: {
-                        "forecast": [
-                            {
-                                "datetime": datetime.now(timezone.utc).isoformat(),
-                                "native_temperature": _CURRENT_WEATHER_TEMP,
-                                "temp_max": _CURRENT_WEATHER_TEMP,
-                            }
-                        ]
-                    }
-                }
-            return {}
-
-        hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+        hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
         config_entry = MockConfigEntry(create_temperature_config())  # Both automations now always active
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -244,27 +224,7 @@ class TestIntegrationScenarios:
         hass.services = MagicMock()
 
         # Mock weather forecast service call
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            """Mock weather forecast service that returns temperature data."""
-            if domain == Platform.WEATHER and service == "get_forecasts":
-                entity_id = service_data.get("entity_id", "weather.forecast")
-                # Get current temperature from global variable
-                from tests.conftest import _CURRENT_WEATHER_TEMP
-
-                return {
-                    entity_id: {
-                        "forecast": [
-                            {
-                                "datetime": datetime.now(timezone.utc).isoformat(),
-                                "native_temperature": _CURRENT_WEATHER_TEMP,
-                                "temp_max": _CURRENT_WEATHER_TEMP,
-                            }
-                        ]
-                    }
-                }
-            return {}
-
-        hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+        hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
         config_entry = MockConfigEntry(create_temperature_config())  # Both automations now always active
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -363,27 +323,7 @@ class TestIntegrationScenarios:
         hass.services = MagicMock()
 
         # Mock weather forecast service call
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            """Mock weather forecast service that returns temperature data."""
-            if domain == Platform.WEATHER and service == "get_forecasts":
-                entity_id = service_data.get("entity_id", "weather.forecast")
-                # Get current temperature from global variable
-                from tests.conftest import _CURRENT_WEATHER_TEMP
-
-                return {
-                    entity_id: {
-                        "forecast": [
-                            {
-                                "datetime": datetime.now(timezone.utc).isoformat(),
-                                "native_temperature": _CURRENT_WEATHER_TEMP,
-                                "temp_max": _CURRENT_WEATHER_TEMP,
-                            }
-                        ]
-                    }
-                }
-            return {}
-
-        hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+        hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -467,27 +407,7 @@ class TestIntegrationScenarios:
         hass.services = MagicMock()
 
         # Mock weather forecast service call
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            """Mock weather forecast service that returns temperature data."""
-            if domain == Platform.WEATHER and service == "get_forecasts":
-                entity_id = service_data.get("entity_id", "weather.forecast")
-                # Get current temperature from global variable
-                from tests.conftest import _CURRENT_WEATHER_TEMP
-
-                return {
-                    entity_id: {
-                        "forecast": [
-                            {
-                                "datetime": datetime.now(timezone.utc).isoformat(),
-                                "native_temperature": _CURRENT_WEATHER_TEMP,
-                                "temp_max": _CURRENT_WEATHER_TEMP,
-                            }
-                        ]
-                    }
-                }
-            return {}
-
-        hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+        hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
 
         # Configure multiple covers for concurrent control testing
         covers = ["cover.living_room", "cover.bedroom", "cover.kitchen"]
@@ -580,27 +500,7 @@ class TestIntegrationScenarios:
         hass.services = MagicMock()
 
         # Mock weather forecast service call
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            """Mock weather forecast service that returns temperature data."""
-            if domain == Platform.WEATHER and service == "get_forecasts":
-                entity_id = service_data.get("entity_id", "weather.forecast")
-                # Get current temperature from global variable
-                from tests.conftest import _CURRENT_WEATHER_TEMP
-
-                return {
-                    entity_id: {
-                        "forecast": [
-                            {
-                                "datetime": datetime.now(timezone.utc).isoformat(),
-                                "native_temperature": _CURRENT_WEATHER_TEMP,
-                                "temp_max": _CURRENT_WEATHER_TEMP,
-                            }
-                        ]
-                    }
-                }
-            return {}
-
-        hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+        hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
 
         # Configure covers with different capabilities
         covers = ["cover.smart", "cover.basic"]

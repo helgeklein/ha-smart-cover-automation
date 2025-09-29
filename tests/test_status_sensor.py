@@ -28,10 +28,9 @@ or environmental conditions.
 
 from __future__ import annotations
 
-from typing import Iterable, cast
+from typing import cast
 from unittest.mock import MagicMock
 
-import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
@@ -53,60 +52,15 @@ from custom_components.smart_cover_automation.const import (
     SENSOR_KEY_AUTOMATION_STATUS,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-from custom_components.smart_cover_automation.sensor import (
-    async_setup_entry as async_setup_entry_sensor,
-)
 
 from .conftest import (
     TEST_COMFORTABLE_TEMP_2,
     TEST_DIRECT_AZIMUTH,
     TEST_HIGH_ELEVATION,
-    MockConfigEntry,
+    capture_platform_entities,
     create_sun_config,
     create_temperature_config,
 )
-
-
-async def _capture_entities(hass: HomeAssistant, config: dict[str, object]) -> list[Entity]:
-    """Helper function to set up the sensor platform and capture created entities.
-
-    This utility function streamlines the test setup process by:
-    1. Creating a mock config entry with the provided configuration
-    2. Setting up a coordinator with successful state
-    3. Executing the sensor platform setup process
-    4. Capturing and returning all created entities
-
-    This pattern is reused across multiple tests to ensure consistent
-    setup and reduce code duplication while testing various sensor scenarios.
-
-    Args:
-        hass: Mock Home Assistant instance
-        config: Configuration dictionary for the integration
-
-    Returns:
-        List of entities created by the sensor platform
-    """
-    hass_mock = cast(MagicMock, hass)
-    entry = MockConfigEntry(config)
-
-    # Setup coordinator with basic successful state
-    coordinator = DataUpdateCoordinator(hass_mock, cast(IntegrationConfigEntry, entry))
-    coordinator.data = {}
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
-    entry.runtime_data.coordinator = coordinator
-
-    # Capture entities that would be added to Home Assistant
-    captured: list[Entity] = []
-
-    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:  # noqa: ARG001
-        """Mock entity addition function that captures created entities."""
-        captured.extend(list(new_entities))
-
-    # Execute platform setup to create sensor entities
-    await async_setup_entry_sensor(hass_mock, cast(IntegrationConfigEntry, entry), add_entities)
-
-    return captured
 
 
 def _get_status_entity(entities: list[Entity]) -> Entity:
@@ -128,7 +82,6 @@ def _get_status_entity(entities: list[Entity]) -> Entity:
     return next(e for e in entities if getattr(getattr(e, "entity_description"), "key", "") == SENSOR_KEY_AUTOMATION_STATUS)
 
 
-@pytest.mark.asyncio
 async def test_status_sensor_combined_summary_and_attributes() -> None:
     """Test status sensor summary generation and attribute exposure for temperature automation.
 
@@ -156,7 +109,7 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     # Add custom tuning/options to test attribute exposure
     config[ConfKeys.COVERS_MIN_POSITION_DELTA.value] = 10
 
-    entities = await _capture_entities(hass, config)
+    entities = await capture_platform_entities(hass, config, "sensor")
     status = _get_status_entity(entities)
 
     # Simulate coordinator data with realistic automation scenario
@@ -194,7 +147,6 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     assert isinstance(attrs[ConfKeys.COVERS.value], dict)  # Covers data structure
 
 
-@pytest.mark.asyncio
 async def test_status_sensor_combined_sun_attributes_present() -> None:
     """Test status sensor summary and attributes for sun-based automation.
 
@@ -221,7 +173,7 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     # Setup mock Home Assistant environment for sun automation
     hass = MagicMock(spec=HomeAssistant)
     config = create_sun_config()
-    entities = await _capture_entities(hass, config)
+    entities = await capture_platform_entities(hass, config, "sensor")
     status = _get_status_entity(entities)
 
     # Simulate coordinator data with sun position and cover states
@@ -260,7 +212,6 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     assert isinstance(attrs[ConfKeys.COVERS.value], dict)  # Covers data structure
 
 
-@pytest.mark.asyncio
 async def test_status_sensor_disabled() -> None:
     """Test status sensor behavior when automation is globally disabled.
 
@@ -287,7 +238,7 @@ async def test_status_sensor_disabled() -> None:
     config = create_temperature_config()
     config[ConfKeys.ENABLED.value] = False  # Globally disable automation
 
-    entities = await _capture_entities(hass, config)
+    entities = await capture_platform_entities(hass, config, "sensor")
     status = _get_status_entity(entities)
 
     # Even with coordinator data present, disabled state should short-circuit evaluation
@@ -315,7 +266,7 @@ async def test_status_sensor_simulation_mode_enabled() -> None:
     config = create_temperature_config()
     config[ConfKeys.SIMULATING.value] = True  # Enable simulation mode
 
-    entities = await _capture_entities(hass, config)
+    entities = await capture_platform_entities(hass, config, "sensor")
     status = _get_status_entity(entities)
 
     # Setup coordinator with basic automation data
@@ -349,7 +300,7 @@ async def test_status_sensor_simulation_mode_disabled() -> None:
     config = create_temperature_config()
     config[ConfKeys.SIMULATING.value] = False  # Explicitly disable simulation mode
 
-    entities = await _capture_entities(hass, config)
+    entities = await capture_platform_entities(hass, config, "sensor")
     status = _get_status_entity(entities)
 
     # Setup coordinator with basic automation data

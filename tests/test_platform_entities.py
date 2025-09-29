@@ -27,10 +27,7 @@ real-world integration behavior without requiring actual Home Assistant runtime.
 from __future__ import annotations
 
 from typing import Iterable, cast
-from unittest.mock import MagicMock
 
-import pytest
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.binary_sensor import (
@@ -39,11 +36,8 @@ from custom_components.smart_cover_automation.binary_sensor import (
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
-from .conftest import MockConfigEntry, create_temperature_config
 
-
-@pytest.mark.asyncio
-async def test_binary_sensor_entity_properties() -> None:
+async def test_binary_sensor_entity_properties(mock_hass_with_spec, mock_config_entry_basic) -> None:
     """Test binary sensor platform setup and entity property evaluation.
 
     This test verifies that the binary sensor platform correctly creates and configures
@@ -58,16 +52,12 @@ async def test_binary_sensor_entity_properties() -> None:
     The binary sensor inherits availability from CoordinatorEntity, which means its
     availability reflects the coordinator's ability to fetch and process data.
     """
-    # Setup mock Home Assistant environment
-    hass = MagicMock(spec=HomeAssistant)
-    config_entry = MockConfigEntry(create_temperature_config())
-
     # Coordinator with predefined data and success state
-    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
     coordinator.last_update_success = True  # type: ignore[attr-defined]
 
     # Wire coordinator into runtime_data as HA would do during integration setup
-    config_entry.runtime_data.coordinator = coordinator
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
 
     # Capture entities that would be added to Home Assistant
     captured: list[Entity] = []
@@ -78,8 +68,8 @@ async def test_binary_sensor_entity_properties() -> None:
 
     # Setup the binary sensor platform (this would normally be called by HA)
     await async_setup_entry_binary_sensor(
-        hass,
-        cast(IntegrationConfigEntry, config_entry),
+        mock_hass_with_spec,
+        cast(IntegrationConfigEntry, mock_config_entry_basic),
         add_entities,
     )
 

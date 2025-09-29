@@ -19,45 +19,14 @@ changes without requiring integration reinstallation or YAML editing.
 from __future__ import annotations
 
 from typing import Any, cast
-from unittest.mock import MagicMock
-
-import pytest
 
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
 from custom_components.smart_cover_automation.const import COVER_SFX_AZIMUTH
 
-
-def _mock_entry(data: dict[str, Any], options: dict[str, Any] | None = None) -> MagicMock:
-    """Create a mock Home Assistant config entry for testing options flow.
-
-    Home Assistant config entries store integration data in two places:
-    - data: Initial configuration from setup flow (read-only after creation)
-    - options: Runtime-modifiable settings managed by options flow
-
-    This helper creates a mock entry that simulates the HA config entry structure,
-    allowing tests to verify how the options flow handles existing configurations
-    and user modifications.
-
-    Args:
-        data: The initial configuration data (typically covers list, initial settings)
-        options: Optional runtime options that override data values
-
-    Returns:
-        Mock config entry with data and options attributes
-    """
-    entry = MagicMock()
-    entry.data = data
-    entry.options = options or {}
-
-    # Create a mock hass object with a states attribute
-    hass = MagicMock()
-    hass.states = MagicMock()
-    entry.hass = hass
-    return entry
+from .conftest import create_options_flow_mock_entry
 
 
-@pytest.mark.asyncio
 async def test_options_flow_form_shows_dynamic_fields() -> None:
     """Test that the options form dynamically includes fields based on configured covers.
 
@@ -78,9 +47,9 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
         ConfKeys.COVERS.value: ["cover.one", "cover.two"],
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
     }
-    flow = OptionsFlowHandler(_mock_entry(data))
+    flow = OptionsFlowHandler(create_options_flow_mock_entry(data))
 
-    # Trigger form generation
+    # Trigger form generation with no user input
     result = await flow.async_step_init()
     result_dict = cast(dict[str, Any], result)
 
@@ -102,7 +71,6 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
     assert f"cover.two_{COVER_SFX_AZIMUTH}" in schema
 
 
-@pytest.mark.asyncio
 async def test_options_flow_submit_creates_entry() -> None:
     """Test that submitting valid options creates a configuration entry.
 
@@ -121,7 +89,7 @@ async def test_options_flow_submit_creates_entry() -> None:
     """
     # Start with minimal configuration (one cover)
     data = {ConfKeys.COVERS.value: ["cover.one"]}
-    flow = OptionsFlowHandler(_mock_entry(data))
+    flow = OptionsFlowHandler(create_options_flow_mock_entry(data))
 
     # Simulate user filling out the options form with new values
     user_input = {
@@ -145,7 +113,6 @@ async def test_options_flow_submit_creates_entry() -> None:
     assert result_dict["data"] == user_input
 
 
-@pytest.mark.asyncio
 async def test_options_flow_direction_field_defaults_and_parsing() -> None:
     """Test direction field default values and parsing across different configuration scenarios.
 
@@ -177,7 +144,7 @@ async def test_options_flow_direction_field_defaults_and_parsing() -> None:
         f"cover.one_{COVER_SFX_AZIMUTH}": "180",  # overrides data: "90" → "180" → 180.0° default
     }
 
-    flow = OptionsFlowHandler(_mock_entry(data, options))
+    flow = OptionsFlowHandler(create_options_flow_mock_entry(data, options))
 
     # Generate the options form schema
     result = await flow.async_step_init()
@@ -210,7 +177,6 @@ async def test_options_flow_direction_field_defaults_and_parsing() -> None:
     assert not isinstance(val3, (int, float))  # "west" → non-numeric fallback
 
 
-@pytest.mark.asyncio
 async def test_options_flow_simulation_mode_default_and_submit() -> None:
     """Test simulation mode configuration in the options flow.
 
@@ -225,7 +191,7 @@ async def test_options_flow_simulation_mode_default_and_submit() -> None:
     """
     # Start with basic configuration
     data = {ConfKeys.COVERS.value: ["cover.living_room"]}
-    flow = OptionsFlowHandler(_mock_entry(data))
+    flow = OptionsFlowHandler(create_options_flow_mock_entry(data))
 
     # First, check that simulation mode appears in the form with correct default
     result = await flow.async_step_init()
@@ -265,7 +231,6 @@ async def test_options_flow_simulation_mode_default_and_submit() -> None:
     assert result_dict["data"][ConfKeys.SIMULATING.value] is True
 
 
-@pytest.mark.asyncio
 async def test_options_flow_simulation_mode_with_existing_config() -> None:
     """Test simulation mode handling when it's already configured in existing data/options.
 
@@ -283,7 +248,7 @@ async def test_options_flow_simulation_mode_with_existing_config() -> None:
         ConfKeys.SIMULATING.value: False,
     }
 
-    flow = OptionsFlowHandler(_mock_entry(data, options))
+    flow = OptionsFlowHandler(create_options_flow_mock_entry(data, options))
 
     # Generate form and check that options value takes precedence
     result = await flow.async_step_init()

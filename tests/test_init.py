@@ -25,16 +25,12 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from homeassistant.core import HomeAssistant
-
 from custom_components.smart_cover_automation import (
     async_reload_entry,
     async_setup_entry,
     async_unload_entry,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-
-from .conftest import MockConfigEntry, create_temperature_config
 
 
 class TestIntegrationSetup:
@@ -56,7 +52,7 @@ class TestIntegrationSetup:
     successful scenarios and when errors occur during various phases of operation.
     """
 
-    async def test_setup_entry_success(self) -> None:
+    async def test_setup_entry_success(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test successful setup of a configuration entry.
 
         Validates the complete successful setup process for a Smart Cover Automation
@@ -71,13 +67,9 @@ class TestIntegrationSetup:
         The successful setup process is critical for the integration to function
         properly and provide automation capabilities to users.
         """
-        # Create mock Home Assistant instance with configuration entry management
-        hass = MagicMock(spec=HomeAssistant)
-        hass.config_entries = MagicMock()
-        hass.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
-
-        # Create configuration entry with temperature automation settings
-        config_entry = MockConfigEntry(create_temperature_config())
+        # Create mock Home Assistant instance with successful platform setup
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
 
         # Mock integration loading and coordinator creation
         with (
@@ -90,14 +82,14 @@ class TestIntegrationSetup:
             mock_coordinator_class.return_value = mock_coordinator
 
             # Execute setup process
-            result = await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
+            result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
         # Verify successful setup
         assert result is True
         mock_coordinator.async_config_entry_first_refresh.assert_called_once()
-        hass.config_entries.async_forward_entry_setups.assert_called_once()
+        mock_hass_with_spec.config_entries.async_forward_entry_setups.assert_called_once()
 
-    async def test_setup_entry_coordinator_init_failure(self) -> None:
+    async def test_setup_entry_coordinator_init_failure(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test setup failure during coordinator initialization.
 
         Validates that the integration properly handles and reports failures that
@@ -111,22 +103,18 @@ class TestIntegrationSetup:
         When coordinator initialization fails, the setup should return False to
         inform Home Assistant that the integration setup was unsuccessful.
         """
-        # Create mock Home Assistant instance
-        hass = MagicMock(spec=HomeAssistant)
-        config_entry = MockConfigEntry(create_temperature_config())
-
         # Mock coordinator initialization failure
         with patch(
             "custom_components.smart_cover_automation.DataUpdateCoordinator",
             side_effect=ValueError("Coordinator init failed"),
         ):
             # Execute setup process (should fail)
-            result = await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
+            result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
         # Verify setup failure is properly reported
         assert result is False
 
-    async def test_setup_entry_refresh_failure(self) -> None:
+    async def test_setup_entry_refresh_failure(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test setup failure during initial data refresh.
 
         Validates that the integration properly handles failures during the initial
@@ -141,10 +129,6 @@ class TestIntegrationSetup:
         integration from being marked as successfully loaded when it cannot
         actually function properly.
         """
-        # Create mock Home Assistant instance
-        hass = MagicMock(spec=HomeAssistant)
-        config_entry = MockConfigEntry(create_temperature_config())
-
         # Mock successful coordinator creation but failed initial refresh
         with (
             patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
@@ -155,12 +139,12 @@ class TestIntegrationSetup:
             mock_coordinator_class.return_value = mock_coordinator
 
             # Execute setup process (should fail at refresh)
-            result = await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
+            result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
         # Verify setup failure is properly reported
         assert result is False
 
-    async def test_setup_entry_platform_setup_failure(self) -> None:
+    async def test_setup_entry_platform_setup_failure(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test setup failure during platform setup phase.
 
         Validates that the integration properly handles failures during the platform
@@ -176,11 +160,8 @@ class TestIntegrationSetup:
         that it could not be fully set up and should not be considered operational.
         """
         # Create mock Home Assistant instance with platform setup failure
-        hass = MagicMock(spec=HomeAssistant)
-        hass.config_entries = MagicMock()
-        hass.config_entries.async_forward_entry_setups = AsyncMock(side_effect=ImportError("Platform setup failed"))
-
-        config_entry = MockConfigEntry(create_temperature_config())
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_forward_entry_setups = AsyncMock(side_effect=ImportError("Platform setup failed"))
 
         # Mock successful coordinator setup but failed platform setup
         with (
@@ -192,12 +173,12 @@ class TestIntegrationSetup:
             mock_coordinator_class.return_value = mock_coordinator
 
             # Execute setup process (should fail at platform setup)
-            result = await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
+            result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
         # Verify setup failure is properly reported
         assert result is False
 
-    async def test_unload_entry_success(self) -> None:
+    async def test_unload_entry_success(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test successful unloading of a configuration entry.
 
         Validates the proper cleanup and unloading process when a Smart Cover
@@ -212,20 +193,17 @@ class TestIntegrationSetup:
         to remove or reconfigure the integration without Home Assistant restart.
         """
         # Create mock Home Assistant instance with platform unloading capability
-        hass = MagicMock(spec=HomeAssistant)
-        hass.config_entries = MagicMock()
-        hass.config_entries.async_unload_platforms = AsyncMock(return_value=True)
-
-        config_entry = MockConfigEntry(create_temperature_config())
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_unload_platforms = AsyncMock(return_value=True)
 
         # Execute unload process
-        result = await async_unload_entry(hass, cast(IntegrationConfigEntry, config_entry))
+        result = await async_unload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
         # Verify successful unloading
         assert result is True
-        hass.config_entries.async_unload_platforms.assert_called_once()
+        mock_hass_with_spec.config_entries.async_unload_platforms.assert_called_once()
 
-    async def test_unload_entry_failure(self) -> None:
+    async def test_unload_entry_failure(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test unload failure during platform cleanup.
 
         Validates that the integration properly handles and reports failures during
@@ -240,19 +218,16 @@ class TestIntegrationSetup:
         Assistant that the integration could not be completely cleaned up.
         """
         # Create mock Home Assistant instance with platform unloading failure
-        hass = MagicMock(spec=HomeAssistant)
-        hass.config_entries = MagicMock()
-        hass.config_entries.async_unload_platforms = AsyncMock(side_effect=OSError("Unload failed"))
-
-        config_entry = MockConfigEntry(create_temperature_config())
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_unload_platforms = AsyncMock(side_effect=OSError("Unload failed"))
 
         # Execute unload process (should fail)
-        result = await async_unload_entry(hass, cast(IntegrationConfigEntry, config_entry))
+        result = await async_unload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
         # Verify unload failure is properly reported
         assert result is False
 
-    async def test_reload_entry(self) -> None:
+    async def test_reload_entry(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test configuration entry reload functionality.
 
         Validates that the integration properly handles reload requests, which
@@ -267,19 +242,16 @@ class TestIntegrationSetup:
         configuration entry reload mechanism using the correct entry ID.
         """
         # Create mock Home Assistant instance with reload capability
-        hass = MagicMock(spec=HomeAssistant)
-        hass.config_entries = MagicMock()
-        hass.config_entries.async_reload = AsyncMock()
-
-        config_entry = MockConfigEntry(create_temperature_config())
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_reload = AsyncMock()
 
         # Execute reload process
-        await async_reload_entry(hass, cast(IntegrationConfigEntry, config_entry))
+        await async_reload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
         # Verify reload was requested with correct entry ID
-        hass.config_entries.async_reload.assert_called_once_with(config_entry.entry_id)
+        mock_hass_with_spec.config_entries.async_reload.assert_called_once_with(mock_config_entry_basic.entry_id)
 
-    async def test_runtime_data_setup(self) -> None:
+    async def test_runtime_data_setup(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test that runtime data is properly configured during setup.
 
         Validates that the RuntimeData object is correctly created and attached
@@ -294,11 +266,8 @@ class TestIntegrationSetup:
         data and for the integration to maintain state across platforms.
         """
         # Create mock Home Assistant instance
-        hass = MagicMock(spec=HomeAssistant)
-        hass.config_entries = MagicMock()
-        hass.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
-
-        config_entry = MockConfigEntry(create_temperature_config())
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
 
         # Mock all required components for runtime data creation
         with (
@@ -314,19 +283,19 @@ class TestIntegrationSetup:
             mock_get_integration.return_value = mock_integration
 
             # Execute setup process
-            await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
             # Verify RuntimeData was created with correct parameters
             mock_data_class.assert_called_once_with(
                 integration=mock_integration,
                 coordinator=mock_coordinator,
-                config=dict(config_entry.data),
+                config=dict(mock_config_entry_basic.data),
             )
 
             # Verify runtime_data was attached to config entry
-            assert config_entry.runtime_data is mock_data_class.return_value
+            assert mock_config_entry_basic.runtime_data is mock_data_class.return_value
 
-    async def test_update_listener_setup(self) -> None:
+    async def test_update_listener_setup(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test that update listener is properly configured for dynamic reconfiguration.
 
         Validates that the integration sets up proper update listeners to handle
@@ -342,11 +311,8 @@ class TestIntegrationSetup:
         restart or Home Assistant reload.
         """
         # Create mock Home Assistant instance
-        hass = MagicMock(spec=HomeAssistant)
-        hass.config_entries = MagicMock()
-        hass.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
-
-        config_entry = MockConfigEntry(create_temperature_config())
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
 
         # Mock integration loading and coordinator setup
         with (
@@ -358,8 +324,8 @@ class TestIntegrationSetup:
             mock_coordinator_class.return_value = mock_coordinator
 
             # Execute setup process
-            await async_setup_entry(hass, cast(IntegrationConfigEntry, config_entry))
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
             # Verify update listener was properly configured
-            config_entry.add_update_listener.assert_called_once()
-            config_entry.async_on_unload.assert_called_once()
+            mock_config_entry_basic.add_update_listener.assert_called_once()
+            mock_config_entry_basic.async_on_unload.assert_called_once()

@@ -13,7 +13,6 @@ from __future__ import annotations
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
-import pytest
 from homeassistant.components.weather.const import WeatherEntityFeature
 from homeassistant.data_entry_flow import FlowResultType
 
@@ -21,7 +20,11 @@ from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.config_flow import FlowHandler, OptionsFlowHandler
 
-from .conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2
+from .conftest import (
+    MOCK_COVER_ENTITY_ID,
+    MOCK_COVER_ENTITY_ID_2,
+    create_mock_state_getter,
+)
 
 
 class TestConfigFlowWeatherValidation:
@@ -47,15 +50,11 @@ class TestConfigFlowWeatherValidation:
         weather_state = MagicMock()
         weather_state.attributes = {"supported_features": 0}  # No forecast features
 
-        # Mock hass to return covers and invalid weather entity
-        def mock_get_state(entity_id: str) -> MagicMock | None:
-            if entity_id.startswith("cover."):
-                return MagicMock(state="closed")
-            elif entity_id == "weather.test":
-                return weather_state
-            return None
+        # Create state mappings
+        cover_states = {entity_id: MagicMock(state="closed") for entity_id in [MOCK_COVER_ENTITY_ID] if entity_id.startswith("cover.")}
 
-        mock_hass_with_covers.states.get.side_effect = mock_get_state
+        # Mock hass to return covers and invalid weather entity
+        mock_hass_with_covers.states.get.side_effect = create_mock_state_getter(**cover_states, **{"weather.test": weather_state})
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
@@ -81,15 +80,10 @@ class TestConfigFlowWeatherValidation:
         doesn't exist in the Home Assistant state registry.
         """
 
-        # Mock hass to return covers but no weather entity (None)
-        def mock_get_state(entity_id: str) -> MagicMock | None:
-            if entity_id.startswith("cover."):
-                return MagicMock(state="closed")
-            elif entity_id == "weather.nonexistent":
-                return None  # Weather entity not found
-            return None
-
-        mock_hass_with_covers.states.get.side_effect = mock_get_state
+        # Mock hass to return no weather entities and one cover entity
+        mock_hass_with_covers.states.get.side_effect = create_mock_state_getter(
+            **{entity_id: MagicMock(state="closed") for entity_id in [MOCK_COVER_ENTITY_ID] if entity_id.startswith("cover.")}
+        )
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
@@ -118,15 +112,11 @@ class TestConfigFlowWeatherValidation:
         weather_state = MagicMock()
         weather_state.attributes = {"supported_features": WeatherEntityFeature.FORECAST_DAILY}
 
-        # Mock hass to return covers and valid weather entity
-        def mock_get_state(entity_id: str) -> MagicMock | None:
-            if entity_id.startswith("cover."):
-                return MagicMock(state="closed")
-            elif entity_id == "weather.valid":
-                return weather_state
-            return None
+        # Create state mappings
+        cover_states = {entity_id: MagicMock(state="closed") for entity_id in [MOCK_COVER_ENTITY_ID] if entity_id.startswith("cover.")}
 
-        mock_hass_with_covers.states.get.side_effect = mock_get_state
+        # Mock hass to return covers and valid weather entity
+        mock_hass_with_covers.states.get.side_effect = create_mock_state_getter(**cover_states, **{"weather.valid": weather_state})
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
@@ -155,44 +145,10 @@ class TestOptionsFlowExtended:
         """Convert ConfigFlowResult to dictionary for test assertions."""
         return cast(dict[str, Any], result)
 
-    @pytest.fixture
-    def mock_config_entry(self) -> MagicMock:
-        """Create a mock config entry for options flow testing."""
-        config_entry = MagicMock()
-        config_entry.data = {
-            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-        }
-        config_entry.options = {
-            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
-            f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}": 90.0,
-        }
-        return config_entry
-
-    @pytest.fixture
-    def mock_hass_with_entities(self) -> MagicMock:
-        """Create mock Home Assistant instance with entities for options flow."""
-        hass = MagicMock()
-
-        def mock_get_state(entity_id: str) -> MagicMock | None:
-            if entity_id.startswith("cover."):
-                state = MagicMock()
-                state.name = f"Test Cover {entity_id.split('.')[-1]}"
-                state.state = "closed"
-                return state
-            elif entity_id.startswith("weather."):
-                state = MagicMock()
-                state.attributes = {"supported_features": WeatherEntityFeature.FORECAST_DAILY}
-                return state
-            return None
-
-        hass.states.get.side_effect = mock_get_state
-        return hass
-
     async def test_options_flow_weather_entity_invalid_features_abort(
         self,
-        mock_config_entry: MagicMock,
-        mock_hass_with_entities: MagicMock,
+        mock_config_entry_extended: MagicMock,
+        mock_hass_with_weather_and_covers: MagicMock,
     ) -> None:
         """Test options flow aborts when weather entity lacks forecast features.
 
@@ -200,23 +156,26 @@ class TestOptionsFlowExtended:
         options with an invalid weather entity. When a user selects a weather
         entity without daily forecast support, the flow should abort with an error.
         """
-        mock_config_entry.hass = mock_hass_with_entities
+        mock_config_entry_extended.hass = mock_hass_with_weather_and_covers
 
-        # Override weather entity to have invalid features
-        def mock_get_state_invalid_weather(entity_id: str) -> MagicMock | None:
+        # Create cover states
+        cover_states = {}
+        for entity_id in [MOCK_COVER_ENTITY_ID]:
             if entity_id.startswith("cover."):
                 state = MagicMock()
                 state.name = f"Test Cover {entity_id.split('.')[-1]}"
-                return state
-            elif entity_id == "weather.invalid":
-                state = MagicMock()
-                state.attributes = {"supported_features": 0}  # No forecast features
-                return state
-            return None
+                cover_states[entity_id] = state
 
-        mock_hass_with_entities.states.get.side_effect = mock_get_state_invalid_weather
+        # Create invalid weather state
+        invalid_weather_state = MagicMock()
+        invalid_weather_state.attributes = {"supported_features": 0}  # No forecast features
 
-        options_flow = OptionsFlowHandler(mock_config_entry)
+        # Override weather entity to have invalid features
+        mock_hass_with_weather_and_covers.states.get.side_effect = create_mock_state_getter(
+            **cover_states, **{"weather.invalid": invalid_weather_state}
+        )
+
+        options_flow = OptionsFlowHandler(mock_config_entry_extended)
 
         user_input = {
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.invalid",
@@ -232,8 +191,8 @@ class TestOptionsFlowExtended:
 
     async def test_options_flow_cover_cleanup_when_covers_modified(
         self,
-        mock_config_entry: MagicMock,
-        mock_hass_with_entities: MagicMock,
+        mock_config_entry_extended: MagicMock,
+        mock_hass_with_weather_and_covers: MagicMock,
     ) -> None:
         """Test options flow cleans up azimuth settings for removed covers.
 
@@ -241,8 +200,8 @@ class TestOptionsFlowExtended:
         for covers that are no longer in the covers list. When users remove
         covers from the configuration, their azimuth settings should be cleaned up.
         """
-        mock_config_entry.hass = mock_hass_with_entities
-        options_flow = OptionsFlowHandler(mock_config_entry)
+        mock_config_entry_extended.hass = mock_hass_with_weather_and_covers
+        options_flow = OptionsFlowHandler(mock_config_entry_extended)
 
         # User input that removes one of the covers but keeps azimuth settings
         user_input = {
@@ -273,8 +232,8 @@ class TestOptionsFlowExtended:
 
     async def test_options_flow_no_cleanup_when_covers_not_modified(
         self,
-        mock_config_entry: MagicMock,
-        mock_hass_with_entities: MagicMock,
+        mock_config_entry_extended: MagicMock,
+        mock_hass_with_weather_and_covers: MagicMock,
     ) -> None:
         """Test options flow skips cleanup when covers list is not modified.
 
@@ -282,8 +241,8 @@ class TestOptionsFlowExtended:
         actually modifies the covers list. If they only change other settings,
         no cleanup should occur.
         """
-        mock_config_entry.hass = mock_hass_with_entities
-        options_flow = OptionsFlowHandler(mock_config_entry)
+        mock_config_entry_extended.hass = mock_hass_with_weather_and_covers
+        options_flow = OptionsFlowHandler(mock_config_entry_extended)
 
         # User input that doesn't modify covers list
         user_input = {
@@ -301,16 +260,16 @@ class TestOptionsFlowExtended:
 
     async def test_options_flow_initial_form_display(
         self,
-        mock_config_entry: MagicMock,
-        mock_hass_with_entities: MagicMock,
+        mock_config_entry_extended: MagicMock,
+        mock_hass_with_weather_and_covers: MagicMock,
     ) -> None:
         """Test options flow displays form correctly on initial call.
 
         This tests that the options flow properly constructs and displays
         the form with current configuration values as defaults.
         """
-        mock_config_entry.hass = mock_hass_with_entities
-        options_flow = OptionsFlowHandler(mock_config_entry)
+        mock_config_entry_extended.hass = mock_hass_with_weather_and_covers
+        options_flow = OptionsFlowHandler(mock_config_entry_extended)
 
         # Initial call with no user input should show form
         result = await options_flow.async_step_init(None)

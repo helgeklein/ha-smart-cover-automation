@@ -28,13 +28,11 @@ system and immediately applies state changes to the automation logic.
 from __future__ import annotations
 
 from typing import Iterable, cast
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-import pytest
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.switch import (
     IntegrationSwitch,
@@ -43,11 +41,8 @@ from custom_components.smart_cover_automation.switch import (
     async_setup_entry as async_setup_entry_switch,
 )
 
-from .conftest import MockConfigEntry, create_temperature_config
 
-
-@pytest.mark.asyncio
-async def test_switch_turn_on_persists_option_and_refresh() -> None:
+async def test_switch_turn_on_persists_option_and_refresh(mock_coordinator_basic) -> None:
     """Test that turning the switch ON persists the enabled state and triggers refresh.
 
     This test verifies the complete turn-on sequence for the automation switch:
@@ -69,16 +64,14 @@ async def test_switch_turn_on_persists_option_and_refresh() -> None:
     the same reliable behavior as configuring it through the options flow.
     """
     # Setup integration with switch initially disabled
-    entry = MockConfigEntry(create_temperature_config())
+    entry = mock_coordinator_basic.config_entry
     # Start with enabled False to observe the state change
     entry.runtime_data.config[ConfKeys.ENABLED.value] = False
 
     # Setup mock Home Assistant environment
-    hass = MagicMock()
-    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
-    coordinator.async_request_refresh = AsyncMock()  # type: ignore[assignment]
-    entry.runtime_data.coordinator = coordinator
+    mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
+    mock_coordinator_basic.async_request_refresh = AsyncMock()  # type: ignore[assignment]
+    entry.runtime_data.coordinator = mock_coordinator_basic
     entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
 
     # Capture entities created by the switch platform
@@ -89,7 +82,7 @@ async def test_switch_turn_on_persists_option_and_refresh() -> None:
         captured.extend(list(new_entities))
 
     # Setup the switch platform and capture the switch entity
-    await async_setup_entry_switch(hass, cast(IntegrationConfigEntry, entry), add_entities)
+    await async_setup_entry_switch(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
     switch = cast(IntegrationSwitch, captured[0])
 
     # Execute the turn-on operation
@@ -101,17 +94,16 @@ async def test_switch_turn_on_persists_option_and_refresh() -> None:
 
     # Verify that coordinator refresh is triggered (immediate effect)
     # This ensures automation starts immediately without waiting for next update cycle
-    coordinator.async_request_refresh.assert_awaited()
+    mock_coordinator_basic.async_request_refresh.assert_awaited()
 
 
-@pytest.mark.asyncio
-async def test_switch_turn_off_persists_option_and_refresh() -> None:
+async def test_switch_turn_off_persists_option_and_refresh(mock_coordinator_basic) -> None:
     """Test that turning the switch OFF persists the disabled state and triggers refresh.
 
     This test verifies the complete turn-off sequence for the automation switch:
     1. State persistence through Home Assistant's options system
     2. Immediate coordinator refresh to apply the new state
-    3. Proper deactivation of automation logic
+    3. Proper integration with the configuration management system
 
     Test scenario:
     - Switch starts in enabled state (enabled = True)
@@ -128,15 +120,13 @@ async def test_switch_turn_off_persists_option_and_refresh() -> None:
     will respect their manual override decisions.
     """
     # Setup integration with switch initially enabled
-    entry = MockConfigEntry(create_temperature_config())
+    entry = mock_coordinator_basic.config_entry
     entry.runtime_data.config[ConfKeys.ENABLED.value] = True  # Start enabled to observe disable
 
     # Setup mock Home Assistant environment
-    hass = MagicMock()
-    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
-    coordinator.async_request_refresh = AsyncMock()  # type: ignore[assignment]
-    entry.runtime_data.coordinator = coordinator
+    mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
+    mock_coordinator_basic.async_request_refresh = AsyncMock()  # type: ignore[assignment]
+    entry.runtime_data.coordinator = mock_coordinator_basic
     entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
 
     # Capture entities created by the switch platform
@@ -147,7 +137,7 @@ async def test_switch_turn_off_persists_option_and_refresh() -> None:
         captured.extend(list(new_entities))
 
     # Setup the switch platform and capture the switch entity
-    await async_setup_entry_switch(hass, cast(IntegrationConfigEntry, entry), add_entities)
+    await async_setup_entry_switch(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
     switch = cast(IntegrationSwitch, captured[0])
 
     # Execute the turn-off operation
@@ -159,4 +149,4 @@ async def test_switch_turn_off_persists_option_and_refresh() -> None:
 
     # Verify that coordinator refresh is triggered (immediate effect)
     # This ensures automation stops immediately without waiting for next update cycle
-    coordinator.async_request_refresh.assert_awaited()
+    mock_coordinator_basic.async_request_refresh.assert_awaited()

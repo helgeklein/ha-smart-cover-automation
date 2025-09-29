@@ -22,8 +22,6 @@ from unittest.mock import MagicMock
 from custom_components.smart_cover_automation.const import DOMAIN
 from custom_components.smart_cover_automation.entity import IntegrationEntity
 
-from .conftest import MockConfigEntry, create_temperature_config
-
 
 class TestIntegrationEntity:
     """Test suite for the IntegrationEntity base class.
@@ -42,7 +40,7 @@ class TestIntegrationEntity:
     entities (sensors, binary sensors, switches) in the integration.
     """
 
-    def test_entity_initialization(self) -> None:
+    def test_entity_initialization(self, mock_config_entry_basic) -> None:
         """Test proper initialization of IntegrationEntity with coordinator.
 
         Validates that the IntegrationEntity base class correctly initializes
@@ -56,16 +54,15 @@ class TestIntegrationEntity:
         The unique ID and device information are critical for Home Assistant
         to properly track and manage the entity across restarts and updates.
         """
-        # Create mock configuration entry and coordinator
-        config_entry = MockConfigEntry(create_temperature_config())
+        # Create mock coordinator with configuration entry
         coordinator = MagicMock()
-        coordinator.config_entry = config_entry
+        coordinator.config_entry = mock_config_entry_basic
 
         # Initialize the entity with the coordinator
         entity = IntegrationEntity(coordinator)
 
         # Verify unique ID matches configuration entry ID
-        expected_uid = config_entry.entry_id
+        expected_uid = mock_config_entry_basic.entry_id
         assert entity.unique_id == expected_uid, f"Expected unique_id {expected_uid}, got {entity.unique_id}"
 
         # Verify device information is properly populated
@@ -74,10 +71,10 @@ class TestIntegrationEntity:
 
         # Verify device identifier includes domain and entry ID
         identifiers = device_info.get("identifiers", set())
-        expected_identifier = (DOMAIN, config_entry.entry_id)
+        expected_identifier = (DOMAIN, mock_config_entry_basic.entry_id)
         assert expected_identifier in identifiers, f"Expected identifier {expected_identifier} not found in {identifiers}"
 
-    def test_coordinator_reference(self) -> None:
+    def test_coordinator_reference(self, mock_config_entry_basic) -> None:
         """Test that entity maintains proper reference to its coordinator.
 
         Validates that the IntegrationEntity correctly stores and maintains
@@ -92,10 +89,9 @@ class TestIntegrationEntity:
         The coordinator serves as the primary data source for all entities
         in the Smart Cover Automation integration.
         """
-        # Create mock configuration entry and coordinator
-        config_entry = MockConfigEntry(create_temperature_config())
+        # Create mock coordinator with configuration entry
         coordinator = MagicMock()
-        coordinator.config_entry = config_entry
+        coordinator.config_entry = mock_config_entry_basic
 
         # Initialize the entity with the coordinator
         entity = IntegrationEntity(coordinator)

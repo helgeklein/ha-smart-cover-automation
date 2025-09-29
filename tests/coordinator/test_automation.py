@@ -194,7 +194,6 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
             (TEST_DIRECT_AZIMUTH, 20, 100, "15.0", "hail", 100, "Very cold hail day, covers stay open"),
         ],
     )
-    @pytest.mark.asyncio
     async def test_sun_automation_closure_position_matrix(
         self,
         mock_hass: MagicMock,
@@ -261,7 +260,6 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
             f"Expected position: {expected_position}%, Got: {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}%"
         )
 
-    @pytest.mark.asyncio
     async def test_combined_missing_direction_uses_temp_only(
         self,
         mock_hass: MagicMock,

@@ -20,13 +20,12 @@ from custom_components.smart_cover_automation.coordinator import (
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
-from ..conftest import MockConfigEntry, create_temperature_config
+from ..conftest import MockConfigEntry, create_mock_weather_service, create_temperature_config, set_weather_forecast_temp
 
 
 class TestWeatherCondition:
     """Test weather condition checking functionality."""
 
-    @pytest.mark.asyncio
     async def test_weather_entity_not_found(self) -> None:
         """Test handling when weather entity is not found."""
         hass = MagicMock()
@@ -45,7 +44,6 @@ class TestWeatherCondition:
         result = coordinator.data
         assert result == {"covers": {}}
 
-    @pytest.mark.asyncio
     async def test_weather_entity_unavailable_state(self) -> None:
         """Test handling when weather entity is in unavailable state."""
         hass = MagicMock()
@@ -71,7 +69,6 @@ class TestWeatherCondition:
         result = coordinator.data
         assert result is None or result == {"covers": {}}
 
-    @pytest.mark.asyncio
     async def test_weather_entity_unknown_state(self) -> None:
         """Test handling when weather entity is in unknown state."""
         hass = MagicMock()
@@ -97,7 +94,6 @@ class TestWeatherCondition:
         result = coordinator.data
         assert result is None or result == {"covers": {}}
 
-    @pytest.mark.asyncio
     async def test_weather_entity_none_state(self) -> None:
         """Test handling when weather entity state is None."""
         hass = MagicMock()
@@ -148,7 +144,6 @@ class TestWeatherCondition:
         with pytest.raises(InvalidSensorReadingError, match="Weather entity weather.test: state is unavailable"):
             coordinator._get_weather_condition("weather.test")
 
-    @pytest.mark.asyncio
     async def test_non_sunny_weather_conditions(self) -> None:
         """Test that non-sunny weather conditions prevent cover closing."""
         hass = MagicMock()
@@ -156,19 +151,8 @@ class TestWeatherCondition:
         hass.states = MagicMock()
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            return {
-                "weather.forecast": {
-                    "forecast": [
-                        {
-                            "datetime": "2023-01-01T12:00:00Z",
-                            "native_temperature": 30.0,  # Hot temperature
-                        }
-                    ]
-                }
-            }
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(30.0)  # Hot temperature
+        hass.services.async_call.side_effect = create_mock_weather_service()
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
@@ -190,7 +174,6 @@ class TestWeatherCondition:
         cover_data = result["covers"]["cover.test_cover"]
         assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == 100  # Should stay open
 
-    @pytest.mark.asyncio
     async def test_sunny_weather_conditions_variations(self) -> None:
         """Test different sunny weather condition variations."""
         hass = MagicMock()
@@ -198,19 +181,8 @@ class TestWeatherCondition:
         hass.states = MagicMock()
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            return {
-                "weather.forecast": {
-                    "forecast": [
-                        {
-                            "datetime": "2023-01-01T12:00:00Z",
-                            "native_temperature": 30.0,  # Hot temperature
-                        }
-                    ]
-                }
-            }
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(30.0)  # Hot temperature
+        hass.services.async_call.side_effect = create_mock_weather_service()
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
