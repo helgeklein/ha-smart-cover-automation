@@ -28,7 +28,6 @@ from __future__ import annotations
 
 from typing import Iterable, cast
 
-import pytest
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.binary_sensor import (
@@ -38,7 +37,6 @@ from custom_components.smart_cover_automation.coordinator import DataUpdateCoord
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
 
-@pytest.mark.asyncio
 async def test_binary_sensor_entity_properties(mock_hass_with_spec, mock_config_entry_basic) -> None:
     """Test binary sensor platform setup and entity property evaluation.
 

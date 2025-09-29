@@ -30,7 +30,6 @@ from ..conftest import MockConfigEntry, create_temperature_config
 class TestSetCoverPosition:
     """Test the _set_cover_position method logic."""
 
-    @pytest.mark.asyncio
     async def test_position_supporting_cover_valid_position(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test position-supporting cover with valid position value."""
         entity_id = "cover.test"
@@ -44,7 +43,6 @@ class TestSetCoverPosition:
             Platform.COVER, SERVICE_SET_COVER_POSITION, {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos}
         )
 
-    @pytest.mark.asyncio
     async def test_position_supporting_cover_boundary_positions(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test position-supporting cover with boundary position values."""
         entity_id = "cover.test"
@@ -65,7 +63,6 @@ class TestSetCoverPosition:
             Platform.COVER, SERVICE_SET_COVER_POSITION, {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: 100}
         )
 
-    @pytest.mark.asyncio
     async def test_binary_cover_open_positions_above_threshold(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test binary cover with desired positions above 50% (should use open_cover service)."""
         entity_id = "cover.test"
@@ -82,7 +79,6 @@ class TestSetCoverPosition:
             # Should call open_cover service
             mock_hass.services.async_call.assert_called_once_with(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
 
-    @pytest.mark.asyncio
     async def test_binary_cover_close_positions_at_or_below_threshold(
         self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock
     ) -> None:
@@ -101,7 +97,6 @@ class TestSetCoverPosition:
             # Should call close_cover service
             mock_hass.services.async_call.assert_called_once_with(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
 
-    @pytest.mark.asyncio
     async def test_binary_cover_threshold_boundary(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test binary cover at exact threshold boundary (50% should close, 51% should open)."""
         entity_id = "cover.test"
@@ -118,7 +113,6 @@ class TestSetCoverPosition:
         await coordinator._set_cover_position(entity_id, 51, features)
         mock_hass.services.async_call.assert_called_with(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
 
-    @pytest.mark.asyncio
     async def test_mixed_features_cover_uses_set_position(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test cover with mixed features (SET_POSITION + others) uses SET_POSITION service."""
         entity_id = "cover.test"
@@ -132,7 +126,6 @@ class TestSetCoverPosition:
             Platform.COVER, SERVICE_SET_COVER_POSITION, {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos}
         )
 
-    @pytest.mark.asyncio
     async def test_no_features_cover_uses_binary_logic(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test cover with no features still uses binary open/close logic."""
         entity_id = "cover.test"
@@ -149,7 +142,6 @@ class TestSetCoverPosition:
         await coordinator._set_cover_position(entity_id, 20, features)
         mock_hass.services.async_call.assert_called_with(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
 
-    @pytest.mark.asyncio
     async def test_simulation_mode_skips_service_call(self, mock_hass: MagicMock) -> None:
         """Test that simulation mode skips actual service calls."""
         # Create config with simulation enabled
@@ -167,7 +159,6 @@ class TestSetCoverPosition:
         # Should not call any service in simulation mode
         mock_hass.services.async_call.assert_not_called()
 
-    @pytest.mark.asyncio
     async def test_position_validation_out_of_range_low(self, coordinator: DataUpdateCoordinator) -> None:
         """Test position validation with value below valid range."""
         entity_id = "cover.test"
@@ -176,7 +167,6 @@ class TestSetCoverPosition:
         with pytest.raises(ValueError, match="desired_pos must be between 0 and 100, got -10"):
             await coordinator._set_cover_position(entity_id, -10, features)
 
-    @pytest.mark.asyncio
     async def test_position_validation_out_of_range_high(self, coordinator: DataUpdateCoordinator) -> None:
         """Test position validation with value above valid range."""
         entity_id = "cover.test"
@@ -185,7 +175,6 @@ class TestSetCoverPosition:
         with pytest.raises(ValueError, match="desired_pos must be between 0 and 100, got 150"):
             await coordinator._set_cover_position(entity_id, 150, features)
 
-    @pytest.mark.asyncio
     async def test_service_call_error_handling_home_assistant_error(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test error handling when Home Assistant service call fails."""
         entity_id = "cover.test"
@@ -198,7 +187,6 @@ class TestSetCoverPosition:
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(entity_id, desired_pos, features)
 
-    @pytest.mark.asyncio
     async def test_service_call_error_handling_connection_error(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test error handling when connection error occurs."""
         entity_id = "cover.test"
@@ -211,7 +199,6 @@ class TestSetCoverPosition:
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(entity_id, desired_pos, features)
 
-    @pytest.mark.asyncio
     async def test_service_call_error_preserves_service_name_for_binary_covers(
         self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock
     ) -> None:
@@ -232,7 +219,6 @@ class TestSetCoverPosition:
         with pytest.raises(ServiceCallError, match="Failed to call close_cover"):
             await coordinator._set_cover_position(entity_id, 20, features)  # Below threshold
 
-    @pytest.mark.asyncio
     async def test_service_call_error_handling_value_error(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test error handling when ValueError occurs during service call."""
         entity_id = "cover.test"
@@ -245,7 +231,6 @@ class TestSetCoverPosition:
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(entity_id, desired_pos, features)
 
-    @pytest.mark.asyncio
     async def test_service_call_error_handling_type_error(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test error handling when TypeError occurs during service call."""
         entity_id = "cover.test"
@@ -258,7 +243,6 @@ class TestSetCoverPosition:
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(entity_id, desired_pos, features)
 
-    @pytest.mark.asyncio
     async def test_service_call_error_handling_unexpected_error(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test error handling when unexpected error occurs during service call."""
         entity_id = "cover.test"
@@ -271,7 +255,6 @@ class TestSetCoverPosition:
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(entity_id, desired_pos, features)
 
-    @pytest.mark.asyncio
     async def test_various_entity_ids_and_positions(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test method works with various entity IDs and position combinations."""
         test_cases = [
@@ -297,7 +280,6 @@ class TestSetCoverPosition:
             service_data = call_args[0][2]
             assert service_data[ATTR_ENTITY_ID] == entity_id
 
-    @pytest.mark.asyncio
     async def test_return_value_position_supporting_covers(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test that position-supporting covers return the exact desired position."""
         entity_id = "cover.test"
@@ -311,7 +293,6 @@ class TestSetCoverPosition:
             # For position-supporting covers, actual should equal desired
             assert actual_pos == desired_pos
 
-    @pytest.mark.asyncio
     async def test_return_value_binary_covers_above_threshold(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test that binary covers return 100 for positions above threshold."""
         entity_id = "cover.test"
@@ -326,7 +307,6 @@ class TestSetCoverPosition:
             # Binary covers above threshold should return fully open (100)
             assert actual_pos == 100
 
-    @pytest.mark.asyncio
     async def test_return_value_binary_covers_at_or_below_threshold(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test that binary covers return 0 for positions at or below threshold."""
         entity_id = "cover.test"
@@ -341,7 +321,6 @@ class TestSetCoverPosition:
             # Binary covers at/below threshold should return fully closed (0)
             assert actual_pos == 0
 
-    @pytest.mark.asyncio
     async def test_return_value_simulation_mode(self, mock_hass: MagicMock) -> None:
         """Test that simulation mode still returns correct actual position values."""
         # Create config with simulation enabled
@@ -365,7 +344,6 @@ class TestSetCoverPosition:
         # Should not call any service in simulation mode
         mock_hass.services.async_call.assert_not_called()
 
-    @pytest.mark.asyncio
     async def test_return_value_boundary_cases(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test return values for boundary cases."""
         entity_id = "cover.test"

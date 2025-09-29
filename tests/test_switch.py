@@ -30,7 +30,6 @@ from __future__ import annotations
 from typing import Iterable, cast
 from unittest.mock import AsyncMock
 
-import pytest
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.config import ConfKeys
@@ -43,7 +42,6 @@ from custom_components.smart_cover_automation.switch import (
 )
 
 
-@pytest.mark.asyncio
 async def test_switch_turn_on_persists_option_and_refresh(mock_coordinator_basic) -> None:
     """Test that turning the switch ON persists the enabled state and triggers refresh.
 
@@ -99,7 +97,6 @@ async def test_switch_turn_on_persists_option_and_refresh(mock_coordinator_basic
     mock_coordinator_basic.async_request_refresh.assert_awaited()
 
 
-@pytest.mark.asyncio
 async def test_switch_turn_off_persists_option_and_refresh(mock_coordinator_basic) -> None:
     """Test that turning the switch OFF persists the disabled state and triggers refresh.
 

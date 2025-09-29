@@ -28,7 +28,6 @@ from tests.conftest import (
 class TestCoordinatorErrorHandling:
     """Test comprehensive error handling scenarios in coordinator operations."""
 
-    @pytest.mark.asyncio
     async def test_configuration_resolution_exception(self) -> None:
         """Test handling of configuration resolution exceptions."""
         hass = MagicMock()
@@ -52,7 +51,6 @@ class TestCoordinatorErrorHandling:
         result = coordinator.data
         assert result is None
 
-    @pytest.mark.asyncio
     async def test_unexpected_error_during_automation(self) -> None:
         """Test handling of unexpected errors during automation update."""
         hass = MagicMock()
@@ -88,7 +86,6 @@ class TestCoordinatorErrorHandling:
         result = coordinator.data
         assert result == {"covers": {}}
 
-    @pytest.mark.asyncio
     async def test_service_call_home_assistant_error(self) -> None:
         """Test handling of HomeAssistantError during service calls."""
         hass = MagicMock()
@@ -102,7 +99,6 @@ class TestCoordinatorErrorHandling:
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
 
-    @pytest.mark.asyncio
     async def test_service_call_connection_error(self) -> None:
         """Test handling of ConnectionError during service calls."""
         hass = MagicMock()
@@ -116,7 +112,6 @@ class TestCoordinatorErrorHandling:
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
 
-    @pytest.mark.asyncio
     async def test_service_call_value_error(self) -> None:
         """Test handling of ValueError during service calls."""
         hass = MagicMock()
@@ -130,7 +125,6 @@ class TestCoordinatorErrorHandling:
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
 
-    @pytest.mark.asyncio
     async def test_service_call_type_error(self) -> None:
         """Test handling of TypeError during service calls."""
         hass = MagicMock()
@@ -144,7 +138,6 @@ class TestCoordinatorErrorHandling:
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
 
-    @pytest.mark.asyncio
     async def test_service_call_unexpected_error(self) -> None:
         """Test handling of unexpected errors during service calls."""
         hass = MagicMock()
@@ -158,7 +151,6 @@ class TestCoordinatorErrorHandling:
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
 
-    @pytest.mark.asyncio
     async def test_service_call_error_during_automation_update(self) -> None:
         """Test service call error handling during full automation update."""
         hass = MagicMock()
@@ -190,7 +182,6 @@ class TestCoordinatorErrorHandling:
         assert "covers" in result
         assert result["covers"] == {}
 
-    @pytest.mark.asyncio
     async def test_weather_forecast_service_error(self) -> None:
         """Test handling of weather forecast service errors."""
         hass = MagicMock()
@@ -220,7 +211,6 @@ class TestCoordinatorErrorHandling:
         # Should have cover data
         assert "covers" in result
 
-    @pytest.mark.asyncio
     async def test_weather_forecast_unexpected_error(self) -> None:
         """Test handling of unexpected errors during weather forecast retrieval."""
         hass = MagicMock()
@@ -250,7 +240,6 @@ class TestCoordinatorErrorHandling:
         # Should either return None or empty covers due to weather service error
         assert result is None or "covers" in result
 
-    @pytest.mark.asyncio
     async def test_weather_forecast_temperature_unavailable(self) -> None:
         """Test critical error handling when weather forecast temperature is unavailable.
 

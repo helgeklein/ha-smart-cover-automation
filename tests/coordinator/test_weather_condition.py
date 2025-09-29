@@ -26,7 +26,6 @@ from ..conftest import MockConfigEntry, create_mock_weather_service, create_temp
 class TestWeatherCondition:
     """Test weather condition checking functionality."""
 
-    @pytest.mark.asyncio
     async def test_weather_entity_not_found(self) -> None:
         """Test handling when weather entity is not found."""
         hass = MagicMock()
@@ -45,7 +44,6 @@ class TestWeatherCondition:
         result = coordinator.data
         assert result == {"covers": {}}
 
-    @pytest.mark.asyncio
     async def test_weather_entity_unavailable_state(self) -> None:
         """Test handling when weather entity is in unavailable state."""
         hass = MagicMock()
@@ -71,7 +69,6 @@ class TestWeatherCondition:
         result = coordinator.data
         assert result is None or result == {"covers": {}}
 
-    @pytest.mark.asyncio
     async def test_weather_entity_unknown_state(self) -> None:
         """Test handling when weather entity is in unknown state."""
         hass = MagicMock()
@@ -97,7 +94,6 @@ class TestWeatherCondition:
         result = coordinator.data
         assert result is None or result == {"covers": {}}
 
-    @pytest.mark.asyncio
     async def test_weather_entity_none_state(self) -> None:
         """Test handling when weather entity state is None."""
         hass = MagicMock()
@@ -148,7 +144,6 @@ class TestWeatherCondition:
         with pytest.raises(InvalidSensorReadingError, match="Weather entity weather.test: state is unavailable"):
             coordinator._get_weather_condition("weather.test")
 
-    @pytest.mark.asyncio
     async def test_non_sunny_weather_conditions(self) -> None:
         """Test that non-sunny weather conditions prevent cover closing."""
         hass = MagicMock()
@@ -179,7 +174,6 @@ class TestWeatherCondition:
         cover_data = result["covers"]["cover.test_cover"]
         assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == 100  # Should stay open
 
-    @pytest.mark.asyncio
     async def test_sunny_weather_conditions_variations(self) -> None:
         """Test different sunny weather condition variations."""
         hass = MagicMock()

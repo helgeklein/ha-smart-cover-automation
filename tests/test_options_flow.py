@@ -20,8 +20,6 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-import pytest
-
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
 from custom_components.smart_cover_automation.const import COVER_SFX_AZIMUTH
@@ -29,7 +27,6 @@ from custom_components.smart_cover_automation.const import COVER_SFX_AZIMUTH
 from .conftest import create_options_flow_mock_entry
 
 
-@pytest.mark.asyncio
 async def test_options_flow_form_shows_dynamic_fields() -> None:
     """Test that the options form dynamically includes fields based on configured covers.
 
@@ -74,7 +71,6 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
     assert f"cover.two_{COVER_SFX_AZIMUTH}" in schema
 
 
-@pytest.mark.asyncio
 async def test_options_flow_submit_creates_entry() -> None:
     """Test that submitting valid options creates a configuration entry.
 
@@ -117,7 +113,6 @@ async def test_options_flow_submit_creates_entry() -> None:
     assert result_dict["data"] == user_input
 
 
-@pytest.mark.asyncio
 async def test_options_flow_direction_field_defaults_and_parsing() -> None:
     """Test direction field default values and parsing across different configuration scenarios.
 
@@ -182,7 +177,6 @@ async def test_options_flow_direction_field_defaults_and_parsing() -> None:
     assert not isinstance(val3, (int, float))  # "west" → non-numeric fallback
 
 
-@pytest.mark.asyncio
 async def test_options_flow_simulation_mode_default_and_submit() -> None:
     """Test simulation mode configuration in the options flow.
 
@@ -237,7 +231,6 @@ async def test_options_flow_simulation_mode_default_and_submit() -> None:
     assert result_dict["data"][ConfKeys.SIMULATING.value] is True
 
 
-@pytest.mark.asyncio
 async def test_options_flow_simulation_mode_with_existing_config() -> None:
     """Test simulation mode handling when it's already configured in existing data/options.
 

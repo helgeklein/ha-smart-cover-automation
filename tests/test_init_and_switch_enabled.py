@@ -23,13 +23,10 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import MagicMock
 
-import pytest
-
 from custom_components.smart_cover_automation import async_get_options_flow
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
 
-@pytest.mark.asyncio
 async def test_async_get_options_flow_returns_handler(mock_config_entry_basic, mock_basic_hass) -> None:
     """Test that the integration properly creates and returns an options flow handler.
 

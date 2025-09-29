@@ -10,8 +10,6 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
-import pytest
-
 from ..conftest import create_invalid_weather_service
 
 
@@ -146,7 +144,6 @@ class TestDateParsingEdgeCases:
         result = mock_coordinator_basic._extract_max_temperature(forecast)
         assert result is None
 
-    @pytest.mark.asyncio
     async def test_weather_forecast_missing_fields(self, mock_coordinator_basic) -> None:
         """Test weather forecast handling with missing or invalid fields."""
         hass = MagicMock()

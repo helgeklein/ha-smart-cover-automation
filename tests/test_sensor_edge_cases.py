@@ -12,13 +12,10 @@ Coverage targets:
 
 from __future__ import annotations
 
-import pytest
-
 from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.sensor import ENTITY_DESCRIPTIONS, AutomationStatusSensor
 
 
-@pytest.mark.asyncio
 async def test_sensor_availability_property_delegation(mock_coordinator_basic) -> None:
     """Test sensor availability property delegation to parent classes.
 
@@ -44,7 +41,6 @@ async def test_sensor_availability_property_delegation(mock_coordinator_basic) -
     # The exact behavior (True vs False) is handled by the parent class
 
 
-@pytest.mark.asyncio
 async def test_sensor_native_value_with_missing_data(mock_coordinator_basic) -> None:
     """Test sensor native value when coordinator data is missing.
 
@@ -67,7 +63,6 @@ async def test_sensor_native_value_with_missing_data(mock_coordinator_basic) -> 
     assert native_value is None
 
 
-@pytest.mark.asyncio
 async def test_sensor_extra_state_attributes_with_missing_data(mock_coordinator_basic) -> None:
     """Test sensor extra state attributes when coordinator data is missing.
 
@@ -90,8 +85,6 @@ async def test_sensor_extra_state_attributes_with_missing_data(mock_coordinator_
     assert extra_attributes is None
 
 
-@pytest.mark.asyncio
-@pytest.mark.asyncio
 async def test_sensor_with_valid_coordinator_data(mock_coordinator_basic) -> None:
     """Test sensor behavior with valid coordinator data.
 

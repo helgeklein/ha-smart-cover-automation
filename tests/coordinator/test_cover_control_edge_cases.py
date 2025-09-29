@@ -10,8 +10,6 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import MagicMock
 
-import pytest
-
 from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
@@ -28,7 +26,6 @@ from ..conftest import (
 class TestCoverControlEdgeCases:
     """Test cover control edge cases."""
 
-    @pytest.mark.asyncio
     async def test_minor_position_adjustment_skipped(self) -> None:
         """Test that minor position adjustments are skipped based on min_position_delta."""
         hass = MagicMock()
@@ -62,7 +59,6 @@ class TestCoverControlEdgeCases:
         cover_calls = [call for call in hass.services.async_call.call_args_list if call[0][0] == "cover"]
         assert len(cover_calls) == 0
 
-    @pytest.mark.asyncio
     async def test_exact_position_no_movement_needed(self) -> None:
         """Test that no movement is made when cover is already at desired position."""
         hass = MagicMock()
@@ -93,7 +89,6 @@ class TestCoverControlEdgeCases:
         cover_calls = [call for call in hass.services.async_call.call_args_list if call[0][0] == "cover"]
         assert len(cover_calls) == 0
 
-    @pytest.mark.asyncio
     async def test_cover_service_call_parameter_validation_during_automation(self) -> None:
         """Test parameter validation errors during cover service calls in automation."""
         hass = MagicMock()
@@ -128,7 +123,6 @@ class TestCoverControlEdgeCases:
         assert "sca_cover_error" in cover_data
         assert "Failed to call set_cover_position for cover.test_cover" in cover_data["sca_cover_error"]
 
-    @pytest.mark.asyncio
     async def test_cover_service_call_type_error_during_automation(self) -> None:
         """Test TypeError handling during cover service calls in automation."""
         hass = MagicMock()
@@ -189,7 +183,6 @@ class TestCoverControlEdgeCases:
         diff = coordinator._calculate_angle_difference(450.0, 90.0)
         assert diff == 0.0  # 450 % 360 = 90
 
-    @pytest.mark.asyncio
     async def test_cover_debug_logging_paths(self) -> None:
         """Test debug logging paths in cover evaluation."""
         hass = MagicMock()

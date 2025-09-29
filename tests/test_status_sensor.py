@@ -31,7 +31,6 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import MagicMock
 
-import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
@@ -83,7 +82,6 @@ def _get_status_entity(entities: list[Entity]) -> Entity:
     return next(e for e in entities if getattr(getattr(e, "entity_description"), "key", "") == SENSOR_KEY_AUTOMATION_STATUS)
 
 
-@pytest.mark.asyncio
 async def test_status_sensor_combined_summary_and_attributes() -> None:
     """Test status sensor summary generation and attribute exposure for temperature automation.
 
@@ -149,7 +147,6 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     assert isinstance(attrs[ConfKeys.COVERS.value], dict)  # Covers data structure
 
 
-@pytest.mark.asyncio
 async def test_status_sensor_combined_sun_attributes_present() -> None:
     """Test status sensor summary and attributes for sun-based automation.
 
@@ -215,7 +212,6 @@ async def test_status_sensor_combined_sun_attributes_present() -> None:
     assert isinstance(attrs[ConfKeys.COVERS.value], dict)  # Covers data structure
 
 
-@pytest.mark.asyncio
 async def test_status_sensor_disabled() -> None:
     """Test status sensor behavior when automation is globally disabled.
 

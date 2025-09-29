@@ -15,7 +15,6 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from custom_components.smart_cover_automation import (
@@ -25,7 +24,6 @@ from custom_components.smart_cover_automation import (
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
 
-@pytest.mark.asyncio
 async def test_setup_entry_unexpected_exception(mock_hass_with_spec, mock_config_entry_basic) -> None:
     """Test handling of unexpected exceptions during integration setup.
 
@@ -52,7 +50,6 @@ async def test_setup_entry_unexpected_exception(mock_hass_with_spec, mock_config
         mock_get_integration.assert_called_once_with(mock_hass_with_spec, mock_config_entry_basic.domain)
 
 
-@pytest.mark.asyncio
 async def test_unload_entry_unexpected_exception(mock_hass_with_spec, mock_config_entry_basic) -> None:
     """Test handling of unexpected exceptions during integration unload.
 
@@ -79,7 +76,6 @@ async def test_unload_entry_unexpected_exception(mock_hass_with_spec, mock_confi
     mock_hass_with_spec.config_entries.async_unload_platforms.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_setup_entry_config_entry_not_ready(mock_hass_with_spec, mock_config_entry_basic) -> None:
     """Test setup handling when ConfigEntryNotReady is raised.
 

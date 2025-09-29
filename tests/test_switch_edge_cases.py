@@ -11,13 +11,10 @@ Coverage targets:
 
 from __future__ import annotations
 
-import pytest
-
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.switch import ENTITY_DESCRIPTIONS, IntegrationSwitch
 
 
-@pytest.mark.asyncio
 async def test_switch_availability_property_delegation(mock_coordinator_basic) -> None:
     """Test switch availability property delegation to parent classes.
 
@@ -43,7 +40,6 @@ async def test_switch_availability_property_delegation(mock_coordinator_basic) -
     # The exact behavior (True vs False) is handled by the parent class
 
 
-@pytest.mark.asyncio
 async def test_switch_is_on_property_with_config_resolution(mock_coordinator_basic) -> None:
     """Test switch is_on property with configuration resolution.
 

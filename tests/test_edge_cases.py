@@ -27,7 +27,6 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import MagicMock
 
-import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
@@ -58,7 +57,6 @@ from .conftest import (
 )
 
 
-@pytest.mark.asyncio
 async def test_non_int_supported_features_does_not_crash() -> None:
     """Test robustness when cover entity has invalid supported_features attribute.
 
@@ -115,7 +113,6 @@ async def test_non_int_supported_features_does_not_crash() -> None:
     assert len(cover_service_calls) == 0, f"Expected no cover service calls, but got: {cover_service_calls}"
 
 
-@pytest.mark.asyncio
 async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
     """Test that duplicate cover IDs in configuration don't cause duplicate service calls.
 
@@ -174,7 +171,6 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
     assert len(cover_service_calls) == 1, f"Expected exactly 1 cover service call, but got {len(cover_service_calls)}"
 
 
-@pytest.mark.asyncio
 async def test_boundary_angle_equals_tolerance_is_not_hitting() -> None:
     """Test boundary condition where sun angle difference exactly equals tolerance threshold.
 
@@ -225,7 +221,6 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting() -> None:
     await assert_service_called(hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=COVER_POS_FULLY_OPEN)
 
 
-@pytest.mark.asyncio
 async def test_missing_current_position_behaves_safely() -> None:
     """Test robustness when cover entity is missing current_position attribute.
 
@@ -285,7 +280,6 @@ async def test_missing_current_position_behaves_safely() -> None:
     assert len(cover_service_calls) == 0, f"Expected no cover service calls, but got: {cover_service_calls}"
 
 
-@pytest.mark.asyncio
 async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     """Test that invalid window direction configuration safely skips cover automation.
 
