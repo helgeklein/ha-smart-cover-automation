@@ -15,10 +15,8 @@
         "vscode": {
             "extensions": [
                 "charliermarsh.ruff",
-                "github.vscode-pull-request-github",
                 "ms-python.python",
-                "ms-python.vscode-pylance",
-                "ryanluker.vscode-coverage-gutters"
+                "ms-python.vscode-pylance"
             ],
             "settings": {
                 "files.eol": "\n",
@@ -27,19 +25,36 @@
                 "editor.formatOnSave": true,
                 "editor.formatOnType": false,
                 "files.trimTrailingWhitespace": true,
+                // Python/Pylance performance
                 "python.analysis.typeCheckingMode": "basic",
-                "python.analysis.autoImportCompletions": true,
+                "python.analysis.packageIndexDepths": [
+                    {
+                        "name": "homeassistant",
+                        "depth": 1,
+                        "includeAllSymbols": false
+                    }
+                ],
+                "python.analysis.inlayHints.functionReturnTypes": false,
+                "python.analysis.inlayHints.variableTypes": false,
+                "python.analysis.completeFunctionParens": false,
                 "python.defaultInterpreterPath": "/usr/local/bin/python",
+                // File watching optimizations
+                "files.watcherExclude": {
+                    "**/__pycache__/**": true,
+                    "**/htmlcov/**": true,
+                    "coverage.json": true,
+                    "coverage.xml": true,
+                    "**/.git/**": true,
+                    "**/.mypy_cache/**": true,
+                    "**/.pytest_cache/**": true,
+                    "**/.ruff_cache/**": true
+                },
+                // Python formatter
                 "[python]": {
                     "editor.defaultFormatter": "charliermarsh.ruff"
                 }
             }
         }
     },
-    "remoteUser": "vscode",
-    "features": {
-        "ghcr.io/devcontainers-extra/features/apt-packages:1": {
-            "packages": "ffmpeg,libturbojpeg0,libpcap-dev"
-        }
-    }
+    "remoteUser": "vscode"
 }

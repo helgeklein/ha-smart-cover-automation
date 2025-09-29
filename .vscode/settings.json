@@ -9,27 +9,23 @@
     "python.analysis.packageIndexDepths": [
         {
             "name": "homeassistant",
-            "depth": 2,
+            "depth": 1,
             "includeAllSymbols": false
         }
     ],
     "python.analysis.autoImportCompletions": false,
     "python.analysis.autoFormatStrings": false,
     "python.analysis.memory.keepLibraryAst": false,
-    "python.analysis.exclude": [
-        "**/node_modules",
-        "**/__pycache__",
-        "**/.*",
-        "htmlcov/**",
-        "coverage.json"
-    ],
     // File watching optimizations
     "files.watcherExclude": {
         "**/__pycache__/**": true,
         "**/htmlcov/**": true,
         "coverage.json": true,
         "coverage.xml": true,
-        "**/.git/**": true
+        "**/.git/**": true,
+        "**/.mypy_cache/**": true,
+        "**/.pytest_cache/**": true,
+        "**/.ruff_cache/**": true
     },
     // Editor performance
     "editor.quickSuggestions": {
@@ -43,5 +39,7 @@
     "python.analysis.inlayHints.functionReturnTypes": false,
     "python.analysis.inlayHints.variableTypes": false,
     "editor.codeLens": false,
-    "editor.hover.delay": 1000
+    "editor.hover.delay": 1000,
+    // Additional performance optimizations
+    "python.analysis.completeFunctionParens": false
 }

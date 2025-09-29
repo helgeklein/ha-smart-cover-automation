@@ -4,7 +4,11 @@
         "**/site-packages/homeassistant/**",
         "htmlcov/**",
         "**/__pycache__/**",
-        "coverage.json"
+        "coverage.json",
+        "**/node_modules",
+        "**/.mypy_cache/**",
+        "**/.pytest_cache/**",
+        "**/.ruff_cache/**"
     ],
     "useLibraryCodeForTypes": false,
     "autoImportCompletions": false,
