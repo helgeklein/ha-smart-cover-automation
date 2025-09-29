@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Any, cast
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -19,22 +19,12 @@ from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
     WeatherEntityNotFoundError,
 )
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-
-from ..conftest import MockConfigEntry
 
 MOCK_CONFIG = {
     "covers": ["cover.test_cover"],
 }
 WEATHER_ENTITY_ID = "weather.test"
 SENSOR_ENTITY_ID = "sensor.temperature"
-
-
-@pytest.fixture
-def coordinator(mock_hass: MagicMock) -> DataUpdateCoordinator:
-    """Fixture for a DataUpdateCoordinator."""
-    entry = MockConfigEntry(data=MOCK_CONFIG)
-    return DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, entry))
 
 
 class TestGetMaxTemperature:

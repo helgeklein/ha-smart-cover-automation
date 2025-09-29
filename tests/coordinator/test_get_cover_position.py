@@ -7,29 +7,17 @@ position-supporting covers and binary covers (open/close only).
 
 from __future__ import annotations
 
-from typing import cast
 from unittest.mock import MagicMock
 
-import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 from homeassistant.const import STATE_CLOSED, STATE_CLOSING, STATE_OPEN, STATE_OPENING
 
 from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-
-from ..conftest import MockConfigEntry, create_temperature_config
 
 
 class TestGetCoverPosition:
     """Test the _get_cover_position method logic."""
-
-    @pytest.fixture
-    def coordinator(self, mock_hass: MagicMock) -> DataUpdateCoordinator:
-        """Create a DataUpdateCoordinator instance for testing."""
-        config = create_temperature_config()
-        config_entry = MockConfigEntry(config)
-        return DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
     def test_position_supporting_cover_with_current_position(self, coordinator: DataUpdateCoordinator) -> None:
         """Test position-supporting cover with valid current_position attribute."""

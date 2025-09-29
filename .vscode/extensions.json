@@ -3,9 +3,8 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-python.autopep8",
-        "charliermarsh.ruff",
-        "ryanluker.vscode-coverage-gutters"
-    ],
+      "charliermarsh.ruff"
+   ],
     "unwantedRecommendations": [
         "ms-python.flake8",
         "ms-python.pylint"

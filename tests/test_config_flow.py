@@ -20,7 +20,6 @@ from __future__ import annotations
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
-import pytest
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
@@ -56,38 +55,6 @@ class TestConfigFlow:
             Dictionary representation of the result for easier testing
         """
         return cast(dict[str, Any], result)
-
-    @pytest.fixture
-    def flow_handler(self) -> FlowHandler:
-        """Create a fresh FlowHandler instance for testing.
-
-        Provides a clean FlowHandler instance for each test method to ensure
-        test isolation and prevent state leakage between tests.
-
-        Returns:
-            New FlowHandler instance ready for testing
-        """
-        return FlowHandler()
-
-    @pytest.fixture
-    def mock_hass_with_covers(self) -> MagicMock:
-        """Create mock Home Assistant instance with valid cover entities.
-
-        Provides a mocked Home Assistant instance that simulates the presence
-        of cover entities in the state registry. This allows tests to validate
-        configuration flow behavior with existing cover entities without
-        requiring a full Home Assistant setup.
-
-        The mock returns a "closed" state for any entity ID starting with "cover."
-        and None for all other entity IDs, simulating a typical Home Assistant
-        environment with cover entities present.
-
-        Returns:
-            MagicMock instance configured to simulate Home Assistant with covers
-        """
-        hass = MagicMock()
-        hass.states.get.side_effect = lambda entity_id: (MagicMock(state="closed") if entity_id.startswith("cover.") else None)
-        return hass
 
     async def test_user_step_combined_success_with_temps(
         self,

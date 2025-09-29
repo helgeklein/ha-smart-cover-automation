@@ -44,19 +44,6 @@ from tests.coordinator.test_coordinator_base import TestDataUpdateCoordinatorBas
 class TestSimulationMode(TestDataUpdateCoordinatorBase):
     """Test simulation mode functionality in the DataUpdateCoordinator."""
 
-    @pytest.fixture
-    def simulation_coordinator(self, mock_hass: MagicMock) -> DataUpdateCoordinator:
-        """Create a coordinator with simulation mode enabled.
-
-        Returns a coordinator configured for temperature automation with simulation
-        mode enabled to test that cover commands are not actually sent.
-        """
-        config = create_temperature_config()
-        # Enable simulation mode
-        config[ConfKeys.SIMULATING.value] = True
-        config_entry = MockConfigEntry(config)
-        return DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
-
     async def test_simulation_mode_prevents_cover_commands(
         self,
         simulation_coordinator: DataUpdateCoordinator,

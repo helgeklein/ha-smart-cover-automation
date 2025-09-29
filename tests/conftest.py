@@ -15,7 +15,7 @@ Key components:
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -24,6 +24,10 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
+
+if TYPE_CHECKING:
+    from custom_components.smart_cover_automation.config_flow import FlowHandler
+    from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.const import (
     COVER_POS_FULLY_CLOSED,
     COVER_POS_FULLY_OPEN,
@@ -266,6 +270,106 @@ def mock_unavailable_state() -> MagicMock:
     state.state = "unavailable"
     state.attributes = {}
     return state
+
+
+@pytest.fixture
+def coordinator(mock_hass) -> "DataUpdateCoordinator":
+    """Create a DataUpdateCoordinator instance configured for temperature automation.
+
+    Provides a standard coordinator for most tests that need basic temperature
+    automation functionality. This consolidates the duplicate coordinator fixtures
+    found across multiple test files.
+
+    Returns:
+        DataUpdateCoordinator configured with temperature automation
+    """
+    from typing import cast
+
+    from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
+    from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+
+    config = create_temperature_config()
+    config_entry = MockConfigEntry(config)
+    return DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+
+
+@pytest.fixture
+def sun_coordinator(mock_hass) -> "DataUpdateCoordinator":
+    """Create a DataUpdateCoordinator instance configured for sun automation.
+
+    Provides a coordinator with sun automation configuration for testing
+    sun-based cover control logic including azimuth and elevation thresholds.
+
+    Returns:
+        DataUpdateCoordinator configured with sun automation
+    """
+    from typing import cast
+
+    from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
+    from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+
+    config = create_sun_config()
+    config_entry = MockConfigEntry(config)
+    return DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+
+
+@pytest.fixture
+def simulation_coordinator(mock_hass) -> "DataUpdateCoordinator":
+    """Create a coordinator with simulation mode enabled.
+
+    Returns a coordinator configured for temperature automation with simulation
+    mode enabled to test that cover commands are not actually sent.
+
+    Returns:
+        DataUpdateCoordinator with simulation mode enabled
+    """
+    from typing import cast
+
+    from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
+    from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+
+    config = create_temperature_config()
+    # Enable simulation mode
+    config[ConfKeys.SIMULATING.value] = True
+    config_entry = MockConfigEntry(config)
+    return DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+
+
+@pytest.fixture
+def flow_handler() -> "FlowHandler":
+    """Create a fresh FlowHandler instance for testing.
+
+    Provides a clean FlowHandler instance for each test method to ensure
+    test isolation and prevent state leakage between tests. This consolidates
+    the duplicate flow_handler fixtures found in config flow test files.
+
+    Returns:
+        New FlowHandler instance ready for testing
+    """
+    from custom_components.smart_cover_automation.config_flow import FlowHandler
+
+    return FlowHandler()
+
+
+@pytest.fixture
+def mock_hass_with_covers() -> MagicMock:
+    """Create mock Home Assistant instance with valid cover entities.
+
+    Provides a mocked Home Assistant instance that simulates the presence
+    of cover entities in the state registry. This allows tests to validate
+    configuration flow behavior with existing cover entities without
+    requiring a full Home Assistant setup.
+
+    The mock returns a "closed" state for any entity ID starting with "cover."
+    and None for all other entity IDs, simulating a typical Home Assistant
+    environment with cover entities present.
+
+    Returns:
+        Mock Home Assistant instance with cover entity simulation
+    """
+    hass = MagicMock()
+    hass.states.get.side_effect = lambda entity_id: (MagicMock(state="closed") if entity_id.startswith("cover.") else None)
+    return hass
 
 
 class MockConfigEntry:

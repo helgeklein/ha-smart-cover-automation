@@ -8,7 +8,7 @@ position-supporting covers and binary covers (open/close only).
 from __future__ import annotations
 
 from typing import cast
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_POSITION, CoverEntityFeature
@@ -29,21 +29,6 @@ from ..conftest import MockConfigEntry, create_temperature_config
 
 class TestSetCoverPosition:
     """Test the _set_cover_position method logic."""
-
-    @pytest.fixture
-    def mock_hass(self) -> MagicMock:
-        """Create a mock Home Assistant instance."""
-        hass = MagicMock()
-        hass.services = MagicMock()
-        hass.services.async_call = AsyncMock()
-        return hass
-
-    @pytest.fixture
-    def coordinator(self, mock_hass: MagicMock) -> DataUpdateCoordinator:
-        """Create a DataUpdateCoordinator instance for testing."""
-        config = create_temperature_config()
-        config_entry = MockConfigEntry(config)
-        return DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
     @pytest.mark.asyncio
     async def test_position_supporting_cover_valid_position(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:

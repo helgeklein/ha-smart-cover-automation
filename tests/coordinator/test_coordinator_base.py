@@ -1,58 +1,49 @@
-"""Base test classes and shared fixtures for coordinator tests.
+"""Base test class for DataUpdateCoordinator tests.
 
-This module provides the base test class and shared fixtures that are inherited
-by all coordinator test modules. It establishes common setup for testing
-DataUpdateCoordinator functionality across different test categories.
+This module provides the base test class that other coordinator test modules
+inherit from. It includes shared initialization tests and basic coordinator
+functionality testing.
 """
 
 from __future__ import annotations
 
-from typing import cast
-from unittest.mock import MagicMock
-
-import pytest
-
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-from tests.conftest import (
-    MockConfigEntry,
-    create_sun_config,
-    create_temperature_config,
-)
 
 
 class TestDataUpdateCoordinatorBase:
-    """Base test class for DataUpdateCoordinator with shared fixtures and initialization tests."""
-
-    @pytest.fixture
-    def coordinator(self, mock_hass: MagicMock) -> DataUpdateCoordinator:
-        """Create a DataUpdateCoordinator instance configured for temperature automation.
-
-        Returns a coordinator with basic temperature automation configuration
-        for testing temperature-based cover control logic.
-        """
-        config = create_temperature_config()
-        config_entry = MockConfigEntry(config)
-        return DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
-
-    @pytest.fixture
-    def sun_coordinator(self, mock_hass: MagicMock) -> DataUpdateCoordinator:
-        """Create a DataUpdateCoordinator instance configured for sun automation.
-
-        Returns a coordinator with sun automation configuration for testing
-        sun-based cover control logic including azimuth and elevation thresholds.
-        """
-        config = create_sun_config()
-        config_entry = MockConfigEntry(config)
-        return DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+    """Base test class for DataUpdateCoordinator with shared initialization tests."""
 
     async def test_init(self, coordinator: DataUpdateCoordinator) -> None:
         """Test basic coordinator initialization and configuration parsing.
 
-        Validates that the DataUpdateCoordinator properly initializes with
-        configuration data and sets up the required attributes and state
-        for automation processing.
+        Validates that DataUpdateCoordinator properly initializes with the
+        provided configuration and sets up all required attributes for
+        automation processing.
+
+        This test verifies the fundamental coordinator setup that all other
+        tests depend on.
         """
-        assert coordinator is not None
-        assert coordinator.data is None  # No data until first refresh
-        assert coordinator.last_exception is None  # No errors initially
+        # Verify coordinator has expected configuration attributes
+        assert coordinator.hass is not None
+        assert coordinator.name == "smart_cover_automation"
+        assert coordinator.update_interval is not None
+
+
+class TestErrorHandling(TestDataUpdateCoordinatorBase):
+    """Test error handling scenarios in DataUpdateCoordinator initialization.
+
+    This class tests various error conditions during coordinator setup
+    to ensure robust error handling and proper exception propagation.
+    """
+
+    async def test_init(self, coordinator: DataUpdateCoordinator) -> None:
+        """Test that error handling coordinator still initializes properly.
+
+        Even when testing error scenarios, the coordinator itself should
+        initialize successfully. The errors being tested occur during
+        data updates, not during coordinator creation.
+        """
+        # Verify basic coordinator functionality even in error test context
+        assert coordinator.hass is not None
+        assert coordinator.name == "smart_cover_automation"
+        assert coordinator.update_interval is not None

@@ -32,18 +32,6 @@ class TestConfigFlowWeatherValidation:
         """Convert ConfigFlowResult to dictionary for test assertions."""
         return cast(dict[str, Any], result)
 
-    @pytest.fixture
-    def flow_handler(self) -> FlowHandler:
-        """Create a fresh FlowHandler instance for testing."""
-        return FlowHandler()
-
-    @pytest.fixture
-    def mock_hass_with_covers(self) -> MagicMock:
-        """Create mock Home Assistant instance with valid cover entities."""
-        hass = MagicMock()
-        hass.states.get.side_effect = lambda entity_id: (MagicMock(state="closed") if entity_id.startswith("cover.") else None)
-        return hass
-
     async def test_weather_entity_invalid_features(
         self,
         flow_handler: FlowHandler,
