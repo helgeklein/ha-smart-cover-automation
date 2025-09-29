@@ -325,6 +325,34 @@ def flow_handler() -> "FlowHandler":
     return FlowHandler()
 
 
+def create_integration_coordinator(covers: list[str] | None = None) -> "DataUpdateCoordinator":
+    """Create a coordinator specifically configured for integration testing.
+
+    Provides a DataUpdateCoordinator with:
+    - Mock Home Assistant instance with weather service
+    - Temperature automation configuration
+    - Optional custom cover list
+    - Ready for comprehensive integration testing scenarios
+
+    Args:
+        covers: Optional list of cover entity IDs. Defaults to single test cover.
+
+    Returns:
+        DataUpdateCoordinator configured for integration testing
+    """
+    from typing import cast
+
+    from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
+    from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+
+    hass = create_mock_hass_with_weather_service()
+    hass.config_entries = MagicMock()
+
+    config = create_temperature_config(covers=covers)
+    config_entry = MockConfigEntry(config)
+    return DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+
+
 @pytest.fixture
 def mock_hass_with_covers() -> MagicMock:
     """Create mock Home Assistant instance with valid cover entities.
@@ -421,8 +449,9 @@ def create_temperature_config(
     Returns:
         Complete configuration dictionary with temperature settings and default sun settings
     """
+    cover_list = [MOCK_COVER_ENTITY_ID] if covers is None else covers
     config = {
-        ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
+        ConfKeys.COVERS.value: cover_list,
         ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,  # Use weather entity for temperature
         ConfKeys.TEMP_THRESHOLD.value: temp_threshold,
         # Since both automations are now always configured, include sun defaults

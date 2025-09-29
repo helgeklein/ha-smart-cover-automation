@@ -22,7 +22,7 @@ Home Assistant environments.
 from __future__ import annotations
 
 from typing import cast
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION
@@ -36,10 +36,6 @@ from custom_components.smart_cover_automation.const import (
     COVER_ATTR_POS_TARGET_DESIRED,
     HA_WEATHER_COND_SUNNY,
 )
-from custom_components.smart_cover_automation.coordinator import (
-    DataUpdateCoordinator,
-)
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
 from .conftest import (
     MOCK_COVER_ENTITY_ID,
@@ -54,9 +50,7 @@ from .conftest import (
     TEST_HOT_TEMP,
     TEST_MIN_SERVICE_CALLS,
     TEST_NUM_COVERS,
-    MockConfigEntry,
-    create_mock_weather_service,
-    create_temperature_config,
+    create_integration_coordinator,
     set_weather_forecast_temp,
 )
 
@@ -102,14 +96,9 @@ class TestIntegrationScenarios:
         This ensures the automation makes smart decisions rather than simple temperature-only
         or sun-only responses, preventing unnecessary cover movements and optimizing comfort.
         """
-        # Setup Home Assistant mock environment for automation testing
-        hass = MagicMock()
-        hass.services = MagicMock()
-
-        # Mock weather forecast service call
-        hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
-        config_entry = MockConfigEntry(create_temperature_config())  # Both automations now always active
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+        # Setup coordinator with integrated hass and weather service
+        coordinator = create_integration_coordinator()
+        hass = cast(MagicMock, coordinator.hass)
 
         # Test scenarios with combined logic (temp AND sun)
         # Each scenario: (temp, sun_elevation, sun_azimuth, current_pos, expected_pos, description)
@@ -219,14 +208,9 @@ class TestIntegrationScenarios:
 
         Combined with temperature logic to ensure realistic automation behavior.
         """
-        # Setup Home Assistant mock for daily sun cycle testing
-        hass = MagicMock()
-        hass.services = MagicMock()
-
-        # Mock weather forecast service call
-        hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
-        config_entry = MockConfigEntry(create_temperature_config())  # Both automations now always active
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+        # Setup coordinator with integrated hass and weather service
+        coordinator = create_integration_coordinator()
+        hass = cast(MagicMock, coordinator.hass)
 
         # Test scenarios for combined temp+sun logic throughout the day
         # Each scenario: (elevation, azimuth, temp, expected_pos, description)
@@ -318,14 +302,9 @@ class TestIntegrationScenarios:
         Critical sensor errors result in UpdateFailed exceptions that make entities unavailable,
         signaling to users that the automation system requires attention.
         """
-        # Setup basic Home Assistant mock for error testing
-        hass = MagicMock()
-        hass.services = MagicMock()
-
-        # Mock weather forecast service call
-        hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
-        config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+        # Setup coordinator with integrated hass and weather service
+        coordinator = create_integration_coordinator()
+        hass = cast(MagicMock, coordinator.hass)
 
         # Test 1: Temperature sensor temporarily unavailable (common during maintenance)
         # Setup valid cover and sun states but missing temperature sensor
@@ -365,15 +344,9 @@ class TestIntegrationScenarios:
         The system should detect these issues early and provide clear error messages
         through logs while maintaining system stability.
         """
-        # Setup Home Assistant mock for configuration testing
-        hass = MagicMock()
-
         # Test empty covers list - should be handled gracefully
         # An automation system needs at least one cover to control
-        config = create_temperature_config()
-        config[ConfKeys.COVERS.value] = []  # Empty covers list
-        config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+        coordinator = create_integration_coordinator(covers=[])
 
         # Should handle invalid configuration gracefully
         await coordinator.async_refresh()
@@ -402,18 +375,10 @@ class TestIntegrationScenarios:
         but validates that service calls are only made for covers that actually need
         to move to the new position.
         """
-        # Setup Home Assistant mock with service call tracking
-        hass = MagicMock()
-        hass.services = MagicMock()
-
-        # Mock weather forecast service call
-        hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
-
         # Configure multiple covers for concurrent control testing
         covers = ["cover.living_room", "cover.bedroom", "cover.kitchen"]
-        config = create_temperature_config(covers=covers)
-        config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+        coordinator = create_integration_coordinator(covers=covers)
+        hass = cast(MagicMock, coordinator.hass)
 
         # Setup environmental conditions that should trigger cover closing
         # Hot temperature scenario combined with direct sun hitting
@@ -495,18 +460,10 @@ class TestIntegrationScenarios:
         Real-world scenario: A home with expensive motorized covers in main rooms
         and basic automated covers in utility areas.
         """
-        # Setup Home Assistant mock with service call tracking for capability testing
-        hass = MagicMock()
-        hass.services = MagicMock()
-
-        # Mock weather forecast service call
-        hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
-
         # Configure covers with different capabilities
         covers = ["cover.smart", "cover.basic"]
-        config = create_temperature_config(covers=covers)
-        config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+        coordinator = create_integration_coordinator(covers=covers)
+        hass = cast(MagicMock, coordinator.hass)
 
         # Setup cold temperature to trigger opening covers (clear automation logic)
         set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold enough to open covers for warmth
