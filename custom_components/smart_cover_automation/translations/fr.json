@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Smart Cover Automation",
-                "description": "Contrôle automatique des volets. Documentation : https://helgeklein.github.io/ha-smart-cover-automation/",
+                "description": "Contrôle automatique des volets et stores. Documentation : https://helgeklein.github.io/ha-smart-cover-automation/",
                 "data": {
                     "covers": "Volets à automatiser",
                     "weather_entity_id": "Capteur de prévisions météorologiques"
@@ -11,7 +11,7 @@
             }
         },
         "error": {
-            "invalid_cover": "Un ou plusieurs volets sélectionnés sont invalides ou indisponibles.",
+            "invalid_cover": "Un ou plusieurs volets/stores sélectionnés sont invalides ou indisponibles.",
             "invalid_weather_entity": "L'entité météorologique sélectionnée ne prend pas en charge les prévisions quotidiennes.",
             "invalid_config": "Configuration invalide."
         },
@@ -40,7 +40,7 @@
                 },
                 "data_description": {
                     "cover_azimuth": "Direction vers laquelle la fenêtre est orientée (0°=Nord, 90°=Est, etc.). Utilisé pour calculer si le soleil frappe la fenêtre.",
-                    "covers": "Sélectionnez les volets que l'automatisation doit contrôler.",
+                    "covers": "Sélectionnez les volets/stores que l'automatisation doit contrôler.",
                     "covers_max_closure": "Ne jamais fermer plus que cela pour toujours laisser entrer un peu de lumière (0 = complètement fermé, 100 = complètement ouvert).",
                     "covers_min_closure": "Ne jamais ouvrir plus que cela pour toujours fournir un minimum d'ombre (0 = complètement fermé, 100 = complètement ouvert).",
                     "manual_override_duration": "Combien de temps ignorer un volet après qu'il ait été déplacé manuellement (0 = pas d'ignorance).",

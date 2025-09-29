@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Smart Cover Automation",
-                "description": "自动窗帘控制系统。文档：https://helgeklein.github.io/ha-smart-cover-automation/。",
+                "description": "自动窗帘/百叶窗控制系统。文档：https://helgeklein.github.io/ha-smart-cover-automation/。",
                 "data": {
                     "covers": "要自动化的窗帘",
                     "weather_entity_id": "天气预报传感器"
@@ -11,7 +11,7 @@
             }
         },
         "error": {
-            "invalid_cover": "一个或多个选定的窗帘无效或不可用。",
+            "invalid_cover": "一个或多个选定的窗帘/百叶窗无效或不可用。",
             "invalid_weather_entity": "所选的天气实体不支持每日预报。",
             "invalid_config": "配置无效。"
         },
@@ -40,7 +40,7 @@
                 },
                 "data_description": {
                     "cover_azimuth": "窗户面向的方向（0°=北，90°=东，等等）。用于计算太阳是否照射在窗户上。",
-                    "covers": "选择自动化系统应控制的窗帘。",
+                    "covers": "选择自动化系统应控制的窗帘/百叶窗。",
                     "covers_max_closure": "永远不要关闭超过此位置，以始终让一些光线进入（0 = 完全关闭，100 = 完全打开）。",
                     "covers_min_closure": "永远不要打开超过此位置，以始终提供最小的遮阴（0 = 完全关闭，100 = 完全打开）。",
                     "manual_override_duration": "手动移动窗帘后跳过多长时间（0 = 不跳过）。",

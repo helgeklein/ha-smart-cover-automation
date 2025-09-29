@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Smart Cover Automation",
-                "description": "Controllo automatico delle tapparelle. Documentazione: https://helgeklein.github.io/ha-smart-cover-automation/",
+                "description": "Controllo automatico delle tapparelle e tende. Documentazione: https://helgeklein.github.io/ha-smart-cover-automation/",
                 "data": {
                     "covers": "Tapparelle da automatizzare",
                     "weather_entity_id": "Sensore previsioni meteorologiche"
@@ -11,7 +11,7 @@
             }
         },
         "error": {
-            "invalid_cover": "Una o più tapparelle selezionate non sono valide o non sono disponibili.",
+            "invalid_cover": "Una o più tapparelle/tende selezionate non sono valide o non sono disponibili.",
             "invalid_weather_entity": "L'entità meteorologica selezionata non supporta le previsioni giornaliere.",
             "invalid_config": "Configurazione non valida."
         },
@@ -40,7 +40,7 @@
                 },
                 "data_description": {
                     "cover_azimuth": "Direzione verso cui è orientata la finestra (0°=Nord, 90°=Est, ecc.). Utilizzato per calcolare se il sole colpisce la finestra.",
-                    "covers": "Seleziona le tapparelle che l'automazione deve controllare.",
+                    "covers": "Seleziona le tapparelle/tende che l'automazione deve controllare.",
                     "covers_max_closure": "Non chiudere mai più di questo per far sempre entrare un po' di luce (0 = completamente chiuso, 100 = completamente aperto).",
                     "covers_min_closure": "Non aprire mai più di questo per fornire sempre un minimo di ombra (0 = completamente chiuso, 100 = completamente aperto).",
                     "manual_override_duration": "Per quanto tempo saltare una tapparella dopo che è stata mossa manualmente (0 = nessun salto).",
