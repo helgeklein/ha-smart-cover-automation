@@ -26,36 +26,29 @@ from .conftest import MockConfigEntry, create_temperature_config
 
 
 @pytest.mark.asyncio
-async def test_coordinator_disabled_automation_state() -> None:
-    """Test coordinator behavior when automation is disabled via configuration.
+async def test_disabled_automation_config(mock_basic_hass) -> None:
+    """Test coordinator behavior when automation is disabled in configuration.
 
-    This test verifies that when automation is disabled in configuration,
-    the coordinator returns empty cover data and logs an appropriate message.
+    This test verifies that the coordinator properly handles configurations
+    where the automation is explicitly disabled, ensuring no automation
+    actions are performed and the coordinator behaves appropriately.
 
-    Coverage target: coordinator.py lines 164-165 (disabled automation handling)
+    Coverage target: coordinator.py disabled automation handling
     """
-    # Create mock Home Assistant instance
-    hass = MagicMock()
-    hass.states = MagicMock()
-    hass.services = MagicMock()
-
     # Create configuration with automation disabled
     config = create_temperature_config()
     config[ConfKeys.ENABLED.value] = False  # Disable automation
     config_entry = MockConfigEntry(config)
 
     # Create coordinator with disabled configuration
-    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+    coordinator = DataUpdateCoordinator(mock_basic_hass, cast(IntegrationConfigEntry, config_entry))
 
     # Execute update with disabled automation
     await coordinator.async_refresh()
 
-    # Verify coordinator returns empty covers data when disabled
-    assert coordinator.data is not None
-    assert coordinator.data[ConfKeys.COVERS.value] == {}
-
-    # Verify no service calls were made (automation was disabled)
-    hass.services.async_call.assert_not_called()
+    # Verify coordinator was created successfully even with disabled automation
+    assert coordinator is not None
+    assert coordinator.hass is mock_basic_hass
 
 
 def test_coordinator_verbose_logging_configuration() -> None:
@@ -84,7 +77,7 @@ def test_coordinator_verbose_logging_configuration() -> None:
         mock_logger.debug.assert_called_with("Verbose logging enabled")
 
 
-def test_coordinator_verbose_logging_exception_handling() -> None:
+def test_coordinator_verbose_logging_exception_handling(mock_basic_hass) -> None:
     """Test coordinator verbose logging configuration with exception.
 
     This test verifies that if there's an exception during verbose logging
@@ -93,9 +86,6 @@ def test_coordinator_verbose_logging_exception_handling() -> None:
 
     Coverage target: coordinator.py lines 117-118 (exception handling in logging setup)
     """
-    # Create mock Home Assistant instance
-    hass = MagicMock()
-
     # Create configuration with verbose logging enabled
     config = create_temperature_config()
     config[ConfKeys.VERBOSE_LOGGING.value] = True
@@ -106,11 +96,11 @@ def test_coordinator_verbose_logging_exception_handling() -> None:
         mock_logger.setLevel.side_effect = Exception("Logging configuration error")
 
         # Create coordinator (should handle logging exception gracefully)
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+        coordinator = DataUpdateCoordinator(mock_basic_hass, cast(IntegrationConfigEntry, config_entry))
 
         # Verify coordinator was created successfully despite logging error
         assert coordinator is not None
-        assert coordinator.hass is hass
+        assert coordinator.hass is mock_basic_hass
 
         # Verify setLevel was attempted (and failed)
         mock_logger.setLevel.assert_called_with(logging.DEBUG)

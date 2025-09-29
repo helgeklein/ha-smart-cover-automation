@@ -24,14 +24,12 @@ configuration mistakes might occur.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import cast
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
-from homeassistant.core import HomeAssistant
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
@@ -50,8 +48,13 @@ from .conftest import (
     TEST_COMFORTABLE_TEMP_1,
     MockConfigEntry,
     assert_service_called,
+    create_mock_hass_with_weather_service,
+    create_mock_state_getter,
+    create_standard_cover_state,
+    create_standard_sun_state,
     create_sun_config,
     create_temperature_config,
+    set_weather_forecast_temp,
 )
 
 
@@ -71,30 +74,9 @@ async def test_non_int_supported_features_does_not_crash() -> None:
     This ensures the integration remains stable even when Home Assistant entities
     provide malformed data.
     """
-    # Setup mock Home Assistant instance with service tracking
-    hass = MagicMock(spec=HomeAssistant)
-    hass.states = MagicMock()
-    hass.services = MagicMock()
-
-    # Setup weather service mock for temperature data
-    async def mock_weather_service(domain, service, service_data, **kwargs):
-        """Mock weather forecast service that returns temperature data."""
-        if domain == Platform.WEATHER and service == "get_forecasts":
-            entity_id = service_data.get("entity_id", "weather.forecast")
-            return {
-                entity_id: {
-                    "forecast": [
-                        {
-                            "datetime": datetime.now(timezone.utc).isoformat(),
-                            "native_temperature": 22.0,  # Comfortable temperature
-                            "temp_max": 22.0,
-                        }
-                    ]
-                }
-            }
-        return {}
-
-    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+    # Setup mock Home Assistant instance with weather service
+    hass = create_mock_hass_with_weather_service()
+    set_weather_forecast_temp(22.0)  # Comfortable temperature
 
     # Create sun-based automation configuration
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
@@ -104,26 +86,21 @@ async def test_non_int_supported_features_does_not_crash() -> None:
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
 
     # Setup cover entity with corrupted supported_features attribute
-    cover_state = MagicMock()
-    cover_state.entity_id = MOCK_COVER_ENTITY_ID
+    cover_state = create_standard_cover_state()
     cover_state.state = "open"
-    cover_state.attributes = {
-        ATTR_CURRENT_POSITION: 100,
-        ATTR_SUPPORTED_FEATURES: "invalid",  # String instead of integer bitmask
-    }
+    cover_state.attributes[ATTR_SUPPORTED_FEATURES] = "invalid"  # String instead of integer bitmask
 
     # Setup sun entity indicating direct hit conditions
-    sun_state = MagicMock()
-    sun_state.entity_id = MOCK_SUN_ENTITY_ID
-    sun_state.state = "above_horizon"
-    sun_state.attributes = {"elevation": 50.0, "azimuth": 0.0}
+    sun_state = create_standard_sun_state(elevation=50.0, azimuth=0.0)
 
     # Configure Home Assistant state lookup
-    hass.states.get.side_effect = lambda entity_id: {
-        MOCK_SUN_ENTITY_ID: sun_state,
-        MOCK_COVER_ENTITY_ID: cover_state,
-        MOCK_WEATHER_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),
-    }.get(entity_id)
+    hass.states.get.side_effect = create_mock_state_getter(
+        **{
+            MOCK_SUN_ENTITY_ID: sun_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_WEATHER_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),
+        }
+    )
 
     # Execute automation logic
     await coordinator.async_refresh()
@@ -154,30 +131,9 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
     This ensures that configuration mistakes don't result in multiple conflicting
     service calls to the same cover entity, which could cause operational issues.
     """
-    # Setup mock Home Assistant instance with service call tracking
-    hass = MagicMock(spec=HomeAssistant)
-    hass.states = MagicMock()
-    hass.services = MagicMock()
-
-    # Setup weather service mock for temperature data
-    async def mock_weather_service(domain, service, service_data, **kwargs):
-        """Mock weather forecast service that returns temperature data."""
-        if domain == Platform.WEATHER and service == "get_forecasts":
-            entity_id = service_data.get("entity_id", "weather.forecast")
-            return {
-                entity_id: {
-                    "forecast": [
-                        {
-                            "datetime": datetime.now(timezone.utc).isoformat(),
-                            "native_temperature": 25.0,  # Hot temperature triggering closure
-                            "temp_max": 25.0,
-                        }
-                    ]
-                }
-            }
-        return {}
-
-    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+    # Setup mock Home Assistant instance with weather service
+    hass = create_mock_hass_with_weather_service()
+    set_weather_forecast_temp(25.0)  # Hot temperature triggering closure
 
     # Create temperature automation with duplicate cover IDs
     config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID])
@@ -185,13 +141,9 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
 
     # Setup cover entity that supports position control
-    cover_state = MagicMock()
-    cover_state.entity_id = MOCK_COVER_ENTITY_ID
+    cover_state = create_standard_cover_state()
     cover_state.state = "open"
-    cover_state.attributes = {
-        ATTR_CURRENT_POSITION: 100,
-        ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
-    }
+    cover_state.attributes[ATTR_SUPPORTED_FEATURES] = CoverEntityFeature.SET_POSITION
 
     # Setup weather entity indicating sunny conditions (for weather condition check)
     weather_state = MagicMock()
@@ -199,11 +151,13 @@ async def test_duplicate_covers_in_config_do_not_duplicate_actions() -> None:
     weather_state.state = HA_WEATHER_COND_SUNNY  # Sunny weather condition for automation to work
 
     # Configure Home Assistant state lookup
-    hass.states.get.side_effect = lambda entity_id: {
-        MOCK_WEATHER_ENTITY_ID: weather_state,
-        MOCK_COVER_ENTITY_ID: cover_state,
-        MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
-    }.get(entity_id)
+    hass.states.get.side_effect = create_mock_state_getter(
+        **{
+            MOCK_WEATHER_ENTITY_ID: weather_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
+        }
+    )
 
     # Execute automation logic
     await coordinator.async_refresh()
@@ -237,30 +191,9 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting() -> None:
 
     This ensures boundary conditions are handled consistently and predictably.
     """
-    # Setup mock Home Assistant instance
-    hass = MagicMock(spec=HomeAssistant)
-    hass.states = MagicMock()
-    hass.services = MagicMock()
-
-    # Setup weather service mock for temperature data
-    async def mock_weather_service(domain, service, service_data, **kwargs):
-        """Mock weather forecast service that returns temperature data."""
-        if domain == Platform.WEATHER and service == "get_forecasts":
-            entity_id = service_data.get("entity_id", "weather.forecast")
-            return {
-                entity_id: {
-                    "forecast": [
-                        {
-                            "datetime": datetime.now(timezone.utc).isoformat(),
-                            "native_temperature": 22.0,  # Comfortable temperature
-                            "temp_max": 22.0,
-                        }
-                    ]
-                }
-            }
-        return {}
-
-    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+    # Setup mock Home Assistant instance with weather service
+    hass = create_mock_hass_with_weather_service()
+    set_weather_forecast_temp(22.0)  # Comfortable temperature
 
     # Create sun automation with window facing north
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
@@ -269,26 +202,21 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting() -> None:
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
 
     # Setup cover entity in closed position
-    cover_state = MagicMock()
-    cover_state.entity_id = MOCK_COVER_ENTITY_ID
+    cover_state = create_standard_cover_state(position=0)
     cover_state.state = "closed"
-    cover_state.attributes = {
-        ATTR_CURRENT_POSITION: 0,
-        ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
-    }
+    cover_state.attributes[ATTR_SUPPORTED_FEATURES] = CoverEntityFeature.SET_POSITION
 
     # Setup sun at exact tolerance boundary (90° from window)
-    sun_state = MagicMock()
-    sun_state.entity_id = MOCK_SUN_ENTITY_ID
-    sun_state.state = "above_horizon"
-    sun_state.attributes = {"elevation": 50.0, "azimuth": 90.0}  # Due east, 90° from north
+    sun_state = create_standard_sun_state(elevation=50.0, azimuth=90.0)  # Due east, 90° from north
 
     # Configure Home Assistant state lookup
-    hass.states.get.side_effect = lambda entity_id: {
-        MOCK_SUN_ENTITY_ID: sun_state,
-        MOCK_COVER_ENTITY_ID: cover_state,
-        MOCK_WEATHER_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),
-    }.get(entity_id)
+    hass.states.get.side_effect = create_mock_state_getter(
+        **{
+            MOCK_SUN_ENTITY_ID: sun_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_WEATHER_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),
+        }
+    )
 
     # Execute automation logic
     await coordinator.async_refresh()
@@ -314,30 +242,9 @@ async def test_missing_current_position_behaves_safely() -> None:
     no service call should be made. This ensures safe operation when position
     data is unavailable.
     """
-    # Setup mock Home Assistant instance
-    hass = MagicMock(spec=HomeAssistant)
-    hass.states = MagicMock()
-    hass.services = MagicMock()
-
-    # Setup weather service mock for temperature data
-    async def mock_weather_service(domain, service, service_data, **kwargs):
-        """Mock weather forecast service that returns temperature data."""
-        if domain == Platform.WEATHER and service == "get_forecasts":
-            entity_id = service_data.get("entity_id", "weather.forecast")
-            return {
-                entity_id: {
-                    "forecast": [
-                        {
-                            "datetime": datetime.now(timezone.utc).isoformat(),
-                            "native_temperature": 5.0,  # Cold temperature should trigger opening
-                            "temp_max": 5.0,
-                        }
-                    ]
-                }
-            }
-        return {}
-
-    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+    # Setup mock Home Assistant instance with weather service
+    hass = create_mock_hass_with_weather_service()
+    set_weather_forecast_temp(5.0)  # Cold temperature should trigger opening
 
     # Create temperature automation configuration
     config = create_temperature_config(covers=[MOCK_COVER_ENTITY_ID], temp_threshold=24.0)
@@ -345,13 +252,11 @@ async def test_missing_current_position_behaves_safely() -> None:
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
 
     # Setup cover entity WITHOUT current_position attribute
-    cover_state = MagicMock()
-    cover_state.entity_id = MOCK_COVER_ENTITY_ID
+    cover_state = create_standard_cover_state()
     cover_state.state = "open"
-    cover_state.attributes = {
-        # Intentionally omit ATTR_CURRENT_POSITION to test missing position handling
-        ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
-    }
+    # Intentionally remove ATTR_CURRENT_POSITION to test missing position handling
+    del cover_state.attributes[ATTR_CURRENT_POSITION]
+    cover_state.attributes[ATTR_SUPPORTED_FEATURES] = CoverEntityFeature.SET_POSITION
 
     # Setup temperature sensor indicating cold conditions
     temp_state = MagicMock()
@@ -359,11 +264,13 @@ async def test_missing_current_position_behaves_safely() -> None:
     temp_state.state = "5.0"  # Cold temperature should trigger opening
 
     # Configure Home Assistant state lookup
-    hass.states.get.side_effect = lambda entity_id: {
-        MOCK_WEATHER_ENTITY_ID: temp_state,
-        MOCK_COVER_ENTITY_ID: cover_state,
-        MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
-    }.get(entity_id)
+    hass.states.get.side_effect = create_mock_state_getter(
+        **{
+            MOCK_WEATHER_ENTITY_ID: temp_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_SUN_ENTITY_ID: MagicMock(state="above_horizon", attributes={"elevation": 30.0, "azimuth": 180.0}),
+        }
+    )
 
     # Execute automation logic
     await coordinator.async_refresh()
@@ -396,30 +303,9 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     This ensures configuration validation prevents problematic setups from causing
     operational issues while allowing the rest of the system to function normally.
     """
-    # Setup mock Home Assistant instance
-    hass = MagicMock(spec=HomeAssistant)
-    hass.states = MagicMock()
-    hass.services = MagicMock()
-
-    # Setup weather service mock for temperature data
-    async def mock_weather_service(domain, service, service_data, **kwargs):
-        """Mock weather forecast service that returns temperature data."""
-        if domain == Platform.WEATHER and service == "get_forecasts":
-            entity_id = service_data.get("entity_id", "weather.forecast")
-            return {
-                entity_id: {
-                    "forecast": [
-                        {
-                            "datetime": datetime.now(timezone.utc).isoformat(),
-                            "native_temperature": 22.0,  # Comfortable temperature
-                            "temp_max": 22.0,
-                        }
-                    ]
-                }
-            }
-        return {}
-
-    hass.services.async_call = AsyncMock(side_effect=mock_weather_service)
+    # Setup mock Home Assistant instance with weather service
+    hass = create_mock_hass_with_weather_service()
+    set_weather_forecast_temp(22.0)  # Comfortable temperature
 
     # Create combined sun/temperature automation with invalid direction
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
@@ -430,26 +316,21 @@ async def test_invalid_direction_string_skips_cover_in_sun_only() -> None:
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))
 
     # Setup cover entity with partial opening
-    cover_state = MagicMock()
-    cover_state.entity_id = MOCK_COVER_ENTITY_ID
+    cover_state = create_standard_cover_state(position=50)
     cover_state.state = "open"
-    cover_state.attributes = {
-        ATTR_CURRENT_POSITION: 50,
-        ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
-    }
+    cover_state.attributes[ATTR_SUPPORTED_FEATURES] = CoverEntityFeature.SET_POSITION
 
     # Setup sun entity indicating direct hit conditions
-    sun_state = MagicMock()
-    sun_state.entity_id = MOCK_SUN_ENTITY_ID
-    sun_state.state = "above_horizon"
-    sun_state.attributes = {"elevation": 50.0, "azimuth": 180.0}
+    sun_state = create_standard_sun_state(elevation=50.0, azimuth=180.0)
 
     # Configure Home Assistant state lookup
-    hass.states.get.side_effect = lambda entity_id: {
-        MOCK_SUN_ENTITY_ID: sun_state,
-        MOCK_COVER_ENTITY_ID: cover_state,
-        MOCK_WEATHER_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),  # Comfortable temperature
-    }.get(entity_id)
+    hass.states.get.side_effect = create_mock_state_getter(
+        **{
+            MOCK_SUN_ENTITY_ID: sun_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_WEATHER_ENTITY_ID: MagicMock(state=TEST_COMFORTABLE_TEMP_1),  # Comfortable temperature
+        }
+    )
 
     # Execute automation logic
     await coordinator.async_refresh()

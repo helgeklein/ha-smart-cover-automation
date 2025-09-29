@@ -11,21 +11,14 @@ Coverage targets:
 
 from __future__ import annotations
 
-from typing import cast
-from unittest.mock import MagicMock
-
 import pytest
 
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.switch import ENTITY_DESCRIPTIONS, IntegrationSwitch
-
-from .conftest import MockConfigEntry, create_temperature_config
 
 
 @pytest.mark.asyncio
-async def test_switch_availability_property_delegation() -> None:
+async def test_switch_availability_property_delegation(mock_coordinator_basic) -> None:
     """Test switch availability property delegation to parent classes.
 
     This test verifies that the switch's availability property properly
@@ -33,18 +26,13 @@ async def test_switch_availability_property_delegation() -> None:
 
     Coverage target: switch.py line 100 (availability property override)
     """
-    # Create mock Home Assistant instance and coordinator
-    hass = MagicMock()
-    config_entry = MockConfigEntry(create_temperature_config())
-    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-
     # Create switch instance
     entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
-    switch = IntegrationSwitch(coordinator, entity_description)
+    switch = IntegrationSwitch(mock_coordinator_basic, entity_description)
 
     # Test that availability property can be accessed and delegates to parent
     # This covers the line: return super().available
-    coordinator.last_update_success = True
+    mock_coordinator_basic.last_update_success = True
     availability = switch.available
 
     # Verify that the property delegation works and returns a value
@@ -56,22 +44,17 @@ async def test_switch_availability_property_delegation() -> None:
 
 
 @pytest.mark.asyncio
-async def test_switch_is_on_property_with_resolved_config() -> None:
-    """Test switch is_on property with resolved configuration.
+async def test_switch_is_on_property_with_config_resolution(mock_coordinator_basic) -> None:
+    """Test switch is_on property with configuration resolution.
 
-    This test verifies that the switch's is_on property properly
-    accesses the resolved configuration to determine the enabled state.
+    This test verifies that the switch's is_on property properly resolves
+    the configuration entry and returns the enabled state.
 
     Coverage target: switch.py line 110 (is_on property with resolve_entry call)
     """
-    # Create mock Home Assistant instance and coordinator
-    hass = MagicMock()
-    config_entry = MockConfigEntry(create_temperature_config())
-    coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-
     # Create switch instance
     entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
-    switch = IntegrationSwitch(coordinator, entity_description)
+    switch = IntegrationSwitch(mock_coordinator_basic, entity_description)
 
     # Test that is_on property accesses resolved configuration
     # This covers the line: return resolve_entry(self.coordinator.config_entry).enabled
@@ -85,11 +68,11 @@ async def test_switch_is_on_property_with_resolved_config() -> None:
 
     # Verify that the property can handle different states by modifying config
     # (This tests the resolve_entry call and configuration access)
-    config_entry.runtime_data.config[ConfKeys.ENABLED.value] = False
+    mock_coordinator_basic.config_entry.runtime_data.config[ConfKeys.ENABLED.value] = False
 
     # Create new switch instance to get fresh property evaluation
     entity_description_2 = ENTITY_DESCRIPTIONS[0]  # Use first available description
-    switch_disabled = IntegrationSwitch(coordinator, entity_description_2)
+    switch_disabled = IntegrationSwitch(mock_coordinator_basic, entity_description_2)
     is_on_disabled = switch_disabled.is_on
 
     # Should reflect the updated configuration

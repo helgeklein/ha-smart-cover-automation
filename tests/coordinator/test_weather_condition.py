@@ -20,7 +20,7 @@ from custom_components.smart_cover_automation.coordinator import (
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
-from ..conftest import MockConfigEntry, create_temperature_config
+from ..conftest import MockConfigEntry, create_mock_weather_service, create_temperature_config, set_weather_forecast_temp
 
 
 class TestWeatherCondition:
@@ -156,19 +156,8 @@ class TestWeatherCondition:
         hass.states = MagicMock()
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            return {
-                "weather.forecast": {
-                    "forecast": [
-                        {
-                            "datetime": "2023-01-01T12:00:00Z",
-                            "native_temperature": 30.0,  # Hot temperature
-                        }
-                    ]
-                }
-            }
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(30.0)  # Hot temperature
+        hass.services.async_call.side_effect = create_mock_weather_service()
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
@@ -198,19 +187,8 @@ class TestWeatherCondition:
         hass.states = MagicMock()
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            return {
-                "weather.forecast": {
-                    "forecast": [
-                        {
-                            "datetime": "2023-01-01T12:00:00Z",
-                            "native_temperature": 30.0,  # Hot temperature
-                        }
-                    ]
-                }
-            }
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(30.0)  # Hot temperature
+        hass.services.async_call.side_effect = create_mock_weather_service()
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))

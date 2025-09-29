@@ -16,7 +16,7 @@ import pytest
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
-from ..conftest import MockConfigEntry, create_temperature_config
+from ..conftest import MockConfigEntry, create_invalid_weather_service, create_temperature_config
 
 
 class TestDateParsingEdgeCases:
@@ -182,23 +182,17 @@ class TestDateParsingEdgeCases:
         hass.states = MagicMock()
 
         # Mock weather forecast service with missing temperature fields
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            return {
-                "weather.forecast": {
-                    "forecast": [
-                        {
-                            "datetime": datetime.now(timezone.utc).isoformat(),
-                            "humidity": 80,  # No temperature field
-                        },
-                        {
-                            "datetime": datetime.now(timezone.utc).isoformat(),
-                            "native_temperature": "invalid",  # Invalid temperature
-                        },
-                    ]
-                }
-            }
-
-        hass.services.async_call.side_effect = mock_weather_service
+        invalid_forecast_data = [
+            {
+                "datetime": datetime.now(timezone.utc).isoformat(),
+                "humidity": 80,  # No temperature field
+            },
+            {
+                "datetime": datetime.now(timezone.utc).isoformat(),
+                "native_temperature": "invalid",  # Invalid temperature
+            },
+        ]
+        hass.services.async_call.side_effect = create_invalid_weather_service(invalid_forecast_data)
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))

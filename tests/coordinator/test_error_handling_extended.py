@@ -15,7 +15,14 @@ from custom_components.smart_cover_automation.coordinator import (
     ServiceCallError,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-from tests.conftest import MOCK_COVER_ENTITY_ID, MockConfigEntry, create_temperature_config
+from tests.conftest import (
+    MOCK_COVER_ENTITY_ID,
+    MockConfigEntry,
+    create_mock_weather_service,
+    create_temperature_config,
+    create_weather_service_with_cover_error,
+    set_weather_forecast_temp,
+)
 
 
 class TestCoordinatorErrorHandling:
@@ -66,19 +73,8 @@ class TestCoordinatorErrorHandling:
         }.get(entity_id)
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            return {
-                "weather.forecast": {
-                    "forecast": [
-                        {
-                            "datetime": "2023-01-01T12:00:00Z",
-                            "native_temperature": 30.0,  # Hot temperature
-                        }
-                    ]
-                }
-            }
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(30.0)  # Hot temperature
+        hass.services.async_call.side_effect = create_mock_weather_service()
 
         # Mock _handle_automation to raise unexpected error
         async def mock_handle_automation(*args, **kwargs):
@@ -170,23 +166,8 @@ class TestCoordinatorErrorHandling:
         hass.states = MagicMock()
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            if domain == "weather":
-                return {
-                    "weather.forecast": {
-                        "forecast": [
-                            {
-                                "datetime": "2023-01-01T12:00:00Z",
-                                "native_temperature": 30.0,  # Hot temperature
-                            }
-                        ]
-                    }
-                }
-            else:
-                # Simulate cover service call failure
-                raise ServiceNotFound("cover", "set_cover_position")
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(30.0)  # Hot temperature
+        hass.services.async_call.side_effect = create_weather_service_with_cover_error(ServiceNotFound, "cover", "set_cover_position")
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))

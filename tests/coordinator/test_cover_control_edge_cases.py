@@ -16,7 +16,13 @@ from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
-from ..conftest import MockConfigEntry, create_temperature_config
+from ..conftest import (
+    MockConfigEntry,
+    create_mock_weather_service,
+    create_temperature_config,
+    create_weather_service_with_cover_error,
+    set_weather_forecast_temp,
+)
 
 
 class TestCoverControlEdgeCases:
@@ -30,19 +36,8 @@ class TestCoverControlEdgeCases:
         hass.states = MagicMock()
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            return {
-                "weather.forecast": {
-                    "forecast": [
-                        {
-                            "datetime": "2023-01-01T12:00:00Z",
-                            "native_temperature": 30.0,  # Hot temperature
-                        }
-                    ]
-                }
-            }
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(30.0)  # Hot temperature
+        hass.services.async_call.side_effect = create_mock_weather_service()
 
         # Create config with min_position_delta of 10
         config = create_temperature_config()
@@ -75,19 +70,8 @@ class TestCoverControlEdgeCases:
         hass.states = MagicMock()
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            return {
-                "weather.forecast": {
-                    "forecast": [
-                        {
-                            "datetime": "2023-01-01T12:00:00Z",
-                            "native_temperature": 30.0,  # Hot temperature
-                        }
-                    ]
-                }
-            }
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(30.0)  # Hot temperature
+        hass.services.async_call.side_effect = create_mock_weather_service()
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
@@ -117,23 +101,8 @@ class TestCoverControlEdgeCases:
         hass.states = MagicMock()
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            if domain == "weather":
-                return {
-                    "weather.forecast": {
-                        "forecast": [
-                            {
-                                "datetime": "2023-01-01T12:00:00Z",
-                                "native_temperature": 30.0,  # Hot temperature
-                            }
-                        ]
-                    }
-                }
-            else:
-                # Simulate parameter validation error in cover service
-                raise ValueError("Entity ID format is invalid")
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(30.0)  # Hot temperature
+        hass.services.async_call.side_effect = create_weather_service_with_cover_error(ValueError, "Entity ID format is invalid")
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
@@ -167,23 +136,8 @@ class TestCoverControlEdgeCases:
         hass.states = MagicMock()
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            if domain == "weather":
-                return {
-                    "weather.forecast": {
-                        "forecast": [
-                            {
-                                "datetime": "2023-01-01T12:00:00Z",
-                                "native_temperature": 30.0,  # Hot temperature
-                            }
-                        ]
-                    }
-                }
-            else:
-                # Simulate type error in cover service
-                raise TypeError("Expected int, got str")
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(30.0)  # Hot temperature
+        hass.services.async_call.side_effect = create_weather_service_with_cover_error(TypeError, "Expected int, got str")
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
@@ -243,19 +197,8 @@ class TestCoverControlEdgeCases:
         hass.states = MagicMock()
 
         # Mock weather forecast service
-        async def mock_weather_service(domain, service, service_data, **kwargs):
-            return {
-                "weather.forecast": {
-                    "forecast": [
-                        {
-                            "datetime": "2023-01-01T12:00:00Z",
-                            "native_temperature": 15.0,  # Cold temperature
-                        }
-                    ]
-                }
-            }
-
-        hass.services.async_call.side_effect = mock_weather_service
+        set_weather_forecast_temp(15.0)  # Cold temperature
+        hass.services.async_call.side_effect = create_mock_weather_service()
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
