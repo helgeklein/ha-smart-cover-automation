@@ -111,16 +111,28 @@ def mock_hass() -> MagicMock:
 
     This is the foundation for most integration tests.
     """
-    hass = MagicMock(spec=HomeAssistant)
-    hass.states = MagicMock()
-    hass.services = MagicMock()
+    hass = create_mock_hass_with_weather_service()
     hass.config_entries = MagicMock()
-
-    # Setup weather service mock with standard pattern
-    hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
-    # Store reference to allow temperature override in tests
-    hass._weather_service_mock = create_mock_weather_service()
     return hass
+
+
+def create_mock_config_entry(data: dict[str, Any], entry_id: str = "test_entry_id") -> MagicMock:
+    """Create a standard mock config entry with consistent structure.
+
+    Args:
+        data: Configuration data dictionary
+        entry_id: Unique identifier for the entry (default: "test_entry_id")
+
+    Returns:
+        Mock config entry with standard domain, ID, and runtime data structure
+    """
+    entry = MagicMock()
+    entry.domain = DOMAIN
+    entry.entry_id = entry_id
+    entry.data = data
+    entry.runtime_data = MagicMock()
+    entry.runtime_data.config = data
+    return entry
 
 
 @pytest.fixture
@@ -133,16 +145,11 @@ def mock_config_entry() -> MagicMock:
     - Proper domain and entry ID setup
     - Runtime data structure matching integration expectations
     """
-    entry = MagicMock()
-    entry.domain = DOMAIN
-    entry.entry_id = "test_entry_id"
-    entry.data = {
+    data = {
         ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
         ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
     }
-    entry.runtime_data = MagicMock()
-    entry.runtime_data.config = entry.data
-    return entry
+    return create_mock_config_entry(data, "test_entry_id")
 
 
 @pytest.fixture
@@ -155,19 +162,14 @@ def mock_config_entry_sun() -> MagicMock:
     - Numeric azimuth values in degrees for proper direction calculation
     - Separate entry ID to avoid conflicts with temperature automation tests
     """
-    entry = MagicMock()
-    entry.domain = DOMAIN
-    entry.entry_id = "test_entry_id_sun"
-    entry.data = {
+    data = {
         ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
         # Use numeric azimuths (degrees) for directions
         f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": 180.0,
         f"{MOCK_COVER_ENTITY_ID_2}_{COVER_SFX_AZIMUTH}": 0.0,
     }
-    entry.runtime_data = MagicMock()
-    entry.runtime_data.config = entry.data
-    return entry
+    return create_mock_config_entry(data, "test_entry_id_sun")
 
 
 @pytest.fixture
@@ -179,14 +181,9 @@ def mock_cover_state() -> MagicMock:
     - Support for position-based control (SET_POSITION feature)
     - Standard cover entity attributes for automation testing
     """
-    state = MagicMock()
-    state.entity_id = MOCK_COVER_ENTITY_ID
-    state.state = "open"
-    state.attributes = {
-        ATTR_CURRENT_POSITION: COVER_POS_FULLY_OPEN,
-        ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
-    }
-    return state
+    return create_standard_cover_state(
+        entity_id=MOCK_COVER_ENTITY_ID, position=COVER_POS_FULLY_OPEN, features=CoverEntityFeature.SET_POSITION
+    )
 
 
 @pytest.fixture
@@ -198,14 +195,9 @@ def mock_cover_state_2() -> MagicMock:
     - Basic open/close control only (no position support)
     - Used for testing multi-cover automation logic
     """
-    state = MagicMock()
-    state.entity_id = MOCK_COVER_ENTITY_ID_2
-    state.state = "closed"
-    state.attributes = {
-        ATTR_CURRENT_POSITION: COVER_POS_FULLY_CLOSED,
-        ATTR_SUPPORTED_FEATURES: CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE,
-    }
-    return state
+    return create_standard_cover_state(
+        entity_id=MOCK_COVER_ENTITY_ID_2, position=COVER_POS_FULLY_CLOSED, features=CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
+    )
 
 
 @pytest.fixture
@@ -216,11 +208,7 @@ def mock_temperature_state() -> MagicMock:
     - Moderate temperature (22.5°C) for threshold testing
     - Standard sensor state structure for automation logic
     """
-    state = MagicMock()
-    state.entity_id = MOCK_WEATHER_ENTITY_ID
-    state.state = TEST_COMFORTABLE_TEMP_2
-    state.attributes = {}
-    return state
+    return create_standard_weather_state(condition=TEST_COMFORTABLE_TEMP_2)
 
 
 @pytest.fixture
@@ -232,13 +220,18 @@ def mock_sun_state() -> MagicMock:
     - Elevation and azimuth attributes for position calculation
     - South-facing direction (180°) and moderate elevation (35°)
     """
+    return create_standard_sun_state(elevation=35.0, azimuth=180.0)
+
+
+def create_unavailable_state() -> MagicMock:
+    """Create a mock unavailable state for error condition testing.
+
+    Returns:
+        Mock state representing an unavailable entity
+    """
     state = MagicMock()
-    state.entity_id = MOCK_SUN_ENTITY_ID
-    state.state = "above_horizon"
-    state.attributes = {
-        "elevation": 35.0,
-        "azimuth": 180.0,
-    }
+    state.state = "unavailable"
+    state.attributes = {}
     return state
 
 
@@ -250,10 +243,7 @@ def mock_unavailable_state() -> MagicMock:
     - State set to "unavailable" (Home Assistant standard)
     - Empty attributes dict for realistic unavailable entity behavior
     """
-    state = MagicMock()
-    state.state = "unavailable"
-    state.attributes = {}
-    return state
+    return create_unavailable_state()
 
 
 @pytest.fixture
@@ -727,6 +717,7 @@ def create_standard_weather_state(condition: str = "sunny") -> MagicMock:
     weather_state = MagicMock()
     weather_state.state = condition
     weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
+    weather_state.attributes = {}
     return weather_state
 
 
@@ -760,6 +751,7 @@ def create_standard_cover_state(entity_id: str = MOCK_COVER_ENTITY_ID, position:
     """
     cover_state = MagicMock()
     cover_state.entity_id = entity_id
+    cover_state.state = "open" if position > 0 else "closed"
     cover_state.attributes = {
         ATTR_CURRENT_POSITION: position,
         ATTR_SUPPORTED_FEATURES: features,
@@ -921,6 +913,8 @@ def create_mock_hass_with_weather_service() -> MagicMock:
 
     # Setup weather service mock with standard pattern
     hass.services.async_call = AsyncMock(side_effect=create_mock_weather_service())
+    # Store reference to allow temperature override in tests
+    hass._weather_service_mock = create_mock_weather_service()
     return hass
 
 
