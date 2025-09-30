@@ -12,77 +12,118 @@ Coverage targets:
 
 from __future__ import annotations
 
+import pytest
+
 from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.sensor import ENTITY_DESCRIPTIONS, AutomationStatusSensor
 
 
-async def test_sensor_availability_property_delegation(mock_coordinator_basic) -> None:
-    """Test sensor availability property delegation to parent classes.
+@pytest.mark.parametrize(
+    "coordinator_data, last_update_success, expected_result_type",
+    [
+        ({}, True, type(None)),  # Empty data, successful update
+        ({}, False, type(None)),  # Empty data, failed update
+        (None, True, type(None)),  # None data, successful update
+        (None, False, type(None)),  # None data, failed update
+        ({"covers": {}}, True, str),  # Valid data structure, successful update
+        ({"covers": {}}, False, str),  # Valid data structure, failed update
+    ],
+)
+async def test_sensor_native_value_with_various_data_states(
+    mock_coordinator_basic, coordinator_data, last_update_success, expected_result_type
+) -> None:
+    """Test sensor native value with various coordinator data states.
 
-    This test verifies that the sensor's availability property properly
-    delegates to parent class implementations and can be accessed.
-
-    Coverage target: sensor.py line 113 (availability property override)
-    """
-    # Create sensor instance with entity description
-    entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
-    sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
-
-    # Test that availability property can be accessed and delegates to parent
-    # This covers the line: return super().available
-    mock_coordinator_basic.last_update_success = True
-    availability = sensor.available
-
-    # Verify that the property delegation works and returns a value
-    assert availability is not None
-    assert isinstance(availability, bool)
-
-    # The key is that we accessed the property, which covers line 113
-    # The exact behavior (True vs False) is handled by the parent class
-
-
-async def test_sensor_native_value_with_missing_data(mock_coordinator_basic) -> None:
-    """Test sensor native value when coordinator data is missing.
-
-    This test verifies that the sensor handles missing coordinator data
-    gracefully and returns None for the native value.
+    This parametrized test verifies that the sensor handles different combinations
+    of coordinator data availability and update success states appropriately.
 
     Coverage target: sensor.py line 125 (native_value with missing data)
     """
-    # Set coordinator data to empty dict (falsy for the check)
-    mock_coordinator_basic.data = {}  # This will make `if not self.coordinator.data:` true
+    # Set coordinator data and update status
+    mock_coordinator_basic.data = coordinator_data
+    mock_coordinator_basic.last_update_success = last_update_success
 
     # Create sensor instance with entity description
     entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
     sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
 
-    # Get native value when no meaningful data is available
+    # Get native value
     native_value = sensor.native_value
 
-    # Should return None when no meaningful coordinator data is available
-    assert native_value is None
+    # Verify the result type matches expectations
+    if expected_result_type is type(None):
+        assert native_value is None
+    else:
+        assert isinstance(native_value, expected_result_type)
 
 
-async def test_sensor_extra_state_attributes_with_missing_data(mock_coordinator_basic) -> None:
-    """Test sensor extra state attributes when coordinator data is missing.
+@pytest.mark.parametrize(
+    "coordinator_data, last_update_success, expected_result_type",
+    [
+        ({}, True, type(None)),  # Empty data, successful update
+        ({}, False, type(None)),  # Empty data, failed update
+        (None, True, type(None)),  # None data, successful update
+        (None, False, type(None)),  # None data, failed update
+        ({"covers": {}}, True, dict),  # Valid data structure, successful update
+        ({"covers": {}}, False, dict),  # Valid data structure, failed update
+    ],
+)
+async def test_sensor_extra_state_attributes_with_various_data_states(
+    mock_coordinator_basic, coordinator_data, last_update_success, expected_result_type
+) -> None:
+    """Test sensor extra state attributes with various coordinator data states.
 
-    This test verifies that the sensor handles missing coordinator data
-    gracefully and returns None for extra state attributes.
+    This parametrized test verifies that the sensor handles different combinations
+    of coordinator data availability and update success states appropriately.
 
     Coverage target: sensor.py line 137 (extra_state_attributes with missing data)
     """
-    # Set coordinator data to empty dict (falsy for the check)
-    mock_coordinator_basic.data = {}  # This will make `if not self.coordinator.data:` true
+    # Set coordinator data and update status
+    mock_coordinator_basic.data = coordinator_data
+    mock_coordinator_basic.last_update_success = last_update_success
 
     # Create sensor instance with entity description
     entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
     sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
 
-    # Get extra state attributes when no data is available
+    # Get extra state attributes
     extra_attributes = sensor.extra_state_attributes
 
-    # Should return None when no coordinator data is available
-    assert extra_attributes is None
+    # Verify the result type matches expectations
+    if expected_result_type is type(None):
+        assert extra_attributes is None
+    else:
+        assert isinstance(extra_attributes, expected_result_type)
+
+
+@pytest.mark.parametrize(
+    "last_update_success, expected_availability",
+    [
+        (True, True),  # Successful update should be available
+        (False, False),  # Failed update should be unavailable
+    ],
+)
+async def test_sensor_availability_property_delegation(mock_coordinator_basic, last_update_success, expected_availability) -> None:
+    """Test sensor availability property delegation to parent classes.
+
+    This parametrized test verifies that the sensor's availability property properly
+    delegates to parent class implementations based on coordinator update status.
+
+    Coverage target: sensor.py line 113 (availability property override)
+    """
+    # Set coordinator update status
+    mock_coordinator_basic.last_update_success = last_update_success
+
+    # Create sensor instance
+    entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
+    sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
+
+    # Test that availability property delegates to parent and reflects update status
+    availability = sensor.available
+
+    # Verify that the property delegation works and returns expected availability
+    assert availability == expected_availability
+    assert isinstance(availability, bool)
 
 
 async def test_sensor_with_valid_coordinator_data(mock_coordinator_basic) -> None:

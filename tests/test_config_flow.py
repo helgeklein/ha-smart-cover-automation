@@ -20,6 +20,7 @@ from __future__ import annotations
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
+import pytest
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
@@ -129,37 +130,56 @@ class TestConfigFlow:
             assert result["type"] == FlowResultType.CREATE_ENTRY
             assert result["data"] == user_input
 
-    async def test_user_step_invalid_cover(
-        self,
-        flow_handler: FlowHandler,
+    @pytest.mark.parametrize(
+        "mock_setup,user_input,expected_error,test_description",
+        [
+            # Test invalid/non-existent cover
+            (
+                lambda flow_handler: setattr(flow_handler, "hass", MagicMock(states=MagicMock(get=MagicMock(return_value=None)))),
+                {ConfKeys.COVERS.value: ["cover.nonexistent"]},
+                "invalid_cover",
+                "non-existent cover entity",
+            ),
+            # Test malformed configuration (missing required covers field)
+            (
+                lambda flow_handler: setattr(flow_handler, "hass", MagicMock()),
+                {},
+                "invalid_config",
+                "missing required covers field",
+            ),
+            # Test empty covers list
+            (
+                lambda flow_handler: setattr(flow_handler, "hass", MagicMock()),
+                {ConfKeys.COVERS.value: []},
+                "invalid_config",
+                "empty covers list",
+            ),
+        ],
+    )
+    async def test_config_flow_error_scenarios_parametrized(
+        self, mock_setup, user_input: dict[str, Any], expected_error: str, test_description: str, flow_handler: FlowHandler
     ) -> None:
-        """Test error handling when user specifies non-existent cover entities.
+        """Test various configuration flow error scenarios.
 
-        Validates that the config flow properly handles and reports errors when
-        users try to configure automation for cover entities that don't exist
-        in Home Assistant. This prevents invalid configurations and provides
-        clear feedback to users about the problem.
+        This parametrized test validates that the config flow properly handles and reports
+        different types of configuration errors, ensuring robust error handling and
+        preventing invalid configurations from being created.
 
-        The test simulates a scenario where Home Assistant's state registry
-        returns None for the specified cover entity, indicating it doesn't exist.
+        Test scenarios include:
+        - Non-existent cover entities
+        - Malformed configuration data
+        - Empty or invalid field values
         """
-        # Mock Home Assistant to return None for any entity (simulating non-existence)
-        hass = MagicMock()
-        hass.states.get.return_value = None  # Cover doesn't exist
-        flow_handler.hass = hass
+        # Apply the mock setup for this scenario
+        mock_setup(flow_handler)
 
-        # Attempt to configure automation for non-existent cover
-        user_input = {
-            ConfKeys.COVERS.value: ["cover.nonexistent"],
-        }
-
-        # Execute config flow and verify error handling
+        # Execute config flow with the test input
         result = await flow_handler.async_step_user(user_input)
         result = self._as_dict(result)
 
-        # Verify the flow shows an error and returns to the form
-        assert result["type"] == FlowResultType.FORM
-        assert result["errors"]["base"] == "invalid_cover"
+        # Verify error handling returns to form with appropriate error message
+        assert result["type"] == FlowResultType.FORM, f"Expected FORM result for {test_description}"
+        assert result["errors"]["base"] == expected_error, f"Expected {expected_error} error for {test_description}"
 
     async def test_user_step_unavailable_cover_warning(
         self,

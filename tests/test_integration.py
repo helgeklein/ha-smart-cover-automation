@@ -77,32 +77,9 @@ class TestIntegrationScenarios:
     - Mixed cover capabilities (smart vs. basic covers)
     """
 
-    async def test_temperature_automation_complete_cycle(self) -> None:
-        """
-        Test complete temperature automation cycle with combined AND logic.
-
-        This test validates the core automation logic that combines temperature and sun position
-        to make intelligent cover control decisions. The automation uses AND logic, meaning
-        covers are closed only when BOTH conditions are met:
-        1. Temperature is hot (above threshold)
-        2. Sun is hitting the cover (elevation > 25° and azimuth in range 135°-225°)
-
-        Test scenarios cover all logical combinations:
-        - Hot temperature + sun hitting = close covers (both conditions met)
-        - Comfortable temperature + sun hitting = open covers (temperature not hot)
-        - Cold temperature + any sun = open covers (cold overrides)
-        - Hot temperature + sun not hitting = open covers (sun condition not met)
-
-        This ensures the automation makes smart decisions rather than simple temperature-only
-        or sun-only responses, preventing unnecessary cover movements and optimizing comfort.
-        """
-        # Setup coordinator with integrated hass and weather service
-        coordinator = create_integration_coordinator()
-        hass = cast(MagicMock, coordinator.hass)
-
-        # Test scenarios with combined logic (temp AND sun)
-        # Each scenario: (temp, sun_elevation, sun_azimuth, current_pos, expected_pos, description)
-        test_scenarios = [
+    @pytest.mark.parametrize(
+        "temp,sun_elevation,sun_azimuth,current_pos,expected_pos,test_description",
+        [
             # Hot temperature + sun hitting cover = close to block heat
             (TEST_HOT_TEMP, TEST_HIGH_ELEVATION, TEST_DIRECT_AZIMUTH, TEST_COVER_OPEN, TEST_COVER_CLOSED, "Hot + sun hitting -> close"),
             # Comfortable temperature + sun hitting = open (temperature not hot enough)
@@ -118,103 +95,92 @@ class TestIntegrationScenarios:
             (TEST_COLD_TEMP, 10.0, 90.0, TEST_COVER_CLOSED, TEST_COVER_OPEN, "Cold + sun not hitting -> open"),
             # Hot temperature + sun not hitting = open (sun condition not met)
             (TEST_HOT_TEMP, 10.0, 90.0, TEST_COVER_OPEN, TEST_COVER_OPEN, "Hot + sun not hitting -> open (not hitting)"),
-        ]
-
-        for i, (temp, elevation, azimuth, current_pos, expected_pos, description) in enumerate(test_scenarios):
-            # Set the weather forecast temperature for this scenario
-            set_weather_forecast_temp(float(temp))
-
-            # Setup realistic Home Assistant entity states for this scenario
-            # Weather entity state (now using weather instead of temperature sensor)
-            weather_state = MagicMock()
-            weather_state.state = HA_WEATHER_COND_SUNNY
-            weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
-
-            # Cover entity state with current position and supported features
-            cover_state = MagicMock()
-            cover_state.attributes = {
-                ATTR_CURRENT_POSITION: current_pos,
-                ATTR_SUPPORTED_FEATURES: 15,  # Full cover control capabilities
-            }
-
-            # Sun entity state with elevation and azimuth for sun position logic
-            sun_state = MagicMock()
-            sun_state.state = "above_horizon"
-            sun_state.attributes = {"elevation": elevation, "azimuth": azimuth}
-
-            # Configure Home Assistant state lookup to return our mock entities
-            hass.states.get.side_effect = lambda entity_id, ws=weather_state, cs=cover_state, ss=sun_state: {
-                MOCK_WEATHER_ENTITY_ID: ws,
-                MOCK_COVER_ENTITY_ID: cs,
-                MOCK_SUN_ENTITY_ID: ss,
-            }.get(entity_id)
-
-            # Reset service call mock to track calls for this scenario
-            # But preserve the weather service mock functionality
-            original_side_effect = hass.services.async_call.side_effect
-            hass.services.async_call.reset_mock()
-            hass.services.async_call.side_effect = original_side_effect
-
-            # Execute automation and validate results
-            try:
-                await coordinator.async_refresh()
-                result = coordinator.data
-
-                # Verify automation produced valid results
-                assert result is not None, f"Result is None in scenario {i}: {description}"
-                assert ConfKeys.COVERS.value in result, f"Invalid result structure in scenario {i}: {description}"
-
-                # Check that the automation calculated the correct desired position
-                cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-                assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_pos, (
-                    f"Scenario {i} ({description}): Expected position {expected_pos}, got {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}"
-                )
-
-                # Check for cover service calls (ignore weather service calls)
-                cover_service_calls = [
-                    call
-                    for call in hass.services.async_call.call_args_list
-                    if call[0][0] == Platform.COVER  # Only cover service calls
-                ]
-
-                # Verify service calls are made only when cover position needs to change
-                # This prevents unnecessary service calls when covers are already in correct position
-                if current_pos != expected_pos:
-                    assert len(cover_service_calls) > 0, f"Scenario {i} ({description}): Cover service should have been called"
-                else:
-                    assert len(cover_service_calls) == 0, f"Scenario {i} ({description}): Cover service should not have been called"
-
-            except Exception as e:
-                pytest.fail(f"Automation failed in scenario {i} ({description}): {e}")
-
-    async def test_sun_automation_daily_cycle(self) -> None:
+        ],
+    )
+    async def test_temperature_automation_complete_cycle_parametrized(
+        self, temp: float, sun_elevation: float, sun_azimuth: float, current_pos: int, expected_pos: int, test_description: str
+    ) -> None:
         """
-        Test sun automation through daily cycle with combined AND logic.
+        Test complete temperature automation cycle with combined AND logic.
 
-        This test simulates a complete day's sun movement from east to west and validates
-        how the automation responds to different sun positions combined with temperature.
-        The test focuses on the sun azimuth logic that determines when sun is "hitting" covers:
+        This parametrized test validates the core automation logic that combines temperature and sun position
+        to make intelligent cover control decisions. The automation uses AND logic, meaning
+        covers are closed only when BOTH conditions are met:
+        1. Temperature is hot (above threshold)
+        2. Sun is hitting the cover (elevation > 25° and azimuth in range 135°-225°)
 
-        Sun hitting conditions:
-        - Elevation > 25° (sun is high enough)
-        - Azimuth between 135° and 225° (southeast to southwest arc)
-
-        Daily sun movement simulation:
-        - Morning (90° azimuth): Sun in east, not hitting south-facing covers
-        - Mid-morning (135° azimuth): Sun enters hitting zone if high enough
-        - Midday (180° azimuth): Sun directly south, maximum impact
-        - Afternoon (225° azimuth): Sun still hitting from southwest
-        - Evening (270° azimuth): Sun in west, no longer hitting south-facing covers
-
-        Combined with temperature logic to ensure realistic automation behavior.
+        Test scenarios cover all logical combinations to ensure the automation makes smart decisions
+        rather than simple temperature-only or sun-only responses.
         """
         # Setup coordinator with integrated hass and weather service
         coordinator = create_integration_coordinator()
         hass = cast(MagicMock, coordinator.hass)
 
-        # Test scenarios for combined temp+sun logic throughout the day
-        # Each scenario: (elevation, azimuth, temp, expected_pos, description)
-        test_scenarios = [
+        # Set the weather forecast temperature for this scenario
+        set_weather_forecast_temp(float(temp))
+
+        # Setup realistic Home Assistant entity states for this scenario
+        # Weather entity state (now using weather instead of temperature sensor)
+        weather_state = MagicMock()
+        weather_state.state = HA_WEATHER_COND_SUNNY
+        weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
+
+        # Cover entity state with current position and supported features
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            ATTR_CURRENT_POSITION: current_pos,
+            ATTR_SUPPORTED_FEATURES: 15,  # Full cover control capabilities
+        }
+
+        # Sun entity state with elevation and azimuth for sun position logic
+        sun_state = MagicMock()
+        sun_state.state = "above_horizon"
+        sun_state.attributes = {"elevation": sun_elevation, "azimuth": sun_azimuth}
+
+        # Configure Home Assistant state lookup to return our mock entities
+        hass.states.get.side_effect = lambda entity_id: {
+            MOCK_WEATHER_ENTITY_ID: weather_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_SUN_ENTITY_ID: sun_state,
+        }.get(entity_id)
+
+        # Reset service call mock to track calls for this scenario
+        # But preserve the weather service mock functionality
+        original_side_effect = hass.services.async_call.side_effect
+        hass.services.async_call.reset_mock()
+        hass.services.async_call.side_effect = original_side_effect
+
+        # Execute automation and validate results
+        await coordinator.async_refresh()
+        result = coordinator.data
+
+        # Verify automation produced valid results
+        assert result is not None, f"Result is None: {test_description}"
+        assert ConfKeys.COVERS.value in result, f"Invalid result structure: {test_description}"
+
+        # Check that the automation calculated the correct desired position
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_pos, (
+            f"{test_description}: Expected position {expected_pos}, got {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}"
+        )
+
+        # Check for cover service calls (ignore weather service calls)
+        cover_service_calls = [
+            call
+            for call in hass.services.async_call.call_args_list
+            if call[0][0] == Platform.COVER  # Only cover service calls
+        ]
+
+        # Verify service calls are made only when cover position needs to change
+        # This prevents unnecessary service calls when covers are already in correct position
+        if current_pos != expected_pos:
+            assert len(cover_service_calls) > 0, f"{test_description}: Cover service should have been called"
+        else:
+            assert len(cover_service_calls) == 0, f"{test_description}: Cover service should not have been called"
+
+    @pytest.mark.parametrize(
+        "elevation,azimuth,temp,expected_pos,test_description",
+        [
             # Morning: Low sun in east, not hitting south-facing covers
             (10.0, 90.0, TEST_HOT_TEMP, TEST_COVER_OPEN, "Low sun, east + hot -> no change (sun not hitting)"),
             # Mid-morning: High sun in southeast, hitting covers + hot = close
@@ -235,49 +201,68 @@ class TestIntegrationScenarios:
             ),
             # Cold temperature overrides sun position: always open for warmth
             (50.0, TEST_DIRECT_AZIMUTH, TEST_COLD_TEMP, TEST_COVER_OPEN, "High sun, south + cold -> open (cold temp wins)"),
-        ]
+        ],
+    )
+    async def test_sun_automation_daily_cycle_parametrized(
+        self, elevation: float, azimuth: float, temp: float, expected_pos: int, test_description: str
+    ) -> None:
+        """
+        Test sun automation through daily cycle with combined AND logic.
 
-        for i, (elevation, azimuth, temp, expected_pos, description) in enumerate(test_scenarios):
-            # Set temperature for this scenario
-            set_weather_forecast_temp(float(temp))
+        This parametrized test simulates a complete day's sun movement from east to west and validates
+        how the automation responds to different sun positions combined with temperature.
+        The test focuses on the sun azimuth logic that determines when sun is "hitting" covers:
 
-            # Setup sun entity state for current time of day
-            sun_state = MagicMock()
-            sun_state.state = "above_horizon"
-            sun_state.attributes = {"elevation": elevation, "azimuth": azimuth}
+        Sun hitting conditions:
+        - Elevation > 25° (sun is high enough)
+        - Azimuth between 135° and 225° (southeast to southwest arc)
 
-            # Setup cover state (starting fully open for all scenarios)
-            cover_state = MagicMock()
-            cover_state.attributes = {
-                ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
-                ATTR_SUPPORTED_FEATURES: 15,
-            }
+        Daily sun movement simulation combined with temperature logic to ensure realistic automation behavior.
+        """
+        # Setup coordinator with integrated hass and weather service
+        coordinator = create_integration_coordinator()
+        hass = cast(MagicMock, coordinator.hass)
 
-            # Configure Home Assistant entity lookup for this scenario
-            # Create a weather entity state (required even though we use service calls)
-            weather_state = MagicMock()
-            weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
-            weather_state.state = HA_WEATHER_COND_SUNNY  # Set weather condition to sunny for automation to work
+        # Set temperature for this scenario
+        set_weather_forecast_temp(float(temp))
 
-            hass.states.get.side_effect = lambda entity_id, ss=sun_state, cs=cover_state, ws=weather_state: {
-                MOCK_SUN_ENTITY_ID: ss,
-                MOCK_COVER_ENTITY_ID: cs,
-                MOCK_WEATHER_ENTITY_ID: ws,
-            }.get(entity_id)
+        # Setup sun entity state for current time of day
+        sun_state = MagicMock()
+        sun_state.state = "above_horizon"
+        sun_state.attributes = {"elevation": elevation, "azimuth": azimuth}
 
-            # Execute automation for current sun/temperature conditions
-            await coordinator.async_refresh()
-            result = coordinator.data
+        # Setup cover state (starting fully open for all scenarios)
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
+            ATTR_SUPPORTED_FEATURES: 15,
+        }
 
-            # Validate automation results for this time of day
-            assert result is not None, f"Result is None in scenario {i}: {description}"
-            assert ConfKeys.COVERS.value in result, f"Invalid result for scenario {i}: {description}"
+        # Configure Home Assistant entity lookup for this scenario
+        # Create a weather entity state (required even though we use service calls)
+        weather_state = MagicMock()
+        weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
+        weather_state.state = HA_WEATHER_COND_SUNNY  # Set weather condition to sunny for automation to work
 
-            # Verify the automation calculated the correct position based on sun and temperature
-            cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-            assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_pos, (
-                f"Scenario {i} ({description}): Expected {expected_pos}, got {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}"
-            )
+        hass.states.get.side_effect = lambda entity_id: {
+            MOCK_SUN_ENTITY_ID: sun_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_WEATHER_ENTITY_ID: weather_state,
+        }.get(entity_id)
+
+        # Execute automation for current sun/temperature conditions
+        await coordinator.async_refresh()
+        result = coordinator.data
+
+        # Validate automation results for this time of day
+        assert result is not None, f"Result is None: {test_description}"
+        assert ConfKeys.COVERS.value in result, f"Invalid result: {test_description}"
+
+        # Verify the automation calculated the correct position based on sun and temperature
+        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_pos, (
+            f"{test_description}: Expected {expected_pos}, got {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}"
+        )
 
     async def test_error_recovery_scenarios(self) -> None:
         """

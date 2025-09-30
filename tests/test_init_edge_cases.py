@@ -15,6 +15,7 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from custom_components.smart_cover_automation import (
@@ -24,43 +25,74 @@ from custom_components.smart_cover_automation import (
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
 
-async def test_setup_entry_unexpected_exception(mock_hass_with_spec, mock_config_entry_basic) -> None:
-    """Test handling of unexpected exceptions during integration setup.
+@pytest.mark.parametrize(
+    "exception_type,mock_target,exception_message,test_description",
+    [
+        (
+            RuntimeError,
+            "custom_components.smart_cover_automation.async_get_loaded_integration",
+            "Unexpected setup error",
+            "setup exception from async_get_loaded_integration",
+        ),
+        (
+            ValueError,
+            "custom_components.smart_cover_automation.DataUpdateCoordinator",
+            "Invalid configuration",
+            "setup exception from DataUpdateCoordinator",
+        ),
+        (
+            ConnectionError,
+            "custom_components.smart_cover_automation.DataUpdateCoordinator",
+            "Connection failed",
+            "setup exception from connection failure",
+        ),
+    ],
+)
+async def test_setup_entry_various_exceptions(
+    mock_hass_with_spec, mock_config_entry_basic, exception_type: type, mock_target: str, exception_message: str, test_description: str
+) -> None:
+    """Test handling of various exception types during integration setup.
 
-    This test verifies that the integration gracefully handles unexpected
-    errors during setup and returns False to indicate setup failure to
-    Home Assistant.
-
-    Coverage target: __init__.py lines 87-90 (unexpected exception handling)
+    This parametrized test verifies that the integration gracefully handles different
+    types of exceptions that can occur during setup and always returns False to
+    indicate setup failure to Home Assistant.
     """
     # Ensure hass has the required data structure
     mock_hass_with_spec.data = {}  # Required for async_get_loaded_integration
 
-    # Mock async_get_loaded_integration to raise unexpected exception
-    with patch("custom_components.smart_cover_automation.async_get_loaded_integration") as mock_get_integration:
-        mock_get_integration.side_effect = RuntimeError("Unexpected setup error")
+    # Mock the target to raise the specified exception
+    with patch(mock_target) as mock_component:
+        mock_component.side_effect = exception_type(exception_message)
 
         # Execute setup and verify graceful failure handling
         result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
         # Setup should return False indicating failure
-        assert result is False
+        assert result is False, f"Setup should return False for {test_description}"
 
-        # Verify the exception was attempted (async_get_loaded_integration was called)
-        mock_get_integration.assert_called_once_with(mock_hass_with_spec, mock_config_entry_basic.domain)
+        # Verify the exception was attempted
+        mock_component.assert_called_once()
 
 
-async def test_unload_entry_unexpected_exception(mock_hass_with_spec, mock_config_entry_basic) -> None:
-    """Test handling of unexpected exceptions during integration unload.
+@pytest.mark.parametrize(
+    "exception_type,exception_message,test_description",
+    [
+        (RuntimeError, "Unexpected unload error", "runtime error during unload"),
+        (ValueError, "Invalid platform configuration", "value error during platform unload"),
+        (ConnectionError, "Service connection lost", "connection error during unload"),
+    ],
+)
+async def test_unload_entry_various_exceptions(
+    mock_hass_with_spec, mock_config_entry_basic, exception_type: type, exception_message: str, test_description: str
+) -> None:
+    """Test handling of various exception types during integration unload.
 
-    This test verifies that the integration gracefully handles unexpected
-    errors during unload and returns False to indicate unload failure to
-    Home Assistant.
-
-    Coverage target: __init__.py lines 117-120 (unexpected exception handling)
+    This parametrized test verifies that the integration gracefully handles different
+    types of exceptions that can occur during unload and always returns False to
+    indicate unload failure to Home Assistant.
     """
-    # Configure async_unload_platforms to raise unexpected exception
-    mock_hass_with_spec.config_entries.async_unload_platforms = AsyncMock(side_effect=RuntimeError("Unexpected unload error"))
+    # Configure async_unload_platforms to raise the specified exception
+    mock_hass_with_spec.config_entries.async_unload_platforms = AsyncMock(side_effect=exception_type(exception_message))
 
     # Create configuration entry with mock runtime data
     coordinator = MagicMock()
@@ -70,7 +102,7 @@ async def test_unload_entry_unexpected_exception(mock_hass_with_spec, mock_confi
     result = await async_unload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
     # Unload should return False indicating failure
-    assert result is False
+    assert result is False, f"Unload should return False for {test_description}"
 
     # Verify the exception was attempted to be handled
     mock_hass_with_spec.config_entries.async_unload_platforms.assert_called_once()

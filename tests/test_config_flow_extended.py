@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
+import pytest
 from homeassistant.components.weather.const import WeatherEntityFeature
 from homeassistant.data_entry_flow import FlowResultType
 
@@ -35,68 +36,68 @@ class TestConfigFlowWeatherValidation:
         """Convert ConfigFlowResult to dictionary for test assertions."""
         return cast(dict[str, Any], result)
 
-    async def test_weather_entity_invalid_features(
+    @pytest.mark.parametrize(
+        "weather_entity_id,weather_state_setup,expected_error,test_description",
+        [
+            (
+                "weather.test",
+                lambda: MagicMock(attributes={"supported_features": 0}),  # No forecast features
+                const.ERROR_INVALID_WEATHER_ENTITY,
+                "weather entity with no forecast features",
+            ),
+            (
+                "weather.nonexistent",
+                lambda: None,  # Entity doesn't exist
+                const.ERROR_INVALID_WEATHER_ENTITY,
+                "weather entity that doesn't exist",
+            ),
+            (
+                "weather.incomplete",
+                lambda: MagicMock(attributes={}),  # Missing supported_features attribute
+                const.ERROR_INVALID_WEATHER_ENTITY,
+                "weather entity with missing supported_features",
+            ),
+        ],
+    )
+    async def test_weather_entity_validation_errors(
         self,
         flow_handler: FlowHandler,
         mock_hass_with_covers: MagicMock,
+        weather_entity_id: str,
+        weather_state_setup,
+        expected_error: str,
+        test_description: str,
     ) -> None:
-        """Test config flow error when weather entity lacks daily forecast support.
+        """Test config flow errors for various weather entity validation failures.
 
-        This tests the weather entity validation logic that checks for
-        WeatherEntityFeature.FORECAST_DAILY support. Weather entities without
-        this feature cannot provide the daily forecast data needed for automation.
+        This parametrized test verifies that the config flow properly validates
+        weather entities and returns appropriate errors for different failure scenarios:
+        - Weather entities without required forecast features
+        - Weather entities that don't exist in the state registry
+        - Weather entities with incomplete attribute data
         """
-        # Setup weather entity that exists but lacks forecast daily feature
-        weather_state = MagicMock()
-        weather_state.attributes = {"supported_features": 0}  # No forecast features
-
-        # Create state mappings
+        # Create state mappings with cover entities
         cover_states = {entity_id: MagicMock(state="closed") for entity_id in [MOCK_COVER_ENTITY_ID] if entity_id.startswith("cover.")}
 
-        # Mock hass to return covers and invalid weather entity
-        mock_hass_with_covers.states.get.side_effect = create_mock_state_getter(**cover_states, **{"weather.test": weather_state})
+        # Setup weather entity state (or lack thereof)
+        weather_state = weather_state_setup()
+        weather_states = {weather_entity_id: weather_state} if weather_state is not None else {}
+
+        # Mock hass to return covers and weather entity setup
+        mock_hass_with_covers.states.get.side_effect = create_mock_state_getter(**cover_states, **weather_states)
         flow_handler.hass = mock_hass_with_covers
 
         user_input = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.WEATHER_ENTITY_ID.value: weather_entity_id,
         }
 
         result = await flow_handler.async_step_user(user_input)
         result_dict = self._as_dict(result)
 
         # Should return form with error
-        assert result_dict["type"] == FlowResultType.FORM
-        assert result_dict["errors"]["base"] == const.ERROR_INVALID_WEATHER_ENTITY
-
-    async def test_weather_entity_not_found(
-        self,
-        flow_handler: FlowHandler,
-        mock_hass_with_covers: MagicMock,
-    ) -> None:
-        """Test config flow error when weather entity doesn't exist.
-
-        This tests the case where a user provides a weather entity ID that
-        doesn't exist in the Home Assistant state registry.
-        """
-
-        # Mock hass to return no weather entities and one cover entity
-        mock_hass_with_covers.states.get.side_effect = create_mock_state_getter(
-            **{entity_id: MagicMock(state="closed") for entity_id in [MOCK_COVER_ENTITY_ID] if entity_id.startswith("cover.")}
-        )
-        flow_handler.hass = mock_hass_with_covers
-
-        user_input = {
-            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            ConfKeys.WEATHER_ENTITY_ID.value: "weather.nonexistent",
-        }
-
-        result = await flow_handler.async_step_user(user_input)
-        result_dict = self._as_dict(result)
-
-        # Should return form with error
-        assert result_dict["type"] == FlowResultType.FORM
-        assert result_dict["errors"]["base"] == const.ERROR_INVALID_WEATHER_ENTITY
+        assert result_dict["type"] == FlowResultType.FORM, f"Expected form result for {test_description}"
+        assert result_dict["errors"]["base"] == expected_error, f"Expected {expected_error} for {test_description}"
 
     async def test_weather_entity_valid_features(
         self,

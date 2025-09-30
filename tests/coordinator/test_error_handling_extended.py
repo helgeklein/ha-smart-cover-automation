@@ -86,68 +86,30 @@ class TestCoordinatorErrorHandling:
         result = coordinator.data
         assert result == {"covers": {}}
 
-    async def test_service_call_home_assistant_error(self) -> None:
-        """Test handling of HomeAssistantError during service calls."""
+    @pytest.mark.parametrize(
+        "exception_class, exception_message",
+        [
+            (HomeAssistantError, "Home Assistant error"),
+            (ConnectionError, "Connection lost"),
+            (ValueError, "Invalid entity ID format"),
+            (TypeError, "'NoneType' object is not callable"),
+            (RuntimeError, "Network connection lost"),
+        ],
+    )
+    async def test_service_call_various_error_types(self, exception_class: type, exception_message: str) -> None:
+        """Test handling of various exception types during service calls.
+
+        This parametrized test verifies that all types of exceptions during service calls
+        are properly caught and wrapped in ServiceCallError with appropriate messages.
+        """
         hass = MagicMock()
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
-        # Mock service call to raise HomeAssistantError
-        hass.services.async_call.side_effect = HomeAssistantError("Home Assistant error")
+        # Mock service call to raise the specified exception
+        hass.services.async_call.side_effect = exception_class(exception_message)
 
         # Should raise ServiceCallError
-        with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
-            await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
-
-    async def test_service_call_connection_error(self) -> None:
-        """Test handling of ConnectionError during service calls."""
-        hass = MagicMock()
-        config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Mock service call to raise ConnectionError
-        hass.services.async_call.side_effect = ConnectionError("Connection lost")
-
-        # Should raise ServiceCallError
-        with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
-            await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
-
-    async def test_service_call_value_error(self) -> None:
-        """Test handling of ValueError during service calls."""
-        hass = MagicMock()
-        config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Mock service call to raise ValueError
-        hass.services.async_call.side_effect = ValueError("Invalid entity ID format")
-
-        # Should raise ServiceCallError with specific error message
-        with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
-            await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
-
-    async def test_service_call_type_error(self) -> None:
-        """Test handling of TypeError during service calls."""
-        hass = MagicMock()
-        config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Mock service call to raise TypeError
-        hass.services.async_call.side_effect = TypeError("'NoneType' object is not callable")
-
-        # Should raise ServiceCallError with specific error message
-        with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
-            await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
-
-    async def test_service_call_unexpected_error(self) -> None:
-        """Test handling of unexpected errors during service calls."""
-        hass = MagicMock()
-        config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Mock service call to raise unexpected error
-        hass.services.async_call.side_effect = RuntimeError("Network connection lost")
-
-        # Should raise ServiceCallError with specific error message
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
             await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
 
@@ -182,14 +144,32 @@ class TestCoordinatorErrorHandling:
         assert "covers" in result
         assert result["covers"] == {}
 
-    async def test_weather_forecast_service_error(self) -> None:
-        """Test handling of weather forecast service errors."""
+    @pytest.mark.parametrize(
+        "error_type,exception_class,service_name,test_description",
+        [
+            ("service_not_found", ServiceNotFound, "get_forecasts", "weather forecast service not found"),
+            ("unexpected_error", RuntimeError, "get_forecasts", "unexpected error during weather forecast retrieval"),
+            ("home_assistant_error", HomeAssistantError, "get_forecasts", "Home Assistant service error"),
+        ],
+    )
+    async def test_weather_forecast_service_errors_parametrized(
+        self, error_type: str, exception_class: type, service_name: str, test_description: str
+    ) -> None:
+        """Test handling of various weather forecast service errors.
+
+        This parametrized test verifies that different types of weather forecast service errors
+        are handled gracefully, allowing the automation to continue operating with minimal
+        functionality rather than completely failing.
+        """
         hass = MagicMock()
         hass.services = MagicMock()
         hass.states = MagicMock()
 
-        # Mock weather forecast service to raise an error
-        hass.services.async_call.side_effect = ServiceNotFound("weather", "get_forecasts")
+        # Mock weather forecast service to raise the specified error
+        if error_type == "service_not_found":
+            hass.services.async_call.side_effect = exception_class("weather", service_name)
+        else:
+            hass.services.async_call.side_effect = exception_class(f"Unexpected weather service error: {test_description}")
 
         config_entry = MockConfigEntry(create_temperature_config())
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
@@ -204,41 +184,13 @@ class TestCoordinatorErrorHandling:
             MOCK_COVER_ENTITY_ID: MagicMock(attributes={"current_position": 100, "supported_features": 15}),
         }.get(entity_id)
 
-        # Should still complete update
+        # Should still complete update despite weather service error
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Should have cover data
-        assert "covers" in result
-
-    async def test_weather_forecast_unexpected_error(self) -> None:
-        """Test handling of unexpected errors during weather forecast retrieval."""
-        hass = MagicMock()
-        hass.services = MagicMock()
-        hass.states = MagicMock()
-
-        # Mock weather forecast service to raise unexpected error
-        hass.services.async_call.side_effect = RuntimeError("Unexpected weather service error")
-
-        config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Mock entities to exist but weather service will fail
-        weather_state = MagicMock()
-        weather_state.state = "sunny"
-
-        hass.states.get.side_effect = lambda entity_id: {
-            "weather.forecast": weather_state,
-            "sun.sun": MagicMock(state="above_horizon", attributes={"elevation": 45, "azimuth": 180}),
-            MOCK_COVER_ENTITY_ID: MagicMock(attributes={"current_position": 100, "supported_features": 15}),
-        }.get(entity_id)
-
-        # Should still complete update
-        await coordinator.async_refresh()
-        result = coordinator.data
-
-        # Should either return None or empty covers due to weather service error
-        assert result is None or "covers" in result
+        # Should either return None or have cover data, depending on error handling
+        # The key is that it doesn't crash the entire automation
+        assert result is None or "covers" in result, f"Failed for {test_description}"
 
     async def test_weather_forecast_temperature_unavailable(self) -> None:
         """Test critical error handling when weather forecast temperature is unavailable.

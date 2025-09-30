@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 from homeassistant.const import STATE_CLOSED, STATE_CLOSING, STATE_OPEN, STATE_OPENING
 
@@ -19,24 +20,45 @@ from custom_components.smart_cover_automation.coordinator import DataUpdateCoord
 class TestGetCoverPosition:
     """Test the _get_cover_position method logic."""
 
-    def test_position_supporting_cover_with_current_position(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test position-supporting cover with valid current_position attribute."""
+    @pytest.mark.parametrize(
+        "current_position, expected_result",
+        [
+            (75, 75),  # Valid position
+            (0, 0),  # Minimum position
+            (100, 100),  # Maximum position
+            (50, 50),  # Middle position
+        ],
+    )
+    def test_position_supporting_cover_with_current_position(
+        self, coordinator: DataUpdateCoordinator, current_position: int, expected_result: int
+    ) -> None:
+        """Test position-supporting cover with various valid current_position values."""
         # Create mock state with SET_POSITION feature and current_position
         state = MagicMock()
         state.attributes = {
-            ATTR_CURRENT_POSITION: 75,
+            ATTR_CURRENT_POSITION: current_position,
         }
         features = CoverEntityFeature.SET_POSITION
 
         result = coordinator._get_cover_position("cover.test", state, features)
 
-        assert result == 75
+        assert result == expected_result
 
-    def test_position_supporting_cover_without_current_position(self, coordinator: DataUpdateCoordinator) -> None:
+    @pytest.mark.parametrize(
+        "missing_position_value",
+        [
+            None,  # None value
+            {},  # Missing attribute (empty dict)
+        ],
+    )
+    def test_position_supporting_cover_without_current_position(self, coordinator: DataUpdateCoordinator, missing_position_value) -> None:
         """Test position-supporting cover without current_position attribute."""
-        # Create mock state with SET_POSITION feature but no current_position
+        # Create mock state with SET_POSITION feature but no/invalid current_position
         state = MagicMock()
-        state.attributes = {}
+        if missing_position_value is None:
+            state.attributes = {ATTR_CURRENT_POSITION: None}
+        else:
+            state.attributes = missing_position_value
         features = CoverEntityFeature.SET_POSITION
 
         result = coordinator._get_cover_position("cover.test", state, features)
@@ -44,117 +66,71 @@ class TestGetCoverPosition:
         # Should default to fully open when current_position is missing
         assert result == const.COVER_POS_FULLY_OPEN
 
-    def test_position_supporting_cover_none_current_position(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test position-supporting cover with None current_position attribute."""
-        # Create mock state with SET_POSITION feature but None current_position
+    @pytest.mark.parametrize(
+        "cover_state, expected_position",
+        [
+            (STATE_CLOSED, const.COVER_POS_FULLY_CLOSED),
+            (STATE_OPEN, const.COVER_POS_FULLY_OPEN),
+        ],
+    )
+    def test_binary_cover_fixed_states(self, coordinator: DataUpdateCoordinator, cover_state: str, expected_position: int) -> None:
+        """Test binary cover in closed or open states."""
+        # Create mock state without SET_POSITION feature
         state = MagicMock()
-        state.attributes = {ATTR_CURRENT_POSITION: None}
-        features = CoverEntityFeature.SET_POSITION
-
-        result = coordinator._get_cover_position("cover.test", state, features)
-
-        # Should default to fully open when current_position is None
-        assert result == const.COVER_POS_FULLY_OPEN
-
-    def test_binary_cover_closed_state(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test binary cover in closed state."""
-        # Create mock state without SET_POSITION feature, state is closed
-        state = MagicMock()
-        state.state = STATE_CLOSED
+        state.state = cover_state
         state.attributes = {}
         features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
 
         result = coordinator._get_cover_position("cover.test", state, features)
 
-        assert result == const.COVER_POS_FULLY_CLOSED
+        assert result == expected_position
 
-    def test_binary_cover_open_state(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test binary cover in open state."""
-        # Create mock state without SET_POSITION feature, state is open
+    @pytest.mark.parametrize(
+        "cover_state, current_position, expected_result",
+        [
+            (STATE_CLOSING, 30, 30),  # Closing with position
+            (STATE_OPENING, 60, 60),  # Opening with position
+            ("unknown", 40, 40),  # Unknown state with position
+            ("unavailable", 25, 25),  # Unavailable state with position
+        ],
+    )
+    def test_binary_cover_transitional_states_with_position(
+        self, coordinator: DataUpdateCoordinator, cover_state: str, current_position: int, expected_result: int
+    ) -> None:
+        """Test binary cover in transitional states with current_position available."""
+        # Create mock state without SET_POSITION feature, with position
         state = MagicMock()
-        state.state = STATE_OPEN
+        state.state = cover_state
+        state.attributes = {ATTR_CURRENT_POSITION: current_position}
+        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
+
+        result = coordinator._get_cover_position("cover.test", state, features)
+
+        assert result == expected_result
+
+    @pytest.mark.parametrize(
+        "cover_state, expected_position",
+        [
+            (STATE_CLOSING, 50),  # Transitional state returns 50%
+            (STATE_OPENING, 50),  # Transitional state returns 50%
+            ("unknown", const.COVER_POS_FULLY_OPEN),  # Unknown state falls back to fully open
+            ("unavailable", const.COVER_POS_FULLY_OPEN),  # Unavailable state falls back to fully open
+        ],
+    )
+    def test_binary_cover_transitional_states_without_position(
+        self, coordinator: DataUpdateCoordinator, cover_state: str, expected_position: int
+    ) -> None:
+        """Test binary cover in transitional states without current_position."""
+        # Create mock state without SET_POSITION feature, no position
+        state = MagicMock()
+        state.state = cover_state
         state.attributes = {}
         features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
 
         result = coordinator._get_cover_position("cover.test", state, features)
 
-        assert result == const.COVER_POS_FULLY_OPEN
-
-    def test_binary_cover_closing_state_with_position(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test binary cover in closing state with current_position available."""
-        # Create mock state without SET_POSITION feature, state is closing
-        state = MagicMock()
-        state.state = STATE_CLOSING
-        state.attributes = {ATTR_CURRENT_POSITION: 30}
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        result = coordinator._get_cover_position("cover.test", state, features)
-
-        assert result == 30
-
-    def test_binary_cover_opening_state_with_position(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test binary cover in opening state with current_position available."""
-        # Create mock state without SET_POSITION feature, state is opening
-        state = MagicMock()
-        state.state = STATE_OPENING
-        state.attributes = {ATTR_CURRENT_POSITION: 60}
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        result = coordinator._get_cover_position("cover.test", state, features)
-
-        assert result == 60
-
-    def test_binary_cover_closing_state_without_position(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test binary cover in closing state without current_position."""
-        # Create mock state without SET_POSITION feature, state is closing, no position
-        state = MagicMock()
-        state.state = STATE_CLOSING
-        state.attributes = {}
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        result = coordinator._get_cover_position("cover.test", state, features)
-
-        # Should assume 50% when closing and no position available
-        assert result == 50
-
-    def test_binary_cover_opening_state_without_position(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test binary cover in opening state without current_position."""
-        # Create mock state without SET_POSITION feature, state is opening, no position
-        state = MagicMock()
-        state.state = STATE_OPENING
-        state.attributes = {}
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        result = coordinator._get_cover_position("cover.test", state, features)
-
-        # Should assume 50% when opening and no position available
-        assert result == 50
-
-    def test_binary_cover_unknown_state_with_position(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test binary cover with unknown state but current_position available."""
-        # Create mock state without SET_POSITION feature, unknown state, but has position
-        state = MagicMock()
-        state.state = "unknown"
-        state.attributes = {ATTR_CURRENT_POSITION: 40}
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        result = coordinator._get_cover_position("cover.test", state, features)
-
-        # Should fallback to current_position when state is unknown
-        assert result == 40
-
-    def test_binary_cover_unknown_state_without_position(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test binary cover with unknown state and no current_position."""
-        # Create mock state without SET_POSITION feature, unknown state, no position
-        state = MagicMock()
-        state.state = "unknown"
-        state.attributes = {}
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        result = coordinator._get_cover_position("cover.test", state, features)
-
-        # Should assume fully open as ultimate fallback
-        assert result == const.COVER_POS_FULLY_OPEN
+        # Verify expected position based on state
+        assert result == expected_position
 
     def test_binary_cover_none_state_with_position(self, coordinator: DataUpdateCoordinator) -> None:
         """Test binary cover with None state but current_position available."""

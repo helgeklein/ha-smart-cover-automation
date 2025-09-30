@@ -20,6 +20,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+import pytest
+
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
 from custom_components.smart_cover_automation.const import COVER_SFX_AZIMUTH
@@ -177,80 +179,38 @@ async def test_options_flow_direction_field_defaults_and_parsing() -> None:
     assert not isinstance(val3, (int, float))  # "west" → non-numeric fallback
 
 
-async def test_options_flow_simulation_mode_default_and_submit() -> None:
-    """Test simulation mode configuration in the options flow.
+@pytest.mark.parametrize(
+    "initial_simulation_state,expected_default,options_override,final_state,test_description",
+    [
+        (False, False, None, True, "simulation disabled by default, user enables"),
+        (True, False, False, False, "simulation in data but disabled via options"),
+        (None, False, None, True, "no initial simulation state, user enables"),
+        (True, True, None, False, "simulation enabled, user disables"),
+    ],
+)
+async def test_simulation_mode_configuration_parametrized(
+    initial_simulation_state: bool | None, expected_default: bool, options_override: bool | None, final_state: bool, test_description: str
+) -> None:
+    """Test simulation mode configuration across various scenarios.
 
-    This test verifies that simulation mode is properly included in the options form
-    with correct default values and that user input for simulation mode is correctly
-    processed and stored.
-
-    Test scenarios:
-    1. Default simulation mode state (False) appears in form
-    2. User can enable simulation mode via options form
-    3. Simulation mode setting is properly stored in config entry
+    This parametrized test verifies simulation mode handling including:
+    - Default value display in options form
+    - Options precedence over data configuration
+    - User input processing and storage
+    - Various initial configuration states
     """
-    # Start with basic configuration
-    data = {ConfKeys.COVERS.value: ["cover.living_room"]}
-    flow = OptionsFlowHandler(create_options_flow_mock_entry(data))
+    # Setup configuration based on test parameters
+    data: dict[str, Any] = {ConfKeys.COVERS.value: ["cover.test"]}
+    if initial_simulation_state is not None:
+        data[ConfKeys.SIMULATING.value] = initial_simulation_state
 
-    # First, check that simulation mode appears in the form with correct default
-    result = await flow.async_step_init()
-    result_dict = cast(dict[str, Any], result)
-    schema = result_dict["data_schema"].schema
-
-    # Verify simulation mode field is present
-    simulation_key = ConfKeys.SIMULATING.value
-    assert simulation_key in schema
-
-    # Find the voluptuous marker and check default value
-    simulation_marker = next(k for k in schema.keys() if getattr(k, "schema", None) == simulation_key)
-
-    def _resolve_default(marker: object) -> Any:
-        """Helper to resolve voluptuous default values."""
-        if hasattr(marker, "default"):
-            dv = getattr(marker, "default")
-            return dv() if callable(dv) else dv
-        return None
-
-    # Default should be False (simulation disabled)
-    assert _resolve_default(simulation_marker) is False
-
-    # Now test submitting with simulation mode enabled
-    user_input = {
-        ConfKeys.ENABLED.value: True,
-        ConfKeys.SIMULATING.value: True,  # Enable simulation mode
-        ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-        ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
-    }
-
-    result = await flow.async_step_init(user_input)
-    result_dict = cast(dict[str, Any], result)
-
-    # Verify successful submission with simulation mode enabled
-    assert result_dict["type"] == "create_entry"
-    assert result_dict["data"][ConfKeys.SIMULATING.value] is True
-
-
-async def test_options_flow_simulation_mode_with_existing_config() -> None:
-    """Test simulation mode handling when it's already configured in existing data/options.
-
-    This test verifies that existing simulation mode configuration is properly
-    read from data/options and displayed as defaults in the options form.
-    """
-    # Start with simulation mode already enabled in data
-    data = {
-        ConfKeys.COVERS.value: ["cover.test"],
-        ConfKeys.SIMULATING.value: True,
-    }
-
-    # Override with simulation disabled in options
-    options = {
-        ConfKeys.SIMULATING.value: False,
-    }
+    options: dict[str, Any] = {}
+    if options_override is not None:
+        options[ConfKeys.SIMULATING.value] = options_override
 
     flow = OptionsFlowHandler(create_options_flow_mock_entry(data, options))
 
-    # Generate form and check that options value takes precedence
+    # Check form default value
     result = await flow.async_step_init()
     result_dict = cast(dict[str, Any], result)
     schema = result_dict["data_schema"].schema
@@ -264,5 +224,20 @@ async def test_options_flow_simulation_mode_with_existing_config() -> None:
             return dv() if callable(dv) else dv
         return None
 
-    # Should use options value (False) instead of data value (True)
-    assert _resolve_default(simulation_marker) is False
+    # Verify expected default
+    assert _resolve_default(simulation_marker) is expected_default, f"Failed default check for: {test_description}"
+
+    # Submit form with final simulation state
+    user_input = {
+        ConfKeys.ENABLED.value: True,
+        ConfKeys.SIMULATING.value: final_state,
+        ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+        ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
+    }
+
+    result = await flow.async_step_init(user_input)
+    result_dict = cast(dict[str, Any], result)
+
+    # Verify successful submission with expected final state
+    assert result_dict["type"] == "create_entry"
+    assert result_dict["data"][ConfKeys.SIMULATING.value] is final_state, f"Failed final state check for: {test_description}"

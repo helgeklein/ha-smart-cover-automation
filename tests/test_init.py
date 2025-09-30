@@ -1,29 +1,37 @@
-"""Tests for the Smart Cover Automation integration lifecycle management.
+"""Tests for Smart Cover Automation integration setup, teardown, and lifecycle management.
 
-This module tests the core lifecycle management functions of the Smart Cover Automation
-integration, including setup, teardown, and reload operations. The tests validate:
+This module contains comprehensive tests for the core integration functionality
+that manages the integration's lifecycle within Home Assistant. The tests focus
+on the critical setup and teardown processes that handle configuration entry
+management, coordinator initialization, and platform registration.
 
-- Integration setup and initialization process
-- Platform setup and coordinator initialization
-- Configuration entry management and runtime data
-- Error handling during setup and teardown operations
-- Update listener configuration for dynamic reconfiguration
-- Platform unloading and cleanup procedures
-- Reload functionality for configuration changes
+Key testing areas include:
+1. **Configuration Entry Setup**: Tests successful integration loading and
+   initialization of the DataUpdateCoordinator with proper platform setup
+2. **Error Handling During Setup**: Tests graceful failure handling when
+   coordinator initialization, data refresh, or platform setup fails
+3. **Configuration Entry Unloading**: Tests proper cleanup and resource
+   release when the integration is disabled or removed
+4. **Configuration Entry Reloading**: Tests configuration reload functionality
+   when settings are changed through the options flow
 
-These lifecycle tests ensure that the integration properly integrates with Home Assistant's
-configuration entry system and handles all aspects of the integration lifecycle, from
-initial setup through runtime operation to eventual removal or reconfiguration.
+The integration lifecycle is critical because it:
+- Establishes the foundation for all automation functionality
+- Manages resource allocation and cleanup to prevent memory leaks
+- Ensures proper integration with Home Assistant's configuration system
+- Provides error handling and recovery for various failure scenarios
 
-The tests cover both successful operations and various failure scenarios to ensure
-robust error handling and graceful degradation when issues occur during setup or
-teardown operations.
+These tests ensure that the integration properly integrates with Home Assistant's
+configuration entry system and handles all lifecycle events correctly, both in
+successful scenarios and when errors occur during various phases of operation.
 """
 
 from __future__ import annotations
 
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from custom_components.smart_cover_automation import (
     async_reload_entry,
@@ -89,118 +97,118 @@ class TestIntegrationSetup:
         mock_coordinator.async_config_entry_first_refresh.assert_called_once()
         mock_hass_with_spec.config_entries.async_forward_entry_setups.assert_called_once()
 
-    async def test_setup_entry_coordinator_init_failure(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
-        """Test setup failure during coordinator initialization.
+    @pytest.mark.parametrize(
+        "failure_point, exception_type, exception_message, mock_setup",
+        [
+            (
+                "coordinator_init",
+                ValueError,
+                "Coordinator init failed",
+                lambda mock_hass, mock_entry: patch(
+                    "custom_components.smart_cover_automation.DataUpdateCoordinator",
+                    side_effect=ValueError("Coordinator init failed"),
+                ),
+            ),
+            (
+                "coordinator_refresh",
+                OSError,
+                "Refresh failed",
+                lambda mock_hass, mock_entry: (
+                    patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+                    patch("custom_components.smart_cover_automation.DataUpdateCoordinator"),
+                ),
+            ),
+            (
+                "platform_setup",
+                ImportError,
+                "Platform setup failed",
+                lambda mock_hass, mock_entry: (
+                    patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+                    patch("custom_components.smart_cover_automation.DataUpdateCoordinator"),
+                ),
+            ),
+        ],
+    )
+    async def test_setup_entry_failures(
+        self,
+        mock_hass_with_spec,
+        mock_config_entry_basic,
+        failure_point: str,
+        exception_type: type,
+        exception_message: str,
+        mock_setup,
+    ) -> None:
+        """Test setup failures at different points in the process.
 
-        Validates that the integration properly handles and reports failures that
-        occur during DataUpdateCoordinator initialization. This could happen due to:
+        This parametrized test validates that the integration properly handles and reports
+        failures that can occur at various stages of the setup process:
 
-        - Invalid configuration parameters
-        - Missing required entities or sensors
-        - Home Assistant service unavailability
-        - Resource allocation failures
+        - Coordinator initialization failures
+        - Initial data refresh failures
+        - Platform setup failures
 
-        When coordinator initialization fails, the setup should return False to
-        inform Home Assistant that the integration setup was unsuccessful.
+        Each failure type represents a different category of setup issues that could
+        prevent the integration from functioning properly.
         """
-        # Mock coordinator initialization failure
-        with patch(
-            "custom_components.smart_cover_automation.DataUpdateCoordinator",
-            side_effect=ValueError("Coordinator init failed"),
-        ):
-            # Execute setup process (should fail)
-            result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+        if failure_point == "coordinator_init":
+            # Mock coordinator initialization failure
+            with mock_setup(mock_hass_with_spec, mock_config_entry_basic):
+                result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
-        # Verify setup failure is properly reported
+        elif failure_point == "coordinator_refresh":
+            # Mock successful coordinator creation but failed initial refresh
+            patches = mock_setup(mock_hass_with_spec, mock_config_entry_basic)
+            with patches[0], patches[1] as mock_coordinator_class:
+                mock_coordinator = MagicMock()
+                mock_coordinator.async_config_entry_first_refresh = AsyncMock(side_effect=exception_type(exception_message))
+                mock_coordinator_class.return_value = mock_coordinator
+
+                result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        else:  # failure_point == "platform_setup"
+            # Mock successful coordinator setup but failed platform setup
+            mock_hass_with_spec.config_entries = MagicMock()
+            mock_hass_with_spec.config_entries.async_forward_entry_setups = AsyncMock(side_effect=exception_type(exception_message))
+
+            patches = mock_setup(mock_hass_with_spec, mock_config_entry_basic)
+            with patches[0], patches[1] as mock_coordinator_class:
+                mock_coordinator = MagicMock()
+                mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+                mock_coordinator_class.return_value = mock_coordinator
+
+                result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        # Verify setup failure is properly reported for all scenarios
         assert result is False
 
-    async def test_setup_entry_refresh_failure(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
-        """Test setup failure during initial data refresh.
+    @pytest.mark.parametrize(
+        "unload_success, expected_result",
+        [
+            (True, True),  # Successful unload
+            (False, False),  # Failed unload
+        ],
+    )
+    async def test_unload_entry_scenarios(
+        self, mock_hass_with_spec, mock_config_entry_basic, unload_success: bool, expected_result: bool
+    ) -> None:
+        """Test unload entry with different success/failure scenarios.
 
-        Validates that the integration properly handles failures during the initial
-        data refresh phase of coordinator setup. This could occur due to:
-
-        - Unavailable sensors or entities
-        - Network connectivity issues
-        - Invalid sensor data or readings
-        - Home Assistant service communication failures
-
-        When the initial refresh fails, setup should return False to prevent the
-        integration from being marked as successfully loaded when it cannot
-        actually function properly.
-        """
-        # Mock successful coordinator creation but failed initial refresh
-        with (
-            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
-            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
-        ):
-            mock_coordinator = MagicMock()
-            mock_coordinator.async_config_entry_first_refresh = AsyncMock(side_effect=OSError("Refresh failed"))
-            mock_coordinator_class.return_value = mock_coordinator
-
-            # Execute setup process (should fail at refresh)
-            result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-
-        # Verify setup failure is properly reported
-        assert result is False
-
-    async def test_setup_entry_platform_setup_failure(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
-        """Test setup failure during platform setup phase.
-
-        Validates that the integration properly handles failures during the platform
-        setup phase, where individual platforms (sensor, binary_sensor, switch) are
-        loaded and initialized. This could fail due to:
-
-        - Platform module import errors
-        - Platform initialization failures
-        - Missing dependencies or requirements
-        - Home Assistant platform registration issues
-
-        When platform setup fails, the integration should return False to indicate
-        that it could not be fully set up and should not be considered operational.
-        """
-        # Create mock Home Assistant instance with platform setup failure
-        mock_hass_with_spec.config_entries = MagicMock()
-        mock_hass_with_spec.config_entries.async_forward_entry_setups = AsyncMock(side_effect=ImportError("Platform setup failed"))
-
-        # Mock successful coordinator setup but failed platform setup
-        with (
-            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
-            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
-        ):
-            mock_coordinator = MagicMock()
-            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-            mock_coordinator_class.return_value = mock_coordinator
-
-            # Execute setup process (should fail at platform setup)
-            result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-
-        # Verify setup failure is properly reported
-        assert result is False
-
-    async def test_unload_entry_success(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
-        """Test successful unloading of a configuration entry.
-
-        Validates the proper cleanup and unloading process when a Smart Cover
-        Automation configuration entry is removed or disabled. This test ensures:
-
-        - All platforms are properly unloaded and cleaned up
-        - Resources are released and entities are removed
-        - Unload operation returns True to indicate success
-        - No lingering references or memory leaks occur
-
-        Successful unloading is important for system stability and allows users
-        to remove or reconfigure the integration without Home Assistant restart.
+        This parametrized test validates both successful and failed unload scenarios
+        to ensure the integration properly handles platform cleanup in all cases.
         """
         # Create mock Home Assistant instance with platform unloading capability
         mock_hass_with_spec.config_entries = MagicMock()
-        mock_hass_with_spec.config_entries.async_unload_platforms = AsyncMock(return_value=True)
+
+        if unload_success:
+            mock_hass_with_spec.config_entries.async_unload_platforms = AsyncMock(return_value=True)
+        else:
+            mock_hass_with_spec.config_entries.async_unload_platforms = AsyncMock(side_effect=OSError("Unload failed"))
 
         # Execute unload process
         result = await async_unload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
-        # Verify successful unloading
-        assert result is True
+        # Verify expected result
+        assert result == expected_result
         mock_hass_with_spec.config_entries.async_unload_platforms.assert_called_once()
 
     async def test_unload_entry_failure(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
