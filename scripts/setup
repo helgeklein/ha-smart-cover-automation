@@ -4,4 +4,8 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+echo "Installing core dependencies..."
 python3 -m pip install --requirement requirements.txt
+
+echo "Installing test dependencies..."
+python3 -m pip install --requirement requirements-test.txt
