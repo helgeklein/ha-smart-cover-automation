@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a dynamic coverage badge from coverage.json."""
+"""Generate a dynamic test coverage badge from coverage.json."""
 
 import json
 import sys
