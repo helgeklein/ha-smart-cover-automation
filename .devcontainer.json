@@ -19,13 +19,23 @@
                 "ms-python.vscode-pylance"
             ],
             "settings": {
+                // Testing configuration (workspace-wide)
+                "python.testing.pytestArgs": [
+                    "tests"
+                ],
+                "python.testing.unittestEnabled": false,
+                "python.testing.pytestEnabled": true,
+                "python.testing.autoTestDiscoverOnSaveEnabled": false,
+                "python.testing.pytestPath": "pytest",
+                "python.testing.cwd": "${workspaceFolder}",
+                // File handling
                 "files.eol": "\n",
                 "editor.tabSize": 4,
                 "editor.formatOnPaste": true,
                 "editor.formatOnSave": true,
                 "editor.formatOnType": false,
                 "files.trimTrailingWhitespace": true,
-                // Python/Pylance performance
+                // Python/Pylance performance (VS Code specific only)
                 "python.analysis.typeCheckingMode": "basic",
                 "python.analysis.packageIndexDepths": [
                     {

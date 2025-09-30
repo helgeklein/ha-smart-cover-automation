@@ -4,8 +4,10 @@
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    // Pylance performance optimizations
-    "python.analysis.indexing": true,
+    "python.testing.autoTestDiscoverOnSaveEnabled": false,
+    "python.testing.pytestPath": "pytest",
+    "python.testing.cwd": "${workspaceFolder}",
+    // Pylance performance optimizations (VS Code specific only)
     "python.analysis.packageIndexDepths": [
         {
             "name": "homeassistant",
@@ -13,9 +15,7 @@
             "includeAllSymbols": false
         }
     ],
-    "python.analysis.autoImportCompletions": false,
     "python.analysis.autoFormatStrings": false,
-    "python.analysis.memory.keepLibraryAst": false,
     // File watching optimizations
     "files.watcherExclude": {
         "**/__pycache__/**": true,
