@@ -1,4 +1,4 @@
 colorlog==6.9.0
-homeassistant==2025.8.2
 pip>=25.2
+-r requirements-ha.txt
 -r requirements-ruff.txt

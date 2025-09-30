@@ -7,7 +7,9 @@ cd "$(dirname "$0")/.."
 
 # Install test dependencies
 echo "Installing test dependencies..."
-python3 -m pip install -r requirements-test.txt
+# Use constraints to prevent upgrades of existing packages
+pip freeze > /tmp/constraints.txt
+python3 -m pip install -r requirements-test.txt -c /tmp/constraints.txt --quiet
 
 # Run static type checking
 echo "Running static type checking..."

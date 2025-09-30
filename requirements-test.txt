@@ -1,9 +1,13 @@
 #! Test requirements for Smart Cover Automation
 
+# Core test dependencies
 pytest>=8.0.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.0.0
-pytest-homeassistant-custom-component>=0.13.0
+
+# Home Assistant testing dependencies
+-r requirements-ha.txt
+pytest-homeassistant-custom-component==0.13.271
 
 # Static type checking
 mypy>=1.0.0
