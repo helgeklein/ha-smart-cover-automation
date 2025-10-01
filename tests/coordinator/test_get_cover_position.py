@@ -88,10 +88,10 @@ class TestGetCoverPosition:
     @pytest.mark.parametrize(
         "cover_state, current_position, expected_result",
         [
-            (STATE_CLOSING, 30, 30),  # Closing with position
-            (STATE_OPENING, 60, 60),  # Opening with position
-            ("unknown", 40, 40),  # Unknown state with position
-            ("unavailable", 25, 25),  # Unavailable state with position
+            (STATE_CLOSING, 30, const.COVER_POS_FULLY_OPEN),  # Closing defaults to fully open
+            (STATE_OPENING, 60, const.COVER_POS_FULLY_OPEN),  # Opening defaults to fully open
+            ("unknown", 40, const.COVER_POS_FULLY_OPEN),  # Unknown state defaults to fully open
+            ("unavailable", 25, const.COVER_POS_FULLY_OPEN),  # Unavailable state defaults to fully open
         ],
     )
     def test_binary_cover_transitional_states_with_position(
@@ -111,8 +111,8 @@ class TestGetCoverPosition:
     @pytest.mark.parametrize(
         "cover_state, expected_position",
         [
-            (STATE_CLOSING, 50),  # Transitional state returns 50%
-            (STATE_OPENING, 50),  # Transitional state returns 50%
+            (STATE_CLOSING, const.COVER_POS_FULLY_OPEN),  # Transitional state defaults to fully open
+            (STATE_OPENING, const.COVER_POS_FULLY_OPEN),  # Transitional state defaults to fully open
             ("unknown", const.COVER_POS_FULLY_OPEN),  # Unknown state falls back to fully open
             ("unavailable", const.COVER_POS_FULLY_OPEN),  # Unavailable state falls back to fully open
         ],
@@ -142,8 +142,8 @@ class TestGetCoverPosition:
 
         result = coordinator._get_cover_position("cover.test", state, features)
 
-        # Should fallback to current_position when state is None
-        assert result == 25
+        # Should fallback to default position when state is None
+        assert result == const.COVER_POS_FULLY_OPEN
 
     def test_binary_cover_none_state_without_position(self, coordinator: DataUpdateCoordinator) -> None:
         """Test binary cover with None state and no current_position."""
@@ -177,7 +177,7 @@ class TestGetCoverPosition:
         # Test closing state with different case
         state.state = "Closing"
         result = coordinator._get_cover_position("cover.test", state, features)
-        assert result == 50  # No position available, should default to 50%
+        assert result == const.COVER_POS_FULLY_OPEN  # No position available, should default to fully open
 
     def test_binary_cover_exception_handling_state(self, coordinator: DataUpdateCoordinator) -> None:
         """Test binary cover when state access raises exception."""
@@ -189,8 +189,8 @@ class TestGetCoverPosition:
 
         result = coordinator._get_cover_position("cover.test", state, features)
 
-        # Should fallback to current_position when state access fails
-        assert result == 35
+        # Should fallback to default position when state access fails
+        assert result == const.COVER_POS_FULLY_OPEN
 
     def test_binary_cover_exception_handling_no_fallback(self, coordinator: DataUpdateCoordinator) -> None:
         """Test binary cover when state access raises exception and no position fallback."""

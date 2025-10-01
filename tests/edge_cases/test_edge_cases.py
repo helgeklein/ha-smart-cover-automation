@@ -33,6 +33,8 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
+    COVER_ATTR_COVER_AZIMUTH,
+    COVER_ATTR_MESSAGE,
     COVER_POS_FULLY_CLOSED,
     COVER_POS_FULLY_OPEN,
     COVER_SFX_AZIMUTH,
@@ -377,9 +379,9 @@ async def test_invalid_direction_string_skips_cover_in_sun_only(
     assert result is not None, f"Coordinator should return data even with invalid cover configuration ({description})"
     assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
     cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-    assert "sca_cover_error" in cover_data, f"Expected error field for {description}"
-    assert expected_error_contains in cover_data["sca_cover_error"], (
-        f"Expected error message to contain '{expected_error_contains}' for {description}, got: {cover_data['sca_cover_error']}"
+    assert COVER_ATTR_MESSAGE in cover_data, f"Expected error field for {description}"
+    assert expected_error_contains in cover_data[COVER_ATTR_MESSAGE], (
+        f"Expected error message to contain '{expected_error_contains}' for {description}, got: {cover_data[COVER_ATTR_MESSAGE]}"
     )
 
     # Verify no cover service calls made (cover skipped, comfortable temperature)
@@ -452,6 +454,6 @@ async def test_numeric_direction_strings_are_processed(numeric_direction: str, e
 
     if expected_processed:
         # Should have azimuth as float and no error
-        assert "sca_cover_azimuth" in cover_data, f"Expected azimuth field for {description}"
-        assert isinstance(cover_data["sca_cover_azimuth"], float), f"Expected float azimuth for {description}"
-        assert "sca_cover_error" not in cover_data, f"Should not have error for valid numeric string ({description})"
+        assert COVER_ATTR_COVER_AZIMUTH in cover_data, f"Expected azimuth field for {description}"
+        assert isinstance(cover_data[COVER_ATTR_COVER_AZIMUTH], float), f"Expected float azimuth for {description}"
+        assert COVER_ATTR_MESSAGE not in cover_data, f"Should not have error for valid numeric string ({description})"

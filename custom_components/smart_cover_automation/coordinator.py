@@ -18,6 +18,8 @@ from homeassistant.const import (
     STATE_CLOSING,
     STATE_OPEN,
     STATE_OPENING,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
     Platform,
 )
 from homeassistant.exceptions import HomeAssistantError
@@ -268,36 +270,51 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Iterate over covers
         const.LOGGER.debug("Starting cover evaluation")
         for entity_id, state in states.items():
-            if state is None:
-                const.LOGGER.warning(f"[{entity_id}] Cover unavailable, skipping")
-                continue
-
-            # Get cover features (e.g., SET_POSITION), defaulting to 0
-            features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
-
-            # Get the current position
-            current_pos = self._get_cover_position(entity_id, state, features)
-
-            # Outputs to determine
-            sun_hitting: bool = False
+            # Reset the per-cover attributes
             cover_attrs: dict[str, Any] = {}
 
             # Cover azimuth
             cover_azimuth_raw = config.get(f"{entity_id}_{const.COVER_SFX_AZIMUTH}")
-            cover_azimuth: float | None = to_float_or_none(cover_azimuth_raw)
+            cover_azimuth = to_float_or_none(cover_azimuth_raw)
             if cover_azimuth is None:
-                error = f"[{entity_id}] Cover has invalid or missing azimuth (direction), skipping"
-                const.LOGGER.warning(error)
-                cover_attrs[const.COVER_ATTR_ERROR] = error
-                result[ConfKeys.COVERS.value][entity_id] = cover_attrs
+                self._skip_cover_with_error(entity_id, "Cover has invalid or missing azimuth (direction), skipping", cover_attrs, result)
+                continue
+            else:
+                cover_attrs[const.COVER_ATTR_COVER_AZIMUTH] = cover_azimuth
+
+            # Cover state
+            if state is None or state.state is None:
+                self._skip_cover_with_error(entity_id, "Cover state unavailable, skipping", cover_attrs, result)
+                continue
+            elif state.state in ("", STATE_UNAVAILABLE, STATE_UNKNOWN):
+                self._skip_cover_with_error(entity_id, f"Cover state '{state.state}' unsupported, skipping", cover_attrs, result)
+                continue
+            else:
+                cover_attrs[const.COVER_ATTR_STATE] = state.state
+
+            # Check if cover is currently moving
+            is_moving = state.state.lower() in (STATE_OPENING, STATE_CLOSING)
+            if is_moving:
+                self._skip_cover_with_error(entity_id, "Cover is currently moving, skipping", cover_attrs, result)
                 continue
 
+            # Get cover features (e.g., SET_POSITION), defaulting to 0
+            features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
+            cover_attrs[const.COVER_ATTR_SUPPORTED_FEATURES] = features
+
+            # Get the current position
+            current_pos = self._get_cover_position(entity_id, state, features)
+            cover_attrs[const.COVER_ATTR_POS_CURRENT] = current_pos
+
             # Is the sun hitting the window?
+            sun_hitting: bool = False
             sun_azimuth_difference = self._calculate_angle_difference(sun_azimuth, cover_azimuth)
             if sun_elevation >= sun_elevation_threshold:
                 sun_hitting = sun_azimuth_difference < resolved.sun_azimuth_tolerance
             else:
                 sun_hitting = False
+            cover_attrs[const.COVER_ATTR_SUN_HITTING] = sun_hitting
+            cover_attrs[const.COVER_ATTR_SUN_AZIMUTH_DIFF] = sun_azimuth_difference
 
             # Calculate the cover position
             if temp_hot and weather_sunny and sun_hitting:
@@ -306,6 +323,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             else:
                 # Open the cover (but respect min closure limit)
                 target_desired_pos = min(const.COVER_POS_FULLY_OPEN, resolved.covers_min_closure)
+            cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = target_desired_pos
 
             # Determine if cover movement is necessary
             movement_needed = False
@@ -319,31 +337,23 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
             if movement_needed:
                 try:
+                    # Move the cover
                     actual_pos = await self._set_cover_position(entity_id, target_desired_pos, features)
                     const.LOGGER.debug(f"[{entity_id}] Cover moved to position: {actual_pos}%")
                     if actual_pos is not None:
+                        # Store the position after movement
                         cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
                 except ServiceCallError as err:
                     # Log the error but continue with other covers
                     const.LOGGER.error(f"[{entity_id}] Failed to control cover: {err}")
-                    cover_attrs[const.COVER_ATTR_ERROR] = str(err)
+                    cover_attrs[const.COVER_ATTR_MESSAGE] = str(err)
                 except (ValueError, TypeError) as err:
                     # Parameter validation errors
                     error_msg = f"Invalid parameters for cover control: {err}"
                     const.LOGGER.error(f"[{entity_id}] {error_msg}")
-                    cover_attrs[const.COVER_ATTR_ERROR] = error_msg
+                    cover_attrs[const.COVER_ATTR_MESSAGE] = error_msg
 
             # Store per-cover attributes
-            cover_attrs.update(
-                {
-                    const.COVER_ATTR_COVER_AZIMUTH: cover_azimuth,
-                    const.COVER_ATTR_SUN_AZIMUTH_DIFF: sun_azimuth_difference,
-                    const.COVER_ATTR_SUN_HITTING: sun_hitting,
-                    const.COVER_ATTR_POS_CURRENT: current_pos,
-                    const.COVER_ATTR_POS_TARGET_DESIRED: target_desired_pos,
-                    const.COVER_ATTR_SUPPORTED_FEATURES: features,
-                }
-            )
             result[ConfKeys.COVERS.value][entity_id] = cover_attrs
 
             # Log per-cover attributes
@@ -448,23 +458,28 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             features: Cover's supported features bitmask
 
         Returns:
-            Current position (0-100, where 0=closed, 100=open)
+            Current position (0-100, where 0=closed, 100=open) or fully open if no position can be determined
         """
+        # Default return value
+        default_pos = const.COVER_POS_FULLY_OPEN
+
         # Check if cover supports position control
         if features & CoverEntityFeature.SET_POSITION:
             # Cover supports positioning - use current_position attribute
             current_pos = state.attributes.get(ATTR_CURRENT_POSITION)
             if current_pos is None:
-                const.LOGGER.warning(f"[{entity_id}] Cover supports positioning but has no current_position attribute, assuming fully open")
-                return const.COVER_POS_FULLY_OPEN
-
-            const.LOGGER.debug(f"[{entity_id}] Position-supporting cover at {current_pos}%")
-            return int(current_pos)
+                const.LOGGER.warning(
+                    f"[{entity_id}] Cover supports positioning but has no current_position attribute; defaulting to {default_pos}%"
+                )
+                return default_pos
+            else:
+                const.LOGGER.debug(f"[{entity_id}] Position-supporting cover at {current_pos}%")
+                return int(current_pos)
         else:
             # Binary cover - determine position from state or fallback to current_position
-            try:
-                cover_state = state.state.lower() if state.state else None
-            except (AttributeError, TypeError):
+            if state.state:
+                cover_state = state.state.lower()
+            else:
                 cover_state = None
 
             if cover_state == STATE_CLOSED:
@@ -473,26 +488,12 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             elif cover_state == STATE_OPEN:
                 const.LOGGER.debug(f"[{entity_id}] Binary cover is open (100%)")
                 return const.COVER_POS_FULLY_OPEN
-            elif cover_state in (STATE_CLOSING, STATE_OPENING):
-                # Cover is in motion - use current_position if available, otherwise assume partially open
-                current_pos = state.attributes.get(ATTR_CURRENT_POSITION)
-                if current_pos is not None:
-                    const.LOGGER.debug(f"[{entity_id}] Binary cover is {cover_state}, position from attribute: {current_pos}%")
-                    return int(current_pos)
-                else:
-                    # Assume halfway if we can't determine exact position during movement
-                    const.LOGGER.debug(f"[{entity_id}] Binary cover is {cover_state}, assuming 50% position")
-                    return 50
             else:
-                # No valid state - fallback to current_position attribute if available
-                current_pos = state.attributes.get(ATTR_CURRENT_POSITION)
-                if current_pos is not None:
-                    const.LOGGER.debug(f"[{entity_id}] Binary cover fallback to current_position: {current_pos}%")
-                    return int(current_pos)
-                else:
-                    # Ultimate fallback - assume fully open
-                    const.LOGGER.warning(f"[{entity_id}] Binary cover has no state or position info, assuming fully open")
-                    return const.COVER_POS_FULLY_OPEN
+                const.LOGGER.warning(
+                    f"[{entity_id}] Binary cover in state '{state.state}', cannot determine position; defaulting to {default_pos}%"
+                )
+
+        return default_pos
 
     # _get_weather_condition
     #
@@ -689,3 +690,29 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
         const.LOGGER.debug(f"No temperature fields found in forecast. Available fields: {list(forecast.keys())}")
         return None
+
+    #
+    # _skip_cover_with_error
+    #
+    def _skip_cover_with_error(
+        self,
+        entity_id: str,
+        error_description: str,
+        cover_attrs: dict[str, Any],
+        result: dict[str, Any],
+    ) -> None:
+        """Skip a cover due to an error and record the error details.
+
+        Consolidates the common pattern of logging an error, setting error attributes,
+        and recording the cover state in the result.
+
+        Args:
+            entity_id: The cover entity ID
+            error_description: Description of the error (without entity ID prefix)
+            cover_attrs: Cover attributes dictionary to populate
+            result: Result dictionary to update
+        """
+        message = f"[{entity_id}] {error_description}"
+        const.LOGGER.warning(message)
+        cover_attrs[const.COVER_ATTR_MESSAGE] = message
+        result[ConfKeys.COVERS.value][entity_id] = cover_attrs

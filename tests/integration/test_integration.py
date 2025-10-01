@@ -455,6 +455,7 @@ class TestIntegrationScenarios:
 
         # Smart cover with full position control capabilities
         smart_cover = MagicMock()
+        smart_cover.state = "closed"  # Add valid state
         smart_cover.attributes = {
             ATTR_CURRENT_POSITION: TEST_COVER_CLOSED,  # Currently closed, should open
             ATTR_SUPPORTED_FEATURES: 15,  # Full feature set: open, close, stop, position
@@ -462,6 +463,7 @@ class TestIntegrationScenarios:
 
         # Basic cover with only open/close capabilities (no position control)
         basic_cover = MagicMock()
+        basic_cover.state = "closed"  # Add valid state
         basic_cover.attributes = {
             ATTR_CURRENT_POSITION: TEST_COVER_CLOSED,  # Currently closed, should open
             ATTR_SUPPORTED_FEATURES: 3,  # Basic feature set: open, close only
@@ -471,6 +473,7 @@ class TestIntegrationScenarios:
         # Create a weather entity state (required even though we use service calls)
         weather_state = MagicMock()
         weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
+        weather_state.state = "sunny"  # Add valid state
 
         hass.states.get.side_effect = lambda entity_id: {
             "cover.smart": smart_cover,

@@ -17,6 +17,7 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
+    COVER_ATTR_MESSAGE,
     COVER_ATTR_SUN_HITTING,
     COVER_SFX_AZIMUTH,
     SENSOR_ATTR_TEMP_HOT,
@@ -363,8 +364,8 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
 
         # Cover 2 should have error due to missing azimuth
         cover2_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID_2]
-        assert "sca_cover_error" in cover2_data
-        assert "invalid or missing azimuth" in cover2_data["sca_cover_error"]
+        assert COVER_ATTR_MESSAGE in cover2_data
+        assert "invalid or missing azimuth" in cover2_data[COVER_ATTR_MESSAGE]
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -425,8 +426,8 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
 
         # Cover 2 should have error due to invalid azimuth
         cover2_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID_2]
-        assert "sca_cover_error" in cover2_data
-        assert "invalid or missing azimuth" in cover2_data["sca_cover_error"]
+        assert COVER_ATTR_MESSAGE in cover2_data
+        assert "invalid or missing azimuth" in cover2_data[COVER_ATTR_MESSAGE]
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]

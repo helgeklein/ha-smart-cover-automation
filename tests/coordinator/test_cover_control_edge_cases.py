@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import MagicMock
 
-from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
+from custom_components.smart_cover_automation.const import COVER_ATTR_MESSAGE, COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
@@ -120,8 +120,8 @@ class TestCoverControlEdgeCases:
         assert "covers" in result
         assert "cover.test_cover" in result["covers"]
         cover_data = result["covers"]["cover.test_cover"]
-        assert "sca_cover_error" in cover_data
-        assert "Failed to call set_cover_position for cover.test_cover" in cover_data["sca_cover_error"]
+        assert COVER_ATTR_MESSAGE in cover_data
+        assert "Failed to call set_cover_position for cover.test_cover" in cover_data[COVER_ATTR_MESSAGE]
 
     async def test_cover_service_call_type_error_during_automation(self) -> None:
         """Test TypeError handling during cover service calls in automation."""
@@ -154,8 +154,8 @@ class TestCoverControlEdgeCases:
         assert "covers" in result
         assert "cover.test_cover" in result["covers"]
         cover_data = result["covers"]["cover.test_cover"]
-        assert "sca_cover_error" in cover_data
-        assert "Failed to call set_cover_position for cover.test_cover" in cover_data["sca_cover_error"]
+        assert COVER_ATTR_MESSAGE in cover_data
+        assert "Failed to call set_cover_position for cover.test_cover" in cover_data[COVER_ATTR_MESSAGE]
 
     def test_calculate_angle_difference_edge_cases(self) -> None:
         """Test angle difference calculation with edge cases."""

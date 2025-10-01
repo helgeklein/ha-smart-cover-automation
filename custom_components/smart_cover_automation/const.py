@@ -55,13 +55,14 @@ SENSOR_ATTR_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Current value
 # Cover attribute keys (exposed on each cover entity)
 # Prefix with "sca_" to avoid potential conflicts with other integrations
 COVER_ATTR_COVER_AZIMUTH: Final[str] = "sca_cover_azimuth"  # Cover/window azimuth (°)
-COVER_ATTR_ERROR: Final[str] = "sca_cover_error"  # Whether an error occurred for this cover
+COVER_ATTR_MESSAGE: Final[str] = "sca_cover_message"  # Info or error message for this cover
 COVER_ATTR_POS_CURRENT: Final[str] = "sca_cover_pos_current"  # Current cover position
-COVER_ATTR_POS_TARGET_DESIRED: Final[str] = "sca_cover_pos_target_desired"  # Desired target cover position
-COVER_ATTR_POS_TARGET_FINAL: Final[str] = "sca_cover_pos_target_final"  # Final target position after adjustments
-COVER_ATTR_SUN_AZIMUTH_DIFF: Final[str] = "sca_sun_azimuth_diff"  # Difference between sun azimuth and cover azimuth (°)
-COVER_ATTR_SUN_HITTING: Final[str] = "sca_sun_hitting"  # Whether the sun is hitting the window
-COVER_ATTR_SUPPORTED_FEATURES: Final[str] = "sca_supported_features"  # Supported features bitmask
+COVER_ATTR_POS_TARGET_DESIRED: Final[str] = "sca_cover_pos_target_desired"  # Desired cover target cover position
+COVER_ATTR_POS_TARGET_FINAL: Final[str] = "sca_cover_pos_target_final"  # Final cover target position after adjustments
+COVER_ATTR_STATE: Final[str] = "sca_cover_state"  # Current state of the cover (e.g., 'open', 'closed', 'opening', 'closing', 'stopped')
+COVER_ATTR_SUN_AZIMUTH_DIFF: Final[str] = "sca_cover_sun_azimuth_diff"  # Difference between sun azimuth and cover azimuth (°)
+COVER_ATTR_SUN_HITTING: Final[str] = "sca_cover_sun_hitting"  # Whether the sun is hitting the window
+COVER_ATTR_SUPPORTED_FEATURES: Final[str] = "sca_cover_supported_features"  # Supported cover features bitmask
 
 # Translation keys used by config flows and tests
 ERROR_INVALID_CONFIG: Final[str] = "invalid_config"

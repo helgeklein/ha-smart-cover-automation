@@ -16,6 +16,7 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
+    COVER_ATTR_MESSAGE,
     COVER_ATTR_POS_TARGET_DESIRED,
     COVER_SFX_AZIMUTH,
     HA_WEATHER_COND_PARTCLOUDY,
@@ -231,7 +232,8 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
         config[ConfKeys.COVERS_MAX_CLOSURE.value] = max_closure
         config[ConfKeys.COVERS_MIN_CLOSURE.value] = min_closure
-        config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = TEST_DIRECT_AZIMUTH
+        config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = 180.0  # South-facing cover
+
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -244,14 +246,18 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
 
         state_mapping = create_combined_state_mock(
             sun_azimuth=sun_azimuth,
-            cover_states={MOCK_COVER_ENTITY_ID: cover_state.attributes},
         )
+        # Update the cover attributes to match the test setup
+        state_mapping[MOCK_COVER_ENTITY_ID].attributes = cover_state.attributes
         # Set the weather condition for this test case
         state_mapping[MOCK_WEATHER_ENTITY_ID].state = weather_condition
+
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         await coordinator.async_refresh()
-        cover_data = coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+
+        covers_data = coordinator.data.get(ConfKeys.COVERS.value, {})
+        cover_data = covers_data[MOCK_COVER_ENTITY_ID]
 
         assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_position, (
             f"Test case: {test_description}\n"
@@ -308,5 +314,5 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         # Cover should be present with error due to missing direction
         assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert "sca_cover_error" in cover_data
-        assert "invalid or missing azimuth" in cover_data["sca_cover_error"]
+        assert COVER_ATTR_MESSAGE in cover_data
+        assert "invalid or missing azimuth" in cover_data[COVER_ATTR_MESSAGE]

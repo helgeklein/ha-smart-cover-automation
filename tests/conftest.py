@@ -551,12 +551,14 @@ def create_combined_state_mock(
         for entity_id, attributes in cover_states.items():
             cover_mock = MagicMock()
             cover_mock.entity_id = entity_id
+            cover_mock.state = "open"  # Set a valid cover state
             cover_mock.attributes = attributes
             state_mapping[entity_id] = cover_mock
     else:
         # Add default cover
         cover_mock = MagicMock()
         cover_mock.entity_id = MOCK_COVER_ENTITY_ID
+        cover_mock.state = "open"  # Set a valid cover state
         cover_mock.attributes = {
             ATTR_CURRENT_POSITION: COVER_POS_FULLY_OPEN,
             ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION,
