@@ -20,7 +20,7 @@ from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
-from .conftest import MockConfigEntry, create_temperature_config
+from ..conftest import MockConfigEntry, create_temperature_config
 
 
 async def test_disabled_automation_config(mock_basic_hass) -> None:

@@ -27,7 +27,7 @@ from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import FlowHandler
 from custom_components.smart_cover_automation.const import DOMAIN, INTEGRATION_NAME
 
-from .conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2
+from ..conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2
 
 
 class TestConfigFlow:

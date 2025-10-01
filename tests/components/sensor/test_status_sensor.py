@@ -53,7 +53,7 @@ from custom_components.smart_cover_automation.const import (
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 
-from .conftest import (
+from ...conftest import (
     TEST_COMFORTABLE_TEMP_2,
     TEST_DIRECT_AZIMUTH,
     TEST_HIGH_ELEVATION,

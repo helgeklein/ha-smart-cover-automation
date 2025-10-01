@@ -39,7 +39,7 @@ import pytest
 from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.config import ConfKeys
 
-TRANSLATIONS_DIR = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "smart_cover_automation" / "translations"
+TRANSLATIONS_DIR = pathlib.Path(__file__).resolve().parents[2] / "custom_components" / "smart_cover_automation" / "translations"
 
 
 def _get_available_languages() -> list[str]:

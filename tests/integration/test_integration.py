@@ -37,7 +37,7 @@ from custom_components.smart_cover_automation.const import (
     HA_WEATHER_COND_SUNNY,
 )
 
-from .conftest import (
+from ..conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_SUN_ENTITY_ID,
     MOCK_WEATHER_ENTITY_ID,

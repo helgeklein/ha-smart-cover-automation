@@ -41,7 +41,7 @@ from custom_components.smart_cover_automation.const import (
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
-from .conftest import (
+from ..conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_SUN_ENTITY_ID,
     MOCK_WEATHER_ENTITY_ID,

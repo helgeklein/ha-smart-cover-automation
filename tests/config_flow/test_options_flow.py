@@ -26,7 +26,7 @@ from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
 from custom_components.smart_cover_automation.const import COVER_SFX_AZIMUTH
 
-from .conftest import create_options_flow_mock_entry
+from ..conftest import create_options_flow_mock_entry
 
 
 async def test_options_flow_form_shows_dynamic_fields() -> None:

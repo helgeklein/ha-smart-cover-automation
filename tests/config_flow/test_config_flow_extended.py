@@ -21,7 +21,7 @@ from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.config_flow import FlowHandler, OptionsFlowHandler
 
-from .conftest import (
+from ..conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_COVER_ENTITY_ID_2,
     create_mock_state_getter,
