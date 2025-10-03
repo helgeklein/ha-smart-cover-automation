@@ -67,7 +67,7 @@ class TestWeatherCondition:
         await coordinator.async_refresh()
         # Should return empty covers since weather reading fails
         result = coordinator.data
-        assert result is None or result == {"covers": {}}
+        assert result is None or result == {"covers": {}, "message": "All covers unavailable; skipping actions"}
 
     def test_get_weather_condition_direct_call(self) -> None:
         """Test _get_weather_condition method directly."""

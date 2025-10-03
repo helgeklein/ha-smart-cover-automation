@@ -47,7 +47,7 @@ from custom_components.smart_cover_automation.const import (
     SENSOR_ATTR_SUN_AZIMUTH,
     SENSOR_ATTR_SUN_ELEVATION,
     SENSOR_ATTR_SUN_ELEVATION_THRESH,
-    SENSOR_ATTR_TEMP_CURRENT,
+    SENSOR_ATTR_TEMP_CURRENT_MAX,
     SENSOR_ATTR_TEMP_THRESHOLD,
     SENSOR_KEY_AUTOMATION_STATUS,
 )
@@ -115,7 +115,7 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     # Simulate coordinator data with realistic automation scenario
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
     coordinator.data = {
-        SENSOR_ATTR_TEMP_CURRENT: 22.5,  # Current temperature reading
+        SENSOR_ATTR_TEMP_CURRENT_MAX: 22.5,  # Current temperature reading
         ConfKeys.COVERS.value: {
             "cover.one": {
                 ATTR_CURRENT_POSITION: 50,  # Current position: 50%
@@ -143,7 +143,7 @@ async def test_status_sensor_combined_summary_and_attributes() -> None:
     assert attrs[SENSOR_ATTR_COVERS_NUM_MOVED] == 1  # Covers being moved
     assert attrs[SENSOR_ATTR_COVERS_MIN_POSITION_DELTA] == 10  # Minimum position change threshold
     assert attrs[SENSOR_ATTR_TEMP_THRESHOLD] == config[ConfKeys.TEMP_THRESHOLD.value]  # Temperature threshold
-    assert attrs[SENSOR_ATTR_TEMP_CURRENT] == 22.5  # Current temperature
+    assert attrs[SENSOR_ATTR_TEMP_CURRENT_MAX] == 22.5  # Current temperature
     assert isinstance(attrs[ConfKeys.COVERS.value], dict)  # Covers data structure
 
 
@@ -273,7 +273,7 @@ async def test_status_sensor_simulation_mode_enabled() -> None:
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
     coordinator.data = {
         ConfKeys.COVERS.value: {},
-        "temp_current": 22.0,  # Comfortable temperature
+        SENSOR_ATTR_TEMP_CURRENT_MAX: 22.0,  # Comfortable temperature
     }
 
     # Verify simulation mode is reported in status summary
@@ -307,7 +307,7 @@ async def test_status_sensor_simulation_mode_disabled() -> None:
     coordinator = cast(DataUpdateCoordinator, getattr(status, "coordinator"))
     coordinator.data = {
         ConfKeys.COVERS.value: {},
-        "temp_current": 22.0,  # Comfortable temperature
+        SENSOR_ATTR_TEMP_CURRENT_MAX: 22.0,  # Comfortable temperature
     }
 
     # Verify simulation mode is NOT reported in status summary

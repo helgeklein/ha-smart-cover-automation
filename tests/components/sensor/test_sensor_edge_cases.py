@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
+from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED, SENSOR_ATTR_TEMP_CURRENT_MAX
 from custom_components.smart_cover_automation.sensor import ENTITY_DESCRIPTIONS, AutomationStatusSensor
 
 
@@ -142,7 +142,7 @@ async def test_sensor_with_valid_coordinator_data(mock_coordinator_basic) -> Non
                 COVER_ATTR_POS_TARGET_DESIRED: 75,
             }
         },
-        "temp_current": 22.5,
+        SENSOR_ATTR_TEMP_CURRENT_MAX: 22.5,
     }
     mock_coordinator_basic.last_update_success = True
 

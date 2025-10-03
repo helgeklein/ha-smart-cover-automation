@@ -57,8 +57,10 @@ class TestEdgeCases(TestDataUpdateCoordinatorBase):
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
-        assert "No covers configured; skipping actions" in caplog.text  # Error should be logged
+        assert coordinator.data == {
+            ConfKeys.COVERS.value: {},
+            "message": "No covers configured; skipping actions",
+        }  # Minimal valid state returned
 
     async def test_angle_calculation_utility(
         self,

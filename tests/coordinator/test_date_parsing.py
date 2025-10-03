@@ -181,4 +181,4 @@ class TestDateParsingEdgeCases:
         result = mock_coordinator_basic.data
 
         # Should return empty result due to missing valid temperature
-        assert result == {"covers": {}}
+        assert result == {"covers": {}, "message": "All covers unavailable; skipping actions"}

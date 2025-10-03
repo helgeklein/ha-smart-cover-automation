@@ -16,10 +16,21 @@ logger:
 """
 
 from datetime import timedelta
+from enum import Enum
 from logging import getLogger
 from typing import Final
 
 LOGGER: Final = getLogger(__package__)
+
+
+class LogSeverity(Enum):
+    """Log severity levels for structured logging."""
+
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+
 
 DOMAIN: Final = "smart_cover_automation"
 INTEGRATION_NAME: Final = "Smart Cover Automation"
@@ -40,9 +51,10 @@ SENSOR_ATTR_COVERS_MIN_CLOSURE_POS: Final[str] = "covers_min_closure_pos"  # Con
 SENSOR_ATTR_COVERS_MIN_POSITION_DELTA: Final[str] = "covers_min_position_delta"  # Config value
 SENSOR_ATTR_COVERS_NUM_MOVED: Final[str] = "covers_num_moved"  # Current value
 SENSOR_ATTR_COVERS_NUM_TOTAL: Final[str] = "covers_num_total"  # Current value
+SENSOR_ATTR_MESSAGE: Final[str] = "message"  # Info or error message for the integration
 SENSOR_ATTR_MANUAL_OVERRIDE_DURATION: Final[str] = "manual_override_duration"  # Config value
 SENSOR_ATTR_SIMULATION_ENABLED: Final[str] = "simulation_enabled"  # Config value
-SENSOR_ATTR_TEMP_CURRENT: Final[str] = "temp_current"  # Current value
+SENSOR_ATTR_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Current value
 SENSOR_ATTR_TEMP_HOT: Final[str] = "temp_hot"  # Current value
 SENSOR_ATTR_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Config value
 SENSOR_ATTR_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Current value
@@ -53,16 +65,15 @@ SENSOR_ATTR_WEATHER_ENTITY_ID: Final[str] = "weather_entity_id"  # Config value
 SENSOR_ATTR_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Current value
 
 # Cover attribute keys (exposed on each cover entity)
-# Prefix with "sca_" to avoid potential conflicts with other integrations
-COVER_ATTR_COVER_AZIMUTH: Final[str] = "sca_cover_azimuth"  # Cover/window azimuth (°)
-COVER_ATTR_MESSAGE: Final[str] = "sca_cover_message"  # Info or error message for this cover
-COVER_ATTR_POS_CURRENT: Final[str] = "sca_cover_pos_current"  # Current cover position
-COVER_ATTR_POS_TARGET_DESIRED: Final[str] = "sca_cover_pos_target_desired"  # Desired cover target cover position
-COVER_ATTR_POS_TARGET_FINAL: Final[str] = "sca_cover_pos_target_final"  # Final cover target position after adjustments
-COVER_ATTR_STATE: Final[str] = "sca_cover_state"  # Current state of the cover (e.g., 'open', 'closed', 'opening', 'closing', 'stopped')
-COVER_ATTR_SUN_AZIMUTH_DIFF: Final[str] = "sca_cover_sun_azimuth_diff"  # Difference between sun azimuth and cover azimuth (°)
-COVER_ATTR_SUN_HITTING: Final[str] = "sca_cover_sun_hitting"  # Whether the sun is hitting the window
-COVER_ATTR_SUPPORTED_FEATURES: Final[str] = "sca_cover_supported_features"  # Supported cover features bitmask
+COVER_ATTR_COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
+COVER_ATTR_MESSAGE: Final[str] = "cover_message"  # Info or error message for this cover
+COVER_ATTR_POS_CURRENT: Final[str] = "cover_pos_current"  # Current cover position
+COVER_ATTR_POS_TARGET_DESIRED: Final[str] = "cover_pos_target_desired"  # Desired cover target cover position
+COVER_ATTR_POS_TARGET_FINAL: Final[str] = "cover_pos_target_final"  # Final cover target position after adjustments
+COVER_ATTR_STATE: Final[str] = "cover_state"  # Current state of the cover (e.g., 'open', 'closed', 'opening', 'closing', 'stopped')
+COVER_ATTR_SUN_AZIMUTH_DIFF: Final[str] = "cover_sun_azimuth_diff"  # Difference between sun azimuth and cover azimuth (°)
+COVER_ATTR_SUN_HITTING: Final[str] = "cover_sun_hitting"  # Whether the sun is hitting the window
+COVER_ATTR_SUPPORTED_FEATURES: Final[str] = "cover_supported_features"  # Supported cover features bitmask
 
 # Translation keys used by config flows and tests
 ERROR_INVALID_CONFIG: Final[str] = "invalid_config"

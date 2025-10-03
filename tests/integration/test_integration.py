@@ -336,7 +336,10 @@ class TestIntegrationScenarios:
         # Should handle invalid configuration gracefully
         await coordinator.async_refresh()
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert coordinator.data == {
+            ConfKeys.COVERS.value: {},
+            "message": "No covers configured; skipping actions",
+        }  # Minimal valid state returned
 
     # Configuration validation complete
 

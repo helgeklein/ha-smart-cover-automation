@@ -26,7 +26,7 @@ from .const import (
     SENSOR_ATTR_SUN_AZIMUTH_TOLERANCE,
     SENSOR_ATTR_SUN_ELEVATION,
     SENSOR_ATTR_SUN_ELEVATION_THRESH,
-    SENSOR_ATTR_TEMP_CURRENT,
+    SENSOR_ATTR_TEMP_CURRENT_MAX,
     SENSOR_ATTR_TEMP_HOT,
     SENSOR_ATTR_TEMP_THRESHOLD,
     SENSOR_ATTR_WEATHER_ENTITY_ID,
@@ -165,7 +165,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):  # pyright: ignor
             parts.append("Simulation mode enabled")
 
         # Add temperature information if available
-        current_temp = self.coordinator.data.get(SENSOR_ATTR_TEMP_CURRENT)
+        current_temp = self.coordinator.data.get(SENSOR_ATTR_TEMP_CURRENT_MAX)
         if isinstance(current_temp, (int, float)):
             temp_threshold = resolve_entry(self.coordinator.config_entry).temp_threshold
             parts.append(f"Temp {float(current_temp):.1f}°C" + (f", threshold {temp_threshold:.1f}°C"))
@@ -226,7 +226,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):  # pyright: ignor
             # Environmental data from coordinator
             SENSOR_ATTR_SUN_AZIMUTH: self.coordinator.data.get(SENSOR_ATTR_SUN_AZIMUTH),
             SENSOR_ATTR_SUN_ELEVATION: self.coordinator.data.get(SENSOR_ATTR_SUN_ELEVATION),
-            SENSOR_ATTR_TEMP_CURRENT: self.coordinator.data.get(SENSOR_ATTR_TEMP_CURRENT),
+            SENSOR_ATTR_TEMP_CURRENT_MAX: self.coordinator.data.get(SENSOR_ATTR_TEMP_CURRENT_MAX),
             SENSOR_ATTR_TEMP_HOT: self.coordinator.data.get(SENSOR_ATTR_TEMP_HOT),
             SENSOR_ATTR_WEATHER_SUNNY: self.coordinator.data.get(SENSOR_ATTR_WEATHER_SUNNY),
         }

@@ -142,7 +142,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         UpdateFailed: For critical errors that should make entities unavailable
         """
         # Prepare minimal valid state to keep integration entities available
-        empty_result: dict[str, Any] = {ConfKeys.COVERS.value: {}}
+        error_result: dict[str, Any] = {ConfKeys.COVERS.value: {}}
 
         try:
             const.LOGGER.info("Starting cover automation update")
@@ -161,21 +161,24 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Get the configured covers
             covers = tuple(resolved.covers)
             if not covers:
-                const.LOGGER.warning("No covers configured; skipping actions")
-                return empty_result
+                message = "No covers configured; skipping actions"
+                self._log_automation_result(message, const.LogSeverity.INFO, error_result)
+                return error_result
 
             # Get the enabled state
             enabled = resolved.enabled
             if not enabled:
-                const.LOGGER.info("Automation disabled via configuration; skipping actions")
-                return empty_result
+                message = "Automation disabled via configuration; skipping actions"
+                self._log_automation_result(message, const.LogSeverity.INFO, error_result)
+                return error_result
 
             # Collect states for all configured covers
             states: dict[str, State | None] = {entity_id: self.hass.states.get(entity_id) for entity_id in covers}
             available_covers = sum(1 for s in states.values() if s is not None)
             if available_covers == 0:
-                const.LOGGER.error("All covers unavailable; skipping actions")
-                return empty_result
+                message = "All covers unavailable; skipping actions"
+                self._log_automation_result(message, const.LogSeverity.WARNING, error_result)
+                return error_result
 
             # Run the automation logic
             return await self._handle_automation(states, config)
@@ -194,7 +197,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
             # For unexpected errors, return empty result to keep entities available
             # This prevents system instability from unknown issues
-            return empty_result
+            return error_result
 
         finally:
             const.LOGGER.info("Finished cover automation update")
@@ -220,12 +223,12 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Temperature & sunshine input
         temp_threshold = resolved.temp_threshold
         weather_entity_id = resolved.weather_entity_id
-        temp_current = await self._get_max_temperature(weather_entity_id)
+        temp_max = await self._get_max_temperature(weather_entity_id)
         weather_condition = self._get_weather_condition(weather_entity_id)
 
         # Temperature above threshold?
         temp_hot = False
-        if temp_current > temp_threshold:
+        if temp_max > temp_threshold:
             temp_hot = True
 
         # Sun shining?
@@ -236,28 +239,31 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Cover settings
         covers_min_position_delta = resolved.covers_min_position_delta
 
-        # Sun input
-        sun_elevation: float | None = None
-        sun_azimuth: float | None = None
+        # Sun entity
         sun_elevation_threshold = resolved.sun_elevation_threshold
-        sun_sensor_entity_id = const.HA_SUN_ENTITY_ID
-        sun_state = self.hass.states.get(sun_sensor_entity_id)
+        sun_state = self.hass.states.get(const.HA_SUN_ENTITY_ID)
         if sun_state is None:
             # Required sun entity missing. This is a critical error.
-            raise SunSensorNotFoundError(sun_sensor_entity_id)
+            raise SunSensorNotFoundError(const.HA_SUN_ENTITY_ID)
 
-        try:
-            sun_elevation = float(sun_state.attributes.get(const.HA_SUN_ATTR_ELEVATION, 0))
-            sun_azimuth = float(sun_state.attributes.get(const.HA_SUN_ATTR_AZIMUTH, 0))
-        except (ValueError, TypeError) as err:
-            raise InvalidSensorReadingError(sun_state.entity_id, str(sun_state.state)) from err
+        # Sun azimuth & elevation
+        sun_elevation = to_float_or_none(sun_state.attributes.get(const.HA_SUN_ATTR_ELEVATION))
+        if sun_elevation is None:
+            message = "Sun elevation unavailable; skipping actions"
+            self._log_automation_result(message, const.LogSeverity.WARNING, result)
+            return result
+        sun_azimuth = to_float_or_none(sun_state.attributes.get(const.HA_SUN_ATTR_AZIMUTH, 0))
+        if sun_azimuth is None:
+            message = "Sun azimuth unavailable; skipping actions"
+            self._log_automation_result(message, const.LogSeverity.WARNING, result)
+            return result
 
         # Store sensor attributes
         result.update(
             {
                 const.SENSOR_ATTR_SUN_AZIMUTH: sun_azimuth,
                 const.SENSOR_ATTR_SUN_ELEVATION: sun_elevation,
-                const.SENSOR_ATTR_TEMP_CURRENT: temp_current,
+                const.SENSOR_ATTR_TEMP_CURRENT_MAX: temp_max,
                 const.SENSOR_ATTR_TEMP_HOT: temp_hot,
                 const.SENSOR_ATTR_WEATHER_SUNNY: weather_sunny,
             }
@@ -277,17 +283,17 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             cover_azimuth_raw = config.get(f"{entity_id}_{const.COVER_SFX_AZIMUTH}")
             cover_azimuth = to_float_or_none(cover_azimuth_raw)
             if cover_azimuth is None:
-                self._skip_cover_with_error(entity_id, "Cover has invalid or missing azimuth (direction), skipping", cover_attrs, result)
+                self._log_cover_result(entity_id, "Cover has invalid or missing azimuth (direction), skipping", cover_attrs, result)
                 continue
             else:
                 cover_attrs[const.COVER_ATTR_COVER_AZIMUTH] = cover_azimuth
 
             # Cover state
             if state is None or state.state is None:
-                self._skip_cover_with_error(entity_id, "Cover state unavailable, skipping", cover_attrs, result)
+                self._log_cover_result(entity_id, "Cover state unavailable, skipping", cover_attrs, result)
                 continue
             elif state.state in ("", STATE_UNAVAILABLE, STATE_UNKNOWN):
-                self._skip_cover_with_error(entity_id, f"Cover state '{state.state}' unsupported, skipping", cover_attrs, result)
+                self._log_cover_result(entity_id, f"Cover state '{state.state}' unsupported, skipping", cover_attrs, result)
                 continue
             else:
                 cover_attrs[const.COVER_ATTR_STATE] = state.state
@@ -295,7 +301,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Check if cover is currently moving
             is_moving = state.state.lower() in (STATE_OPENING, STATE_CLOSING)
             if is_moving:
-                self._skip_cover_with_error(entity_id, "Cover is currently moving, skipping", cover_attrs, result)
+                self._log_cover_result(entity_id, "Cover is currently moving, skipping", cover_attrs, result)
                 continue
 
             # Get cover features (e.g., SET_POSITION), defaulting to 0
@@ -692,26 +698,34 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         return None
 
     #
-    # _skip_cover_with_error
+    # _log_automation_result
     #
-    def _skip_cover_with_error(
+    def _log_automation_result(self, message: str, severity: const.LogSeverity, result: dict[str, Any]) -> None:
+        """Log and store the result of an automation run."""
+        # Log the message
+        if severity == const.LogSeverity.DEBUG:
+            const.LOGGER.debug(message)
+        elif severity == const.LogSeverity.INFO:
+            const.LOGGER.info(message)
+        elif severity == const.LogSeverity.WARNING:
+            const.LOGGER.warning(message)
+        else:
+            const.LOGGER.error(message)
+
+        # Record the message in the result
+        result[const.SENSOR_ATTR_MESSAGE] = message
+
+    #
+    # _log_cover_result
+    #
+    def _log_cover_result(
         self,
         entity_id: str,
         error_description: str,
         cover_attrs: dict[str, Any],
         result: dict[str, Any],
     ) -> None:
-        """Skip a cover due to an error and record the error details.
-
-        Consolidates the common pattern of logging an error, setting error attributes,
-        and recording the cover state in the result.
-
-        Args:
-            entity_id: The cover entity ID
-            error_description: Description of the error (without entity ID prefix)
-            cover_attrs: Cover attributes dictionary to populate
-            result: Result dictionary to update
-        """
+        """Log and store the the result for one cover."""
         message = f"[{entity_id}] {error_description}"
         const.LOGGER.warning(message)
         cover_attrs[const.COVER_ATTR_MESSAGE] = message
