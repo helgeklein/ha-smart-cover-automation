@@ -7,7 +7,7 @@ pytest-cov>=4.0.0
 
 # Home Assistant testing dependencies
 -r requirements-ha.txt
-pytest-homeassistant-custom-component==0.13.271
+pytest-homeassistant-custom-component==0.13.285
 
 # Static type checking
 mypy>=1.0.0
