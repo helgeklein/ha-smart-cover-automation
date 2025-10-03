@@ -48,7 +48,7 @@
                 "python.analysis.inlayHints.variableTypes": false,
                 "python.analysis.completeFunctionParens": false,
                 "python.defaultInterpreterPath": "/usr/local/bin/python",
-                // File watching optimizations
+                // VS Code file watching optimizations
                 "files.watcherExclude": {
                     "**/__pycache__/**": true,
                     "**/htmlcov/**": true,
@@ -58,6 +58,18 @@
                     "**/.mypy_cache/**": true,
                     "**/.pytest_cache/**": true,
                     "**/.ruff_cache/**": true
+                },
+                // Copilot Performance Optimization
+                "copilot.exclude": {
+                    "**/__pycache__/**": true,
+                    "**/htmlcov/**": true,
+                    "**/node_modules/**": true,
+                    "**/.git/**": true,
+                    "**/.mypy_cache/**": true,
+                    "**/.pytest_cache/**": true,
+                    "**/.ruff_cache/**": true,
+                    "**/build/**": true,
+                    "**/dist/**": true
                 },
                 // Python formatter
                 "[python]": {
