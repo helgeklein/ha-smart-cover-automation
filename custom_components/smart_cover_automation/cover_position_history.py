@@ -1,12 +1,24 @@
-"""Position history tracking for cover automation."""
+"""Position history tracking for cover        entry = PositionEntry(position=position, timestamp=timestamp)
+    self._entries.appendleft(entry)
+
+def get_newest_entry(self) -> PositionEntry | None:ion."""
 
 from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Iterator
 
 from . import const
+
+
+@dataclass
+class PositionEntry:
+    """A single position entry with timestamp."""
+
+    position: int | None
+    timestamp: datetime
 
 
 @dataclass
@@ -15,31 +27,48 @@ class CoverPositionHistory:
 
     def __post_init__(self) -> None:
         """Initialize the deque after the object is created."""
-        self._positions: deque[int | None] = deque(maxlen=const.COVER_POSITION_HISTORY_SIZE)
+        self._entries: deque[PositionEntry] = deque(maxlen=const.COVER_POSITION_HISTORY_SIZE)
 
-    def add_position(self, position: int | None) -> None:
-        """Add a new position to the history (newest first)."""
-        self._positions.appendleft(position)
+    def add_position(self, position: int, timestamp: datetime | None = None) -> PositionEntry:
+        """Add a new position to the history (newest first).
 
-    def get_newest(self) -> int | None:
-        """Get the newest (most recent) position."""
-        return self._positions[0] if self._positions else None
+        Args:
+            position: The cover position
+            timestamp: UTC timestamp, defaults to current UTC time if None
+
+        Returns:
+            The newly created PositionEntry that was added to the history
+        """
+        if timestamp is None:
+            timestamp = datetime.now(timezone.utc)
+
+        entry = PositionEntry(position, timestamp)
+        self._entries.appendleft(entry)
+        return entry
+
+    def get_newest_entry(self) -> PositionEntry | None:
+        """Get the newest (most recent) position entry with timestamp."""
+        return self._entries[0] if self._entries else None
 
     def get_all(self) -> list[int | None]:
         """Get all positions from newest to oldest."""
-        return list(self._positions)
+        return [entry.position for entry in self._entries]
+
+    def get_all_entries(self) -> list[PositionEntry]:
+        """Get all position entries with timestamps from newest to oldest."""
+        return list(self._entries)
 
     def __bool__(self) -> bool:
         """Return True if history contains any positions."""
-        return bool(self._positions)
+        return bool(self._entries)
 
     def __len__(self) -> int:
         """Return the number of positions in history."""
-        return len(self._positions)
+        return len(self._entries)
 
     def __iter__(self) -> Iterator[int | None]:
         """Make the object iterable to support list() conversion and direct iteration."""
-        return iter(self._positions)
+        return iter(entry.position for entry in self._entries)
 
 
 class CoverPositionHistoryManager:
@@ -49,12 +78,13 @@ class CoverPositionHistoryManager:
         """Initialize the position history manager."""
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
 
-    def update(self, entity_id: str, new_position: int | None) -> None:
+    def update(self, entity_id: str, new_position: int, timestamp: datetime | None = None) -> None:
         """Update position history for a cover, maintaining the last COVER_POSITION_HISTORY_SIZE positions.
 
         Args:
             entity_id: The cover entity ID
             new_position: The new position to add to history
+            timestamp: UTC timestamp, defaults to current UTC time if None
         """
         if entity_id not in self._cover_position_history:
             # First time seeing this cover - initialize with new history object
@@ -62,30 +92,41 @@ class CoverPositionHistoryManager:
 
         # Add the new position to the history
         history = self._cover_position_history[entity_id]
-        history.add_position(new_position)
+        newest_entry = history.add_position(new_position, timestamp)
 
-        const.LOGGER.debug(f"[{entity_id}] Updated position history: {history.get_all()} (current: {history.get_newest() or 'N/A'})")
+        # Log the updated history for debugging
+        timestamp_str = newest_entry.timestamp.isoformat()
+        current_pos = newest_entry.position
+        const.LOGGER.debug(
+            f"[{entity_id}] Updated position history: {history.get_all()} (current: {current_pos or 'N/A'} at {timestamp_str})"
+        )
 
-    def get(self, entity_id: str) -> list[int | None]:
-        """Get the position history for a cover.
-
-        Args:
-            entity_id: The cover entity ID
-
-        Returns:
-            List with all positions in order from newest to oldest
-        """
-        history = self._cover_position_history.get(entity_id)
-        return history.get_all() if history else []
-
-    def get_latest(self, entity_id: str) -> int | None:
-        """Get the latest (newest) position from the cover position history.
+    def get_entries(self, entity_id: str) -> list[PositionEntry]:
+        """Get the position history entries with timestamps for a cover.
 
         Args:
             entity_id: The cover entity ID
 
         Returns:
-            The newest position value or None if no history exists
+            List with all position entries in order from newest to oldest
         """
         history = self._cover_position_history.get(entity_id)
-        return history.get_newest() if history else None
+        if history:
+            return history.get_all_entries()
+        else:
+            return []
+
+    def get_latest_entry(self, entity_id: str) -> PositionEntry | None:
+        """Get the latest (newest) position entry with timestamp from the cover position history.
+
+        Args:
+            entity_id: The cover entity ID
+
+        Returns:
+            The newest position entry or None if no history exists
+        """
+        history = self._cover_position_history.get(entity_id)
+        if history:
+            return history.get_newest_entry()
+        else:
+            return None

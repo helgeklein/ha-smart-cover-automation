@@ -317,6 +317,22 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             current_pos = self._get_cover_position(entity_id, state, features)
             cover_attrs[const.COVER_ATTR_POS_CURRENT] = current_pos
 
+            #
+            # Check for manual override
+            #
+            # Get the last known cover position from history
+            # last_history_pos = self._cover_pos_history_mgr.get_latest(entity_id)
+            #            if last_history_pos is not None and current_pos != last_history_pos:
+            # Position has changed since last recorded position
+            #                if resolved.manual_override_duration > 0:
+            #                    last_moved = self._cover_pos_history_mgr.get_last_moved_time(entity_id)
+            #                    if last_moved is not None:
+            #                        elapsed = (datetime.now(timezone.utc) - last_moved).total_seconds() / 60.0
+            #                        if elapsed < resolved.manual_override_duration:
+            #                            message = f"Manual override active (last moved {elapsed:.1f} min ago), skipping"
+            #                            self._log_cover_result(entity_id, message, cover_attrs, result)
+            #                            continue
+
             # Is the sun hitting the window?
             sun_hitting: bool = False
             sun_azimuth_difference = self._calculate_angle_difference(sun_azimuth, cover_azimuth)
@@ -370,7 +386,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 self._cover_pos_history_mgr.update(entity_id, current_pos)
 
             # Include position history in cover attributes
-            cover_attrs[const.COVER_ATTR_POS_HISTORY] = self._cover_pos_history_mgr.get(entity_id)
+            position_entries = self._cover_pos_history_mgr.get_entries(entity_id)
+            cover_attrs[const.COVER_ATTR_POS_HISTORY] = [entry.position for entry in position_entries]
 
             # Store per-cover attributes
             result[ConfKeys.COVERS.value][entity_id] = cover_attrs
