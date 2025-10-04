@@ -104,10 +104,9 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             f"Initializing {const.INTEGRATION_NAME} coordinator: covers={tuple(resolved.covers)}, update_interval={const.UPDATE_INTERVAL}"
         )
 
-        # Initialize position history storage (non-persistent)
+        # Position history storage will be initialized lazily in _update_cover_position_history
         # Dictionary structure: {entity_id: deque()}
         # Stores the last COVER_POSITION_HISTORY_SIZE positions for each cover using a deque for efficient operations
-        self._cover_position_history: dict[str, deque[int | None]] = {}
 
         # Adjust log level if verbose logging is enabled
         try:
@@ -134,6 +133,10 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             entity_id: The cover entity ID
             new_position: The new position to add to history
         """
+        # Initialize the position history dictionary if it doesn't exist
+        if not hasattr(self, "_cover_position_history"):
+            self._cover_position_history: dict[str, deque[int | None]] = {}
+
         if entity_id not in self._cover_position_history:
             # First time seeing this cover - initialize with this position
             self._cover_position_history[entity_id] = deque([new_position], maxlen=const.COVER_POSITION_HISTORY_SIZE)
@@ -151,20 +154,21 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
     #
     # _get_cover_position_history
     #
-    def _get_cover_position_history(self, entity_id: str) -> dict[str, int | None | list[int | None]]:
+    def _get_cover_position_history(self, entity_id: str) -> list[int | None]:
         """Get the position history for a cover.
 
         Args:
             entity_id: The cover entity ID
 
         Returns:
-            Dictionary with position history using const attribute names
+            List with all posititions in order from newest to oldest
         """
+        # Return empty list if position history hasn't been initialized yet
+        if not hasattr(self, "_cover_position_history"):
+            return []
+
         history = self._cover_position_history.get(entity_id, deque())
-        history_list = list(history)  # Convert deque to list for serialization
-        return {
-            const.COVER_ATTR_POS_HISTORY_ALL: history_list,  # All positions in order from newest to oldest
-        }
+        return list(history)
 
     #
     # _async_update_data
@@ -413,8 +417,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                 self._update_cover_position_history(entity_id, current_pos)
 
             # Include position history in cover attributes
-            position_history = self._get_cover_position_history(entity_id)
-            cover_attrs[const.COVER_ATTR_POS_HISTORY_ALL] = position_history[const.COVER_ATTR_POS_HISTORY_ALL]
+            cover_attrs[const.COVER_ATTR_POS_HISTORY] = self._get_cover_position_history(entity_id)
 
             # Store per-cover attributes
             result[ConfKeys.COVERS.value][entity_id] = cover_attrs
