@@ -105,8 +105,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         )
 
         # Initialize position history storage (non-persistent)
-        # Dictionary structure: {entity_id: deque(maxlen=5)}
-        # Stores the last 5 positions for each cover using a deque for efficient operations
+        # Dictionary structure: {entity_id: deque()}
+        # Stores the last COVER_POSITION_HISTORY_SIZE positions for each cover using a deque for efficient operations
         self._cover_position_history: dict[str, deque[int | None]] = {}
 
         # Adjust log level if verbose logging is enabled
@@ -128,7 +128,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
     # _update_cover_position_history
     #
     def _update_cover_position_history(self, entity_id: str, new_position: int | None) -> None:
-        """Update position history for a cover, maintaining the last 5 positions.
+        """Update position history for a cover, maintaining the last COVER_POSITION_HISTORY_SIZE positions.
 
         Args:
             entity_id: The cover entity ID
@@ -136,7 +136,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         """
         if entity_id not in self._cover_position_history:
             # First time seeing this cover - initialize with this position
-            self._cover_position_history[entity_id] = deque([new_position], maxlen=const.POSITION_HISTORY_SIZE)
+            self._cover_position_history[entity_id] = deque([new_position], maxlen=const.COVER_POSITION_HISTORY_SIZE)
             const.LOGGER.debug(f"[{entity_id}] Initialized position history: {list(self._cover_position_history[entity_id])}")
         else:
             # Add new position to the front of the deque (most recent first)
@@ -160,11 +160,9 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         Returns:
             Dictionary with position history using const attribute names
         """
-        history = self._cover_position_history.get(entity_id, deque(maxlen=const.POSITION_HISTORY_SIZE))
+        history = self._cover_position_history.get(entity_id, deque())
         history_list = list(history)  # Convert deque to list for serialization
         return {
-            const.COVER_ATTR_POS_HISTORY_CURRENT: history_list[0] if len(history_list) > 0 else None,
-            const.COVER_ATTR_POS_HISTORY_PREVIOUS: history_list[1] if len(history_list) > 1 else None,
             const.COVER_ATTR_POS_HISTORY_ALL: history_list,  # All positions in order from newest to oldest
         }
 
@@ -416,8 +414,6 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
             # Include position history in cover attributes
             position_history = self._get_cover_position_history(entity_id)
-            cover_attrs[const.COVER_ATTR_POS_HISTORY_CURRENT] = position_history[const.COVER_ATTR_POS_HISTORY_CURRENT]
-            cover_attrs[const.COVER_ATTR_POS_HISTORY_PREVIOUS] = position_history[const.COVER_ATTR_POS_HISTORY_PREVIOUS]
             cover_attrs[const.COVER_ATTR_POS_HISTORY_ALL] = position_history[const.COVER_ATTR_POS_HISTORY_ALL]
 
             # Store per-cover attributes

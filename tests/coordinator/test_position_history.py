@@ -7,8 +7,7 @@ import pytest
 
 from custom_components.smart_cover_automation.const import (
     COVER_ATTR_POS_HISTORY_ALL,
-    COVER_ATTR_POS_HISTORY_CURRENT,
-    COVER_ATTR_POS_HISTORY_PREVIOUS,
+    COVER_POSITION_HISTORY_SIZE,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 
@@ -25,8 +24,6 @@ class TestPositionHistory:
         # Test getting history for non-existent cover
         history = coordinator._get_cover_position_history("cover.non_existent")
         assert history == {
-            COVER_ATTR_POS_HISTORY_CURRENT: None,
-            COVER_ATTR_POS_HISTORY_PREVIOUS: None,
             COVER_ATTR_POS_HISTORY_ALL: [],
         }
 
@@ -39,8 +36,6 @@ class TestPositionHistory:
         # Check history - first update should be current, no previous
         history = coordinator._get_cover_position_history("cover.test")
         assert history == {
-            COVER_ATTR_POS_HISTORY_CURRENT: 50,
-            COVER_ATTR_POS_HISTORY_PREVIOUS: None,
             COVER_ATTR_POS_HISTORY_ALL: [50],
         }
 
@@ -58,8 +53,6 @@ class TestPositionHistory:
         # Check history - should have current and previous
         history = coordinator._get_cover_position_history("cover.test")
         assert history == {
-            COVER_ATTR_POS_HISTORY_CURRENT: 70,
-            COVER_ATTR_POS_HISTORY_PREVIOUS: 30,
             COVER_ATTR_POS_HISTORY_ALL: [70, 30],
         }
 
@@ -68,32 +61,33 @@ class TestPositionHistory:
 
     @pytest.mark.asyncio
     async def test_position_history_multiple_updates(self, coordinator: DataUpdateCoordinator):
-        """Test position history with multiple updates (keeps last 5)."""
-        # Update position multiple times
-        coordinator._update_cover_position_history("cover.test", 10)
-        coordinator._update_cover_position_history("cover.test", 40)
-        coordinator._update_cover_position_history("cover.test", 80)
-        coordinator._update_cover_position_history("cover.test", 100)
-        coordinator._update_cover_position_history("cover.test", 60)
+        """Test position history with multiple updates (uses COVER_POSITION_HISTORY_SIZE limit)."""
+        # Update position multiple times - add more than the limit to test maxlen behavior
+        positions = [10, 40, 80, 100, 60]
+        for pos in positions:
+            coordinator._update_cover_position_history("cover.test", pos)
 
-        # Check history - should keep last five positions
+        # Check history - should keep last COVER_POSITION_HISTORY_SIZE positions in newest-first order
         history = coordinator._get_cover_position_history("cover.test")
+        # Take last 3 positions: [80, 100, 60] and put in newest-first order: [60, 100, 80]
+        expected_positions = [60, 100, 80]  # newest first order
+
         assert history == {
-            COVER_ATTR_POS_HISTORY_CURRENT: 60,
-            COVER_ATTR_POS_HISTORY_PREVIOUS: 100,
-            COVER_ATTR_POS_HISTORY_ALL: [60, 100, 80, 40, 10],
+            COVER_ATTR_POS_HISTORY_ALL: expected_positions,
         }
 
-        # Verify internal storage keeps last five in newest-first order
-        assert list(coordinator._cover_position_history["cover.test"]) == [60, 100, 80, 40, 10]
+        # Verify internal storage
+        assert list(coordinator._cover_position_history["cover.test"]) == expected_positions
 
         # Add one more to test maxlen behavior
         coordinator._update_cover_position_history("cover.test", 20)
         history = coordinator._get_cover_position_history("cover.test")
+
+        # Now we should have: [20, 60, 100] (newest first, 80 dropped)
+        expected_after_new = [20, 60, 100]
+
         assert history == {
-            COVER_ATTR_POS_HISTORY_CURRENT: 20,
-            COVER_ATTR_POS_HISTORY_PREVIOUS: 60,
-            COVER_ATTR_POS_HISTORY_ALL: [20, 60, 100, 80, 40],  # Oldest (10) should be dropped
+            COVER_ATTR_POS_HISTORY_ALL: expected_after_new,
         }
 
     @pytest.mark.asyncio
@@ -107,16 +101,12 @@ class TestPositionHistory:
         # Check history for first cover
         history1 = coordinator._get_cover_position_history("cover.test1")
         assert history1 == {
-            COVER_ATTR_POS_HISTORY_CURRENT: 50,
-            COVER_ATTR_POS_HISTORY_PREVIOUS: 25,
             COVER_ATTR_POS_HISTORY_ALL: [50, 25],
         }
 
         # Check history for second cover
         history2 = coordinator._get_cover_position_history("cover.test2")
         assert history2 == {
-            COVER_ATTR_POS_HISTORY_CURRENT: 75,
-            COVER_ATTR_POS_HISTORY_PREVIOUS: None,
             COVER_ATTR_POS_HISTORY_ALL: [75],
         }
 
@@ -135,8 +125,6 @@ class TestPositionHistory:
         # Should still track each update even if position is same
         history = coordinator._get_cover_position_history("cover.test")
         assert history == {
-            COVER_ATTR_POS_HISTORY_CURRENT: 60,
-            COVER_ATTR_POS_HISTORY_PREVIOUS: 60,
             COVER_ATTR_POS_HISTORY_ALL: [60, 60, 60],
         }
 
@@ -153,8 +141,6 @@ class TestPositionHistory:
         # Check history
         history = coordinator._get_cover_position_history("cover.test")
         assert history == {
-            COVER_ATTR_POS_HISTORY_CURRENT: 45,
-            COVER_ATTR_POS_HISTORY_PREVIOUS: None,
             COVER_ATTR_POS_HISTORY_ALL: [45, None],
         }
 
@@ -171,8 +157,6 @@ class TestPositionHistory:
         # Check history
         history = coordinator._get_cover_position_history("cover.test")
         assert history == {
-            COVER_ATTR_POS_HISTORY_CURRENT: 100,
-            COVER_ATTR_POS_HISTORY_PREVIOUS: 0,
             COVER_ATTR_POS_HISTORY_ALL: [100, 0],
         }
 
@@ -195,8 +179,6 @@ class TestPositionHistory:
 
         # Verify position history was updated
         history = coordinator._get_cover_position_history("cover.test")
-        assert history[COVER_ATTR_POS_HISTORY_CURRENT] == 35
-        assert history[COVER_ATTR_POS_HISTORY_PREVIOUS] is None
         assert history[COVER_ATTR_POS_HISTORY_ALL] == [35]
 
         # Set another position and update history
@@ -206,8 +188,6 @@ class TestPositionHistory:
 
         # Verify history tracks both positions
         history = coordinator._get_cover_position_history("cover.test")
-        assert history[COVER_ATTR_POS_HISTORY_CURRENT] == 85
-        assert history[COVER_ATTR_POS_HISTORY_PREVIOUS] == 35
         assert history[COVER_ATTR_POS_HISTORY_ALL] == [85, 35]
 
     @pytest.mark.asyncio
@@ -237,30 +217,28 @@ class TestPositionHistory:
 
         # Verify position history is still updated even in simulation mode
         history = coordinator._get_cover_position_history("cover.test")
-        assert history[COVER_ATTR_POS_HISTORY_CURRENT] == 65
-        assert history[COVER_ATTR_POS_HISTORY_PREVIOUS] is None
         assert history[COVER_ATTR_POS_HISTORY_ALL] == [65]
 
     @pytest.mark.asyncio
     async def test_position_history_five_position_limit(self, coordinator: DataUpdateCoordinator):
-        """Test that position history correctly maintains exactly 5 positions."""
-        # Add exactly 5 positions
-        positions = [10, 20, 30, 40, 50]
+        """Test that position history correctly maintains exactly COVER_POSITION_HISTORY_SIZE positions."""
+        # Add exactly COVER_POSITION_HISTORY_SIZE positions
+        positions = list(range(10, 10 + COVER_POSITION_HISTORY_SIZE * 10, 10))  # [10, 20, 30, ...] up to the limit
         for pos in positions:
             coordinator._update_cover_position_history("cover.test", pos)
 
-        # Verify all 5 positions are stored in newest-first order
+        # Verify all positions are stored in newest-first order
         history = coordinator._get_cover_position_history("cover.test")
-        assert history[COVER_ATTR_POS_HISTORY_ALL] == [50, 40, 30, 20, 10]
-        assert history[COVER_ATTR_POS_HISTORY_CURRENT] == 50
-        assert history[COVER_ATTR_POS_HISTORY_PREVIOUS] == 40
+        expected_all = list(reversed(positions))  # Newest first
+        assert history[COVER_ATTR_POS_HISTORY_ALL] == expected_all
 
-        # Add a 6th position - should drop the oldest
-        coordinator._update_cover_position_history("cover.test", 60)
+        # Add one more position - should drop the oldest
+        new_position = positions[-1] + 10
+        coordinator._update_cover_position_history("cover.test", new_position)
         history = coordinator._get_cover_position_history("cover.test")
-        assert history[COVER_ATTR_POS_HISTORY_ALL] == [60, 50, 40, 30, 20]  # 10 dropped
-        assert history[COVER_ATTR_POS_HISTORY_CURRENT] == 60
-        assert history[COVER_ATTR_POS_HISTORY_PREVIOUS] == 50
 
-        # Verify internal deque has exactly 5 elements
-        assert len(coordinator._cover_position_history["cover.test"]) == 5
+        expected_all_after = [new_position] + list(reversed(positions[1:]))  # Drop oldest, add newest
+        assert history[COVER_ATTR_POS_HISTORY_ALL] == expected_all_after
+
+        # Verify internal deque has exactly COVER_POSITION_HISTORY_SIZE elements
+        assert len(coordinator._cover_position_history["cover.test"]) == COVER_POSITION_HISTORY_SIZE
