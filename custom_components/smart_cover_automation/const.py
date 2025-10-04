@@ -38,6 +38,9 @@ INTEGRATION_NAME: Final = "Smart Cover Automation"
 # Per-cover configuration key suffixes
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
 
+# Position history configuration
+POSITION_HISTORY_SIZE: Final[int] = 5  # Number of positions to store in history
+
 # Cover translation keys
 COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Translation key for cover/window azimuth (°)
 
@@ -68,6 +71,9 @@ SENSOR_ATTR_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Current value
 COVER_ATTR_COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
 COVER_ATTR_MESSAGE: Final[str] = "cover_message"  # Info or error message for this cover
 COVER_ATTR_POS_CURRENT: Final[str] = "cover_pos_current"  # Current cover position
+COVER_ATTR_POS_HISTORY_CURRENT: Final[str] = "cover_pos_history_current"  # Most recent position in history
+COVER_ATTR_POS_HISTORY_PREVIOUS: Final[str] = "cover_pos_history_previous"  # Previous position in history
+COVER_ATTR_POS_HISTORY_ALL: Final[str] = "cover_pos_history_all"  # All position history (last 5 positions)
 COVER_ATTR_POS_TARGET_DESIRED: Final[str] = "cover_pos_target_desired"  # Desired cover target cover position
 COVER_ATTR_POS_TARGET_FINAL: Final[str] = "cover_pos_target_final"  # Final cover target position after adjustments
 COVER_ATTR_STATE: Final[str] = "cover_state"  # Current state of the cover (e.g., 'open', 'closed', 'opening', 'closing', 'stopped')

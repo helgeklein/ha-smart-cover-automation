@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections import deque
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -103,6 +104,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             f"Initializing {const.INTEGRATION_NAME} coordinator: covers={tuple(resolved.covers)}, update_interval={const.UPDATE_INTERVAL}"
         )
 
+        # Initialize position history storage (non-persistent)
+        # Dictionary structure: {entity_id: deque(maxlen=5)}
+        # Stores the last 5 positions for each cover using a deque for efficient operations
+        self._cover_position_history: dict[str, deque[int | None]] = {}
+
         # Adjust log level if verbose logging is enabled
         try:
             if resolved.verbose_logging:
@@ -117,6 +123,50 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
     def _resolved_settings(self) -> ResolvedConfig:
         """Return resolved settings from the config entry (options over data)."""
         return resolve_entry(self.config_entry)
+
+    #
+    # _update_cover_position_history
+    #
+    def _update_cover_position_history(self, entity_id: str, new_position: int | None) -> None:
+        """Update position history for a cover, maintaining the last 5 positions.
+
+        Args:
+            entity_id: The cover entity ID
+            new_position: The new position to add to history
+        """
+        if entity_id not in self._cover_position_history:
+            # First time seeing this cover - initialize with this position
+            self._cover_position_history[entity_id] = deque([new_position], maxlen=const.POSITION_HISTORY_SIZE)
+            const.LOGGER.debug(f"[{entity_id}] Initialized position history: {list(self._cover_position_history[entity_id])}")
+        else:
+            # Add new position to the front of the deque (most recent first)
+            # The deque will automatically remove the oldest position when it exceeds maxlen
+            history = self._cover_position_history[entity_id]
+            history.appendleft(new_position)
+
+            const.LOGGER.debug(
+                f"[{entity_id}] Updated position history: {list(history)} (current: {history[0] if history else 'N/A'}, previous: {history[1] if len(history) > 1 else 'N/A'})"
+            )
+
+    #
+    # _get_cover_position_history
+    #
+    def _get_cover_position_history(self, entity_id: str) -> dict[str, int | None | list[int | None]]:
+        """Get the position history for a cover.
+
+        Args:
+            entity_id: The cover entity ID
+
+        Returns:
+            Dictionary with position history using const attribute names
+        """
+        history = self._cover_position_history.get(entity_id, deque(maxlen=const.POSITION_HISTORY_SIZE))
+        history_list = list(history)  # Convert deque to list for serialization
+        return {
+            const.COVER_ATTR_POS_HISTORY_CURRENT: history_list[0] if len(history_list) > 0 else None,
+            const.COVER_ATTR_POS_HISTORY_PREVIOUS: history_list[1] if len(history_list) > 1 else None,
+            const.COVER_ATTR_POS_HISTORY_ALL: history_list,  # All positions in order from newest to oldest
+        }
 
     #
     # _async_update_data
@@ -349,6 +399,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     if actual_pos is not None:
                         # Store the position after movement
                         cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
+                        # Update position history for this cover
+                        self._update_cover_position_history(entity_id, actual_pos)
                 except ServiceCallError as err:
                     # Log the error but continue with other covers
                     const.LOGGER.error(f"[{entity_id}] Failed to control cover: {err}")
@@ -358,6 +410,15 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     error_msg = f"Invalid parameters for cover control: {err}"
                     const.LOGGER.error(f"[{entity_id}] {error_msg}")
                     cover_attrs[const.COVER_ATTR_MESSAGE] = error_msg
+            else:
+                # No movement - just update position history with current position
+                self._update_cover_position_history(entity_id, current_pos)
+
+            # Include position history in cover attributes
+            position_history = self._get_cover_position_history(entity_id)
+            cover_attrs[const.COVER_ATTR_POS_HISTORY_CURRENT] = position_history[const.COVER_ATTR_POS_HISTORY_CURRENT]
+            cover_attrs[const.COVER_ATTR_POS_HISTORY_PREVIOUS] = position_history[const.COVER_ATTR_POS_HISTORY_PREVIOUS]
+            cover_attrs[const.COVER_ATTR_POS_HISTORY_ALL] = position_history[const.COVER_ATTR_POS_HISTORY_ALL]
 
             # Store per-cover attributes
             result[ConfKeys.COVERS.value][entity_id] = cover_attrs
