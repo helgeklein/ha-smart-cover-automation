@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from collections import deque
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -29,6 +28,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from . import const
 from .config import ConfKeys, ResolvedConfig, resolve_entry
+from .cover_position_history import CoverPositionHistoryManager
 from .util import to_float_or_none
 
 if TYPE_CHECKING:
@@ -99,14 +99,14 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             config_entry=config_entry,
         )
         self.config_entry = config_entry
+
+        # Initialize position history manager
+        self._cover_pos_history_mgr = CoverPositionHistoryManager()
+
         resolved = resolve_entry(config_entry)
         const.LOGGER.info(
             f"Initializing {const.INTEGRATION_NAME} coordinator: covers={tuple(resolved.covers)}, update_interval={const.UPDATE_INTERVAL}"
         )
-
-        # Position history storage will be initialized lazily in _update_cover_position_history
-        # Dictionary structure: {entity_id: deque()}
-        # Stores the last COVER_POSITION_HISTORY_SIZE positions for each cover using a deque for efficient operations
 
         # Adjust log level if verbose logging is enabled
         try:
@@ -122,53 +122,6 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
     def _resolved_settings(self) -> ResolvedConfig:
         """Return resolved settings from the config entry (options over data)."""
         return resolve_entry(self.config_entry)
-
-    #
-    # _update_cover_position_history
-    #
-    def _update_cover_position_history(self, entity_id: str, new_position: int | None) -> None:
-        """Update position history for a cover, maintaining the last COVER_POSITION_HISTORY_SIZE positions.
-
-        Args:
-            entity_id: The cover entity ID
-            new_position: The new position to add to history
-        """
-        # Initialize the position history dictionary if it doesn't exist
-        if not hasattr(self, "_cover_position_history"):
-            self._cover_position_history: dict[str, deque[int | None]] = {}
-
-        if entity_id not in self._cover_position_history:
-            # First time seeing this cover - initialize with this position
-            self._cover_position_history[entity_id] = deque([new_position], maxlen=const.COVER_POSITION_HISTORY_SIZE)
-            const.LOGGER.debug(f"[{entity_id}] Initialized position history: {list(self._cover_position_history[entity_id])}")
-        else:
-            # Add new position to the front of the deque (most recent first)
-            # The deque will automatically remove the oldest position when it exceeds maxlen
-            history = self._cover_position_history[entity_id]
-            history.appendleft(new_position)
-
-            const.LOGGER.debug(
-                f"[{entity_id}] Updated position history: {list(history)} (current: {history[0] if history else 'N/A'}, previous: {history[1] if len(history) > 1 else 'N/A'})"
-            )
-
-    #
-    # _get_cover_position_history
-    #
-    def _get_cover_position_history(self, entity_id: str) -> list[int | None]:
-        """Get the position history for a cover.
-
-        Args:
-            entity_id: The cover entity ID
-
-        Returns:
-            List with all posititions in order from newest to oldest
-        """
-        # Return empty list if position history hasn't been initialized yet
-        if not hasattr(self, "_cover_position_history"):
-            return []
-
-        history = self._cover_position_history.get(entity_id, deque())
-        return list(history)
 
     #
     # _async_update_data
@@ -402,7 +355,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                         # Store the position after movement
                         cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
                         # Update position history for this cover
-                        self._update_cover_position_history(entity_id, actual_pos)
+                        self._cover_pos_history_mgr.update(entity_id, actual_pos)
                 except ServiceCallError as err:
                     # Log the error but continue with other covers
                     const.LOGGER.error(f"[{entity_id}] Failed to control cover: {err}")
@@ -414,10 +367,10 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     cover_attrs[const.COVER_ATTR_MESSAGE] = error_msg
             else:
                 # No movement - just update position history with current position
-                self._update_cover_position_history(entity_id, current_pos)
+                self._cover_pos_history_mgr.update(entity_id, current_pos)
 
             # Include position history in cover attributes
-            cover_attrs[const.COVER_ATTR_POS_HISTORY] = self._get_cover_position_history(entity_id)
+            cover_attrs[const.COVER_ATTR_POS_HISTORY] = self._cover_pos_history_mgr.get(entity_id)
 
             # Store per-cover attributes
             result[ConfKeys.COVERS.value][entity_id] = cover_attrs
@@ -747,11 +700,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             "temphigh",  # Alternative naming used by some integrations
         ]
 
-        for field in temp_fields:
-            if field in forecast:
-                temp_value = forecast[field]
+        for field_name in temp_fields:
+            if field_name in forecast:
+                temp_value = forecast[field_name]
                 if isinstance(temp_value, (int, float)):
-                    const.LOGGER.debug(f"Extracted temperature from field '{field}': {temp_value}°C")
+                    const.LOGGER.debug(f"Extracted temperature from field '{field_name}': {temp_value}°C")
                     return float(temp_value)
 
         const.LOGGER.debug(f"No temperature fields found in forecast. Available fields: {list(forecast.keys())}")
