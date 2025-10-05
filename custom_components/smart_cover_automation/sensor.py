@@ -62,6 +62,7 @@ ENTITY_DESCRIPTIONS = (
     SensorEntityDescription(
         key=SENSOR_KEY_AUTOMATION_STATUS,
         icon="mdi:information-outline",
+        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
     ),
 )
 
@@ -113,7 +114,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):  # pyright: ignor
         """Initialize the automation status sensor."""
         super().__init__(coordinator)
         self.entity_description = entity_description
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}-{entity_description.key}"
+        self._attr_unique_id = entity_description.key
 
     # Note: We inherit the 'available' property from IntegrationEntity/CoordinatorEntity
     # which provides the correct coordinator-based availability logic.

@@ -5,8 +5,12 @@
                 "title": "Smart Cover Automation",
                 "description": "自动窗帘/百叶窗控制系统。文档：https://helgeklein.github.io/ha-smart-cover-automation/。",
                 "data": {
-                    "covers": "要自动化的窗帘",
-                    "weather_entity_id": "天气预报传感器"
+                    "covers": "要自动化的窗帘:",
+                    "weather_entity_id": "天气预报传感器:"
+                },
+                "data_description": {
+                    "covers": "选择自动化系统应控制的窗帘/百叶窗（必需）。",
+                    "weather_entity_id": "选择支持每日预报的天气实体（必需）。"
                 }
             }
         },
@@ -14,9 +18,6 @@
             "invalid_cover": "一个或多个选定的窗帘/百叶窗无效或不可用。",
             "invalid_weather_entity": "所选的天气实体不支持每日预报。",
             "invalid_config": "配置无效。"
-        },
-        "abort": {
-            "single_instance_allowed": "此集成只能配置一个实例"
         }
     },
     "options": {
@@ -25,29 +26,30 @@
                 "title": "Smart Cover Automation 配置",
                 "description": "调整设置",
                 "data": {
-                    "cover_azimuth": "**{cover_name}** 方位角",
-                    "covers": "要自动化的窗帘",
-                    "covers_max_closure": "窗帘最大关闭位置",
-                    "covers_min_closure": "窗帘最小关闭位置",
-                    "enabled": "启用自动化",
-                    "manual_override_duration": "手动覆盖持续时间",
-                    "simulating": "模拟模式",
-                    "sun_azimuth_tolerance": "太阳方位角容差",
-                    "sun_elevation_threshold": "最小太阳高度角",
-                    "temp_threshold": "温度阈值",
-                    "verbose_logging": "详细日志记录",
-                    "weather_entity_id": "天气预报传感器"
+                    "cover_azimuth": "**{cover_name}** 方位角:",
+                    "covers": "要自动化的窗帘:",
+                    "covers_max_closure": "窗帘最大关闭位置:",
+                    "covers_min_closure": "窗帘最小关闭位置:",
+                    "enabled": "启用自动化:",
+                    "manual_override_duration": "手动覆盖持续时间:",
+                    "simulating": "模拟模式:",
+                    "sun_azimuth_tolerance": "太阳方位角容差:",
+                    "sun_elevation_threshold": "最小太阳高度角:",
+                    "temp_threshold": "温度阈值:",
+                    "verbose_logging": "详细日志记录:",
+                    "weather_entity_id": "天气预报传感器:"
                 },
                 "data_description": {
                     "cover_azimuth": "窗户面向的方向（0°=北，90°=东，等等）。用于计算太阳是否照射在窗户上。",
-                    "covers": "选择自动化系统应控制的窗帘/百叶窗。",
+                    "covers": "选择自动化系统应控制的窗帘/百叶窗（必需）。",
                     "covers_max_closure": "永远不要关闭超过此位置，以始终让一些光线进入（0 = 完全关闭，100 = 完全打开）。",
                     "covers_min_closure": "永远不要打开超过此位置，以始终提供最小的遮阴（0 = 完全关闭，100 = 完全打开）。",
                     "manual_override_duration": "手动移动窗帘后跳过多长时间（0 = 不跳过）。",
                     "simulating": "如果启用，自动化系统将执行所有计算但不会实际移动窗帘。",
                     "sun_azimuth_tolerance": "太阳被认为照射在窗户上的最大水平角度（度数）。",
                     "sun_elevation_threshold": "当太阳高度角超过此阈值时，自动化系统开始运行（地平线以上的度数）。",
-                    "temp_threshold": "自动化系统仅在炎热天气下运行，即预测的日最高温度超过此阈值时（°C）。"
+                    "temp_threshold": "自动化系统仅在炎热天气下运行，即预测的日最高温度超过此阈值时（°C）。",
+                    "weather_entity_id": "选择支持每日预报的天气实体（必需）。"
                 }
             }
         }
@@ -59,8 +61,13 @@
             }
         },
         "binary_sensor": {
+            "health_status": {
+                "name": "健康状态"
+            }
+        },
+        "switch": {
             "smart_cover_automation": {
-                "name": "Smart Cover Automation 可用性"
+                "name": "已启用"
             }
         }
     }

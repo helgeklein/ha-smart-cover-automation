@@ -5,8 +5,12 @@
                 "title": "Smart Cover Automation",
                 "description": "Automatyczne sterowanie roletami/żaluzjami okiennymi. Dokumentacja: https://helgeklein.github.io/ha-smart-cover-automation/.",
                 "data": {
-                    "covers": "Rolety do automatyzacji",
-                    "weather_entity_id": "Czujnik prognozy pogody"
+                    "covers": "Rolety do automatyzacji:",
+                    "weather_entity_id": "Czujnik prognozy pogody:"
+                },
+                "data_description": {
+                    "covers": "Wybierz rolety/żaluzje, którymi ma sterować automatyzacja (wymagane).",
+                    "weather_entity_id": "Wybierz jednostkę pogodową, która obsługuje prognozy dzienne (wymagane)."
                 }
             }
         },
@@ -14,9 +18,6 @@
             "invalid_cover": "Jedna lub więcej wybranych rolet/żaluzji jest nieprawidłowych lub niedostępnych.",
             "invalid_weather_entity": "Wybrana jednostka pogodowa nie obsługuje prognoz dziennych.",
             "invalid_config": "Nieprawidłowa konfiguracja."
-        },
-        "abort": {
-            "single_instance_allowed": "Można skonfigurować tylko jedną instancję tej integracji"
         }
     },
     "options": {
@@ -25,29 +26,30 @@
                 "title": "Konfiguracja Smart Cover Automation",
                 "description": "Dostosuj ustawienia",
                 "data": {
-                    "cover_azimuth": "Azymut **{cover_name}**",
-                    "covers": "Rolety do automatyzacji",
-                    "covers_max_closure": "Maksymalna pozycja zamknięcia rolet",
-                    "covers_min_closure": "Minimalna pozycja zamknięcia rolet",
-                    "enabled": "Włącz automatyzację",
-                    "manual_override_duration": "Czas ręcznego zastąpienia",
-                    "simulating": "Tryb symulacji",
-                    "sun_azimuth_tolerance": "Tolerancja azymutu słonecznego",
-                    "sun_elevation_threshold": "Minimalna wysokość słońca",
-                    "temp_threshold": "Próg temperatury",
-                    "verbose_logging": "Szczegółowe logowanie",
-                    "weather_entity_id": "Czujnik prognozy pogody"
+                    "cover_azimuth": "Azymut **{cover_name}**:",
+                    "covers": "Rolety do automatyzacji:",
+                    "covers_max_closure": "Maksymalna pozycja zamknięcia rolet:",
+                    "covers_min_closure": "Minimalna pozycja zamknięcia rolet:",
+                    "enabled": "Włącz automatyzację:",
+                    "manual_override_duration": "Czas ręcznego zastąpienia:",
+                    "simulating": "Tryb symulacji:",
+                    "sun_azimuth_tolerance": "Tolerancja azymutu słonecznego:",
+                    "sun_elevation_threshold": "Minimalna wysokość słońca:",
+                    "temp_threshold": "Próg temperatury:",
+                    "verbose_logging": "Szczegółowe logowanie:",
+                    "weather_entity_id": "Czujnik prognozy pogody:"
                 },
                 "data_description": {
                     "cover_azimuth": "Kierunek, w którym zwrócone jest okno (0°=Północ, 90°=Wschód, itp.). Używane do obliczenia, czy słońce świeci na okno.",
-                    "covers": "Wybierz rolety/żaluzje, którymi ma sterować automatyzacja.",
+                    "covers": "Wybierz rolety/żaluzje, którymi ma sterować automatyzacja (wymagane).",
                     "covers_max_closure": "Nigdy nie zamykaj bardziej niż to, aby zawsze wpuścić trochę światła (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
                     "covers_min_closure": "Nigdy nie otwieraj bardziej niż to, aby zawsze zapewnić minimum cienia (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
                     "manual_override_duration": "Jak długo pomijać roletę po tym, jak została przesunięta ręcznie (0 = nie pomijaj).",
                     "simulating": "Jeśli włączone, automatyzacja wykonuje wszystkie obliczenia bez rzeczywistego przesuwania rolet.",
                     "sun_azimuth_tolerance": "Maksymalny kąt poziomy, przy którym słońce jest uważane za świecące na okno (stopnie).",
                     "sun_elevation_threshold": "Automatyzacja zaczyna działać, gdy wysokość słońca przekracza ten próg (stopnie nad horyzontem).",
-                    "temp_threshold": "Automatyzacja działa tylko w gorące dni, tj. gdy prognozowana maksymalna temperatura dzienna przekracza ten próg (°C)."
+                    "temp_threshold": "Automatyzacja działa tylko w gorące dni, tj. gdy prognozowana maksymalna temperatura dzienna przekracza ten próg (°C).",
+                    "weather_entity_id": "Wybierz jednostkę pogodową, która obsługuje prognozy dzienne (wymagane)."
                 }
             }
         }
@@ -59,8 +61,13 @@
             }
         },
         "binary_sensor": {
+            "health_status": {
+                "name": "Stan Zdrowia"
+            }
+        },
+        "switch": {
             "smart_cover_automation": {
-                "name": "Dostępność Smart Cover Automation"
+                "name": "Włączone"
             }
         }
     }

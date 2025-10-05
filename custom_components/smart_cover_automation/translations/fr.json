@@ -5,8 +5,12 @@
                 "title": "Smart Cover Automation",
                 "description": "Contrôle automatique des volets et stores. Documentation : https://helgeklein.github.io/ha-smart-cover-automation/",
                 "data": {
-                    "covers": "Volets à automatiser",
-                    "weather_entity_id": "Capteur de prévisions météorologiques"
+                    "covers": "Volets à automatiser :",
+                    "weather_entity_id": "Capteur de prévisions météo :"
+                },
+                "data_description": {
+                    "covers": "Sélectionnez les volets/stores que l'automatisation doit contrôler (requis).",
+                    "weather_entity_id": "Sélectionnez une entité météorologique qui prend en charge les prévisions quotidiennes (requis)."
                 }
             }
         },
@@ -14,9 +18,6 @@
             "invalid_cover": "Un ou plusieurs volets/stores sélectionnés sont invalides ou indisponibles.",
             "invalid_weather_entity": "L'entité météorologique sélectionnée ne prend pas en charge les prévisions quotidiennes.",
             "invalid_config": "Configuration invalide."
-        },
-        "abort": {
-            "single_instance_allowed": "Une seule instance de cette intégration peut être configurée"
         }
     },
     "options": {
@@ -25,29 +26,30 @@
                 "title": "Configuration Smart Cover Automation",
                 "description": "Ajuster les paramètres",
                 "data": {
-                    "cover_azimuth": "Azimut de **{cover_name}**",
-                    "covers": "Volets à automatiser",
-                    "covers_max_closure": "Position de fermeture maximale des volets",
-                    "covers_min_closure": "Position de fermeture minimale des volets",
-                    "enabled": "Activer l'automatisation",
-                    "manual_override_duration": "Durée de dérogation manuelle",
-                    "simulating": "Mode simulation",
-                    "sun_azimuth_tolerance": "Tolérance d'azimut solaire",
-                    "sun_elevation_threshold": "Élévation solaire minimale",
-                    "temp_threshold": "Seuil de température",
-                    "verbose_logging": "Journalisation détaillée",
-                    "weather_entity_id": "Capteur de prévisions météorologiques"
+                    "cover_azimuth": "Azimut de **{cover_name}** :",
+                    "covers": "Volets à automatiser :",
+                    "covers_max_closure": "Position de fermeture maximale des volets :",
+                    "covers_min_closure": "Position de fermeture minimale des volets :",
+                    "enabled": "Activer l'automatisation :",
+                    "manual_override_duration": "Durée de dérogation manuelle :",
+                    "simulating": "Mode simulation :",
+                    "sun_azimuth_tolerance": "Tolérance d'azimut du soleil :",
+                    "sun_elevation_threshold": "Élévation minimale du soleil :",
+                    "temp_threshold": "Seuil de température :",
+                    "verbose_logging": "Journalisation détaillée :",
+                    "weather_entity_id": "Capteur de prévisions météo :"
                 },
                 "data_description": {
                     "cover_azimuth": "Direction vers laquelle la fenêtre est orientée (0°=Nord, 90°=Est, etc.). Utilisé pour calculer si le soleil frappe la fenêtre.",
-                    "covers": "Sélectionnez les volets/stores que l'automatisation doit contrôler.",
+                    "covers": "Sélectionnez les volets/stores que l'automatisation doit contrôler (requis).",
                     "covers_max_closure": "Ne jamais fermer plus que cela pour toujours laisser entrer un peu de lumière (0 = complètement fermé, 100 = complètement ouvert).",
                     "covers_min_closure": "Ne jamais ouvrir plus que cela pour toujours fournir un minimum d'ombre (0 = complètement fermé, 100 = complètement ouvert).",
                     "manual_override_duration": "Combien de temps ignorer un volet après qu'il ait été déplacé manuellement (0 = pas d'ignorance).",
                     "simulating": "Si activé, l'automatisation effectue tous les calculs sans réellement déplacer les volets.",
                     "sun_azimuth_tolerance": "Angle horizontal maximal auquel le soleil est considéré comme brillant sur la fenêtre (degrés).",
                     "sun_elevation_threshold": "L'automatisation commence à fonctionner lorsque l'élévation du soleil est supérieure à ce seuil (degrés au-dessus de l'horizon).",
-                    "temp_threshold": "L'automatisation ne fonctionne que lors des journées chaudes, c'est-à-dire si la température maximale quotidienne prévue est supérieure à ce seuil (°C)."
+                    "temp_threshold": "L'automatisation ne fonctionne que lors des journées chaudes, c'est-à-dire si la température maximale quotidienne prévue est supérieure à ce seuil (°C).",
+                    "weather_entity_id": "Sélectionnez une entité météorologique qui prend en charge les prévisions quotidiennes (requis)."
                 }
             }
         }
@@ -59,8 +61,13 @@
             }
         },
         "binary_sensor": {
+            "health_status": {
+                "name": "État de Santé"
+            }
+        },
+        "switch": {
             "smart_cover_automation": {
-                "name": "Disponibilité Smart Cover Automation"
+                "name": "Activé"
             }
         }
     }

@@ -274,41 +274,34 @@ class TestConfigFlow:
         flow_handler: FlowHandler,
         mock_hass_with_covers: MagicMock,
     ) -> None:
-        """Test unique ID generation for integration configuration entries.
+        """Test that config flow works properly without requiring unique ID generation.
 
-        Validates that the config flow generates stable, unique identifiers for
-        each integration instance. The unique ID system prevents duplicate
-        configurations and enables proper configuration entry management.
+        Since the integration now uses manifest-based single instance enforcement
+        via the 'single_config_entry' property, the config flow itself no longer
+        needs to manage unique IDs directly. This test validates that the flow
+        operates correctly with this simplified approach.
 
         This test verifies:
-        - A valid UUID is generated and set as the unique ID
-        - The unique ID is independent of cover entity order or configuration
-        - The UUID follows proper formatting standards
-        - The flow calls appropriate Home Assistant unique ID methods
+        - Config flow completes successfully without unique ID generation
+        - The flow creates entries normally when no duplicate enforcement is needed
+        - The configuration validation works as expected
         """
         flow_handler.hass = mock_hass_with_covers
 
-        # Create user input with covers in different order to test UUID stability
+        # Create user input with covers in different order to test stability
         user_input = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID_2, MOCK_COVER_ENTITY_ID],  # Unsorted
             ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
         }
 
-        # Mock unique ID operations to capture generated values
-        with (
-            patch.object(flow_handler, "async_set_unique_id") as mock_set_id,
-            patch.object(flow_handler, "_abort_if_unique_id_configured"),
-        ):
-            await flow_handler.async_step_user(user_input)
+        # Execute the config flow
+        result = await flow_handler.async_step_user(user_input)
+        result_dict = self._as_dict(result)
 
-        # Verify unique ID was generated and follows UUID format
-        args, _ = mock_set_id.call_args
-        assert len(args) == 1
-        uid = args[0]
-        import uuid as _uuid
-
-        # Validate it's a properly formatted UUID string
-        _uuid.UUID(uid)
+        # Verify the flow completes successfully
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        assert result_dict["title"] == "Smart Cover Automation"
+        assert result_dict["data"] == user_input
 
     async def test_version_and_domain(
         self,
@@ -331,29 +324,37 @@ class TestConfigFlow:
         assert flow_handler.domain == DOMAIN
 
     async def test_single_instance_allowed_abort(self, flow_handler: FlowHandler) -> None:
-        """Test single instance enforcement prevents duplicate configurations.
+        """Test single instance enforcement through manifest configuration.
 
-        Validates that the Smart Cover Automation integration correctly enforces
-        the single instance limitation. Home Assistant allows integrations to
-        restrict themselves to one configuration entry, which is appropriate
-        for system-wide automation integrations like this one.
+        Validates that the Smart Cover Automation integration uses manifest-based
+        single instance enforcement via the 'single_config_entry' property in
+        manifest.json. This is the proper Home Assistant way to restrict integrations
+        to one configuration entry.
 
         This test verifies:
-        - When an existing configuration entry is present, new config flows abort
-        - The abort reason is properly set to "single_instance_allowed"
-        - The flow prevents users from creating duplicate configurations
-        - Existing configurations are properly detected
+        - The config flow itself doesn't need to handle single instance logic
+        - The flow operates normally when called directly
+        - Single instance enforcement is delegated to Home Assistant's flow manager
+        - The manifest.json contains the required 'single_config_entry: true' property
         """
         # Provide Home Assistant instance for proper flow operation
         flow_handler.hass = MagicMock()
 
-        # Simulate existing configuration entry to trigger single instance check
-        flow_handler._async_current_entries = MagicMock(return_value=[MagicMock()])  # type: ignore[attr-defined]
-
-        # Attempt to start new configuration flow
+        # The config flow should operate normally since single instance enforcement
+        # is handled at the manifest level by Home Assistant's flow manager
         result = await flow_handler.async_step_user(None)
         result_dict = self._as_dict(result)
 
-        # Verify flow aborts with single instance restriction
-        assert result_dict["type"] == FlowResultType.ABORT
-        assert result_dict["reason"] == "single_instance_allowed"
+        # Verify flow shows the configuration form normally
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "user"
+
+        # Verify that the manifest.json contains single_config_entry property
+        import json
+        from pathlib import Path
+
+        manifest_path = Path(__file__).parent.parent.parent / "custom_components" / "smart_cover_automation" / "manifest.json"
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+
+        assert manifest.get("single_config_entry") is True, "manifest.json must contain 'single_config_entry: true'"

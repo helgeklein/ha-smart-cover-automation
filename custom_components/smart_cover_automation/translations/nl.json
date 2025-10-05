@@ -5,8 +5,12 @@
                 "title": "Smart Cover Automation",
                 "description": "Automatische rolluik- en jaloeziebediening. Documentatie: https://helgeklein.github.io/ha-smart-cover-automation/",
                 "data": {
-                    "covers": "Rolluiken om te automatiseren",
-                    "weather_entity_id": "Weersvoorspelling sensor"
+                    "covers": "Rolluiken om te automatiseren:",
+                    "weather_entity_id": "Weersvoorspelling sensor:"
+                },
+                "data_description": {
+                    "covers": "Selecteer de rolluiken/jaloeziën die de automatisering moet besturen (vereist).",
+                    "weather_entity_id": "Selecteer een weersentiteit die dagelijkse voorspellingen ondersteunt (vereist)."
                 }
             }
         },
@@ -14,9 +18,6 @@
             "invalid_cover": "Een of meer geselecteerde rolluiken/jaloeziën zijn ongeldig of niet beschikbaar.",
             "invalid_weather_entity": "De geselecteerde weersentiteit ondersteunt geen dagelijkse voorspellingen.",
             "invalid_config": "Ongeldige configuratie."
-        },
-        "abort": {
-            "single_instance_allowed": "Er kan slechts één instantie van deze integratie worden geconfigureerd"
         }
     },
     "options": {
@@ -25,29 +26,30 @@
                 "title": "Smart Cover Automation Configuratie",
                 "description": "Instellingen aanpassen",
                 "data": {
-                    "cover_azimuth": "**{cover_name}** azimut",
-                    "covers": "Rolluiken om te automatiseren",
-                    "covers_max_closure": "Maximale rolluik sluitingspositie",
-                    "covers_min_closure": "Minimale rolluik sluitingspositie",
-                    "enabled": "Automatisering inschakelen",
-                    "manual_override_duration": "Handmatige overschrijvingsduur",
-                    "simulating": "Simulatiemodus",
-                    "sun_azimuth_tolerance": "Zon azimut tolerantie",
-                    "sun_elevation_threshold": "Minimale zonhoogte",
-                    "temp_threshold": "Temperatuurdrempel",
-                    "verbose_logging": "Uitgebreide logging",
-                    "weather_entity_id": "Weersvoorspelling sensor"
+                    "cover_azimuth": "**{cover_name}** azimut:",
+                    "covers": "Rolluiken om te automatiseren:",
+                    "covers_max_closure": "Maximale rolluik sluitingspositie:",
+                    "covers_min_closure": "Minimale rolluik sluitingspositie:",
+                    "enabled": "Automatisering inschakelen:",
+                    "manual_override_duration": "Handmatige overschrijvingsduur:",
+                    "simulating": "Simulatiemodus:",
+                    "sun_azimuth_tolerance": "Zon azimut tolerantie:",
+                    "sun_elevation_threshold": "Minimale zonhoogte:",
+                    "temp_threshold": "Temperatuurdrempel:",
+                    "verbose_logging": "Uitgebreide logging:",
+                    "weather_entity_id": "Weersvoorspelling sensor:"
                 },
                 "data_description": {
                     "cover_azimuth": "Richting waarin het raam is gericht (0°=Noord, 90°=Oost, enz.). Gebruikt om te berekenen of de zon op het raam schijnt.",
-                    "covers": "Selecteer de rolluiken/jaloeziën die de automatisering moet besturen.",
+                    "covers": "Selecteer de rolluiken/jaloeziën die de automatisering moet besturen (vereist).",
                     "covers_max_closure": "Sluit nooit meer dan dit om altijd wat licht binnen te laten (0 = volledig gesloten, 100 = volledig open).",
                     "covers_min_closure": "Open nooit meer dan dit om altijd een minimum aan schaduw te bieden (0 = volledig gesloten, 100 = volledig open).",
                     "manual_override_duration": "Hoe lang een rolluik overslaan nadat het handmatig is bewogen (0 = niet overslaan).",
                     "simulating": "Indien ingeschakeld voert de automatisering alle berekeningen uit zonder de rolluiken daadwerkelijk te bewegen.",
                     "sun_azimuth_tolerance": "Maximale horizontale hoek waarbij de zon wordt beschouwd als schijnend op het raam (graden).",
                     "sun_elevation_threshold": "De automatisering begint te werken wanneer de zonhoogte boven deze drempel ligt (graden boven de horizon).",
-                    "temp_threshold": "De automatisering werkt alleen op warme dagen, d.w.z. als de voorspelde dagelijkse maximumtemperatuur boven deze drempel ligt (°C)."
+                    "temp_threshold": "De automatisering werkt alleen op warme dagen, d.w.z. als de voorspelde dagelijkse maximumtemperatuur boven deze drempel ligt (°C).",
+                    "weather_entity_id": "Selecteer een weersentiteit die dagelijkse voorspellingen ondersteunt (vereist)."
                 }
             }
         }
@@ -59,8 +61,13 @@
             }
         },
         "binary_sensor": {
+            "health_status": {
+                "name": "Gezondheidsstatus"
+            }
+        },
+        "switch": {
             "smart_cover_automation": {
-                "name": "Smart Cover Automation Beschikbaarheid"
+                "name": "Ingeschakeld"
             }
         }
     }

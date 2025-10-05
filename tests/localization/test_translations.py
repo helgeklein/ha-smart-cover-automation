@@ -155,15 +155,6 @@ def test_translation_has_required_keys(language_code: str) -> None:
     missing_errors = expected_errors - set(error_data.keys())
     assert not missing_errors, f"Missing error strings in {language_code}.json: {sorted(missing_errors)}"
 
-    # Test 4: Required abort reasons used by config flow termination
-    # These messages explain why the setup process was terminated
-    abort_data = data.get("config", {}).get("abort", {})
-    expected_abort = {
-        const.ABORT_SINGLE_INSTANCE_ALLOWED,  # Multiple instances not allowed
-    }
-    missing_abort = expected_abort - set(abort_data.keys())
-    assert not missing_abort, f"Missing abort strings in {language_code}.json: {sorted(missing_abort)}"
-
 
 def test_available_languages_detected() -> None:
     """Test that the language detection function finds all translation files.

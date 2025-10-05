@@ -8,7 +8,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from homeassistant.const import Platform
 from homeassistant.exceptions import HomeAssistantError, ServiceNotFound
-from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
@@ -193,15 +192,16 @@ class TestCoordinatorErrorHandling:
         assert result is None or "covers" in result, f"Failed for {test_description}"
 
     async def test_weather_forecast_temperature_unavailable(self) -> None:
-        """Test critical error handling when weather forecast temperature is unavailable.
+        """Test graceful degradation when weather forecast temperature is unavailable.
 
-        Validates that the coordinator treats unavailable weather forecast as critical errors
-        that make the automation non-functional. Since accurate temperature readings are essential for
-        automation decisions, unavailable forecast data should make entities unavailable.
+        Validates that the coordinator handles unavailable weather forecast gracefully by
+        continuing automation with temperature-based features disabled. Weather service
+        failures are often temporary (network issues, API limits) and shouldn't make the
+        entire automation system unavailable.
 
         Test scenario:
         - Weather entity: Available but forecast service returns no temperature data
-        - Expected behavior: Critical error logged, UpdateFailed exception raised, entities unavailable
+        - Expected behavior: Warning logged, automation continues with temp_max=0.0, entities remain available
         """
         hass = MagicMock()
         hass.services = MagicMock()
@@ -229,9 +229,13 @@ class TestCoordinatorErrorHandling:
 
         hass.services.async_call = AsyncMock(side_effect=mock_weather_service_error)
 
-        # Execute automation and verify error handling
+        # Execute automation and verify graceful degradation
         await coordinator.async_refresh()
 
-        # Verify critical error handling
-        assert isinstance(coordinator.last_exception, UpdateFailed)  # Critical error should propagate
-        assert "Forecast temperature unavailable" in str(coordinator.last_exception)
+        # Verify graceful degradation handling
+        assert coordinator.last_exception is None  # No critical error propagated
+        assert coordinator.last_update_success is True  # Automation continues successfully
+
+        # Verify that automation was skipped due to weather data unavailability
+        assert coordinator.data is not None
+        assert coordinator.data == {"covers": {}, "message": "Weather data unavailable, skipping actions"}

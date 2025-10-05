@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 import voluptuous as vol
@@ -41,16 +40,6 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
         """
         errors = {}
 
-        # Ensure only a single instance of this integration can be configured
-        # Guard against tests/mocks where hass/config_entries may be incomplete
-        try:
-            if getattr(self, "hass", None) is not None:
-                current_entries = self._async_current_entries()
-                if isinstance(current_entries, list) and len(current_entries) > 0:
-                    return self.async_abort(reason=const.ABORT_SINGLE_INSTANCE_ALLOWED)
-        except Exception:  # pragma: no cover - defensive against MagicMock behavior in tests
-            pass
-
         # Initial call: user_input is None -> show the form to the user
         if user_input is None:
             return self._show_user_form_config()
@@ -58,8 +47,13 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
         # Subsequent calls: user_input has form data -> validate user data and create entry
         try:
             # Validate covers
+            covers = user_input.get(ConfKeys.COVERS.value, [])
+            if not covers:
+                errors["base"] = const.ERROR_INVALID_CONFIG
+                const.LOGGER.error("No covers selected for configuration")
+
             invalid_covers = []
-            for cover in user_input[ConfKeys.COVERS.value]:
+            for cover in covers:
                 state = self.hass.states.get(cover)
                 if not state:
                     invalid_covers.append(cover)
@@ -85,11 +79,6 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
                     const.LOGGER.error(f"Weather entity {weather_entity_id} not found")
 
             if not errors:
-                # Create a permanent unique ID for this config entry
-                unique_id = str(uuid.uuid4())
-                await self.async_set_unique_id(unique_id)
-                self._abort_if_unique_id_configured()
-
                 # Persist provided data
                 data = dict(user_input)
 
@@ -130,6 +119,11 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
             errors=errors or {},
         )
 
+    @staticmethod
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
+        """Create the options flow."""
+        return OptionsFlowHandler(config_entry)
+
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options for Smart Cover Automation."""
@@ -140,7 +134,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         Avoid assigning to OptionsFlow.config_entry directly to prevent frame-helper
         warnings in tests; keep a private reference instead.
         """
-        self.hass = config_entry.hass  # type: ignore
         self._config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
@@ -148,11 +141,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         HA calls async_step_init(None) to show the form, then calls it again with a dict after submit.
         """
+        #
         # Subsequent calls: user_input has form data -> store the options and finish
+        #
         if user_input is not None:
             # Validate weather entity in options flow
             weather_entity_id = user_input.get(ConfKeys.WEATHER_ENTITY_ID.value)
-            if weather_entity_id:
+            if weather_entity_id and self.hass is not None:
                 weather_state = self.hass.states.get(weather_entity_id)
                 if weather_state:
                     supported_features = weather_state.attributes.get("supported_features", 0)
@@ -188,7 +183,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Persist options; HA will trigger entry update and reload
             return self.async_create_entry(title="Options", data=user_input)
 
+        #
         # Initial call: user_input is None -> show the form to the user
+        #
 
         data = dict(self._config_entry.data)
         options = dict(self._config_entry.options or {})
@@ -226,18 +223,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             else:
                 direction_fields[vol.Required(key, description=description_from_translation)] = azimuth_number_selector
 
-        # Extract default values from resolved settings
-        enabled_default = resolved_settings.enabled
-        simulating_default = resolved_settings.simulating
-        threshold_default = resolved_settings.sun_elevation_threshold
-        azimuth_tol_default = resolved_settings.sun_azimuth_tolerance
-
         # Build the schema with logical field grouping
         schema_dict: dict[vol.Marker, object] = {}
 
         # === GLOBAL AUTOMATION SETTINGS ===
-        schema_dict[vol.Required(ConfKeys.ENABLED.value, default=enabled_default)] = selector.BooleanSelector()
-        schema_dict[vol.Required(ConfKeys.SIMULATING.value, default=simulating_default)] = selector.BooleanSelector()
+        schema_dict[vol.Required(ConfKeys.SIMULATING.value, default=resolved_settings.simulating)] = selector.BooleanSelector()
         schema_dict[vol.Required(ConfKeys.VERBOSE_LOGGING.value, default=resolved_settings.verbose_logging)] = selector.BooleanSelector()
 
         # === COVER SETTINGS ===
@@ -250,7 +240,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         # === TEMPERATURE & WEATHER SETTINGS ===
-        schema_dict[vol.Required(ConfKeys.WEATHER_ENTITY_ID.value)] = selector.EntitySelector(
+        schema_dict[vol.Required(ConfKeys.WEATHER_ENTITY_ID.value, default=resolved_settings.weather_entity_id)] = selector.EntitySelector(
             selector.EntitySelectorConfig(
                 domain=Platform.WEATHER,
             )
@@ -270,11 +260,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         # === SUN POSITION SETTINGS ===
-        schema_dict[vol.Required(ConfKeys.SUN_ELEVATION_THRESHOLD.value, default=threshold_default)] = selector.NumberSelector(
-            selector.NumberSelectorConfig(min=0, max=90, step=1, unit_of_measurement="°")
+        schema_dict[vol.Required(ConfKeys.SUN_ELEVATION_THRESHOLD.value, default=resolved_settings.sun_elevation_threshold)] = (
+            selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=90, step=1, unit_of_measurement="°"))
         )
-        schema_dict[vol.Required(ConfKeys.SUN_AZIMUTH_TOLERANCE.value, default=azimuth_tol_default)] = selector.NumberSelector(
-            selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°")
+        schema_dict[vol.Required(ConfKeys.SUN_AZIMUTH_TOLERANCE.value, default=resolved_settings.sun_azimuth_tolerance)] = (
+            selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°"))
         )
 
         # === COVER BEHAVIOR SETTINGS ===

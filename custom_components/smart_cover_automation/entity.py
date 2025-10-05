@@ -10,6 +10,7 @@ from __future__ import annotations
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import const
 from .coordinator import DataUpdateCoordinator
 
 
@@ -27,8 +28,10 @@ class IntegrationEntity(CoordinatorEntity[DataUpdateCoordinator]):
     integration.
     """
 
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the base integration entity.
+        """Initialize the entity.
 
         Args:
             coordinator: The DataUpdateCoordinator instance that manages
@@ -38,19 +41,10 @@ class IntegrationEntity(CoordinatorEntity[DataUpdateCoordinator]):
         # between this entity and the coordinator for automatic updates
         super().__init__(coordinator)
 
-        # Set unique ID using the config entry ID to ensure global uniqueness
-        # within Home Assistant. This prevents conflicts with other integrations
-        # or multiple instances of this integration.
-        self._attr_unique_id = coordinator.config_entry.entry_id
-
         # Create device info to group all integration entities under a single device.
         # This makes the UI cleaner by showing all sensors, switches, and other
         # entities as parts of one logical device rather than separate devices.
         self._attr_device_info = DeviceInfo(
-            identifiers={
-                (
-                    coordinator.config_entry.domain,  # Integration domain
-                    coordinator.config_entry.entry_id,  # Unique entry identifier
-                ),
-            },
+            identifiers={(const.DOMAIN, self.coordinator.config_entry.entry_id)},
+            name=const.DOMAIN,
         )

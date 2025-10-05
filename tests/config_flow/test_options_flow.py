@@ -61,7 +61,6 @@ async def test_options_flow_form_shows_dynamic_fields() -> None:
 
     # Verify global automation options are present
     # These affect the entire integration's behavior
-    assert ConfKeys.ENABLED.value in schema
     assert ConfKeys.WEATHER_ENTITY_ID.value in schema
     assert ConfKeys.SUN_ELEVATION_THRESHOLD.value in schema
     assert ConfKeys.COVERS_MAX_CLOSURE.value in schema

@@ -11,6 +11,7 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import (
@@ -51,7 +52,16 @@ class TestWeatherCondition:
 
         # Handle the special case of missing entity (None return)
         if weather_state_value is None and description == "missing weather entity":
-            hass.states.get.return_value = None
+            # Set up states where weather entity is missing but others exist
+            hass.states.get.side_effect = lambda entity_id: {
+                "weather.forecast": None,  # Weather entity missing
+                "sun.sun": MagicMock(state="above_horizon", attributes={"elevation": 45, "azimuth": 180}),
+                "cover.test_cover": MagicMock(attributes={"current_position": 100, "supported_features": 15}),
+            }.get(entity_id)
+            # Missing weather entity should be treated as critical error
+            await coordinator.async_refresh()
+            assert isinstance(coordinator.last_exception, UpdateFailed)
+            assert "Temperature sensor 'weather.forecast' not found" in str(coordinator.last_exception)
         else:
             # Mock weather entity with the specified state
             weather_state = MagicMock()
@@ -63,11 +73,11 @@ class TestWeatherCondition:
                 "cover.test_cover": MagicMock(attributes={"current_position": 100, "supported_features": 15}),
             }.get(entity_id)
 
-        # Should handle invalid weather entity gracefully (not raise)
-        await coordinator.async_refresh()
-        # Should return empty covers since weather reading fails
-        result = coordinator.data
-        assert result is None or result == {"covers": {}, "message": "All covers unavailable; skipping actions"}
+            # Should handle invalid weather entity gracefully (not raise)
+            await coordinator.async_refresh()
+            # Should return early with weather unavailable message
+            result = coordinator.data
+            assert result == {"covers": {}, "message": "Weather data unavailable, skipping actions"}
 
     def test_get_weather_condition_direct_call(self) -> None:
         """Test _get_weather_condition method directly."""

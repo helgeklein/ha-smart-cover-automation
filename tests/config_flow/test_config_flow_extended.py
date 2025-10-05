@@ -177,6 +177,7 @@ class TestOptionsFlowExtended:
         )
 
         options_flow = OptionsFlowHandler(mock_config_entry_extended)
+        options_flow.hass = mock_hass_with_weather_and_covers  # Set hass manually for test
 
         user_input = {
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.invalid",
@@ -284,6 +285,5 @@ class TestOptionsFlowExtended:
         schema_keys = list(result_dict["data_schema"].schema.keys())
         schema_key_values = [key.schema for key in schema_keys]
 
-        assert ConfKeys.ENABLED.value in schema_key_values
         assert ConfKeys.COVERS.value in schema_key_values
         assert ConfKeys.WEATHER_ENTITY_ID.value in schema_key_values

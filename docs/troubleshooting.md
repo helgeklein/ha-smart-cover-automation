@@ -57,8 +57,6 @@ logger:
   default: info
   logs:
     custom_components.smart_cover_automation: debug
-    custom_components.smart_cover_automation.coordinator: debug
-    custom_components.smart_cover_automation.config_flow: debug
 ```
 
 Then restart Home Assistant and check the logs.

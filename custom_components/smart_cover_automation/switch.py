@@ -38,7 +38,8 @@ ENTITY_DESCRIPTIONS = (
     SwitchEntityDescription(
         key=DOMAIN,
         name=f"{INTEGRATION_NAME}",
-        icon="mdi:format-quote-close",
+        icon="mdi:toggle-switch-outline",
+        translation_key=DOMAIN,
     ),
 )
 
@@ -89,6 +90,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         """
         super().__init__(coordinator)
         self.entity_description = entity_description
+        self._attr_unique_id = self.entity_description.key
 
     # Note: We inherit the 'available' property from IntegrationEntity/CoordinatorEntity
     # which provides the correct coordinator-based availability logic.

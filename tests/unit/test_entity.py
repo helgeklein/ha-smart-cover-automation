@@ -46,13 +46,13 @@ class TestIntegrationEntity:
         Validates that the IntegrationEntity base class correctly initializes
         when provided with a coordinator instance. This test ensures:
 
-        - Unique ID is properly derived from the configuration entry
+        - Base class does not set unique ID (subclasses handle their own IDs)
         - Device information is correctly populated for Home Assistant device registry
         - Device identifiers are properly formatted with domain and entry ID
         - All required entity properties are set during initialization
 
-        The unique ID and device information are critical for Home Assistant
-        to properly track and manage the entity across restarts and updates.
+        The device information is critical for Home Assistant to properly
+        group entities under a single device in the device registry.
         """
         # Create mock coordinator with configuration entry
         coordinator = MagicMock()
@@ -61,9 +61,8 @@ class TestIntegrationEntity:
         # Initialize the entity with the coordinator
         entity = IntegrationEntity(coordinator)
 
-        # Verify unique ID matches configuration entry ID
-        expected_uid = mock_config_entry_basic.entry_id
-        assert entity.unique_id == expected_uid, f"Expected unique_id {expected_uid}, got {entity.unique_id}"
+        # Verify unique ID is None for base class (subclasses set their own unique IDs)
+        assert entity.unique_id is None, f"Base IntegrationEntity should not set unique_id, got {entity.unique_id}"
 
         # Verify device information is properly populated
         device_info = entity.device_info

@@ -6,18 +6,12 @@ indicates whether the automation system is functioning properly by reflecting
 the coordinator's last update status.
 
 The sensor appears in Home Assistant as:
-- Entity: binary_sensor.smart_cover_automation_availability
-- Device Class: Connectivity
-- States: 'on' (connected/working) or 'off' (disconnected/failed)
-
-This allows users to:
-1. Monitor automation system health at a glance
-2. Create automations based on system status
-3. Troubleshoot issues when cover automation stops working
+- Entity: binary_sensor.health_status
 """
 
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 from homeassistant.components.binary_sensor import (
@@ -26,7 +20,6 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 
-from .const import DOMAIN
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -37,11 +30,13 @@ if TYPE_CHECKING:
     from .data import IntegrationConfigEntry
 
 # Define the binary sensor entity configuration
-# This creates a connectivity sensor that shows the integration's health status
+# This creates a problem sensor that shows the integration's health status
 ENTITY_DESCRIPTIONS = (
     BinarySensorEntityDescription(
-        key=DOMAIN,
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        key="health_status",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:check-circle-outline",
+        translation_key="health_status",
     ),
 )
 
@@ -76,18 +71,18 @@ async def async_setup_entry(
 class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
     """Binary sensor entity for Smart Cover Automation system health monitoring.
 
-    This class creates a connectivity-style binary sensor that indicates whether
-    the cover automation system is functioning properly. The sensor's state is
+    This class creates a problem-style binary sensor that indicates whether
+    the cover automation system has any issues. The sensor's state is
     automatically derived from the coordinator's operational status.
 
     The sensor provides:
-    - Connectivity device class for appropriate UI representation
+    - Problem device class for appropriate UI representation
     - Automatic availability tracking based on coordinator health
     - Integration with Home Assistant's binary sensor platform
 
     State meanings:
-    - 'on' (Connected): Automation system is working, coordinator is healthy
-    - 'off' (Disconnected): Automation system has issues or coordinator failed
+    - 'on' (Problem): Automation system has issues or coordinator failed
+    - 'off' (OK): Automation system is working, coordinator is healthy
     """
 
     def __init__(
@@ -108,6 +103,23 @@ class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright
 
         # Store the entity description that defines this sensor's characteristics
         self.entity_description = entity_description
+
+        # Override the unique ID to create a clean, predictable entity ID
+        # This will result in entity_id: binary_sensor.health_status
+        self._attr_unique_id = entity_description.key
+
+    @cached_property
+    def is_on(self) -> bool:
+        """Return True if the integration has problems.
+
+        The binary sensor state reflects the coordinator's operational health:
+        - True (on/Problem): Coordinator has failed or encountered errors
+        - False (off/OK): Coordinator is successfully fetching and processing data
+
+        This allows users to monitor automation system health and create
+        automations based on system status. Note: Problem sensors use inverted logic.
+        """
+        return not self.coordinator.last_update_success
 
     # Note: Multiple inheritance from IntegrationEntity (CoordinatorEntity) and
     # BinarySensorEntity causes a Pylance conflict on the 'available' property.

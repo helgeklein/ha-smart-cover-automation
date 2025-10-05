@@ -65,14 +65,14 @@ After copying the files, restart Home Assistant to load the new integration.
 
 ### 1. Add the Integration
 
-1. Navigate to **Settings** → **Devices & Services**.
+1. Navigate to **Settings** → **Devices & Services** and select the **Integrations** tab.
 2. Click the **Add Integration** button.
 3. Search for **Smart Cover Automation**.
 4. Click on it to start the setup process.
 
 ### 2. Initial Configuration
 
-See the [Configuration Guide]({{ '/configuration/' | relative_url }}) for details on how to configure the integration.
+Select the covers you want to automate and a weather forecast sensor.
 
 ### 3. Verify Installation
 

@@ -182,7 +182,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             available_covers = sum(1 for s in states.values() if s is not None)
             if available_covers == 0:
                 message = "All covers unavailable; skipping actions"
-                self._log_automation_result(message, const.LogSeverity.WARNING, error_result)
+                self._log_automation_result(message, const.LogSeverity.INFO, error_result)
                 return error_result
 
             # Run the automation logic
@@ -225,13 +225,18 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Get the resolved settings
         resolved = self._resolved_settings()
 
-        # Temperature & sunshine input
-        temp_threshold = resolved.temp_threshold
+        # Weather
         weather_entity_id = resolved.weather_entity_id
-        temp_max = await self._get_max_temperature(weather_entity_id)
-        weather_condition = self._get_weather_condition(weather_entity_id)
+        try:
+            temp_max = await self._get_max_temperature(weather_entity_id)
+            weather_condition = self._get_weather_condition(weather_entity_id)
+        except InvalidSensorReadingError:
+            message = "Weather data unavailable, skipping actions"
+            self._log_automation_result(message, const.LogSeverity.WARNING, result)
+            return result
 
         # Temperature above threshold?
+        temp_threshold = resolved.temp_threshold
         temp_hot = False
         if temp_max > temp_threshold:
             temp_hot = True
@@ -279,7 +284,6 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         const.LOGGER.info(f"Calculated sensor states: {str(result_copy)}")
 
         # Iterate over covers
-        const.LOGGER.debug("Starting cover evaluation")
         for entity_id, state in states.items():
             # Reset the per-cover attributes
             cover_attrs: dict[str, Any] = {}
@@ -397,8 +401,6 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
 
             # Log per-cover attributes
             const.LOGGER.debug(f"[{entity_id}] {message} {str(cover_attrs)}")
-
-        const.LOGGER.debug("Finished cover evaluation")
 
         return result
 
@@ -561,7 +563,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             raise InvalidSensorReadingError(entity_id, f"Weather entity {entity_id}: state is unavailable")
 
         condition = state.state
-        const.LOGGER.debug(f"Current weather condition from {entity_id}: {condition}")
+        const.LOGGER.debug(f"Current weather condition: {condition}")
         return condition
 
     #
@@ -603,30 +605,45 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         try:
             # Use the modern weather forecast service
             service_data = {"entity_id": entity_id, "type": "daily"}
-            response = await self.hass.services.async_call(Platform.WEATHER, SERVICE_GET_FORECASTS, service_data, return_response=True)
+            response = await self.hass.services.async_call(
+                Platform.WEATHER, SERVICE_GET_FORECASTS, service_data, blocking=True, return_response=True
+            )
+
+            # Debug logging to understand the response structure
+            const.LOGGER.debug(f"Weather forecast service response for {entity_id}: {response}")
 
             # Extract today's forecast data with proper type checking
             if not (response and isinstance(response, dict) and entity_id in response):
-                const.LOGGER.debug(f"Invalid or empty forecast response for {entity_id}")
+                const.LOGGER.warning(f"Invalid or empty forecast response for {entity_id}: {response}")
                 return None
 
             entity_data = response[entity_id]
             if not (isinstance(entity_data, dict) and "forecast" in entity_data):
-                const.LOGGER.debug(f"Forecast data missing in response for {entity_id}")
+                const.LOGGER.warning(
+                    f"Forecast data missing in response for {entity_id}. Available keys: {list(entity_data.keys()) if isinstance(entity_data, dict) else 'Not a dict'}"
+                )
                 return None
 
             forecast_list = entity_data["forecast"]
             if not (isinstance(forecast_list, list) and forecast_list):
-                const.LOGGER.debug(f"Forecast list is empty or not a list for {entity_id}")
+                const.LOGGER.warning(
+                    f"Forecast list is empty or not a list for {entity_id}: {type(forecast_list)} with length {len(forecast_list) if isinstance(forecast_list, list) else 'N/A'}"
+                )
                 return None
 
             # Find today's forecast and extract the max temperature
             today_forecast = self._find_today_forecast(forecast_list)
+            const.LOGGER.debug(f"Today's forecast for {entity_id}: {today_forecast}")
+
             if today_forecast:
                 max_temp = self._extract_max_temperature(today_forecast)
                 if max_temp is not None:
-                    const.LOGGER.debug(f"Using forecast max temperature: {max_temp}°C from {entity_id}")
+                    const.LOGGER.debug(f"Using forecast max temperature: {max_temp}°C")
                     return max_temp
+                else:
+                    const.LOGGER.warning(f"Could not extract max temperature from today's forecast for {entity_id}")
+            else:
+                const.LOGGER.warning(f"Could not find today's forecast for {entity_id}")
 
         except HomeAssistantError as err:
             const.LOGGER.warning(f"Failed to call weather forecast service for {entity_id}: {err}")
@@ -684,7 +701,6 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     continue
 
                 if forecast_date == today:
-                    const.LOGGER.debug(f"Found today's forecast by date match: {datetime_field}")
                     return forecast
 
             except (ValueError, TypeError, AttributeError) as err:
@@ -716,18 +732,23 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Temperature field names in order of preference (based on official HA weather entity spec)
         temp_fields = [
             "native_temperature",  # Official HA field for higher/max temperature (required in forecasts)
+            "temperature",  # Most common field name used by weather integrations
             "temp_max",  # Alternative naming used by some integrations
+            "temp_high",  # Alternative naming used by some integrations
             "temphigh",  # Alternative naming used by some integrations
+            "high",  # Simple naming used by some integrations
+            "max_temp",  # Alternative naming used by some integrations
         ]
 
         for field_name in temp_fields:
             if field_name in forecast:
                 temp_value = forecast[field_name]
                 if isinstance(temp_value, (int, float)):
-                    const.LOGGER.debug(f"Extracted temperature from field '{field_name}': {temp_value}°C")
                     return float(temp_value)
+                else:
+                    const.LOGGER.debug(f"Field '{field_name}' is not a number: {temp_value}")
 
-        const.LOGGER.debug(f"No temperature fields found in forecast. Available fields: {list(forecast.keys())}")
+        const.LOGGER.warning(f"No temperature fields found in forecast. Available fields: {list(forecast.keys())}")
         return None
 
     #

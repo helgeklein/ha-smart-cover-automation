@@ -84,9 +84,6 @@ ERROR_INVALID_CONFIG: Final[str] = "invalid_config"
 ERROR_INVALID_COVER: Final[str] = "invalid_cover"
 ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"
 
-# Abort reasons
-ABORT_SINGLE_INSTANCE_ALLOWED: Final[str] = "single_instance_allowed"
-
 # Home Assistant string literals
 HA_OPTIONS: Final = "options"
 HA_SUN_ATTR_AZIMUTH: Final[str] = "azimuth"

@@ -81,7 +81,7 @@ class TestGetForecastMaxTemp:
         temp = await coordinator._get_forecast_max_temp(WEATHER_ENTITY_ID)
         assert temp == 28.0
         mock_hass.services.async_call.assert_awaited_once_with(
-            Platform.WEATHER, SERVICE_GET_FORECASTS, {"entity_id": WEATHER_ENTITY_ID, "type": "daily"}, return_response=True
+            Platform.WEATHER, SERVICE_GET_FORECASTS, {"entity_id": WEATHER_ENTITY_ID, "type": "daily"}, blocking=True, return_response=True
         )
 
     async def test_service_call_error(self, mock_hass: MagicMock, coordinator: DataUpdateCoordinator):
