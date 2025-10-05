@@ -34,7 +34,7 @@ class TestPositionHistory:
     async def test_position_history_single_update(self, coordinator: DataUpdateCoordinator):
         """Test position history with a single position update."""
         # Update position once
-        coordinator._cover_pos_history_mgr.update("cover.test", 50)
+        coordinator._cover_pos_history_mgr.add("cover.test", 50)
 
         # Check history - first update should be current, no previous
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
@@ -49,8 +49,8 @@ class TestPositionHistory:
     async def test_position_history_two_updates(self, coordinator: DataUpdateCoordinator):
         """Test position history with two position updates."""
         # Update position twice
-        coordinator._cover_pos_history_mgr.update("cover.test", 30)
-        coordinator._cover_pos_history_mgr.update("cover.test", 70)
+        coordinator._cover_pos_history_mgr.add("cover.test", 30)
+        coordinator._cover_pos_history_mgr.add("cover.test", 70)
 
         # Check history - should have current and previous
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
@@ -66,7 +66,7 @@ class TestPositionHistory:
         # Update position multiple times - add more than the limit to test maxlen behavior
         positions = [10, 40, 80, 100, 60]
         for pos in positions:
-            coordinator._cover_pos_history_mgr.update("cover.test", pos)
+            coordinator._cover_pos_history_mgr.add("cover.test", pos)
 
         # Check history - should keep last COVER_POSITION_HISTORY_SIZE positions in newest-first order
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
@@ -80,7 +80,7 @@ class TestPositionHistory:
         assert list(coordinator._cover_pos_history_mgr._cover_position_history["cover.test"]) == expected_positions
 
         # Add one more to test maxlen behavior
-        coordinator._cover_pos_history_mgr.update("cover.test", 20)
+        coordinator._cover_pos_history_mgr.add("cover.test", 20)
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
 
         # Now we should have: [20, 60, 100] (newest first, 80 dropped)
@@ -90,9 +90,9 @@ class TestPositionHistory:
     async def test_position_history_multiple_covers(self, coordinator: DataUpdateCoordinator):
         """Test position history with multiple covers."""
         # Update positions for different covers
-        coordinator._cover_pos_history_mgr.update("cover.test1", 25)
-        coordinator._cover_pos_history_mgr.update("cover.test2", 75)
-        coordinator._cover_pos_history_mgr.update("cover.test1", 50)
+        coordinator._cover_pos_history_mgr.add("cover.test1", 25)
+        coordinator._cover_pos_history_mgr.add("cover.test2", 75)
+        coordinator._cover_pos_history_mgr.add("cover.test1", 50)
 
         # Check history for first cover
         history1 = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test1")]
@@ -110,9 +110,9 @@ class TestPositionHistory:
     async def test_position_history_same_position_updates(self, coordinator: DataUpdateCoordinator):
         """Test position history when same position is set multiple times."""
         # Update with same position multiple times
-        coordinator._cover_pos_history_mgr.update("cover.test", 60)
-        coordinator._cover_pos_history_mgr.update("cover.test", 60)
-        coordinator._cover_pos_history_mgr.update("cover.test", 60)
+        coordinator._cover_pos_history_mgr.add("cover.test", 60)
+        coordinator._cover_pos_history_mgr.add("cover.test", 60)
+        coordinator._cover_pos_history_mgr.add("cover.test", 60)
 
         # Should still track each update even if position is same
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
@@ -125,8 +125,8 @@ class TestPositionHistory:
     async def test_position_history_edge_case_positions(self, coordinator: DataUpdateCoordinator):
         """Test position history with edge case position values."""
         # Update with edge case positions
-        coordinator._cover_pos_history_mgr.update("cover.test", 0)
-        coordinator._cover_pos_history_mgr.update("cover.test", 100)
+        coordinator._cover_pos_history_mgr.add("cover.test", 0)
+        coordinator._cover_pos_history_mgr.add("cover.test", 100)
 
         # Check history
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
@@ -147,7 +147,7 @@ class TestPositionHistory:
         # Set cover position and manually update history (simulating what _async_update_data does)
         actual_pos = await coordinator._set_cover_position("cover.test", 35, 4)
         if actual_pos is not None:
-            coordinator._cover_pos_history_mgr.update("cover.test", actual_pos)
+            coordinator._cover_pos_history_mgr.add("cover.test", actual_pos)
 
         # Verify position history was updated
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
@@ -156,7 +156,7 @@ class TestPositionHistory:
         # Set another position and update history
         actual_pos = await coordinator._set_cover_position("cover.test", 85, 4)
         if actual_pos is not None:
-            coordinator._cover_pos_history_mgr.update("cover.test", actual_pos)
+            coordinator._cover_pos_history_mgr.add("cover.test", actual_pos)
 
         # Verify history tracks both positions
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
@@ -185,7 +185,7 @@ class TestPositionHistory:
         # Set cover position in simulation mode and manually update history
         actual_pos = await coordinator._set_cover_position("cover.test", 65, 4)
         if actual_pos is not None:
-            coordinator._cover_pos_history_mgr.update("cover.test", actual_pos)
+            coordinator._cover_pos_history_mgr.add("cover.test", actual_pos)
 
         # Verify position history is still updated even in simulation mode
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
@@ -197,7 +197,7 @@ class TestPositionHistory:
         # Add exactly COVER_POSITION_HISTORY_SIZE positions
         positions = list(range(10, 10 + COVER_POSITION_HISTORY_SIZE * 10, 10))  # [10, 20, 30, ...] up to the limit
         for pos in positions:
-            coordinator._cover_pos_history_mgr.update("cover.test", pos)
+            coordinator._cover_pos_history_mgr.add("cover.test", pos)
 
         # Verify all positions are stored in newest-first order
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
@@ -206,7 +206,7 @@ class TestPositionHistory:
 
         # Add one more position - should drop the oldest
         new_position = positions[-1] + 10
-        coordinator._cover_pos_history_mgr.update("cover.test", new_position)
+        coordinator._cover_pos_history_mgr.add("cover.test", new_position)
         history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
 
         expected_all_after = [new_position] + list(reversed(positions[1:]))  # Drop oldest, add newest
@@ -224,7 +224,7 @@ class TestPositionHistory:
     async def test_get_newest_position_single_entry(self, coordinator: DataUpdateCoordinator):
         """Test getting newest position with single history entry."""
         # Add one position
-        coordinator._cover_pos_history_mgr.update("cover.test", 75)
+        coordinator._cover_pos_history_mgr.add("cover.test", 75)
 
         # Should return that position
         newest_entry = coordinator._cover_pos_history_mgr.get_latest_entry("cover.test")
@@ -235,9 +235,9 @@ class TestPositionHistory:
     async def test_get_newest_position_multiple_entries(self, coordinator: DataUpdateCoordinator):
         """Test getting newest position with multiple history entries."""
         # Add multiple positions
-        coordinator._cover_pos_history_mgr.update("cover.test", 25)
-        coordinator._cover_pos_history_mgr.update("cover.test", 50)
-        coordinator._cover_pos_history_mgr.update("cover.test", 90)
+        coordinator._cover_pos_history_mgr.add("cover.test", 25)
+        coordinator._cover_pos_history_mgr.add("cover.test", 50)
+        coordinator._cover_pos_history_mgr.add("cover.test", 90)
 
         # Should return the most recent one (90)
         newest_entry = coordinator._cover_pos_history_mgr.get_latest_entry("cover.test")
@@ -258,11 +258,6 @@ class TestPositionEntryAndTimestamps:
         assert entry.position == 50
         assert entry.timestamp == test_time
 
-        # Test with None position
-        entry_none = PositionEntry(position=None, timestamp=test_time)
-        assert entry_none.position is None
-        assert entry_none.timestamp == test_time
-
     def test_cover_position_history_add_with_explicit_timestamp(self):
         """Test adding positions with explicit timestamps."""
         history = CoverPositionHistory()
@@ -278,7 +273,7 @@ class TestPositionEntryAndTimestamps:
         history.add_position(90, time3)
 
         # Check that positions are in newest-first order
-        assert history.get_all() == [90, 60, 30]
+        assert history.get_all_entries() == [PositionEntry(90, time3), PositionEntry(60, time2), PositionEntry(30, time1)]
 
         # Check that timestamps are properly stored
         entries = history.get_all_entries()
@@ -371,13 +366,13 @@ class TestPositionEntryAndTimestamps:
         # Test that old methods still work
         entry = history.get_newest_entry()
         assert entry and entry.position == 65
-        assert history.get_all() == [65, 35]
+        assert history.get_all_entries() == [PositionEntry(65, time2), PositionEntry(35, time1)]
         assert len(history) == 2
         assert bool(history) is True
         assert list(history) == [65, 35]
 
     def test_position_history_manager_update_with_timestamp(self):
-        """Test manager update method with explicit timestamps."""
+        """Test manager add method with explicit timestamps."""
         manager = CoverPositionHistoryManager()
 
         # Create test timestamps
@@ -385,8 +380,8 @@ class TestPositionEntryAndTimestamps:
         time2 = datetime(2025, 10, 4, 15, 0, 0, tzinfo=timezone.utc)
 
         # Update with explicit timestamps
-        manager.update("cover.test", 45, time1)
-        manager.update("cover.test", 85, time2)
+        manager.add("cover.test", 45, time1)
+        manager.add("cover.test", 85, time2)
 
         # Verify positions were stored correctly
         assert [entry.position for entry in manager.get_entries("cover.test")] == [85, 45]
@@ -400,14 +395,14 @@ class TestPositionEntryAndTimestamps:
         assert entries[1].timestamp == time1
 
     def test_position_history_manager_update_auto_timestamp(self):
-        """Test manager update method with automatic timestamp generation."""
+        """Test manager add method with automatic timestamp generation."""
         manager = CoverPositionHistoryManager()
 
         # Get time before update
         before_time = datetime.now(timezone.utc)
 
         # Update without explicit timestamp
-        manager.update("cover.test", 55)
+        manager.add("cover.test", 55)
 
         # Get time after update
         after_time = datetime.now(timezone.utc)
@@ -434,9 +429,9 @@ class TestPositionEntryAndTimestamps:
         time2 = datetime(2025, 10, 4, 17, 0, 0, tzinfo=timezone.utc)
         time3 = datetime(2025, 10, 4, 18, 0, 0, tzinfo=timezone.utc)
 
-        manager.update("cover.test", 20, time1)
-        manager.update("cover.test", 50, time2)
-        manager.update("cover.test", 80, time3)
+        manager.add("cover.test", 20, time1)
+        manager.add("cover.test", 50, time2)
+        manager.add("cover.test", 80, time3)
 
         # Get entries
         entries = manager.get_entries("cover.test")
@@ -461,8 +456,8 @@ class TestPositionEntryAndTimestamps:
         time1 = datetime(2025, 10, 4, 19, 0, 0, tzinfo=timezone.utc)
         time2 = datetime(2025, 10, 4, 20, 0, 0, tzinfo=timezone.utc)
 
-        manager.update("cover.test", 30, time1)
-        manager.update("cover.test", 70, time2)
+        manager.add("cover.test", 30, time1)
+        manager.add("cover.test", 70, time2)
 
         # Get latest entry
         latest = manager.get_latest_entry("cover.test")
@@ -478,8 +473,8 @@ class TestPositionEntryAndTimestamps:
         time1 = datetime(2025, 10, 4, 21, 0, 0, tzinfo=timezone.utc)
         time2 = datetime(2025, 10, 4, 22, 0, 0, tzinfo=timezone.utc)
 
-        manager.update("cover.test", 40, time1)
-        manager.update("cover.test", 90, time2)
+        manager.add("cover.test", 40, time1)
+        manager.add("cover.test", 90, time2)
 
         # Test that existing methods still work
         assert [entry.position for entry in manager.get_entries("cover.test")] == [90, 40]
@@ -495,8 +490,8 @@ class TestPositionEntryAndTimestamps:
         time2 = datetime(2025, 10, 5, 0, 0, 0, tzinfo=timezone.utc)
 
         # Add positions including None
-        manager.update("cover.test", 60, time1)
-        manager.update("cover.test", 80, time2)
+        manager.add("cover.test", 60, time1)
+        manager.add("cover.test", 80, time2)
 
         # Verify positions
         assert [entry.position for entry in manager.get_entries("cover.test")] == [80, 60]
@@ -520,7 +515,7 @@ class TestPositionEntryAndTimestamps:
 
         for i in range(COVER_POSITION_HISTORY_SIZE + 3):
             timestamp = base_time.replace(minute=i)
-            manager.update("cover.test", i * 10, timestamp)
+            manager.add("cover.test", i * 10, timestamp)
 
         # Verify size limit is respected
         entries = manager.get_entries("cover.test")

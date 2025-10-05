@@ -25,7 +25,7 @@ This is a stable and well-tested Home Assistant integration to automate the cont
 	- Conditionals: weather (sunshine, temperature), sun elevation.
 - **Lockout protection:** (TODO)
 	- Pause automations for a cover if the door/window is open.
-- **Manual override detection:** (TODO)
+- **Manual override detection:**
 	- Detect manual adjustments and pause automation to avoid conflicts.
 - **Night silence**: (TODO)
 	- Don't move the covers when people are sleeping.
@@ -67,7 +67,6 @@ The integration helps you understand what's going on in the following ways:
 - Plant light:
     - Per cover: min/max positions
 - Lockout protection
-- Manual override detection
 - Night silence
 - Prepositioning before silent phases
 

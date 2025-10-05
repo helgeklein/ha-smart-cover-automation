@@ -17,7 +17,7 @@ from . import const
 class PositionEntry:
     """A single position entry with timestamp."""
 
-    position: int | None
+    position: int
     timestamp: datetime
 
 
@@ -50,10 +50,6 @@ class CoverPositionHistory:
         """Get the newest (most recent) position entry with timestamp."""
         return self._entries[0] if self._entries else None
 
-    def get_all(self) -> list[int | None]:
-        """Get all positions from newest to oldest."""
-        return [entry.position for entry in self._entries]
-
     def get_all_entries(self) -> list[PositionEntry]:
         """Get all position entries with timestamps from newest to oldest."""
         return list(self._entries)
@@ -66,7 +62,7 @@ class CoverPositionHistory:
         """Return the number of positions in history."""
         return len(self._entries)
 
-    def __iter__(self) -> Iterator[int | None]:
+    def __iter__(self) -> Iterator[int]:
         """Make the object iterable to support list() conversion and direct iteration."""
         return iter(entry.position for entry in self._entries)
 
@@ -78,8 +74,8 @@ class CoverPositionHistoryManager:
         """Initialize the position history manager."""
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
 
-    def update(self, entity_id: str, new_position: int, timestamp: datetime | None = None) -> None:
-        """Update position history for a cover, maintaining the last COVER_POSITION_HISTORY_SIZE positions.
+    def add(self, entity_id: str, new_position: int, timestamp: datetime | None = None) -> None:
+        """Add a new cover position to the history.
 
         Args:
             entity_id: The cover entity ID
@@ -94,12 +90,10 @@ class CoverPositionHistoryManager:
         history = self._cover_position_history[entity_id]
         newest_entry = history.add_position(new_position, timestamp)
 
-        # Log the updated history for debugging
+        # Log the new entry for debugging
         timestamp_str = newest_entry.timestamp.isoformat()
         current_pos = newest_entry.position
-        const.LOGGER.debug(
-            f"[{entity_id}] Updated position history: {history.get_all()} (current: {current_pos or 'N/A'} at {timestamp_str})"
-        )
+        const.LOGGER.debug(f"[{entity_id}] Updated position history with new entry: {current_pos}% at {timestamp_str}")
 
     def get_entries(self, entity_id: str) -> list[PositionEntry]:
         """Get the position history entries with timestamps for a cover.

@@ -321,17 +321,20 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             # Check for manual override
             #
             # Get the last known cover position from history
-            # last_history_pos = self._cover_pos_history_mgr.get_latest(entity_id)
-            #            if last_history_pos is not None and current_pos != last_history_pos:
-            # Position has changed since last recorded position
-            #                if resolved.manual_override_duration > 0:
-            #                    last_moved = self._cover_pos_history_mgr.get_last_moved_time(entity_id)
-            #                    if last_moved is not None:
-            #                        elapsed = (datetime.now(timezone.utc) - last_moved).total_seconds() / 60.0
-            #                        if elapsed < resolved.manual_override_duration:
-            #                            message = f"Manual override active (last moved {elapsed:.1f} min ago), skipping"
-            #                            self._log_cover_result(entity_id, message, cover_attrs, result)
-            #                            continue
+            last_history_entry = self._cover_pos_history_mgr.get_latest_entry(entity_id)
+            if last_history_entry is not None and current_pos != last_history_entry.position:
+                # Position has changed since our last recorded desired position
+                # Beware of system time changes
+                time_now = datetime.now(timezone.utc)
+                if time_now > last_history_entry.timestamp:
+                    time_delta = (time_now - last_history_entry.timestamp).total_seconds()
+                    if time_delta < resolved.manual_override_duration:
+                        time_remaining = resolved.manual_override_duration - time_delta
+                        message = (
+                            f"Manual override detected (position changed externally), skipping this cover for another {time_remaining} s"
+                        )
+                        self._log_cover_result(entity_id, message, cover_attrs, result)
+                        continue
 
             # Is the sun hitting the window?
             sun_hitting: bool = False
@@ -370,8 +373,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     if actual_pos is not None:
                         # Store the position after movement
                         cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
-                        # Update position history for this cover
-                        self._cover_pos_history_mgr.update(entity_id, actual_pos)
+                        # Add the new position to the history
+                        self._cover_pos_history_mgr.add(entity_id, actual_pos)
                 except ServiceCallError as err:
                     # Log the error but continue with other covers
                     const.LOGGER.error(f"[{entity_id}] Failed to control cover: {err}")
@@ -382,8 +385,8 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     const.LOGGER.error(f"[{entity_id}] {error_msg}")
                     cover_attrs[const.COVER_ATTR_MESSAGE] = error_msg
             else:
-                # No movement - just update position history with current position
-                self._cover_pos_history_mgr.update(entity_id, current_pos)
+                # No movement - just add the current position to the history
+                self._cover_pos_history_mgr.add(entity_id, current_pos)
 
             # Include position history in cover attributes
             position_entries = self._cover_pos_history_mgr.get_entries(entity_id)
