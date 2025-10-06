@@ -230,7 +230,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         try:
             temp_max = await self._get_max_temperature(weather_entity_id)
             weather_condition = self._get_weather_condition(weather_entity_id)
-        except InvalidSensorReadingError:
+        except (InvalidSensorReadingError, WeatherEntityNotFoundError):
             message = "Weather data unavailable, skipping actions"
             self._log_automation_result(message, const.LogSeverity.WARNING, result)
             return result

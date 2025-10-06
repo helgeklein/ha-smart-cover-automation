@@ -20,6 +20,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 
+from .const import BINARY_SENSOR_KEY_HEALTH_STATUS, DOMAIN
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -28,17 +29,6 @@ if TYPE_CHECKING:
 
     from .coordinator import DataUpdateCoordinator
     from .data import IntegrationConfigEntry
-
-# Define the binary sensor entity configuration
-# This creates a problem sensor that shows the integration's health status
-ENTITY_DESCRIPTIONS = (
-    BinarySensorEntityDescription(
-        key="health_status",
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        icon="mdi:check-circle-outline",
-        translation_key="health_status",
-    ),
-)
 
 
 async def async_setup_entry(
@@ -49,22 +39,28 @@ async def async_setup_entry(
     """Set up the binary sensor platform for the integration.
 
     This function is called by Home Assistant when the integration is loaded.
-    It creates and registers binary sensor entities based on the entity
-    descriptions defined above.
+    It creates and registers the health status binary sensor.
 
     Args:
         hass: The Home Assistant instance (unused but required by interface)
         entry: The config entry containing integration configuration and runtime data
         async_add_entities: Callback to register new entities with Home Assistant
     """
-    # Create binary sensor entities from the coordinator
-    # Each entity description results in one binary sensor entity
+    # Create the health status binary sensor
+    entity_description = BinarySensorEntityDescription(
+        key=BINARY_SENSOR_KEY_HEALTH_STATUS,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:check-circle-outline",
+        translation_key=BINARY_SENSOR_KEY_HEALTH_STATUS,
+    )
+
     async_add_entities(
-        IntegrationBinarySensor(
-            coordinator=entry.runtime_data.coordinator,
-            entity_description=entity_description,
-        )
-        for entity_description in ENTITY_DESCRIPTIONS
+        [
+            IntegrationBinarySensor(
+                coordinator=entry.runtime_data.coordinator,
+                entity_description=entity_description,
+            )
+        ]
     )
 
 
@@ -104,9 +100,11 @@ class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright
         # Store the entity description that defines this sensor's characteristics
         self.entity_description = entity_description
 
-        # Override the unique ID to create a clean, predictable entity ID
-        # This will result in entity_id: binary_sensor.health_status
-        self._attr_unique_id = entity_description.key
+        # Override the unique ID or HA uses the device class ("problem") as instead of the key.
+        # Expected resulting entity_id:
+        # HA with English UI: binary_sensor.smart_cover_automation_health_status
+        # HA with German UI: binary_sensor.smart_cover_automation_gesundheitsstatus
+        self._attr_unique_id = f"{DOMAIN}_{entity_description.key}"
 
     @cached_property
     def is_on(self) -> bool:

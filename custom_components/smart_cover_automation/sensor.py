@@ -14,6 +14,7 @@ from .config import ConfKeys, ResolvedConfig, resolve_entry
 from .const import (
     COVER_ATTR_POS_CURRENT,
     COVER_ATTR_POS_TARGET_FINAL,
+    DOMAIN,
     SENSOR_ATTR_AUTOMATION_ENABLED,
     SENSOR_ATTR_COVERS_MAX_CLOSURE_POS,
     SENSOR_ATTR_COVERS_MIN_CLOSURE_POS,
@@ -55,41 +56,36 @@ def _count_moved_covers(covers: dict[str, dict[str, Any]]) -> int:
     )
 
 
-# Define sensor entity descriptions for the platform
-# Only creates the automation status sensor with comprehensive status info
-ENTITY_DESCRIPTIONS = (
-    # Status sensor - provides comprehensive automation status and metrics
-    SensorEntityDescription(
-        key=SENSOR_KEY_AUTOMATION_STATUS,
-        icon="mdi:information-outline",
-        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
-    ),
-)
-
-
 async def async_setup_entry(
     hass: HomeAssistant,  # noqa: ARG001 Unused function argument: `hass`
     entry: IntegrationConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the sensor platform.
+    """Set up the sensor platform for the integration.
 
-    Creates the automation status sensor that provides comprehensive
-    status information about the smart cover automation system.
+    This function is called by Home Assistant when the integration is loaded.
+    It creates and registers the automation status sensor.
+
+    Args:
+        hass: The Home Assistant instance (unused but required by interface)
+        entry: The config entry containing integration configuration and runtime data
+        async_add_entities: Callback to register new entities with Home Assistant
     """
-    coordinator = entry.runtime_data.coordinator
-    entities: list[SensorEntity] = []
+    # Create the automation status sensor
+    entity_description = SensorEntityDescription(
+        key=SENSOR_KEY_AUTOMATION_STATUS,
+        icon="mdi:list-status",
+        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
+    )
 
-    # Create sensor entities based on the entity descriptions
-    for entity_description in ENTITY_DESCRIPTIONS:
-        entities.append(
+    async_add_entities(
+        [
             AutomationStatusSensor(
-                coordinator=coordinator,
+                coordinator=entry.runtime_data.coordinator,
                 entity_description=entity_description,
             )
-        )
-
-    async_add_entities(entities)
+        ]
+    )
 
 
 class AutomationStatusSensor(IntegrationEntity, SensorEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -114,7 +110,7 @@ class AutomationStatusSensor(IntegrationEntity, SensorEntity):  # pyright: ignor
         """Initialize the automation status sensor."""
         super().__init__(coordinator)
         self.entity_description = entity_description
-        self._attr_unique_id = entity_description.key
+        self._attr_unique_id = f"{DOMAIN}_{entity_description.key}"
 
     # Note: We inherit the 'available' property from IntegrationEntity/CoordinatorEntity
     # which provides the correct coordinator-based availability logic.

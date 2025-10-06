@@ -13,9 +13,14 @@ Coverage targets:
 from __future__ import annotations
 
 import pytest
+from homeassistant.components.sensor import SensorEntityDescription
 
-from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED, SENSOR_ATTR_TEMP_CURRENT_MAX
-from custom_components.smart_cover_automation.sensor import ENTITY_DESCRIPTIONS, AutomationStatusSensor
+from custom_components.smart_cover_automation.const import (
+    COVER_ATTR_POS_TARGET_DESIRED,
+    SENSOR_ATTR_TEMP_CURRENT_MAX,
+    SENSOR_KEY_AUTOMATION_STATUS,
+)
+from custom_components.smart_cover_automation.sensor import AutomationStatusSensor
 
 
 @pytest.mark.parametrize(
@@ -44,7 +49,11 @@ async def test_sensor_native_value_with_various_data_states(
     mock_coordinator_basic.last_update_success = last_update_success
 
     # Create sensor instance with entity description
-    entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
+    entity_description = SensorEntityDescription(
+        key=SENSOR_KEY_AUTOMATION_STATUS,
+        icon="mdi:information-outline",
+        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
+    )
     sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
 
     # Get native value
@@ -83,7 +92,11 @@ async def test_sensor_extra_state_attributes_with_various_data_states(
     mock_coordinator_basic.last_update_success = last_update_success
 
     # Create sensor instance with entity description
-    entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
+    entity_description = SensorEntityDescription(
+        key=SENSOR_KEY_AUTOMATION_STATUS,
+        icon="mdi:information-outline",
+        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
+    )
     sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
 
     # Get extra state attributes
@@ -115,7 +128,11 @@ async def test_sensor_availability_property_delegation(mock_coordinator_basic, l
     mock_coordinator_basic.last_update_success = last_update_success
 
     # Create sensor instance
-    entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
+    entity_description = SensorEntityDescription(
+        key=SENSOR_KEY_AUTOMATION_STATUS,
+        icon="mdi:information-outline",
+        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
+    )
     sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
 
     # Test that availability property delegates to parent and reflects update status
@@ -147,7 +164,11 @@ async def test_sensor_with_valid_coordinator_data(mock_coordinator_basic) -> Non
     mock_coordinator_basic.last_update_success = True
 
     # Create sensor instance with entity description
-    entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
+    entity_description = SensorEntityDescription(
+        key=SENSOR_KEY_AUTOMATION_STATUS,
+        icon="mdi:information-outline",
+        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
+    )
     sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
 
     # Verify sensor returns valid data when coordinator data is available

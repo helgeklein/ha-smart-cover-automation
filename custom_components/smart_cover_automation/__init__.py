@@ -24,7 +24,8 @@ if TYPE_CHECKING:
 
 # List of platforms provided by this integration
 PLATFORMS: list[Platform] = [
-    Platform.BINARY_SENSOR,  # For automation status
+    Platform.BINARY_SENSOR,  # For health status monitoring
+    Platform.SENSOR,  # For automation status details
     Platform.SWITCH,  # For enabling/disabling automation
 ]
 

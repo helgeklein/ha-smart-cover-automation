@@ -14,9 +14,11 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from homeassistant.components.switch import SwitchEntityDescription
 
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.switch import ENTITY_DESCRIPTIONS, IntegrationSwitch
+from custom_components.smart_cover_automation.const import SWITCH_KEY_ENABLED
+from custom_components.smart_cover_automation.switch import IntegrationSwitch
 
 
 @pytest.mark.parametrize(
@@ -38,7 +40,11 @@ async def test_switch_availability_property_delegation(mock_coordinator_basic, l
     mock_coordinator_basic.last_update_success = last_update_success
 
     # Create switch instance
-    entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
+    entity_description = SwitchEntityDescription(
+        key=SWITCH_KEY_ENABLED,
+        icon="mdi:toggle-switch-outline",
+        translation_key=SWITCH_KEY_ENABLED,
+    )
     switch = IntegrationSwitch(mock_coordinator_basic, entity_description)
 
     # Test that availability property delegates to parent and reflects update status
@@ -75,7 +81,11 @@ async def test_switch_is_on_property_with_config_resolution(
     mock_coordinator_basic.config_entry.options = {}
 
     # Create switch instance
-    entity_description = ENTITY_DESCRIPTIONS[0]  # Use first available description
+    entity_description = SwitchEntityDescription(
+        key=SWITCH_KEY_ENABLED,
+        icon="mdi:toggle-switch-outline",
+        translation_key=SWITCH_KEY_ENABLED,
+    )
     switch = IntegrationSwitch(mock_coordinator_basic, entity_description)
 
     # Test that is_on property accesses resolved configuration

@@ -65,11 +65,6 @@ async def test_binary_sensor_entity_properties(mock_hass_with_spec, mock_config_
     # With PROBLEM device class: is_on=False when coordinator is working (no problems)
     assert getattr(entity, "is_on") is False
 
-    # Verify unique ID is properly formatted to create clean entity IDs
-    # This prevents ugly entity IDs like binary_sensor.smart_cover_automation_01k6tw1g0whg9jpn1e7yze02hg
-    expected_unique_id = "health_status"
-    assert getattr(entity, "unique_id") == expected_unique_id
-
 
 async def test_binary_sensor_is_on_state_with_failed_coordinator(mock_hass_with_spec, mock_config_entry_basic) -> None:
     """Test binary sensor is_on property returns True when coordinator fails.

@@ -28,6 +28,8 @@ class IntegrationEntity(CoordinatorEntity[DataUpdateCoordinator]):
     integration.
     """
 
+    # Mandatory: enable entity naming based on device name
+    # Docs: https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/has-entity-name/
     _attr_has_entity_name = True
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
@@ -44,7 +46,9 @@ class IntegrationEntity(CoordinatorEntity[DataUpdateCoordinator]):
         # Create device info to group all integration entities under a single device.
         # This makes the UI cleaner by showing all sensors, switches, and other
         # entities as parts of one logical device rather than separate devices.
+        # Docs: https://developers.home-assistant.io/docs/device_registry_index/
         self._attr_device_info = DeviceInfo(
+            # Unique identifier for the device - use the config entry ID (a UUID)
             identifiers={(const.DOMAIN, self.coordinator.config_entry.entry_id)},
             name=const.DOMAIN,
         )

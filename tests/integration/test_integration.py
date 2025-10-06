@@ -27,7 +27,6 @@ from unittest.mock import MagicMock
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION
 from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
-from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.config import (
     ConfKeys,
@@ -284,8 +283,8 @@ class TestIntegrationScenarios:
            - Logs errors but doesn't prevent future automation attempts
            - Simulates network issues, cover device problems, or HA service issues
 
-        Critical sensor errors result in UpdateFailed exceptions that make entities unavailable,
-        signaling to users that the automation system requires attention.
+        Critical sensor errors result in graceful degradation with warning messages,
+        allowing automation to continue with reduced functionality when possible.
         """
         # Setup coordinator with integrated hass and weather service
         coordinator = create_integration_coordinator()
@@ -307,10 +306,12 @@ class TestIntegrationScenarios:
             ),
         }.get(entity_id)
 
-        # Should handle missing sensor as critical error
+        # Should handle missing sensor gracefully with warning message
         await coordinator.async_refresh()
-        assert isinstance(coordinator.last_exception, UpdateFailed)  # Critical error should be raised
-        assert "Temperature sensor 'weather.forecast' not found" in str(coordinator.last_exception)
+        assert coordinator.last_exception is None  # No critical error should be raised
+        # Verify that coordinator data contains the weather unavailable message
+        assert coordinator.data is not None
+        assert "Weather data unavailable, skipping actions" in coordinator.data.get("message", "")
 
     async def test_configuration_validation(self) -> None:
         """

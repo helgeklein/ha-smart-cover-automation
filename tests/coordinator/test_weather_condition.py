@@ -11,7 +11,6 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
-from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import (
@@ -58,10 +57,12 @@ class TestWeatherCondition:
                 "sun.sun": MagicMock(state="above_horizon", attributes={"elevation": 45, "azimuth": 180}),
                 "cover.test_cover": MagicMock(attributes={"current_position": 100, "supported_features": 15}),
             }.get(entity_id)
-            # Missing weather entity should be treated as critical error
+            # Missing weather entity should be handled gracefully with warning
             await coordinator.async_refresh()
-            assert isinstance(coordinator.last_exception, UpdateFailed)
-            assert "Temperature sensor 'weather.forecast' not found" in str(coordinator.last_exception)
+            assert coordinator.last_exception is None  # No critical error should be raised
+            # Verify that coordinator data contains the weather unavailable message
+            assert coordinator.data is not None
+            assert "Weather data unavailable, skipping actions" in coordinator.data.get("message", "")
         else:
             # Mock weather entity with the specified state
             weather_state = MagicMock()
