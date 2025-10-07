@@ -227,7 +227,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         schema_dict: dict[vol.Marker, object] = {}
 
         # === GLOBAL AUTOMATION SETTINGS ===
-        schema_dict[vol.Required(ConfKeys.SIMULATING.value, default=resolved_settings.simulating)] = selector.BooleanSelector()
         schema_dict[vol.Required(ConfKeys.VERBOSE_LOGGING.value, default=resolved_settings.verbose_logging)] = selector.BooleanSelector()
 
         # === COVER SETTINGS ===

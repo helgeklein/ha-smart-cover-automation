@@ -20,8 +20,6 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-import pytest
-
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
 from custom_components.smart_cover_automation.const import COVER_SFX_AZIMUTH
@@ -176,67 +174,3 @@ async def test_options_flow_direction_field_defaults_and_parsing() -> None:
     # Invalid input should not yield a numeric default (graceful degradation)
     val3 = _resolve_default(marker_three)
     assert not isinstance(val3, (int, float))  # "west" → non-numeric fallback
-
-
-@pytest.mark.parametrize(
-    "initial_simulation_state,expected_default,options_override,final_state,test_description",
-    [
-        (False, False, None, True, "simulation disabled by default, user enables"),
-        (True, False, False, False, "simulation in data but disabled via options"),
-        (None, False, None, True, "no initial simulation state, user enables"),
-        (True, True, None, False, "simulation enabled, user disables"),
-    ],
-)
-async def test_simulation_mode_configuration_parametrized(
-    initial_simulation_state: bool | None, expected_default: bool, options_override: bool | None, final_state: bool, test_description: str
-) -> None:
-    """Test simulation mode configuration across various scenarios.
-
-    This parametrized test verifies simulation mode handling including:
-    - Default value display in options form
-    - Options precedence over data configuration
-    - User input processing and storage
-    - Various initial configuration states
-    """
-    # Setup configuration based on test parameters
-    data: dict[str, Any] = {ConfKeys.COVERS.value: ["cover.test"]}
-    if initial_simulation_state is not None:
-        data[ConfKeys.SIMULATING.value] = initial_simulation_state
-
-    options: dict[str, Any] = {}
-    if options_override is not None:
-        options[ConfKeys.SIMULATING.value] = options_override
-
-    flow = OptionsFlowHandler(create_options_flow_mock_entry(data, options))
-
-    # Check form default value
-    result = await flow.async_step_init()
-    result_dict = cast(dict[str, Any], result)
-    schema = result_dict["data_schema"].schema
-
-    simulation_marker = next(k for k in schema.keys() if getattr(k, "schema", None) == ConfKeys.SIMULATING.value)
-
-    def _resolve_default(marker: object) -> Any:
-        """Helper to resolve voluptuous default values."""
-        if hasattr(marker, "default"):
-            dv = getattr(marker, "default")
-            return dv() if callable(dv) else dv
-        return None
-
-    # Verify expected default
-    assert _resolve_default(simulation_marker) is expected_default, f"Failed default check for: {test_description}"
-
-    # Submit form with final simulation state
-    user_input = {
-        ConfKeys.ENABLED.value: True,
-        ConfKeys.SIMULATING.value: final_state,
-        ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-        ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
-    }
-
-    result = await flow.async_step_init(user_input)
-    result_dict = cast(dict[str, Any], result)
-
-    # Verify successful submission with expected final state
-    assert result_dict["type"] == "create_entry"
-    assert result_dict["data"][ConfKeys.SIMULATING.value] is final_state, f"Failed final state check for: {test_description}"

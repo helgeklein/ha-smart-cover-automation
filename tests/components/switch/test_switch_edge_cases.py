@@ -1,12 +1,7 @@
-"""Tests for switch edge cases and property handling.
+"""Edge case tests for the switch platform.
 
-This module contains focused tests for switch entity edge cases that are not
-covered by the main switch tests, specifically targeting property edge cases
-and availability delegation.
-
-Coverage targets:
-- Switch availability property delegation
-- Switch is_on property with resolved configuration
+This module tests specific edge cases and behavioral branches for the Smart Cover
+Automation switch entity that require special test conditions or parameter variations.
 """
 
 from __future__ import annotations
@@ -14,11 +9,9 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from homeassistant.components.switch import SwitchEntityDescription
 
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.const import SWITCH_KEY_ENABLED
-from custom_components.smart_cover_automation.switch import IntegrationSwitch
+from custom_components.smart_cover_automation.switch import EnabledSwitch
 
 
 @pytest.mark.parametrize(
@@ -39,13 +32,8 @@ async def test_switch_availability_property_delegation(mock_coordinator_basic, l
     # Set coordinator update status
     mock_coordinator_basic.last_update_success = last_update_success
 
-    # Create switch instance
-    entity_description = SwitchEntityDescription(
-        key=SWITCH_KEY_ENABLED,
-        icon="mdi:toggle-switch-outline",
-        translation_key=SWITCH_KEY_ENABLED,
-    )
-    switch = IntegrationSwitch(mock_coordinator_basic, entity_description)
+    # Create enabled switch instance directly
+    switch = EnabledSwitch(mock_coordinator_basic)
 
     # Test that availability property delegates to parent and reflects update status
     availability = switch.available
@@ -80,13 +68,8 @@ async def test_switch_is_on_property_with_config_resolution(
     mock_coordinator_basic.config_entry.data = {ConfKeys.ENABLED.value: enabled_config_value}
     mock_coordinator_basic.config_entry.options = {}
 
-    # Create switch instance
-    entity_description = SwitchEntityDescription(
-        key=SWITCH_KEY_ENABLED,
-        icon="mdi:toggle-switch-outline",
-        translation_key=SWITCH_KEY_ENABLED,
-    )
-    switch = IntegrationSwitch(mock_coordinator_basic, entity_description)
+    # Create enabled switch instance directly
+    switch = EnabledSwitch(mock_coordinator_basic)
 
     # Test that is_on property accesses resolved configuration
     is_on_state = switch.is_on

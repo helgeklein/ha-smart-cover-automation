@@ -1,15 +1,12 @@
 """Switch platform for smart_cover_automation.
 
-Provides a Home Assistant switch entity that controls whether the smart cover automation
-is enabled or disabled. This switch:
+This module provides switch entities that control various aspects of the
+Smart Cover Automation integration. The switches allow users to control
+the automation behavior through the Home Assistant interface.
 
-- Represents the global enabled/disabled state of the automation
-- Persists its state in the integration's options (configuration)
-- Triggers coordinator refresh when toggled to immediately apply state changes
-- Inherits availability from the coordinator status
-
-The switch state is stored in the config entry options, allowing it to persist
-across Home Assistant restarts and integration reloads.
+The switches that appear in Home Assistant are:
+- Entity: switch.smart_cover_automation_enabled - Master automation enable/disable
+- Entity: switch.smart_cover_automation_simulation_mode - Simulation mode control
 """
 
 from __future__ import annotations
@@ -22,7 +19,7 @@ from homeassistant.components.switch import SwitchEntity, SwitchEntityDescriptio
 from custom_components.smart_cover_automation.const import HA_OPTIONS
 
 from .config import ConfKeys, resolve_entry
-from .const import SWITCH_KEY_ENABLED
+from .const import SWITCH_KEY_ENABLED, SWITCH_KEY_SIMULATION_MODE
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -41,43 +38,39 @@ async def async_setup_entry(
     """Set up the switch platform for the integration.
 
     This function is called by Home Assistant when the integration is loaded.
-    It creates and registers the automation control switch.
+    It creates and registers all switch entities for the integration.
 
     Args:
         hass: The Home Assistant instance (unused but required by interface)
         entry: The config entry containing integration configuration and runtime data
         async_add_entities: Callback to register new entities with Home Assistant
     """
-    # Create the automation control switch
-    entity_description = SwitchEntityDescription(
-        key=SWITCH_KEY_ENABLED,
-        icon="mdi:toggle-switch-outline",
-        translation_key=SWITCH_KEY_ENABLED,
-    )
+    coordinator = entry.runtime_data.coordinator
 
-    async_add_entities(
-        [
-            IntegrationSwitch(
-                coordinator=entry.runtime_data.coordinator,
-                entity_description=entity_description,
-            )
-        ]
-    )
+    # Create all switch entities
+    entities = [
+        # Master automation enable/disable switch
+        EnabledSwitch(coordinator),
+        # Simulation mode control switch
+        SimulationModeSwitch(coordinator),
+    ]
+
+    async_add_entities(entities)
 
 
 class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
-    """Smart cover automation master enable/disable switch.
+    """Base switch entity for Smart Cover Automation integration.
 
-    This switch controls the global enabled state of the automation system.
-    When turned off, the automation stops processing temperature and sun data
-    and will not move any covers. When turned on, normal automation resumes.
+    This abstract base class provides common functionality for all switch
+    entities in the integration. It handles the basic entity setup and provides
+    a foundation for specific switch implementations.
 
-    The switch state is persisted in the integration's configuration options,
-    ensuring it survives Home Assistant restarts. State changes trigger an
-    immediate coordinator refresh to apply the new setting.
-
-    Inherits device grouping from IntegrationEntity and availability status
-    from CoordinatorEntity via the inheritance chain.
+    The class provides:
+    - Integration with the coordinator for data updates
+    - Automatic availability tracking based on coordinator status
+    - Consistent entity naming and identification patterns
+    - Integration with Home Assistant's switch platform
+    - Base methods for persisting switch state changes in config options
     """
 
     def __init__(
@@ -85,7 +78,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         coordinator: DataUpdateCoordinator,
         entity_description: SwitchEntityDescription,
     ) -> None:
-        """Initialize the automation control switch.
+        """Initialize the switch entity.
 
         Args:
             coordinator: The DataUpdateCoordinator that manages automation logic
@@ -100,12 +93,59 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         self.entity_description = entity_description
 
         # Set unique ID to ensure proper device grouping and entity identification
-        # This will result in entity_id: switch.smart_cover_automation_enabled
+        # This will result in entity_id: switch.smart_cover_automation_{translation_key}
         self._attr_unique_id = f"smart_cover_automation_{entity_description.key}"
 
     # Note: We inherit the 'available' property from IntegrationEntity/CoordinatorEntity
     # which provides the correct coordinator-based availability logic.
     # No override is needed since the default behavior is exactly what we want.
+
+    async def _persist_option_and_refresh(self, config_key: str, value: bool) -> None:
+        """Persist a configuration option and trigger coordinator refresh.
+
+        This helper method handles the common pattern of updating a configuration
+        option in the integration's stored options and then requesting a coordinator
+        refresh to apply the change immediately.
+
+        Args:
+            config_key: The configuration key to update in the options
+            value: The boolean value to set for the configuration key
+        """
+        entry = self.coordinator.config_entry
+        current = dict(getattr(entry, HA_OPTIONS, {}) or {})
+        current[config_key] = value
+        await entry.async_set_options(current)  # type: ignore[attr-defined]
+        await self.coordinator.async_request_refresh()
+
+
+class EnabledSwitch(IntegrationSwitch):
+    """Switch for controlling the master automation enable/disable state.
+
+    This switch controls the global enabled state of the automation system.
+    When turned off, the automation stops processing temperature and sun data
+    and will not move any covers. When turned on, normal automation resumes.
+
+    The switch state is persisted in the integration's configuration options,
+    ensuring it survives Home Assistant restarts. State changes trigger an
+    immediate coordinator refresh to apply the new setting.
+
+    Inherits device grouping from IntegrationEntity and availability status
+    from CoordinatorEntity via the inheritance chain.
+    """
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the automation enable/disable switch.
+
+        Args:
+            coordinator: The DataUpdateCoordinator that manages automation logic
+                        and provides state management for this switch
+        """
+        entity_description = SwitchEntityDescription(
+            key=SWITCH_KEY_ENABLED,
+            icon="mdi:toggle-switch-outline",
+            translation_key=SWITCH_KEY_ENABLED,
+        )
+        super().__init__(coordinator, entity_description)
 
     @cached_property
     def is_on(self) -> bool:
@@ -124,12 +164,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         a coordinator refresh to immediately start automation processing.
         The state change persists across Home Assistant restarts.
         """
-        # Persist enabled=True in options if available
-        entry = self.coordinator.config_entry
-        current = dict(getattr(entry, HA_OPTIONS, {}) or {})
-        current[ConfKeys.ENABLED.value] = True
-        await entry.async_set_options(current)  # type: ignore[attr-defined]
-        await self.coordinator.async_request_refresh()
+        await self._persist_option_and_refresh(ConfKeys.ENABLED.value, True)
 
     async def async_turn_off(self, **_: Any) -> None:
         """Disable the smart cover automation.
@@ -138,8 +173,64 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         a coordinator refresh to immediately stop automation processing.
         The state change persists across Home Assistant restarts.
         """
-        entry = self.coordinator.config_entry
-        current = dict(getattr(entry, HA_OPTIONS, {}) or {})
-        current[ConfKeys.ENABLED.value] = False
-        await entry.async_set_options(current)  # type: ignore[attr-defined]
-        await self.coordinator.async_request_refresh()
+        await self._persist_option_and_refresh(ConfKeys.ENABLED.value, False)
+
+
+class SimulationModeSwitch(IntegrationSwitch):
+    """Switch for controlling simulation mode.
+
+    This switch controls whether the automation runs in simulation mode.
+    When simulation mode is enabled, the automation performs all calculations
+    and decision-making but doesn't actually send commands to move covers.
+
+    This is useful for:
+    - Testing automation logic without affecting physical covers
+    - Monitoring what the automation would do in different conditions
+    - Development and troubleshooting
+
+    The switch state is persisted in the integration's configuration options,
+    ensuring it survives Home Assistant restarts. State changes trigger an
+    immediate coordinator refresh to apply the new setting.
+    """
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the simulation mode switch.
+
+        Args:
+            coordinator: The DataUpdateCoordinator that manages automation logic
+                        and provides state management for this switch
+        """
+        entity_description = SwitchEntityDescription(
+            key=SWITCH_KEY_SIMULATION_MODE,
+            icon="mdi:play-circle-outline",
+            translation_key=SWITCH_KEY_SIMULATION_MODE,
+        )
+        super().__init__(coordinator, entity_description)
+
+    @cached_property
+    def is_on(self) -> bool:
+        """Return whether simulation mode is currently enabled.
+
+        Reads from the resolved settings to get the current simulation state.
+        This reflects changes made through the integration's options flow.
+        """
+        resolved = resolve_entry(self.coordinator.config_entry)
+        return resolved.simulating
+
+    async def async_turn_on(self, **_: Any) -> None:
+        """Enable simulation mode.
+
+        Sets the simulating flag to True in the integration's options and triggers
+        a coordinator refresh to immediately apply simulation mode. The automation
+        will continue to run but won't move any covers.
+        """
+        await self._persist_option_and_refresh(ConfKeys.SIMULATING.value, True)
+
+    async def async_turn_off(self, **_: Any) -> None:
+        """Disable simulation mode.
+
+        Sets the simulating flag to False in the integration's options and triggers
+        a coordinator refresh to immediately disable simulation mode. The automation
+        will resume normal operation and can move covers as designed.
+        """
+        await self._persist_option_and_refresh(ConfKeys.SIMULATING.value, False)

@@ -130,7 +130,6 @@ def test_translation_has_required_keys(language_code: str) -> None:
     options_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("init", {}).get("data", {})
     expected_options_fields = {
         ConfKeys.ENABLED.value,
-        ConfKeys.SIMULATING.value,
         ConfKeys.VERBOSE_LOGGING.value,
         ConfKeys.COVERS.value,
         ConfKeys.WEATHER_ENTITY_ID.value,

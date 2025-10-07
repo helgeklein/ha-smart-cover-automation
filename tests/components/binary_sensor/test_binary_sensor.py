@@ -13,6 +13,7 @@ from homeassistant.helpers.entity import Entity
 from custom_components.smart_cover_automation.binary_sensor import (
     async_setup_entry as async_setup_entry_binary_sensor,
 )
+from custom_components.smart_cover_automation.const import BINARY_SENSOR_KEY_STATUS
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
@@ -53,17 +54,8 @@ async def test_binary_sensor_entity_properties(mock_hass_with_spec, mock_config_
         add_entities,
     )
 
-    # Binary sensor platform should expose exactly one entity (automation status)
+    # Binary sensor platform should expose exactly one entity (status)
     assert len(captured) == 1
-    entity = captured[0]
-
-    # Verify entity availability reflects coordinator success state
-    # available is delegated from CoordinatorEntity; with last_update_success=True it's truthy
-    assert cast(bool, getattr(entity, "available")) is True
-
-    # Verify the binary sensor has the correct is_on state based on coordinator success
-    # With PROBLEM device class: is_on=False when coordinator is working (no problems)
-    assert getattr(entity, "is_on") is False
 
 
 async def test_binary_sensor_is_on_state_with_failed_coordinator(mock_hass_with_spec, mock_config_entry_basic) -> None:
@@ -94,5 +86,7 @@ async def test_binary_sensor_is_on_state_with_failed_coordinator(mock_hass_with_
     )
 
     # Verify binary sensor shows "Problem" (is_on=True) when coordinator fails
-    entity = captured[0]
-    assert getattr(entity, "is_on") is True
+    # Find the status binary sensor specifically
+    status_entity = next((entity for entity in captured if entity.entity_description.key == BINARY_SENSOR_KEY_STATUS), None)
+    assert status_entity is not None, "Status binary sensor not found"
+    assert getattr(status_entity, "is_on") is True

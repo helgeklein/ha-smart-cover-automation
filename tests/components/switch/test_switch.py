@@ -35,7 +35,8 @@ from homeassistant.helpers.entity import Entity
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.switch import (
-    IntegrationSwitch,
+    EnabledSwitch,
+    SimulationModeSwitch,
 )
 from custom_components.smart_cover_automation.switch import (
     async_setup_entry as async_setup_entry_switch,
@@ -81,12 +82,14 @@ async def test_switch_turn_on_persists_option_and_refresh(mock_coordinator_basic
         """Mock entity addition function that captures created entities."""
         captured.extend(list(new_entities))
 
-    # Setup the switch platform and capture the switch entity
+    # Setup the switch platform and capture the switch entities
     await async_setup_entry_switch(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
-    switch = cast(IntegrationSwitch, captured[0])
+
+    # Find the enabled switch entity
+    enabled_switch = next(entity for entity in captured if isinstance(entity, EnabledSwitch))
 
     # Execute the turn-on operation
-    await switch.async_turn_on()
+    await enabled_switch.async_turn_on()
 
     # Verify that options are updated (state persistence)
     # This ensures the switch state survives Home Assistant restarts
@@ -136,12 +139,14 @@ async def test_switch_turn_off_persists_option_and_refresh(mock_coordinator_basi
         """Mock entity addition function that captures created entities."""
         captured.extend(list(new_entities))
 
-    # Setup the switch platform and capture the switch entity
+    # Setup the switch platform and capture the switch entities
     await async_setup_entry_switch(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
-    switch = cast(IntegrationSwitch, captured[0])
+
+    # Find the enabled switch entity
+    enabled_switch = next(entity for entity in captured if isinstance(entity, EnabledSwitch))
 
     # Execute the turn-off operation
-    await switch.async_turn_off()
+    await enabled_switch.async_turn_off()
 
     # Verify that options are updated (state persistence)
     # This ensures the disabled state survives Home Assistant restarts
@@ -150,3 +155,136 @@ async def test_switch_turn_off_persists_option_and_refresh(mock_coordinator_basi
     # Verify that coordinator refresh is triggered (immediate effect)
     # This ensures automation stops immediately without waiting for next update cycle
     mock_coordinator_basic.async_request_refresh.assert_awaited()
+
+
+async def test_simulation_mode_switch_turn_on_persists_option_and_refresh(mock_coordinator_basic) -> None:
+    """Test that turning the simulation mode switch ON persists state and triggers refresh.
+
+    This test verifies the complete turn-on sequence for the simulation mode switch:
+    1. State persistence through Home Assistant's options system
+    2. Immediate coordinator refresh to apply the new state
+    3. Proper integration with the configuration management system
+
+    Test scenario:
+    - Simulation mode switch starts in disabled state (simulating = False)
+    - User turns simulation mode switch ON
+    - Expected behavior: Options updated and coordinator refreshed immediately
+
+    Simulation mode is critical for testing and development, allowing users to
+    verify automation logic without actually moving covers.
+    """
+    # Setup integration with simulation mode initially disabled
+    entry = mock_coordinator_basic.config_entry
+    entry.runtime_data.config[ConfKeys.SIMULATING.value] = False
+
+    # Setup mock Home Assistant environment
+    mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
+    mock_coordinator_basic.async_request_refresh = AsyncMock()  # type: ignore[assignment]
+    entry.runtime_data.coordinator = mock_coordinator_basic
+    entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
+
+    # Capture entities created by the switch platform
+    captured: list[Entity] = []
+
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:  # noqa: ARG001
+        """Mock entity addition function that captures created entities."""
+        captured.extend(list(new_entities))
+
+    # Setup the switch platform and capture the switch entities
+    await async_setup_entry_switch(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
+
+    # Find the simulation mode switch entity
+    simulation_switch = next(entity for entity in captured if isinstance(entity, SimulationModeSwitch))
+
+    # Execute the turn-on operation
+    await simulation_switch.async_turn_on()
+
+    # Verify that options are updated (state persistence)
+    entry.async_set_options.assert_awaited()  # type: ignore[attr-defined]
+
+    # Verify that coordinator refresh is triggered (immediate effect)
+    mock_coordinator_basic.async_request_refresh.assert_awaited()
+
+
+async def test_simulation_mode_switch_turn_off_persists_option_and_refresh(mock_coordinator_basic) -> None:
+    """Test that turning the simulation mode switch OFF persists state and triggers refresh.
+
+    This test verifies the complete turn-off sequence for the simulation mode switch:
+    1. State persistence through Home Assistant's options system
+    2. Immediate coordinator refresh to apply the new state
+    3. Proper integration with the configuration management system
+
+    Test scenario:
+    - Simulation mode switch starts in enabled state (simulating = True)
+    - User turns simulation mode switch OFF
+    - Expected behavior: Options updated and coordinator refreshed immediately
+
+    Turning off simulation mode re-enables normal cover operation, which must
+    happen immediately to provide responsive control.
+    """
+    # Setup integration with simulation mode initially enabled
+    entry = mock_coordinator_basic.config_entry
+    entry.runtime_data.config[ConfKeys.SIMULATING.value] = True
+
+    # Setup mock Home Assistant environment
+    mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
+    mock_coordinator_basic.async_request_refresh = AsyncMock()  # type: ignore[assignment]
+    entry.runtime_data.coordinator = mock_coordinator_basic
+    entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
+
+    # Capture entities created by the switch platform
+    captured: list[Entity] = []
+
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:  # noqa: ARG001
+        """Mock entity addition function that captures created entities."""
+        captured.extend(list(new_entities))
+
+    # Setup the switch platform and capture the switch entities
+    await async_setup_entry_switch(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
+
+    # Find the simulation mode switch entity
+    simulation_switch = next(entity for entity in captured if isinstance(entity, SimulationModeSwitch))
+
+    # Execute the turn-off operation
+    await simulation_switch.async_turn_off()
+
+    # Verify that options are updated (state persistence)
+    entry.async_set_options.assert_awaited()  # type: ignore[attr-defined]
+
+    # Verify that coordinator refresh is triggered (immediate effect)
+    mock_coordinator_basic.async_request_refresh.assert_awaited()
+
+
+async def test_switch_entity_properties(mock_coordinator_basic) -> None:
+    """Test that switch entities are properly created with correct properties.
+
+    This test verifies that both switch entities (enabled and simulation mode)
+    are created during platform setup and have the expected properties.
+    """
+    entry = mock_coordinator_basic.config_entry
+    entry.runtime_data.coordinator = mock_coordinator_basic
+
+    # Capture entities created by the switch platform
+    captured: list[Entity] = []
+
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:  # noqa: ARG001
+        """Mock entity addition function that captures created entities."""
+        captured.extend(list(new_entities))
+
+    # Setup the switch platform and capture all entities
+    await async_setup_entry_switch(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
+
+    # Verify we have exactly 2 switch entities
+    assert len(captured) == 2
+
+    # Find each switch type
+    enabled_switch = next((entity for entity in captured if isinstance(entity, EnabledSwitch)), None)
+    simulation_switch = next((entity for entity in captured if isinstance(entity, SimulationModeSwitch)), None)
+
+    # Verify both switches exist
+    assert enabled_switch is not None
+    assert simulation_switch is not None
+
+    # Verify unique IDs are set correctly
+    assert enabled_switch.unique_id == "smart_cover_automation_enabled"
+    assert simulation_switch.unique_id == "smart_cover_automation_simulation_mode"

@@ -45,9 +45,10 @@ COVER_POSITION_HISTORY_SIZE: Final[int] = 3  # Number of positions to store in h
 COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Translation key for cover/window azimuth (°)
 
 # Entity keys
-BINARY_SENSOR_KEY_HEALTH_STATUS: Final[str] = "health_status"  # Key for the health status binary sensor entity
+BINARY_SENSOR_KEY_STATUS: Final[str] = "status"  # Key for the status binary sensor entity
 SENSOR_KEY_AUTOMATION_STATUS: Final[str] = "automation_status"  # Key for the automation status sensor entity
 SWITCH_KEY_ENABLED: Final[str] = "enabled"  # Key for the master enable/disable switch entity
+SWITCH_KEY_SIMULATION_MODE: Final[str] = "simulation_mode"  # Key for the simulation mode switch entity
 
 # Sensor attribute keys (exposed on the automation status sensor)
 SENSOR_ATTR_AUTOMATION_ENABLED: Final[str] = "automation_enabled"  # Config value

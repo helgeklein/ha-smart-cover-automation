@@ -1,12 +1,12 @@
 """Binary sensor platform for smart_cover_automation.
 
-This module provides a binary sensor that monitors the availability of the
-Smart Cover Automation integration. The binary sensor
-indicates whether the automation system is functioning properly by reflecting
-the coordinator's last update status.
+This module provides binary sensors that monitor various aspects of the
+Smart Cover Automation integration. The binary sensors provide real-time
+status information about the automation system's operation.
 
-The sensor appears in Home Assistant as:
-- Entity: binary_sensor.health_status
+The sensors that appear in Home Assistant are:
+- Entity: binary_sensor.smart_cover_automation_status - System status monitoring
+- Entity: binary_sensor.smart_cover_automation_simulation_mode - Simulation mode status
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 
-from .const import BINARY_SENSOR_KEY_HEALTH_STATUS, DOMAIN
+from .const import BINARY_SENSOR_KEY_STATUS, DOMAIN
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -39,46 +39,36 @@ async def async_setup_entry(
     """Set up the binary sensor platform for the integration.
 
     This function is called by Home Assistant when the integration is loaded.
-    It creates and registers the health status binary sensor.
+    It creates and registers all binary sensor entities for the integration.
 
     Args:
         hass: The Home Assistant instance (unused but required by interface)
         entry: The config entry containing integration configuration and runtime data
         async_add_entities: Callback to register new entities with Home Assistant
     """
-    # Create the health status binary sensor
-    entity_description = BinarySensorEntityDescription(
-        key=BINARY_SENSOR_KEY_HEALTH_STATUS,
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        icon="mdi:check-circle-outline",
-        translation_key=BINARY_SENSOR_KEY_HEALTH_STATUS,
-    )
+    coordinator = entry.runtime_data.coordinator
 
-    async_add_entities(
-        [
-            IntegrationBinarySensor(
-                coordinator=entry.runtime_data.coordinator,
-                entity_description=entity_description,
-            )
-        ]
-    )
+    # Create all binary sensor entities
+    entities = [
+        # Status binary sensor - indicates system problems
+        StatusBinarySensor(coordinator),
+    ]
+
+    async_add_entities(entities)
 
 
 class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
-    """Binary sensor entity for Smart Cover Automation system health monitoring.
+    """Base binary sensor entity for Smart Cover Automation integration.
 
-    This class creates a problem-style binary sensor that indicates whether
-    the cover automation system has any issues. The sensor's state is
-    automatically derived from the coordinator's operational status.
+    This abstract base class provides common functionality for all binary sensor
+    entities in the integration. It handles the basic entity setup and provides
+    a foundation for specific binary sensor implementations.
 
-    The sensor provides:
-    - Problem device class for appropriate UI representation
+    The class provides:
+    - Integration with the coordinator for data updates
     - Automatic availability tracking based on coordinator health
+    - Consistent entity naming and identification patterns
     - Integration with Home Assistant's binary sensor platform
-
-    State meanings:
-    - 'on' (Problem): Automation system has issues or coordinator failed
-    - 'off' (OK): Automation system is working, coordinator is healthy
     """
 
     def __init__(
@@ -90,9 +80,9 @@ class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright
 
         Args:
             coordinator: The DataUpdateCoordinator that manages automation logic
-                        and provides the health status for this sensor
+                         and provides data for this sensor
             entity_description: Configuration describing the entity's properties
-                               (name, device class, etc.)
+                                (name, device class, etc.)
         """
         # Initialize the base entity with coordinator integration
         super().__init__(coordinator)
@@ -100,11 +90,48 @@ class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright
         # Store the entity description that defines this sensor's characteristics
         self.entity_description = entity_description
 
-        # Override the unique ID or HA uses the device class ("problem") as instead of the key.
-        # Expected resulting entity_id:
-        # HA with English UI: binary_sensor.smart_cover_automation_health_status
-        # HA with German UI: binary_sensor.smart_cover_automation_gesundheitsstatus
+        # Override the unique ID or HA uses the device class instead of the key.
+        # Expected resulting entity_id pattern:
+        #   binary_sensor.smart_cover_automation_{translated_key}
         self._attr_unique_id = f"{DOMAIN}_{entity_description.key}"
+
+    # Note: Multiple inheritance from IntegrationEntity (CoordinatorEntity) and
+    # BinarySensorEntity causes a Pylance conflict on the 'available' property.
+    # Both base classes define it differently, but they're compatible at runtime.
+    # The CoordinatorEntity's implementation provides the correct coordinator-based
+    # availability logic we want, so no override is needed.
+
+
+class StatusBinarySensor(IntegrationBinarySensor):
+    """Binary sensor for monitoring Smart Cover Automation system health.
+
+    This sensor indicates whether the cover automation system has any issues.
+    The sensor's state is automatically derived from the coordinator's operational status.
+
+    The sensor provides:
+    - Problem device class for appropriate UI representation
+    - Automatic availability tracking based on coordinator health
+    - Integration with Home Assistant's binary sensor platform
+
+    State meanings:
+    - 'on' (Problem): Automation system has issues or coordinator failed
+    - 'off' (OK): Automation system is working, coordinator is healthy
+    """
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the status binary sensor.
+
+        Args:
+            coordinator: The DataUpdateCoordinator that manages automation logic
+                         and provides the status for this sensor
+        """
+        entity_description = BinarySensorEntityDescription(
+            key=BINARY_SENSOR_KEY_STATUS,
+            device_class=BinarySensorDeviceClass.PROBLEM,
+            # icon="mdi:check-circle-outline",
+            translation_key=BINARY_SENSOR_KEY_STATUS,
+        )
+        super().__init__(coordinator, entity_description)
 
     @cached_property
     def is_on(self) -> bool:
@@ -114,13 +141,7 @@ class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright
         - True (on/Problem): Coordinator has failed or encountered errors
         - False (off/OK): Coordinator is successfully fetching and processing data
 
-        This allows users to monitor automation system health and create
+        This allows users to monitor automation system status and create
         automations based on system status. Note: Problem sensors use inverted logic.
         """
         return not self.coordinator.last_update_success
-
-    # Note: Multiple inheritance from IntegrationEntity (CoordinatorEntity) and
-    # BinarySensorEntity causes a Pylance conflict on the 'available' property.
-    # Both base classes define it differently, but they're compatible at runtime.
-    # The CoordinatorEntity's implementation provides the correct coordinator-based
-    # availability logic we want, so no override is needed.

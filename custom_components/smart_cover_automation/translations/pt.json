@@ -61,13 +61,16 @@
             }
         },
         "binary_sensor": {
-            "health_status": {
-                "name": "Estado de Saúde"
+            "status": {
+                "name": "Estado"
             }
         },
         "switch": {
             "enabled": {
                 "name": "Ativado"
+            },
+            "simulation_mode": {
+                "name": "Modo Simulação"
             }
         }
     }

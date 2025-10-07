@@ -61,13 +61,16 @@
             }
         },
         "binary_sensor": {
-            "health_status": {
-                "name": "健康状态"
+            "status": {
+                "name": "状态"
             }
         },
         "switch": {
             "enabled": {
                 "name": "已启用"
+            },
+            "simulation_mode": {
+                "name": "模拟模式"
             }
         }
     }
