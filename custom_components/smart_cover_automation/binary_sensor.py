@@ -19,6 +19,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
+from homeassistant.const import EntityCategory
 
 from .const import BINARY_SENSOR_KEY_STATUS, DOMAIN
 from .entity import IntegrationEntity
@@ -130,6 +131,7 @@ class StatusBinarySensor(IntegrationBinarySensor):
             device_class=BinarySensorDeviceClass.PROBLEM,
             # icon="mdi:check-circle-outline",
             translation_key=BINARY_SENSOR_KEY_STATUS,
+            entity_category=EntityCategory.DIAGNOSTIC,
         )
         super().__init__(coordinator, entity_description)
 

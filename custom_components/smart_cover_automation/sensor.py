@@ -9,6 +9,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.const import EntityCategory
 
 from .config import ConfKeys, ResolvedConfig, resolve_entry
 from .const import (
@@ -76,6 +77,7 @@ async def async_setup_entry(
         key=SENSOR_KEY_AUTOMATION_STATUS,
         icon="mdi:list-status",
         translation_key=SENSOR_KEY_AUTOMATION_STATUS,
+        entity_category=EntityCategory.DIAGNOSTIC,
     )
 
     async_add_entities(

@@ -32,8 +32,9 @@ class LogSeverity(Enum):
     ERROR = "error"
 
 
-DOMAIN: Final = "smart_cover_automation"
-INTEGRATION_NAME: Final = "Smart Cover Automation"
+DOMAIN: Final[str] = "smart_cover_automation"
+INTEGRATION_NAME: Final[str] = "Smart Cover Automation"
+MANUFACTURER: Final[str] = "Helge Klein"
 
 # Per-cover configuration key suffixes
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
@@ -88,7 +89,7 @@ ERROR_INVALID_COVER: Final[str] = "invalid_cover"
 ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"
 
 # Home Assistant string literals
-HA_OPTIONS: Final = "options"
+HA_OPTIONS: Final[str] = "options"
 HA_SUN_ATTR_AZIMUTH: Final[str] = "azimuth"
 HA_SUN_ATTR_ELEVATION: Final[str] = "elevation"
 HA_SUN_ENTITY_ID: Final[str] = "sun.sun"

@@ -395,6 +395,7 @@ class MockConfigEntry:
         self.domain = DOMAIN
         self.entry_id = "test_entry"
         self.data = data
+        self.options = {}  # Add options attribute for config persistence
         self.runtime_data = MagicMock()
         self.runtime_data.config = data
         self.add_update_listener = MagicMock(return_value=MagicMock())

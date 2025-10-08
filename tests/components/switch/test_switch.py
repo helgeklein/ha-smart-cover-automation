@@ -28,7 +28,7 @@ system and immediately applies state changes to the automation logic.
 from __future__ import annotations
 
 from typing import Iterable, cast
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 from homeassistant.helpers.entity import Entity
 
@@ -71,9 +71,11 @@ async def test_switch_turn_on_persists_option_and_refresh(mock_coordinator_basic
 
     # Setup mock Home Assistant environment
     mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
-    mock_coordinator_basic.async_request_refresh = AsyncMock()  # type: ignore[assignment]
+    mock_coordinator_basic.async_update_listeners = Mock()  # type: ignore[assignment]
     entry.runtime_data.coordinator = mock_coordinator_basic
     entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
+    # Mock the hass.config_entries.async_update_entry method
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()  # type: ignore[attr-defined]
 
     # Capture entities created by the switch platform
     captured: list[Entity] = []
@@ -91,13 +93,11 @@ async def test_switch_turn_on_persists_option_and_refresh(mock_coordinator_basic
     # Execute the turn-on operation
     await enabled_switch.async_turn_on()
 
-    # Verify that options are updated (state persistence)
-    # This ensures the switch state survives Home Assistant restarts
-    entry.async_set_options.assert_awaited()  # type: ignore[attr-defined]
-
-    # Verify that coordinator refresh is triggered (immediate effect)
-    # This ensures automation starts immediately without waiting for next update cycle
-    mock_coordinator_basic.async_request_refresh.assert_awaited()
+    # Verify that async_update_entry was called with the correct options
+    # This ensures the switch state is persisted to the config entry
+    mock_coordinator_basic.hass.config_entries.async_update_entry.assert_called_once()
+    call_args = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
+    assert call_args[1]["options"][ConfKeys.ENABLED.value] is True
 
 
 async def test_switch_turn_off_persists_option_and_refresh(mock_coordinator_basic) -> None:
@@ -128,9 +128,11 @@ async def test_switch_turn_off_persists_option_and_refresh(mock_coordinator_basi
 
     # Setup mock Home Assistant environment
     mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
-    mock_coordinator_basic.async_request_refresh = AsyncMock()  # type: ignore[assignment]
+    mock_coordinator_basic.async_update_listeners = Mock()  # type: ignore[assignment]
     entry.runtime_data.coordinator = mock_coordinator_basic
     entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
+    # Mock the hass.config_entries.async_update_entry method
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()  # type: ignore[attr-defined]
 
     # Capture entities created by the switch platform
     captured: list[Entity] = []
@@ -148,13 +150,11 @@ async def test_switch_turn_off_persists_option_and_refresh(mock_coordinator_basi
     # Execute the turn-off operation
     await enabled_switch.async_turn_off()
 
-    # Verify that options are updated (state persistence)
-    # This ensures the disabled state survives Home Assistant restarts
-    entry.async_set_options.assert_awaited()  # type: ignore[attr-defined]
-
-    # Verify that coordinator refresh is triggered (immediate effect)
-    # This ensures automation stops immediately without waiting for next update cycle
-    mock_coordinator_basic.async_request_refresh.assert_awaited()
+    # Verify that async_update_entry was called with the correct options
+    # This ensures the switch state is persisted to the config entry
+    mock_coordinator_basic.hass.config_entries.async_update_entry.assert_called_once()
+    call_args = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
+    assert call_args[1]["options"][ConfKeys.ENABLED.value] is False
 
 
 async def test_simulation_mode_switch_turn_on_persists_option_and_refresh(mock_coordinator_basic) -> None:
@@ -179,9 +179,11 @@ async def test_simulation_mode_switch_turn_on_persists_option_and_refresh(mock_c
 
     # Setup mock Home Assistant environment
     mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
-    mock_coordinator_basic.async_request_refresh = AsyncMock()  # type: ignore[assignment]
+    mock_coordinator_basic.async_update_listeners = Mock()  # type: ignore[assignment]
     entry.runtime_data.coordinator = mock_coordinator_basic
     entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
+    # Mock the hass.config_entries.async_update_entry method
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()  # type: ignore[attr-defined]
 
     # Capture entities created by the switch platform
     captured: list[Entity] = []
@@ -199,11 +201,11 @@ async def test_simulation_mode_switch_turn_on_persists_option_and_refresh(mock_c
     # Execute the turn-on operation
     await simulation_switch.async_turn_on()
 
-    # Verify that options are updated (state persistence)
-    entry.async_set_options.assert_awaited()  # type: ignore[attr-defined]
-
-    # Verify that coordinator refresh is triggered (immediate effect)
-    mock_coordinator_basic.async_request_refresh.assert_awaited()
+    # Verify that async_update_entry was called with the correct options
+    # This ensures the switch state is persisted to the config entry
+    mock_coordinator_basic.hass.config_entries.async_update_entry.assert_called_once()
+    call_args = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
+    assert call_args[1]["options"][ConfKeys.SIMULATING.value] is True
 
 
 async def test_simulation_mode_switch_turn_off_persists_option_and_refresh(mock_coordinator_basic) -> None:
@@ -228,9 +230,11 @@ async def test_simulation_mode_switch_turn_off_persists_option_and_refresh(mock_
 
     # Setup mock Home Assistant environment
     mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
-    mock_coordinator_basic.async_request_refresh = AsyncMock()  # type: ignore[assignment]
+    mock_coordinator_basic.async_update_listeners = Mock()  # type: ignore[assignment]
     entry.runtime_data.coordinator = mock_coordinator_basic
     entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
+    # Mock the hass.config_entries.async_update_entry method
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()  # type: ignore[attr-defined]
 
     # Capture entities created by the switch platform
     captured: list[Entity] = []
@@ -248,11 +252,11 @@ async def test_simulation_mode_switch_turn_off_persists_option_and_refresh(mock_
     # Execute the turn-off operation
     await simulation_switch.async_turn_off()
 
-    # Verify that options are updated (state persistence)
-    entry.async_set_options.assert_awaited()  # type: ignore[attr-defined]
-
-    # Verify that coordinator refresh is triggered (immediate effect)
-    mock_coordinator_basic.async_request_refresh.assert_awaited()
+    # Verify that async_update_entry was called with the correct options
+    # This ensures the switch state is persisted to the config entry
+    mock_coordinator_basic.hass.config_entries.async_update_entry.assert_called_once()
+    call_args = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
+    assert call_args[1]["options"][ConfKeys.SIMULATING.value] is False
 
 
 async def test_switch_entity_properties(mock_coordinator_basic) -> None:

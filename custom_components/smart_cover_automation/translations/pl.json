@@ -67,7 +67,7 @@
         },
         "switch": {
             "enabled": {
-                "name": "Włączone"
+                "name": "Automatyzacja włączona"
             },
             "simulation_mode": {
                 "name": "Tryb Symulacji"

@@ -103,6 +103,9 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         # Initialize position history manager
         self._cover_pos_history_mgr = CoverPositionHistoryManager()
 
+        # Store merged config for comparison during reload
+        self._merged_config: dict[str, Any] = {}
+
         resolved = resolve_entry(config_entry)
         const.LOGGER.info(
             f"Initializing {const.INTEGRATION_NAME} coordinator: covers={tuple(resolved.covers)}, update_interval={const.UPDATE_INTERVAL}"
@@ -121,7 +124,13 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
     #
     def _resolved_settings(self) -> ResolvedConfig:
         """Return resolved settings from the config entry (options over data)."""
-        return resolve_entry(self.config_entry)
+        from .config import resolve
+
+        # Get base configuration
+        opts = dict(getattr(self.config_entry, const.HA_OPTIONS, {}) or {})
+        dat = dict(getattr(self.config_entry, "data", {}) or {})
+
+        return resolve(opts, dat)
 
     #
     # _async_update_data

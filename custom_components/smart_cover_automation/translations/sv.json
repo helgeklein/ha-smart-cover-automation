@@ -67,7 +67,7 @@
         },
         "switch": {
             "enabled": {
-                "name": "Aktiverad"
+                "name": "Automatisering aktiverad"
             },
             "simulation_mode": {
                 "name": "Simuleringsläge"

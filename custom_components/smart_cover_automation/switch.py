@@ -11,12 +11,10 @@ The switches that appear in Home Assistant are:
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
-
-from custom_components.smart_cover_automation.const import HA_OPTIONS
+from homeassistant.const import EntityCategory
 
 from .config import ConfKeys, resolve_entry
 from .const import SWITCH_KEY_ENABLED, SWITCH_KEY_SIMULATION_MODE
@@ -100,22 +98,25 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
     # which provides the correct coordinator-based availability logic.
     # No override is needed since the default behavior is exactly what we want.
 
-    async def _persist_option_and_refresh(self, config_key: str, value: bool) -> None:
-        """Persist a configuration option and trigger coordinator refresh.
+    async def _async_persist_option(self, config_key: str, value: bool) -> None:
+        """Persist an option to the config entry.
 
-        This helper method handles the common pattern of updating a configuration
-        option in the integration's stored options and then requesting a coordinator
-        refresh to apply the change immediately.
+        This method updates the integration's configuration options. The update
+        will trigger the smart reload listener in __init__.py, which will
+        intelligently decide whether to do a full reload or just refresh the
+        coordinator based on which keys changed.
 
         Args:
-            config_key: The configuration key to update in the options
-            value: The boolean value to set for the configuration key
+            config_key: The configuration key to update.
+            value: The new value for the key.
         """
         entry = self.coordinator.config_entry
-        current = dict(getattr(entry, HA_OPTIONS, {}) or {})
-        current[config_key] = value
-        await entry.async_set_options(current)  # type: ignore[attr-defined]
-        await self.coordinator.async_request_refresh()
+        current_options = dict(entry.options or {})
+        current_options[config_key] = value
+
+        # This will trigger the update listener (async_reload_entry) in __init__.py
+        # which will compare configs and decide on refresh vs. reload
+        self.coordinator.hass.config_entries.async_update_entry(entry, options=current_options)
 
 
 class EnabledSwitch(IntegrationSwitch):
@@ -144,11 +145,14 @@ class EnabledSwitch(IntegrationSwitch):
             key=SWITCH_KEY_ENABLED,
             icon="mdi:toggle-switch-outline",
             translation_key=SWITCH_KEY_ENABLED,
+            entity_category=EntityCategory.CONFIG,
         )
         super().__init__(coordinator, entity_description)
 
-    @cached_property
-    def is_on(self) -> bool:
+    # This must not be a cached_property because the underlying config can change
+    # during runtime when the user toggles the switch in the UI.
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
         """Return whether the automation is currently enabled.
 
         Reads from the resolved settings to get the current enabled state.
@@ -164,7 +168,7 @@ class EnabledSwitch(IntegrationSwitch):
         a coordinator refresh to immediately start automation processing.
         The state change persists across Home Assistant restarts.
         """
-        await self._persist_option_and_refresh(ConfKeys.ENABLED.value, True)
+        await self._async_persist_option(ConfKeys.ENABLED.value, True)
 
     async def async_turn_off(self, **_: Any) -> None:
         """Disable the smart cover automation.
@@ -173,7 +177,7 @@ class EnabledSwitch(IntegrationSwitch):
         a coordinator refresh to immediately stop automation processing.
         The state change persists across Home Assistant restarts.
         """
-        await self._persist_option_and_refresh(ConfKeys.ENABLED.value, False)
+        await self._async_persist_option(ConfKeys.ENABLED.value, False)
 
 
 class SimulationModeSwitch(IntegrationSwitch):
@@ -204,11 +208,14 @@ class SimulationModeSwitch(IntegrationSwitch):
             key=SWITCH_KEY_SIMULATION_MODE,
             icon="mdi:play-circle-outline",
             translation_key=SWITCH_KEY_SIMULATION_MODE,
+            entity_category=EntityCategory.CONFIG,
         )
         super().__init__(coordinator, entity_description)
 
-    @cached_property
-    def is_on(self) -> bool:
+    # This must not be a cached_property because the underlying config can change
+    # during runtime when the user toggles the switch in the UI.
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
         """Return whether simulation mode is currently enabled.
 
         Reads from the resolved settings to get the current simulation state.
@@ -224,7 +231,7 @@ class SimulationModeSwitch(IntegrationSwitch):
         a coordinator refresh to immediately apply simulation mode. The automation
         will continue to run but won't move any covers.
         """
-        await self._persist_option_and_refresh(ConfKeys.SIMULATING.value, True)
+        await self._async_persist_option(ConfKeys.SIMULATING.value, True)
 
     async def async_turn_off(self, **_: Any) -> None:
         """Disable simulation mode.
@@ -233,4 +240,4 @@ class SimulationModeSwitch(IntegrationSwitch):
         a coordinator refresh to immediately disable simulation mode. The automation
         will resume normal operation and can move covers as designed.
         """
-        await self._persist_option_and_refresh(ConfKeys.SIMULATING.value, False)
+        await self._async_persist_option(ConfKeys.SIMULATING.value, False)

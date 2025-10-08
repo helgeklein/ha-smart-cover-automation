@@ -67,7 +67,7 @@
         },
         "switch": {
             "enabled": {
-                "name": "Enabled"
+                "name": "Automation enabled"
             },
             "simulation_mode": {
                 "name": "Simulation Mode"

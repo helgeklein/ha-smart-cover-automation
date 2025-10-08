@@ -61,6 +61,9 @@ async def async_setup_entry(
             **dict(getattr(entry, HA_OPTIONS, {}) or {}),
         }
 
+        # Store the merged config in the coordinator for comparison during reload
+        coordinator._merged_config = merged_config
+
         # Store shared state
         entry.runtime_data = RuntimeData(
             integration=async_get_loaded_integration(hass, entry.domain),
@@ -68,13 +71,16 @@ async def async_setup_entry(
             config=merged_config,
         )
 
-        # Trigger a call to the coordinator's _async_update_data()
-        LOGGER.debug("Starting initial coordinator refresh")
-        await coordinator.async_config_entry_first_refresh()
-
         # Call each platform's async_setup_entry()
         LOGGER.debug(f"Setting up platforms: {PLATFORMS}")
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+        # Trigger initial coordinator refresh after platforms are set up
+        # This ensures all entities are registered before the first state update
+        LOGGER.debug("Starting initial coordinator refresh")
+        await coordinator.async_config_entry_first_refresh()
+
+        # Register the update listener
         entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     except (OSError, ValueError, TypeError) as err:
@@ -125,7 +131,43 @@ async def async_reload_entry(
     hass: HomeAssistant,
     entry: IntegrationConfigEntry,
 ) -> None:
-    """Reload config entry."""
+    """Reload config entry or just refresh coordinator based on what changed.
+
+    For runtime options like enabled/simulating, we only need to refresh
+    the coordinator. For structural changes, we need a full reload.
+    """
+    # These keys can be changed at runtime without requiring a full reload
+    runtime_configurable_keys = {"enabled", "simulating"}
+
+    if hasattr(entry, "runtime_data") and entry.runtime_data:
+        coordinator = entry.runtime_data.coordinator
+
+        # Get the old configuration that the coordinator was using
+        old_config = coordinator._merged_config
+
+        # Get the new configuration from the updated entry
+        new_config = {
+            **dict(entry.data),
+            **dict(getattr(entry, HA_OPTIONS, {}) or {}),
+        }
+
+        # Determine which keys have actually changed
+        changed_keys = {key for key in set(old_config.keys()) | set(new_config.keys()) if old_config.get(key) != new_config.get(key)}
+
+        # If the only changes are to runtime-configurable keys, just refresh
+        if changed_keys and changed_keys.issubset(runtime_configurable_keys):
+            LOGGER.debug(
+                "Runtime-only option change detected (%s), refreshing coordinator",
+                ", ".join(sorted(changed_keys)),
+            )
+            # Update the stored config with new values
+            coordinator._merged_config = new_config
+            entry.runtime_data.config = new_config
+            # Trigger a coordinator refresh to apply the changes
+            await coordinator.async_request_refresh()
+            return
+
+    # For all other changes (structural, new keys, etc.), do a full reload
     LOGGER.info(f"Reloading {INTEGRATION_NAME} integration")
     await hass.config_entries.async_reload(entry.entry_id)
 

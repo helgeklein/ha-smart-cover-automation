@@ -67,7 +67,7 @@
         },
         "switch": {
             "enabled": {
-                "name": "Ingeschakeld"
+                "name": "Automatisering ingeschakeld"
             },
             "simulation_mode": {
                 "name": "Simulatiemodus"

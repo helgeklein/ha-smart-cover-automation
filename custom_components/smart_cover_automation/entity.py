@@ -7,7 +7,7 @@ coordinator integration, device grouping, and unique identification.
 
 from __future__ import annotations
 
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import const
@@ -43,12 +43,23 @@ class IntegrationEntity(CoordinatorEntity[DataUpdateCoordinator]):
         # between this entity and the coordinator for automatic updates
         super().__init__(coordinator)
 
-        # Create device info to group all integration entities under a single device.
-        # This makes the UI cleaner by showing all sensors, switches, and other
-        # entities as parts of one logical device rather than separate devices.
-        # Docs: https://developers.home-assistant.io/docs/device_registry_index/
-        self._attr_device_info = DeviceInfo(
+    @property
+    def device_info(self) -> DeviceInfo:  # pyright: ignore[reportIncompatibleVariableOverride]
+        """Return device info to group all integration entities under a single device.
+
+        This property creates the device info lazily (only when accessed), which helps
+        prevent potential duplicate device registry updates during HA startup when
+        multiple entities are being initialized simultaneously.
+
+        This makes the UI cleaner by showing all sensors, switches, and other
+        entities as parts of one logical device rather than separate devices.
+        Docs: https://developers.home-assistant.io/docs/device_registry_index/
+        """
+        return DeviceInfo(
             # Unique identifier for the device - use the config entry ID (a UUID)
             identifiers={(const.DOMAIN, self.coordinator.config_entry.entry_id)},
-            name=const.DOMAIN,
+            name=const.INTEGRATION_NAME,
+            manufacturer=const.MANUFACTURER,
+            model=const.INTEGRATION_NAME,
+            entry_type=DeviceEntryType.SERVICE,
         )

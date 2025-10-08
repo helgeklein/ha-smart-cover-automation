@@ -67,7 +67,7 @@
         },
         "switch": {
             "enabled": {
-                "name": "已启用"
+                "name": "自动化已启用"
             },
             "simulation_mode": {
                 "name": "模拟模式"
