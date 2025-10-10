@@ -387,7 +387,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                         # Store the position after movement
                         cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
                         # Add the new position to the history
-                        self._cover_pos_history_mgr.add(entity_id, actual_pos)
+                        self._cover_pos_history_mgr.add(entity_id, actual_pos, cover_moved=True)
                 except ServiceCallError as err:
                     # Log the error but continue with other covers
                     const.LOGGER.error(f"[{entity_id}] Failed to control cover: {err}")
@@ -399,7 +399,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     cover_attrs[const.COVER_ATTR_MESSAGE] = error_msg
             else:
                 # No movement - just add the current position to the history
-                self._cover_pos_history_mgr.add(entity_id, current_pos)
+                self._cover_pos_history_mgr.add(entity_id, current_pos, cover_moved=False)
 
             # Include position history in cover attributes
             position_entries = self._cover_pos_history_mgr.get_entries(entity_id)

@@ -56,8 +56,8 @@
     },
     "entity": {
         "sensor": {
-            "automation_status": {
-                "name": "Automatisierungsstatus"
+            "last_movement_timestamp": {
+                "name": "Letzte Bewegung"
             }
         },
         "binary_sensor": {

@@ -18,6 +18,7 @@ class PositionEntry:
     """A single position entry with timestamp."""
 
     position: int
+    cover_moved: bool
     timestamp: datetime
 
 
@@ -29,11 +30,12 @@ class CoverPositionHistory:
         """Initialize the deque after the object is created."""
         self._entries: deque[PositionEntry] = deque(maxlen=const.COVER_POSITION_HISTORY_SIZE)
 
-    def add_position(self, position: int, timestamp: datetime | None = None) -> PositionEntry:
+    def add_position(self, position: int, cover_moved: bool, timestamp: datetime | None = None) -> PositionEntry:
         """Add a new position to the history (newest first).
 
         Args:
             position: The cover position
+            cover_moved: Whether the cover was actually moved in this update cycle
             timestamp: UTC timestamp, defaults to current UTC time if None
 
         Returns:
@@ -42,7 +44,7 @@ class CoverPositionHistory:
         if timestamp is None:
             timestamp = datetime.now(timezone.utc)
 
-        entry = PositionEntry(position, timestamp)
+        entry = PositionEntry(position, cover_moved, timestamp)
         self._entries.appendleft(entry)
         return entry
 
@@ -74,12 +76,13 @@ class CoverPositionHistoryManager:
         """Initialize the position history manager."""
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
 
-    def add(self, entity_id: str, new_position: int, timestamp: datetime | None = None) -> None:
+    def add(self, entity_id: str, new_position: int, cover_moved: bool, timestamp: datetime | None = None) -> None:
         """Add a new cover position to the history.
 
         Args:
             entity_id: The cover entity ID
             new_position: The new position to add to history
+            cover_moved: Whether the cover was actually moved in this update cycle
             timestamp: UTC timestamp, defaults to current UTC time if None
         """
         if entity_id not in self._cover_position_history:
@@ -88,7 +91,7 @@ class CoverPositionHistoryManager:
 
         # Add the new position to the history
         history = self._cover_position_history[entity_id]
-        newest_entry = history.add_position(new_position, timestamp)
+        newest_entry = history.add_position(new_position, cover_moved, timestamp)
 
         # Log the new entry for debugging
         timestamp_str = newest_entry.timestamp.isoformat()

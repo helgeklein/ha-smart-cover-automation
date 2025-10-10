@@ -17,7 +17,7 @@ from homeassistant.components.switch import SwitchEntity, SwitchEntityDescriptio
 from homeassistant.const import EntityCategory
 
 from .config import ConfKeys, resolve_entry
-from .const import SWITCH_KEY_ENABLED, SWITCH_KEY_SIMULATION_MODE
+from .const import DOMAIN, SWITCH_KEY_ENABLED, SWITCH_KEY_SIMULATION_MODE
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -75,6 +75,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         self,
         coordinator: DataUpdateCoordinator,
         entity_description: SwitchEntityDescription,
+        config_key: str,
     ) -> None:
         """Initialize the switch entity.
 
@@ -83,6 +84,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
                         and provides state management for this switch
             entity_description: Configuration describing the entity's properties
                                (name, icon, etc.)
+            config_key: The configuration key this switch controls
         """
         # Initialize the base entity with coordinator integration
         super().__init__(coordinator)
@@ -90,13 +92,42 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         # Store the entity description that defines this switch's characteristics
         self.entity_description = entity_description
 
+        # Store the config key this switch controls
+        self._config_key = config_key
+
         # Set unique ID to ensure proper device grouping and entity identification
         # This will result in entity_id: switch.smart_cover_automation_{translation_key}
-        self._attr_unique_id = f"smart_cover_automation_{entity_description.key}"
+        self._attr_unique_id = f"{DOMAIN}_{entity_description.key}"
 
     # Note: We inherit the 'available' property from IntegrationEntity/CoordinatorEntity
     # which provides the correct coordinator-based availability logic.
     # No override is needed since the default behavior is exactly what we want.
+
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
+        """Return whether the switch is currently on.
+
+        Reads from the resolved settings to get the current state.
+        This reflects changes made through the integration's options flow.
+        """
+        resolved = resolve_entry(self.coordinator.config_entry)
+        return bool(getattr(resolved, self._config_key.lower()))
+
+    async def async_turn_on(self, **_: Any) -> None:
+        """Turn the switch on.
+
+        Sets the config value to True and triggers a coordinator refresh
+        to immediately apply the new setting.
+        """
+        await self._async_persist_option(self._config_key, True)
+
+    async def async_turn_off(self, **_: Any) -> None:
+        """Turn the switch off.
+
+        Sets the config value to False and triggers a coordinator refresh
+        to immediately apply the new setting.
+        """
+        await self._async_persist_option(self._config_key, False)
 
     async def _async_persist_option(self, config_key: str, value: bool) -> None:
         """Persist an option to the config entry.
@@ -120,19 +151,7 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
 
 
 class EnabledSwitch(IntegrationSwitch):
-    """Switch for controlling the master automation enable/disable state.
-
-    This switch controls the global enabled state of the automation system.
-    When turned off, the automation stops processing temperature and sun data
-    and will not move any covers. When turned on, normal automation resumes.
-
-    The switch state is persisted in the integration's configuration options,
-    ensuring it survives Home Assistant restarts. State changes trigger an
-    immediate coordinator refresh to apply the new setting.
-
-    Inherits device grouping from IntegrationEntity and availability status
-    from CoordinatorEntity via the inheritance chain.
-    """
+    """Switch for controlling the master automation enable/disable state."""
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
         """Initialize the automation enable/disable switch.
@@ -147,97 +166,18 @@ class EnabledSwitch(IntegrationSwitch):
             translation_key=SWITCH_KEY_ENABLED,
             entity_category=EntityCategory.CONFIG,
         )
-        super().__init__(coordinator, entity_description)
-
-    # This must not be a cached_property because the underlying config can change
-    # during runtime when the user toggles the switch in the UI.
-    @property
-    def is_on(self) -> bool:  # pyright: ignore
-        """Return whether the automation is currently enabled.
-
-        Reads from the resolved settings to get the current enabled state.
-        This reflects changes made through the integration's options flow.
-        """
-        resolved = resolve_entry(self.coordinator.config_entry)
-        return resolved.enabled
-
-    async def async_turn_on(self, **_: Any) -> None:
-        """Enable the smart cover automation.
-
-        Sets the enabled flag to True in the integration's options and triggers
-        a coordinator refresh to immediately start automation processing.
-        The state change persists across Home Assistant restarts.
-        """
-        await self._async_persist_option(ConfKeys.ENABLED.value, True)
-
-    async def async_turn_off(self, **_: Any) -> None:
-        """Disable the smart cover automation.
-
-        Sets the enabled flag to False in the integration's options and triggers
-        a coordinator refresh to immediately stop automation processing.
-        The state change persists across Home Assistant restarts.
-        """
-        await self._async_persist_option(ConfKeys.ENABLED.value, False)
+        super().__init__(coordinator, entity_description, ConfKeys.ENABLED.value)
 
 
 class SimulationModeSwitch(IntegrationSwitch):
-    """Switch for controlling simulation mode.
-
-    This switch controls whether the automation runs in simulation mode.
-    When simulation mode is enabled, the automation performs all calculations
-    and decision-making but doesn't actually send commands to move covers.
-
-    This is useful for:
-    - Testing automation logic without affecting physical covers
-    - Monitoring what the automation would do in different conditions
-    - Development and troubleshooting
-
-    The switch state is persisted in the integration's configuration options,
-    ensuring it survives Home Assistant restarts. State changes trigger an
-    immediate coordinator refresh to apply the new setting.
-    """
+    """Switch for controlling simulation mode."""
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the simulation mode switch.
-
-        Args:
-            coordinator: The DataUpdateCoordinator that manages automation logic
-                        and provides state management for this switch
-        """
+        """Set the switch properties."""
         entity_description = SwitchEntityDescription(
             key=SWITCH_KEY_SIMULATION_MODE,
             icon="mdi:play-circle-outline",
             translation_key=SWITCH_KEY_SIMULATION_MODE,
             entity_category=EntityCategory.CONFIG,
         )
-        super().__init__(coordinator, entity_description)
-
-    # This must not be a cached_property because the underlying config can change
-    # during runtime when the user toggles the switch in the UI.
-    @property
-    def is_on(self) -> bool:  # pyright: ignore
-        """Return whether simulation mode is currently enabled.
-
-        Reads from the resolved settings to get the current simulation state.
-        This reflects changes made through the integration's options flow.
-        """
-        resolved = resolve_entry(self.coordinator.config_entry)
-        return resolved.simulating
-
-    async def async_turn_on(self, **_: Any) -> None:
-        """Enable simulation mode.
-
-        Sets the simulating flag to True in the integration's options and triggers
-        a coordinator refresh to immediately apply simulation mode. The automation
-        will continue to run but won't move any covers.
-        """
-        await self._async_persist_option(ConfKeys.SIMULATING.value, True)
-
-    async def async_turn_off(self, **_: Any) -> None:
-        """Disable simulation mode.
-
-        Sets the simulating flag to False in the integration's options and triggers
-        a coordinator refresh to immediately disable simulation mode. The automation
-        will resume normal operation and can move covers as designed.
-        """
-        await self._async_persist_option(ConfKeys.SIMULATING.value, False)
+        super().__init__(coordinator, entity_description, ConfKeys.SIMULATING.value)

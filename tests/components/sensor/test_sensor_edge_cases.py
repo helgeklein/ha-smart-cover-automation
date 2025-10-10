@@ -18,31 +18,32 @@ from homeassistant.components.sensor import SensorEntityDescription
 from custom_components.smart_cover_automation.const import (
     COVER_ATTR_POS_TARGET_DESIRED,
     SENSOR_ATTR_TEMP_CURRENT_MAX,
-    SENSOR_KEY_AUTOMATION_STATUS,
+    SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
 )
-from custom_components.smart_cover_automation.sensor import AutomationStatusSensor
+from custom_components.smart_cover_automation.sensor import LastMovementTimestampSensor
 
 
 @pytest.mark.parametrize(
     "coordinator_data, last_update_success, expected_result_type",
     [
-        ({}, True, type(None)),  # Empty data, successful update
-        ({}, False, type(None)),  # Empty data, failed update
-        (None, True, type(None)),  # None data, successful update
-        (None, False, type(None)),  # None data, failed update
-        ({"covers": {}}, True, str),  # Valid data structure, successful update
-        ({"covers": {}}, False, str),  # Valid data structure, failed update
+        ({}, True, type(None)),  # Empty data, successful update - no timestamp
+        ({}, False, type(None)),  # Empty data, failed update - no timestamp
+        (None, True, type(None)),  # None data, successful update - no timestamp
+        (None, False, type(None)),  # None data, failed update - no timestamp
+        ({"covers": {}}, True, type(None)),  # Valid data but no movement history - no timestamp
+        ({"covers": {}}, False, type(None)),  # Valid data but no movement history - no timestamp
     ],
 )
 async def test_sensor_native_value_with_various_data_states(
     mock_coordinator_basic, coordinator_data, last_update_success, expected_result_type
 ) -> None:
-    """Test sensor native value with various coordinator data states.
+    """Test timestamp sensor with various coordinator data states.
 
     This parametrized test verifies that the sensor handles different combinations
     of coordinator data availability and update success states appropriately.
+    The timestamp sensor only returns a value when there's actual movement history.
 
-    Coverage target: sensor.py line 125 (native_value with missing data)
+    Coverage target: sensor.py line 44 (native_value with missing data)
     """
     # Set coordinator data and update status
     mock_coordinator_basic.data = coordinator_data
@@ -50,63 +51,17 @@ async def test_sensor_native_value_with_various_data_states(
 
     # Create sensor instance with entity description
     entity_description = SensorEntityDescription(
-        key=SENSOR_KEY_AUTOMATION_STATUS,
+        key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
         icon="mdi:information-outline",
-        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
+        translation_key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
     )
-    sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
+    sensor = LastMovementTimestampSensor(mock_coordinator_basic, entity_description)
 
-    # Get native value
+    # Get native value (will be None without movement history)
     native_value = sensor.native_value
 
-    # Verify the result type matches expectations
-    if expected_result_type is type(None):
-        assert native_value is None
-    else:
-        assert isinstance(native_value, expected_result_type)
-
-
-@pytest.mark.parametrize(
-    "coordinator_data, last_update_success, expected_result_type",
-    [
-        ({}, True, type(None)),  # Empty data, successful update
-        ({}, False, type(None)),  # Empty data, failed update
-        (None, True, type(None)),  # None data, successful update
-        (None, False, type(None)),  # None data, failed update
-        ({"covers": {}}, True, dict),  # Valid data structure, successful update
-        ({"covers": {}}, False, dict),  # Valid data structure, failed update
-    ],
-)
-async def test_sensor_extra_state_attributes_with_various_data_states(
-    mock_coordinator_basic, coordinator_data, last_update_success, expected_result_type
-) -> None:
-    """Test sensor extra state attributes with various coordinator data states.
-
-    This parametrized test verifies that the sensor handles different combinations
-    of coordinator data availability and update success states appropriately.
-
-    Coverage target: sensor.py line 137 (extra_state_attributes with missing data)
-    """
-    # Set coordinator data and update status
-    mock_coordinator_basic.data = coordinator_data
-    mock_coordinator_basic.last_update_success = last_update_success
-
-    # Create sensor instance with entity description
-    entity_description = SensorEntityDescription(
-        key=SENSOR_KEY_AUTOMATION_STATUS,
-        icon="mdi:information-outline",
-        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
-    )
-    sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
-
-    # Get extra state attributes
-    extra_attributes = sensor.extra_state_attributes
-
-    # Verify the result type matches expectations
-    if expected_result_type is type(None):
-        assert extra_attributes is None
-    else:
-        assert isinstance(extra_attributes, expected_result_type)
+    # Timestamp sensor always returns None when there's no movement history
+    assert native_value is None
 
 
 @pytest.mark.parametrize(
@@ -129,11 +84,11 @@ async def test_sensor_availability_property_delegation(mock_coordinator_basic, l
 
     # Create sensor instance
     entity_description = SensorEntityDescription(
-        key=SENSOR_KEY_AUTOMATION_STATUS,
+        key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
         icon="mdi:information-outline",
-        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
+        translation_key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
     )
-    sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
+    sensor = LastMovementTimestampSensor(mock_coordinator_basic, entity_description)
 
     # Test that availability property delegates to parent and reflects update status
     availability = sensor.available
@@ -143,14 +98,16 @@ async def test_sensor_availability_property_delegation(mock_coordinator_basic, l
     assert isinstance(availability, bool)
 
 
-async def test_sensor_with_valid_coordinator_data(mock_coordinator_basic) -> None:
-    """Test sensor behavior with valid coordinator data.
+async def test_sensor_with_valid_coordinator_data_and_movement_history(mock_coordinator_basic) -> None:
+    """Test timestamp sensor with valid coordinator data and movement history.
 
-    This test ensures that when coordinator data is available, the sensor
-    properly processes and returns appropriate values.
+    This test ensures that when coordinator data is available AND there's movement
+    history, the sensor returns a timestamp string.
 
     Complementary test to verify the positive case alongside the missing data tests.
     """
+    from datetime import datetime, timezone
+
     # Set valid coordinator data
     mock_coordinator_basic.data = {
         "covers": {
@@ -163,19 +120,20 @@ async def test_sensor_with_valid_coordinator_data(mock_coordinator_basic) -> Non
     }
     mock_coordinator_basic.last_update_success = True
 
+    # Add movement history
+    now = datetime.now(timezone.utc)
+    mock_coordinator_basic._cover_pos_history_mgr.add("cover.test", 50, cover_moved=True, timestamp=now)
+
     # Create sensor instance with entity description
     entity_description = SensorEntityDescription(
-        key=SENSOR_KEY_AUTOMATION_STATUS,
+        key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
         icon="mdi:information-outline",
-        translation_key=SENSOR_KEY_AUTOMATION_STATUS,
+        translation_key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
     )
-    sensor = AutomationStatusSensor(mock_coordinator_basic, entity_description)
+    sensor = LastMovementTimestampSensor(mock_coordinator_basic, entity_description)
 
-    # Verify sensor returns valid data when coordinator data is available
+    # Verify sensor returns valid datetime when movement history exists
     native_value = sensor.native_value
     assert native_value is not None
-    assert isinstance(native_value, str)
-
-    extra_attributes = sensor.extra_state_attributes
-    assert extra_attributes is not None
-    assert isinstance(extra_attributes, dict)
+    assert isinstance(native_value, datetime)
+    assert native_value == now

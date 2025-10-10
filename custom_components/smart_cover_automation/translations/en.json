@@ -56,8 +56,8 @@
     },
     "entity": {
         "sensor": {
-            "automation_status": {
-                "name": "Automation Status"
+            "last_movement_timestamp": {
+                "name": "Last movement"
             }
         },
         "binary_sensor": {
@@ -70,7 +70,7 @@
                 "name": "Automation enabled"
             },
             "simulation_mode": {
-                "name": "Simulation Mode"
+                "name": "Simulation mode"
             }
         }
     }

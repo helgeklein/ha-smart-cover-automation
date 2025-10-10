@@ -38,10 +38,10 @@ from tests.coordinator.test_coordinator_base import TestDataUpdateCoordinatorBas
 class TestManualOverride(TestDataUpdateCoordinatorBase):
     """Test suite for manual override detection logic."""
 
-    def _create_position_history_entry(self, position: int, minutes_ago: int) -> PositionEntry:
+    def _create_position_history_entry(self, position: int, minutes_ago: int, cover_moved: bool = True) -> PositionEntry:
         """Create a position entry with a timestamp in the past."""
         timestamp = datetime.now(timezone.utc) - timedelta(minutes=minutes_ago)
-        return PositionEntry(position=position, timestamp=timestamp)
+        return PositionEntry(position=position, cover_moved=cover_moved, timestamp=timestamp)
 
     async def test_manual_override_detection_recent_change(self, mock_hass: MagicMock) -> None:
         """Test that manual override is detected when position changed recently.
@@ -240,7 +240,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
         # Mock position history: same position as current (no change)
-        last_entry = self._create_position_history_entry(position=current_position, minutes_ago=5)
+        last_entry = self._create_position_history_entry(position=current_position, minutes_ago=5, cover_moved=False)
         coordinator._cover_pos_history_mgr.get_latest_entry = MagicMock(return_value=last_entry)
 
         # Mock the set_cover_position method
@@ -359,7 +359,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         # Mock position history: timestamp in the future (system time was changed backwards)
         future_timestamp = datetime.now(timezone.utc) + timedelta(minutes=10)
-        last_entry = PositionEntry(position=50, timestamp=future_timestamp)
+        last_entry = PositionEntry(position=50, cover_moved=True, timestamp=future_timestamp)
         coordinator._cover_pos_history_mgr.get_latest_entry = MagicMock(return_value=last_entry)
         coordinator._set_cover_position = AsyncMock(return_value=0)
 

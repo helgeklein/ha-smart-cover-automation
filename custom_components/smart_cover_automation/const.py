@@ -34,7 +34,6 @@ class LogSeverity(Enum):
 
 DOMAIN: Final[str] = "smart_cover_automation"
 INTEGRATION_NAME: Final[str] = "Smart Cover Automation"
-MANUFACTURER: Final[str] = "Helge Klein"
 
 # Per-cover configuration key suffixes
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
@@ -47,8 +46,8 @@ COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Translation key for cover/window 
 
 # Entity keys
 BINARY_SENSOR_KEY_STATUS: Final[str] = "status"  # Key for the status binary sensor entity
-SENSOR_KEY_AUTOMATION_STATUS: Final[str] = "automation_status"  # Key for the automation status sensor entity
 SWITCH_KEY_ENABLED: Final[str] = "enabled"  # Key for the master enable/disable switch entity
+SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP: Final[str] = "last_movement_timestamp"  # Key for the last movement timestamp sensor entity
 SWITCH_KEY_SIMULATION_MODE: Final[str] = "simulation_mode"  # Key for the simulation mode switch entity
 
 # Sensor attribute keys (exposed on the automation status sensor)
