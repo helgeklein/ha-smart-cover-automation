@@ -226,9 +226,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Build the schema with logical field grouping
         schema_dict: dict[vol.Marker, object] = {}
 
-        # === GLOBAL AUTOMATION SETTINGS ===
-        schema_dict[vol.Required(ConfKeys.VERBOSE_LOGGING.value, default=resolved_settings.verbose_logging)] = selector.BooleanSelector()
-
         # === COVER SETTINGS ===
         # Allow editing the list of covers without changing the unique_id
         schema_dict[vol.Required(ConfKeys.COVERS.value, default=covers)] = selector.EntitySelector(

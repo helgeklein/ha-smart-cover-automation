@@ -36,7 +36,6 @@
                     "sun_azimuth_tolerance": "Solens azimuttolerans:",
                     "sun_elevation_threshold": "Minimal solhöjd:",
                     "temp_threshold": "Temperaturtröskel:",
-                    "verbose_logging": "Utförlig loggning:",
                     "weather_entity_id": "Väderprognosensor:"
                 },
                 "data_description": {
@@ -71,6 +70,9 @@
             },
             "simulation_mode": {
                 "name": "Simuleringsläge"
+            },
+            "verbose_logging": {
+                "name": "Detaljerad loggning"
             }
         }
     }

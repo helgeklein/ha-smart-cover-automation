@@ -59,6 +59,24 @@ class _Converters:
 
     @staticmethod
     def to_bool(v: Any) -> bool:
+        """Convert various boolean representations to bool.
+
+        Handles:
+        - Native bool values: True, False
+        - Integer values: 0 (False), non-zero (True)
+        - String values: 'true', 'false', 'yes', 'no', 'on', 'off', '1', '0' (case-insensitive)
+        - Other values: Python's default truthiness
+        """
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            # Handle common string representations of boolean values
+            normalized = v.lower().strip()
+            if normalized in ("true", "yes", "on", "1"):
+                return True
+            if normalized in ("false", "no", "off", "0"):
+                return False
+            # For any other string values, use default truthiness (non-empty = True)
         return bool(v)
 
     @staticmethod

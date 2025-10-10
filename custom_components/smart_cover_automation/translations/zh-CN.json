@@ -36,7 +36,6 @@
                     "sun_azimuth_tolerance": "太阳方位角容差:",
                     "sun_elevation_threshold": "最小太阳高度角:",
                     "temp_threshold": "温度阈值:",
-                    "verbose_logging": "详细日志记录:",
                     "weather_entity_id": "天气预报传感器:"
                 },
                 "data_description": {
@@ -71,6 +70,9 @@
             },
             "simulation_mode": {
                 "name": "模拟模式"
+            },
+            "verbose_logging": {
+                "name": "详细日志记录"
             }
         }
     }

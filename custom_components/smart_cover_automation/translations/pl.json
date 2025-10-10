@@ -36,7 +36,6 @@
                     "sun_azimuth_tolerance": "Tolerancja azymutu słonecznego:",
                     "sun_elevation_threshold": "Minimalna wysokość słońca:",
                     "temp_threshold": "Próg temperatury:",
-                    "verbose_logging": "Szczegółowe logowanie:",
                     "weather_entity_id": "Czujnik prognozy pogody:"
                 },
                 "data_description": {
@@ -71,6 +70,9 @@
             },
             "simulation_mode": {
                 "name": "Tryb Symulacji"
+            },
+            "verbose_logging": {
+                "name": "Szczegółowe logowanie"
             }
         }
     }

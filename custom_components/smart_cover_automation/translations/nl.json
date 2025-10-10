@@ -36,7 +36,6 @@
                     "sun_azimuth_tolerance": "Zon azimut tolerantie:",
                     "sun_elevation_threshold": "Minimale zonhoogte:",
                     "temp_threshold": "Temperatuurdrempel:",
-                    "verbose_logging": "Uitgebreide logging:",
                     "weather_entity_id": "Weersvoorspelling sensor:"
                 },
                 "data_description": {
@@ -71,6 +70,9 @@
             },
             "simulation_mode": {
                 "name": "Simulatiemodus"
+            },
+            "verbose_logging": {
+                "name": "Uitgebreide logging"
             }
         }
     }

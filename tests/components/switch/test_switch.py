@@ -34,10 +34,7 @@ from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-from custom_components.smart_cover_automation.switch import (
-    EnabledSwitch,
-    SimulationModeSwitch,
-)
+from custom_components.smart_cover_automation.switch import EnabledSwitch, SimulationModeSwitch, VerboseLoggingSwitch
 from custom_components.smart_cover_automation.switch import (
     async_setup_entry as async_setup_entry_switch,
 )
@@ -262,8 +259,8 @@ async def test_simulation_mode_switch_turn_off_persists_option_and_refresh(mock_
 async def test_switch_entity_properties(mock_coordinator_basic) -> None:
     """Test that switch entities are properly created with correct properties.
 
-    This test verifies that both switch entities (enabled and simulation mode)
-    are created during platform setup and have the expected properties.
+    This test verifies that all switch entities are created during platform setup
+    and have the expected properties.
     """
     entry = mock_coordinator_basic.config_entry
     entry.runtime_data.coordinator = mock_coordinator_basic
@@ -278,17 +275,20 @@ async def test_switch_entity_properties(mock_coordinator_basic) -> None:
     # Setup the switch platform and capture all entities
     await async_setup_entry_switch(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
 
-    # Verify we have exactly 2 switch entities
-    assert len(captured) == 2
+    # Verify we have exactly 3 switch entities
+    assert len(captured) == 3
 
     # Find each switch type
     enabled_switch = next((entity for entity in captured if isinstance(entity, EnabledSwitch)), None)
     simulation_switch = next((entity for entity in captured if isinstance(entity, SimulationModeSwitch)), None)
+    verbose_switch = next((entity for entity in captured if isinstance(entity, VerboseLoggingSwitch)), None)
 
     # Verify both switches exist
     assert enabled_switch is not None
     assert simulation_switch is not None
+    assert verbose_switch is not None
 
     # Verify unique IDs are set correctly
     assert enabled_switch.unique_id == "smart_cover_automation_enabled"
     assert simulation_switch.unique_id == "smart_cover_automation_simulation_mode"
+    assert verbose_switch.unique_id == "smart_cover_automation_verbose_logging"

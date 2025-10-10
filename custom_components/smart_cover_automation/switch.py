@@ -11,13 +11,14 @@ The switches that appear in Home Assistant are:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.const import EntityCategory
 
 from .config import ConfKeys, resolve_entry
-from .const import DOMAIN, SWITCH_KEY_ENABLED, SWITCH_KEY_SIMULATION_MODE
+from .const import DOMAIN, SWITCH_KEY_ENABLED, SWITCH_KEY_SIMULATION_MODE, SWITCH_KEY_VERBOSE_LOGGING
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -51,6 +52,8 @@ async def async_setup_entry(
         EnabledSwitch(coordinator),
         # Simulation mode control switch
         SimulationModeSwitch(coordinator),
+        # Verbose logging control switch
+        VerboseLoggingSwitch(coordinator),
     ]
 
     async_add_entities(entities)
@@ -181,3 +184,40 @@ class SimulationModeSwitch(IntegrationSwitch):
             entity_category=EntityCategory.CONFIG,
         )
         super().__init__(coordinator, entity_description, ConfKeys.SIMULATING.value)
+
+
+class VerboseLoggingSwitch(IntegrationSwitch):
+    """Switch for controlling verbose (debug) logging."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Set the switch properties."""
+        entity_description = SwitchEntityDescription(
+            key=SWITCH_KEY_VERBOSE_LOGGING,
+            icon="mdi:list-status",
+            translation_key=SWITCH_KEY_VERBOSE_LOGGING,
+            entity_category=EntityCategory.CONFIG,
+        )
+        super().__init__(coordinator, entity_description, ConfKeys.VERBOSE_LOGGING.value)
+
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
+        """Return whether verbose logging is enabled.
+
+        Checks both the integration config and Home Assistant's logger level.
+        Returns True if either:
+        - The integration's verbose_logging config option is True
+        - Home Assistant's logger is set to DEBUG level for this integration
+
+        This allows the switch to reflect the actual logging state even when
+        configured via configuration.yaml logger settings.
+        """
+        # Check if HA's logger is set to DEBUG for this integration
+        logger = logging.getLogger("custom_components.smart_cover_automation")
+        ha_logger_is_debug = logger.isEnabledFor(logging.DEBUG)
+
+        # Check integration config
+        resolved = resolve_entry(self.coordinator.config_entry)
+        config_value = bool(getattr(resolved, self._config_key.lower()))
+
+        # Return true if either is enabled
+        return ha_logger_is_debug or config_value

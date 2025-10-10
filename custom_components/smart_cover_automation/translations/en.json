@@ -36,7 +36,6 @@
                     "sun_azimuth_tolerance": "Sun azimuth tolerance:",
                     "sun_elevation_threshold": "Minimal sun elevation:",
                     "temp_threshold": "Temperature threshold:",
-                    "verbose_logging": "Verbose logging:",
                     "weather_entity_id": "Weather forecast sensor:"
                 },
                 "data_description": {
@@ -71,6 +70,9 @@
             },
             "simulation_mode": {
                 "name": "Simulation mode"
+            },
+            "verbose_logging": {
+                "name": "Verbose logging"
             }
         }
     }

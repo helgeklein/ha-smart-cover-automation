@@ -49,6 +49,7 @@ BINARY_SENSOR_KEY_STATUS: Final[str] = "status"  # Key for the status binary sen
 SWITCH_KEY_ENABLED: Final[str] = "enabled"  # Key for the master enable/disable switch entity
 SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP: Final[str] = "last_movement_timestamp"  # Key for the last movement timestamp sensor entity
 SWITCH_KEY_SIMULATION_MODE: Final[str] = "simulation_mode"  # Key for the simulation mode switch entity
+SWITCH_KEY_VERBOSE_LOGGING: Final[str] = "verbose_logging"  # Key for the verbose logging switch entity
 
 # Sensor attribute keys (exposed on the automation status sensor)
 SENSOR_ATTR_AUTOMATION_ENABLED: Final[str] = "automation_enabled"  # Config value

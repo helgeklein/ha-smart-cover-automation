@@ -36,7 +36,6 @@
                     "sun_azimuth_tolerance": "Tolerância do azimute solar:",
                     "sun_elevation_threshold": "Elevação mínima do sol:",
                     "temp_threshold": "Limite de temperatura:",
-                    "verbose_logging": "Registo detalhado:",
                     "weather_entity_id": "Sensor de previsão meteorológica:"
                 },
                 "data_description": {
@@ -71,6 +70,9 @@
             },
             "simulation_mode": {
                 "name": "Modo Simulação"
+            },
+            "verbose_logging": {
+                "name": "Registração detalhada"
             }
         }
     }
