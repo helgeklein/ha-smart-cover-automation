@@ -10,11 +10,9 @@ permalink: /troubleshooting/
 
 This guide helps resolve common issues with the Smart Cover Automation integration.
 
-## Common Issues
+## Installation Problems
 
-### Installation Problems
-
-#### Integration Not Found After Installation
+### Integration Not Found After Installation
 
 **Symptoms:**
 
@@ -26,14 +24,16 @@ This guide helps resolve common issues with the Smart Cover Automation integrati
 1. **Restart Home Assistant** completely (not just reload)
 2. **Verify file location:**
    ```
-   config/custom_components/smart_cover_automation/
-   ├── __init__.py
-   ├── manifest.json
-   └── ... (other files)
+   config/
+      custom_components/
+         smart_cover_automation/
+         ├── __init__.py
+         ├── manifest.json
+         └── ... (other files)
    ```
 3. **Check file permissions** (should be readable by Home Assistant user)
 
-#### HACS Installation Fails
+### HACS Installation Fails
 
 **Symptoms:**
 
@@ -48,70 +48,26 @@ This guide helps resolve common issues with the Smart Cover Automation integrati
 
 ## Debugging
 
-### Enable Debug Logging
+### Enable Verbose Logging
 
-Add to `configuration.yaml`:
+Make sure to enable verbose (debug) logging when analyzing a problem. This can be done via the UI (see the [Configuration Guide]({{ '/configuration/' | relative_url }}))
 
-```yaml
-logger:
-  default: info
-  logs:
-    custom_components.smart_cover_automation: debug
-```
+### Log File Location
 
-Then restart Home Assistant and check the logs.
+In the file system, you can find the **Home Assistant Core** log at `config/home-assistant.log`. It includes the log messages from this integration (filter for `smart_cover_automation`).
 
-### Useful Log Locations
-
-- **Home Assistant Core:** `config/home-assistant.log`
-- **Integration Logs:** Filter for `smart_cover_automation`
-
-### State Monitoring
-
-Monitor these entities for debugging:
-
-TODO
-
-## Error Messages
-
-### Common Error Messages and Solutions
-
-#### "Cover entity not found"
-```
-Entity cover.bedroom_blinds not found
-```
-**Solution:** Check entity ID is correct in Developer Tools > States
-
-#### "Weather integration not available"
-```
-Weather entity weather.openweathermap not available
-```
-**Solution:** Ensure weather integration is installed and configured
+In the UI, you can find the same log at **Settings** → **Systems** → **Logs**.
 
 ## Getting Help
 
-If you can't resolve the issue:
-
 ### Before Seeking Help
 
-1. **Check Home Assistant logs** for error messages
-2. **Enable debug logging** and reproduce the issue
+1. **Enable verbose logging** and reproduce the issue
+2. **Check Home Assistant logs**
 3. **Document your configuration** and the exact problem
-4. **Test with minimal configuration** to isolate the issue
 
 ### Where to Get Help
 
 1. **GitHub Issues:** [Report a bug](https://github.com/helgeklein/ha-smart-cover-automation/issues)
 2. **Home Assistant Community:** [Forum discussion](https://community.home-assistant.io/)
 3. **Documentation:** Review all sections of this documentation
-
-### Information to Include
-
-When reporting issues, include:
-
-- Home Assistant version
-- Integration version
-- Relevant configuration (sanitized)
-- Log messages (with debug enabled)
-- Steps to reproduce
-- Expected vs actual behavior

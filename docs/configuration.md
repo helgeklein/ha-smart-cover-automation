@@ -10,53 +10,31 @@ permalink: /configuration/
 
 This guide covers how to configure the Smart Cover Automation integration after installation.
 
-After initial setup, you can modify settings:
+## Configuration Dialog
+
+Basic settings are managed via the integration's configuration dialog.
 
 1. Go to **Settings** → **Devices & Services**.
 2. Find **Smart Cover Automation**.
-3. Click **Configure**.
+3. Click the **gear icon** to open the configuration dialog.
 
-## Configuration Options
+### Configuration Options
 
-### Cover Selection
+#### Cover Selection
 
 Choose which covers to include in the automation.
 
-### Weather Integration
+#### Weather Integration
 
 The integration needs a weather provider to determine if the sun is shining and if it's going to be a hot day.
 
-### Available Options
+## Configuration Switches
 
-TODO
+Additional settings are managed via switches in the interation's UI.
 
-### Per-Cover Settings
-
-TODO
-
-## Entities Created
-
-TODO: VERIFY
-
-The integration creates several entities for monitoring and control:
-
-### Switches
-
-- `switch.smart_cover_automation` - Master enable/disable
-
-### Sensors
-
-- `sensor.smart_cover_automation_status` - Current automation status
-- `sensor.smart_cover_automation_last_action` - Last action taken
-- `binary_sensor.smart_cover_automation_active` - Automation active state
-
-### Binary Sensors
-
-TODO
-
-## Example Configurations
-
-TODO
+1. Go to **Settings** → **Devices & Services**.
+2. Find **Smart Cover Automation**.
+3. Click the **service** item to navigate to the integration's UI page with configuration and diagnostic options.
 
 ## Next Steps
 
