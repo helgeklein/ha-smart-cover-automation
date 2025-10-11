@@ -7,11 +7,11 @@ from typing import Any
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.weather.const import WeatherEntityFeature
-from homeassistant.const import STATE_UNAVAILABLE, Platform, UnitOfTemperature
+from homeassistant.const import STATE_UNAVAILABLE, Platform
 from homeassistant.helpers import selector
 
 from . import const
-from .config import CONF_SPECS, ConfKeys, resolve
+from .config import ConfKeys, resolve
 from .util import to_float_or_none
 
 
