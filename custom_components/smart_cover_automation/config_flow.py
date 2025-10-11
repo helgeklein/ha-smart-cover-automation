@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 
 import voluptuous as vol
 from homeassistant import config_entries
@@ -11,8 +11,194 @@ from homeassistant.const import STATE_UNAVAILABLE, Platform
 from homeassistant.helpers import selector
 
 from . import const
-from .config import ConfKeys, resolve
+from .config import ConfKeys, ResolvedConfig, resolve
 from .util import to_float_or_none
+
+
+class ConfigFlowHelper:
+    """Helper class for config flow validation and schema building."""
+
+    @staticmethod
+    def validate_user_input_step1(hass: Any, user_input: dict[str, Any]) -> dict[str, str]:
+        """Validate step 1 (user/init) input: covers and weather entity.
+
+        Args:
+            hass: Home Assistant instance
+            user_input: User input from the form
+
+        Returns:
+            Dictionary of errors (empty if valid)
+        """
+        errors: dict[str, str] = {}
+
+        # Validate covers
+        covers = user_input.get(ConfKeys.COVERS.value, [])
+        if not covers:
+            errors[ConfKeys.COVERS.value] = const.ERROR_NO_COVERS
+            const.LOGGER.error("No covers selected")
+        elif hass:
+            invalid_covers = []
+            for cover in covers:
+                state = hass.states.get(cover)
+                if not state:
+                    invalid_covers.append(cover)
+                elif state.state == STATE_UNAVAILABLE:
+                    const.LOGGER.warning(f"Cover {cover} is currently unavailable but will be configured")
+
+            if invalid_covers:
+                errors[ConfKeys.COVERS.value] = const.ERROR_INVALID_COVER
+                const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
+
+        # Validate weather entity
+        weather_entity_id = user_input.get(ConfKeys.WEATHER_ENTITY_ID.value)
+        if not weather_entity_id:
+            errors[ConfKeys.WEATHER_ENTITY_ID.value] = const.ERROR_NO_WEATHER_ENTITY
+            const.LOGGER.error("No weather entity selected")
+        elif hass:
+            weather_state = hass.states.get(weather_entity_id)
+            if weather_state:
+                supported_features = weather_state.attributes.get("supported_features", 0)
+                if not supported_features & WeatherEntityFeature.FORECAST_DAILY:
+                    errors[ConfKeys.WEATHER_ENTITY_ID.value] = const.ERROR_INVALID_WEATHER_ENTITY
+                    const.LOGGER.error(f"Weather entity {weather_entity_id} does not support daily forecasts")
+            else:
+                errors[ConfKeys.WEATHER_ENTITY_ID.value] = const.ERROR_INVALID_WEATHER_ENTITY
+                const.LOGGER.error(f"Weather entity {weather_entity_id} has no state value")
+
+        return errors
+
+    @staticmethod
+    def build_schema_step1(resolved_settings: ResolvedConfig) -> vol.Schema:
+        """Build schema for step 1: cover and weather selection.
+
+        Args:
+            resolved_settings: Resolved configuration with defaults
+
+        Returns:
+            Schema for step 1 form
+        """
+        schema_dict: dict[vol.Marker, object] = {}
+
+        schema_dict[vol.Required(ConfKeys.WEATHER_ENTITY_ID.value, default=resolved_settings.weather_entity_id)] = selector.EntitySelector(
+            selector.EntitySelectorConfig(domain=Platform.WEATHER)
+        )
+        schema_dict[vol.Required(ConfKeys.COVERS.value, default=list(resolved_settings.covers))] = selector.EntitySelector(
+            selector.EntitySelectorConfig(domain=Platform.COVER, multiple=True)
+        )
+
+        return vol.Schema(schema_dict)
+
+    @staticmethod
+    def build_schema_step2(hass: Any, covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
+        """Build schema for step 2: azimuth configuration per cover.
+
+        Args:
+            hass: Home Assistant instance (for looking up cover friendly names)
+            covers: List of cover entity IDs
+            defaults: Dictionary to look up default azimuth values
+
+        Returns:
+            Schema for step 2 form
+        """
+        schema_dict: dict[vol.Marker, object] = {}
+
+        for cover in sorted(covers):
+            key = f"{cover}_{const.COVER_SFX_AZIMUTH}"
+            raw = defaults.get(key)
+            default_azimuth = to_float_or_none(raw)
+            if default_azimuth is None:
+                default_azimuth = 180
+
+            azimuth_selector = selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=359,
+                    step=0.1,
+                    unit_of_measurement="°",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+
+            # Look up cover's friendly name
+            cover_name = cover
+            if hass:
+                cover_state = hass.states.get(cover)
+                if cover_state:
+                    cover_name = cover_state.name
+
+            description = {"key": const.COVER_AZIMUTH, "placeholder": {"cover_name": cover_name}}
+            schema_dict[vol.Required(key, default=default_azimuth, description=description)] = azimuth_selector
+
+        return vol.Schema(schema_dict)
+
+    @staticmethod
+    def build_schema_step3(resolved_settings: ResolvedConfig) -> vol.Schema:
+        """Build schema for step 3: sun position, cover behavior, manual override.
+
+        Args:
+            resolved_settings: Resolved configuration with defaults
+
+        Returns:
+            Schema for step 3 form
+        """
+        duration_default = {
+            "hours": resolved_settings.manual_override_duration // 3600,
+            "minutes": (resolved_settings.manual_override_duration % 3600) // 60,
+            "seconds": resolved_settings.manual_override_duration % 60,
+        }
+
+        return vol.Schema(
+            {
+                vol.Required(
+                    ConfKeys.SUN_ELEVATION_THRESHOLD.value,
+                    default=resolved_settings.sun_elevation_threshold,
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        unit_of_measurement="°",
+                        min=-90,
+                        max=90,
+                    )
+                ),
+                vol.Required(
+                    ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
+                    default=resolved_settings.sun_azimuth_tolerance,
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        unit_of_measurement="°",
+                        min=0,
+                        max=180,
+                    )
+                ),
+                vol.Required(
+                    ConfKeys.COVERS_MAX_CLOSURE.value,
+                    default=resolved_settings.covers_max_closure,
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        unit_of_measurement="%",
+                        min=0,
+                        max=100,
+                    )
+                ),
+                vol.Required(
+                    ConfKeys.COVERS_MIN_CLOSURE.value,
+                    default=resolved_settings.covers_min_closure,
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        unit_of_measurement="%",
+                        min=0,
+                        max=100,
+                    )
+                ),
+                vol.Required(
+                    ConfKeys.MANUAL_OVERRIDE_DURATION.value,
+                    default=duration_default,
+                ): selector.DurationSelector(selector.DurationSelectorConfig()),
+            }
+        )
 
 
 class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
@@ -24,99 +210,97 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
     # Explicit domain attribute for tests referencing FlowHandler.domain
     domain = const.DOMAIN
 
-    async def async_step_user(
-        self,
-        user_input: dict[str, Any] | None = None,
-    ) -> config_entries.ConfigFlowResult:
-        """Invoked when the user adds the integration from the UI.
+    def __init__(self) -> None:
+        """Initialize the config flow."""
+        super().__init__()
+        self._config_data: dict[str, Any] = {}
 
-        HA calls async_step_user(None) to show the form, then calls it again with a dict after submit.
-        It's called again on validation errors (to re-display the form) until it returns create_entry or aborts.
-        It's not used for editing options (that's OptionsFlowHandler.async_step_init).
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Step 1: Cover and weather entity selection.
 
-        Error messages are retured in the errors dict:
-        - The key "base" is for general errors not associated with a specific field.
-        - Values like "invalid_cover" are keys that are mapped to strings defined in <lang>.json.
+        HA calls async_step_user(None) to show the menu on first entry, then calls it again with a dict after submit.
         """
-        errors = {}
+        # Show menu on first call (before any user interaction)
+        if user_input is None and not self._config_data and not hasattr(self, "_menu_shown"):
+            self._menu_shown = True
+            return self.async_show_menu(
+                step_id="user",
+                menu_options=["user_form", "2", "3"],
+            )
 
-        # Initial call: user_input is None -> show the form to the user
-        if user_input is None:
-            return self._show_user_form_config()
+        # Build defaults from current config data
+        resolved_settings = resolve({}, self._config_data)
 
-        # Subsequent calls: user_input has form data -> validate user data and create entry
-        try:
-            # Validate covers
-            covers = user_input.get(ConfKeys.COVERS.value, [])
-            if not covers:
-                errors["base"] = const.ERROR_INVALID_CONFIG
-                const.LOGGER.error("No covers selected for configuration")
+        if user_input is not None:
+            # Validate covers and weather entity
+            errors = ConfigFlowHelper.validate_user_input_step1(self.hass, user_input)
 
-            invalid_covers = []
-            for cover in covers:
-                state = self.hass.states.get(cover)
-                if not state:
-                    invalid_covers.append(cover)
-                elif state.state == STATE_UNAVAILABLE:
-                    const.LOGGER.warning(f"Cover {cover} is currently unavailable but will be configured")
-
-            if invalid_covers:
-                errors["base"] = const.ERROR_INVALID_COVER
-                const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
-
-            # Validate weather entity
-            weather_entity_id = user_input.get(ConfKeys.WEATHER_ENTITY_ID.value)
-            if weather_entity_id:
-                weather_state = self.hass.states.get(weather_entity_id)
-                if weather_state:
-                    supported_features = weather_state.attributes.get("supported_features", 0)
-                    if not supported_features & WeatherEntityFeature.FORECAST_DAILY:
-                        errors["base"] = const.ERROR_INVALID_WEATHER_ENTITY
-                        const.LOGGER.error(f"Weather entity {weather_entity_id} does not support daily forecasts")
-                else:
-                    # This case is unlikely as the selector should prevent it
-                    errors["base"] = const.ERROR_INVALID_WEATHER_ENTITY
-                    const.LOGGER.error(f"Weather entity {weather_entity_id} not found")
-
-            if not errors:
-                # Persist provided data
-                data = dict(user_input)
-
-                # Create a new HA config entry with the provided data
-                return self.async_create_entry(
-                    title=const.INTEGRATION_NAME,
-                    data=data,
+            if errors:
+                # Show form again with errors
+                return self.async_show_form(
+                    step_id="user_form",
+                    data_schema=ConfigFlowHelper.build_schema_step1(resolved_settings),
+                    errors=errors,
                 )
 
-        except (KeyError, ValueError, TypeError) as err:
-            const.LOGGER.exception(f"Configuration validation error: {err}")
-            errors["base"] = const.ERROR_INVALID_CONFIG
+            # Store step 1 data and proceed to azimuth configuration
+            self._config_data.update(user_input)
+            return await self.async_step_2()
 
-        # Validation error: show the form to the user again
-        return self._show_user_form_config(errors)
-
-    def _show_user_form_config(self, errors: dict[str, str] | None = None) -> config_entries.ConfigFlowResult:
-        """Render the initial user form (or re-display after validation errors)."""
+        # Show the form
         return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    # === COVER SETTINGS ===
-                    vol.Required(ConfKeys.COVERS.value): selector.EntitySelector(
-                        selector.EntitySelectorConfig(
-                            domain=Platform.COVER,
-                            multiple=True,
-                        ),
-                    ),
-                    # === WEATHER SETTINGS ===
-                    vol.Required(ConfKeys.WEATHER_ENTITY_ID.value): selector.EntitySelector(
-                        selector.EntitySelectorConfig(
-                            domain=Platform.WEATHER,
-                        )
-                    ),
-                }
-            ),
-            errors=errors or {},
+            step_id="user_form",
+            data_schema=ConfigFlowHelper.build_schema_step1(resolved_settings),
+        )
+
+    async def async_step_user_form(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Handle user form step (called from menu)."""
+        return await self.async_step_user(user_input)
+
+    async def async_step_2(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Step 2: Configure azimuth for each cover."""
+        # Get covers from accumulated config data
+        covers: list[str] = self._config_data.get(ConfKeys.COVERS.value, [])
+
+        if user_input is not None:
+            # Store step 2 data and show menu
+            self._config_data.update(user_input)
+            return self.async_show_menu(
+                step_id="user",
+                menu_options=["user_form", "2", "3"],
+            )
+
+        # Show azimuth configuration form
+        return self.async_show_form(
+            step_id="2",
+            data_schema=ConfigFlowHelper.build_schema_step2(hass=self.hass, covers=covers, defaults=self._config_data),
+        )
+
+    async def async_step_3(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Step 3: Configure sun position, cover behavior, and manual override duration."""
+        if user_input is not None:
+            # Store step 3 data and show menu with submit option
+            self._config_data.update(user_input)
+            return self.async_show_menu(
+                step_id="user",
+                menu_options=["user_form", "2", "3", "submit"],
+            )
+
+        # Build defaults from accumulated config data
+        data = dict(self._config_data)
+        resolved_settings = resolve({}, data)
+
+        # Show final settings form
+        return self.async_show_form(
+            step_id="3",
+            data_schema=ConfigFlowHelper.build_schema_step3(resolved_settings),
+        )
+
+    async def async_step_submit(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Submit the configuration."""
+        return self.async_create_entry(
+            title=const.INTEGRATION_NAME,
+            data=dict(self._config_data),
         )
 
     @staticmethod
@@ -135,148 +319,118 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         warnings in tests; keep a private reference instead.
         """
         self._config_entry = config_entry
+        self._config_data: dict[str, Any] = {}
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Invoked when the user clicks the gear icon to bring up the integration's options dialog.
+        """Step 1: Cover and weather entity selection.
 
-        HA calls async_step_init(None) to show the form, then calls it again with a dict after submit.
+        HA calls async_step_init(None) to show the menu on first entry, then calls it again with a dict after submit.
         """
-        #
-        # Subsequent calls: user_input has form data -> store the options and finish
-        #
-        if user_input is not None:
-            # Validate weather entity in options flow
-            weather_entity_id = user_input.get(ConfKeys.WEATHER_ENTITY_ID.value)
-            if weather_entity_id and self.hass is not None:
-                weather_state = self.hass.states.get(weather_entity_id)
-                if weather_state:
-                    supported_features = weather_state.attributes.get("supported_features", 0)
-                    if not supported_features & WeatherEntityFeature.FORECAST_DAILY:
-                        # This is not a perfect solution, as we cannot show an error on the options form easily.
-                        # The best we can do is log an error and prevent the options from being saved with an
-                        # invalid entity. A better approach would be to filter the selector, but that is not
-                        # currently possible for supported_features as it's not a string.
-                        const.LOGGER.error(f"Weather entity {weather_entity_id} does not support daily forecasts. Options not saved.")
-                        # Aborting the flow is not ideal, but it prevents saving invalid options.
-                        # A friendlier way would require changes to the options flow handling in HA core.
-                        return self.async_abort(reason=const.ERROR_INVALID_WEATHER_ENTITY)
+        # Show menu on first call (before any user interaction)
+        if user_input is None and not self._config_data and not hasattr(self, "_menu_shown"):
+            self._menu_shown = True
+            return self.async_show_menu(
+                step_id="init",
+                menu_options=["init_form", "2", "3"],
+            )
 
-            # Clean up any orphaned cover-specific settings if covers were removed
-            # Only do this if the user actually modified the covers list
-            if ConfKeys.COVERS.value in user_input:
-                covers_in_input = user_input.get(ConfKeys.COVERS.value, [])
-                cleaned_input = dict(user_input)
-
-                # Remove azimuth settings for covers that are no longer configured
-                keys_to_remove = []
-                for key in cleaned_input.keys():
-                    if key.endswith(f"_{const.COVER_SFX_AZIMUTH}"):
-                        cover_entity = key.replace(f"_{const.COVER_SFX_AZIMUTH}", "")
-                        if cover_entity not in covers_in_input:
-                            keys_to_remove.append(key)
-
-                for key in keys_to_remove:
-                    cleaned_input.pop(key, None)
-
-                user_input = cleaned_input
-
-            # Persist options; HA will trigger entry update and reload
-            return self.async_create_entry(title="Options", data=user_input)
-
-        #
-        # Initial call: user_input is None -> show the form to the user
-        #
-
-        data = dict(self._config_entry.data)
-        options = dict(self._config_entry.options or {})
+        # Build defaults from existing config/options
+        data = dict(self._config_entry.data) if self._config_entry.data else {}
+        options = dict(self._config_entry.options) if self._config_entry.options else {}
         resolved_settings = resolve(options, data)
 
-        # Build dynamic fields for per-cover directions as numeric azimuth angles (0-359)
-        covers: list[str] = list(resolved_settings.covers)
-        direction_fields: dict[vol.Marker, object] = {}
+        if user_input is not None:
+            # Validate covers and weather entity
+            errors = ConfigFlowHelper.validate_user_input_step1(self.hass, user_input)
 
-        for cover in covers:
-            key = f"{cover}_{const.COVER_SFX_AZIMUTH}"
-            raw = options.get(key, data.get(key))
-            direction_azimuth: float | None = to_float_or_none(raw)
-
-            # Look up the cover's friendly name, falling back to the entity ID.
-            cover_name = cover
-            if self.hass:
-                cover_state = self.hass.states.get(cover)
-                if cover_state:
-                    cover_name = cover_state.name
-
-            # Have the frontend look up the translation by key, passing placeholders as variables to replace in the translation file's string.
-            description_from_translation = {"key": const.COVER_AZIMUTH, "placeholder": {"cover_name": cover_name}}
-
-            # Cover azimuth number selector
-            azimuth_number_selector = selector.NumberSelector(
-                selector.NumberSelectorConfig(min=0, max=359, step=0.1, unit_of_measurement="°", mode=selector.NumberSelectorMode.BOX)
-            )
-
-            # Build cover direction fields for the UI
-            if direction_azimuth is not None:
-                direction_fields[vol.Required(key, default=direction_azimuth, description=description_from_translation)] = (
-                    azimuth_number_selector
+            if errors:
+                # Show form again with errors
+                return self.async_show_form(
+                    step_id="init_form",
+                    data_schema=ConfigFlowHelper.build_schema_step1(resolved_settings),
+                    errors=errors,
                 )
-            else:
-                direction_fields[vol.Required(key, description=description_from_translation)] = azimuth_number_selector
 
-        # Build the schema with logical field grouping
-        schema_dict: dict[vol.Marker, object] = {}
+            # Store step 1 data and proceed to azimuth configuration
+            self._config_data.update(user_input)
+            return await self.async_step_2()
 
-        # === COVER SETTINGS ===
-        # Allow editing the list of covers without changing the unique_id
-        schema_dict[vol.Required(ConfKeys.COVERS.value, default=covers)] = selector.EntitySelector(
-            selector.EntitySelectorConfig(
-                domain=Platform.COVER,
-                multiple=True,
-            ),
-        )
-
-        # === TEMPERATURE & WEATHER SETTINGS ===
-        schema_dict[vol.Required(ConfKeys.WEATHER_ENTITY_ID.value, default=resolved_settings.weather_entity_id)] = selector.EntitySelector(
-            selector.EntitySelectorConfig(
-                domain=Platform.WEATHER,
-            )
-        )
-
-        # === SUN POSITION SETTINGS ===
-        schema_dict[vol.Required(ConfKeys.SUN_ELEVATION_THRESHOLD.value, default=resolved_settings.sun_elevation_threshold)] = (
-            selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=90, step=1, unit_of_measurement="°"))
-        )
-        schema_dict[vol.Required(ConfKeys.SUN_AZIMUTH_TOLERANCE.value, default=resolved_settings.sun_azimuth_tolerance)] = (
-            selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=180, step=1, unit_of_measurement="°"))
-        )
-
-        # === COVER BEHAVIOR SETTINGS ===
-        schema_dict[vol.Required(ConfKeys.COVERS_MAX_CLOSURE.value, default=resolved_settings.covers_max_closure)] = (
-            selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%"))
-        )
-        schema_dict[vol.Required(ConfKeys.COVERS_MIN_CLOSURE.value, default=resolved_settings.covers_min_closure)] = (
-            selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=100, step=1, unit_of_measurement="%"))
-        )
-
-        duration_default = {
-            "hours": resolved_settings.manual_override_duration // 3600,
-            "minutes": (resolved_settings.manual_override_duration % 3600) // 60,
-            "seconds": resolved_settings.manual_override_duration % 60,
-        }
-        schema_dict[vol.Required(ConfKeys.MANUAL_OVERRIDE_DURATION.value, default=duration_default)] = selector.DurationSelector(
-            selector.DurationSelectorConfig()
-        )
-
-        # === PER-COVER AZIMUTH DIRECTIONS ===
-        # Add dynamic direction fields, sorted for consistent ordering
-        if direction_fields:
-            # Sort covers alphabetically for better user experience
-            sorted_direction_items = sorted(direction_fields.items(), key=lambda x: str(x[0]))
-
-            for field_key, field_selector in sorted_direction_items:
-                schema_dict[field_key] = field_selector
-
+        # Show the form
         return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema(schema_dict),
+            step_id="init_form",
+            data_schema=ConfigFlowHelper.build_schema_step1(resolved_settings),
         )
+
+    async def async_step_init_form(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Handle init form step (called from menu)."""
+        return await self.async_step_init(user_input)
+
+    async def async_step_2(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Step 2: Configure azimuth for each cover."""
+        # Get covers from accumulated config data, or fall back to existing config/options
+        covers: list[str] = self._config_data.get(ConfKeys.COVERS.value, [])
+        if not covers:
+            # If no covers in accumulated data, get from existing config/options
+            data = dict(self._config_entry.data) if self._config_entry.data else {}
+            options = dict(self._config_entry.options) if self._config_entry.options else {}
+            combined = {**data, **options}
+            covers = combined.get(ConfKeys.COVERS.value, [])
+
+        if user_input is not None:
+            # Store step 2 data and show menu
+            self._config_data.update(user_input)
+            return self.async_show_menu(
+                step_id="init",
+                menu_options=["init_form", "2", "3"],
+            )
+
+        # Build defaults from existing config/options (options takes precedence)
+        data = dict(self._config_entry.data) if self._config_entry.data else {}
+        options = dict(self._config_entry.options) if self._config_entry.options else {}
+        defaults = {**data, **options}
+
+        # Show azimuth configuration form
+        return self.async_show_form(
+            step_id="2",
+            data_schema=ConfigFlowHelper.build_schema_step2(hass=self.hass, covers=covers, defaults=defaults),
+        )
+
+    async def async_step_3(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Step 3: Configure sun position, cover behavior, and manual override duration."""
+        if user_input is not None:
+            # Store step 3 data
+            self._config_data.update(user_input)
+
+            # Clean up orphaned cover settings
+            covers_in_input = self._config_data.get(ConfKeys.COVERS.value, [])
+            keys_to_remove = []
+            for key in self._config_data.keys():
+                if key.endswith(f"_{const.COVER_SFX_AZIMUTH}"):
+                    cover_entity = key.replace(f"_{const.COVER_SFX_AZIMUTH}", "")
+                    if cover_entity not in covers_in_input:
+                        keys_to_remove.append(key)
+
+            for key in keys_to_remove:
+                self._config_data.pop(key, None)
+
+            # Show menu with submit option
+            return self.async_show_menu(
+                step_id="init",
+                menu_options=["init_form", "2", "3", "submit"],
+            )
+
+        # Build defaults from existing config/options (options takes precedence)
+        data = dict(self._config_entry.data) if self._config_entry.data else {}
+        options = dict(self._config_entry.options) if self._config_entry.options else {}
+        defaults = {**data, **options}
+        resolved_settings = resolve({}, defaults)
+
+        # Show final settings form
+        return self.async_show_form(
+            step_id="3",
+            data_schema=ConfigFlowHelper.build_schema_step3(resolved_settings),
+        )
+
+    async def async_step_submit(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Submit the configuration."""
+        return self.async_create_entry(title="", data=self._config_data)

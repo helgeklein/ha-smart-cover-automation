@@ -80,10 +80,12 @@ COVER_ATTR_SUN_AZIMUTH_DIFF: Final[str] = "cover_sun_azimuth_diff"  # Difference
 COVER_ATTR_SUN_HITTING: Final[str] = "cover_sun_hitting"  # Whether the sun is hitting the window
 COVER_ATTR_SUPPORTED_FEATURES: Final[str] = "cover_supported_features"  # Supported cover features bitmask
 
-# Translation keys used by config flows and tests
+# Config/options flow translation keys
 ERROR_INVALID_CONFIG: Final[str] = "invalid_config"
 ERROR_INVALID_COVER: Final[str] = "invalid_cover"
 ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"
+ERROR_NO_COVERS: Final[str] = "no_covers"
+ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"
 
 # Home Assistant string literals
 HA_OPTIONS: Final[str] = "options"

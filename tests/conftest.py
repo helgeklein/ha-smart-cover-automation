@@ -355,22 +355,33 @@ def create_integration_coordinator(covers: list[str] | None = None) -> "DataUpda
 
 @pytest.fixture
 def mock_hass_with_covers() -> MagicMock:
-    """Create mock Home Assistant instance with valid cover entities.
+    """Create mock Home Assistant instance with valid cover and weather entities.
 
     Provides a mocked Home Assistant instance that simulates the presence
-    of cover entities in the state registry. This allows tests to validate
-    configuration flow behavior with existing cover entities without
+    of cover and weather entities in the state registry. This allows tests to validate
+    configuration flow behavior with existing entities without
     requiring a full Home Assistant setup.
 
-    The mock returns a "closed" state for any entity ID starting with "cover."
-    and None for all other entity IDs, simulating a typical Home Assistant
-    environment with cover entities present.
+    The mock returns:
+    - A "closed" state for entity IDs starting with "cover."
+    - A weather state with daily forecast support for entity IDs starting with "weather."
+    - None for all other entity IDs
 
     Returns:
-        Mock Home Assistant instance with cover entity simulation
+        Mock Home Assistant instance with cover and weather entity simulation
     """
+
+    def mock_get_state(entity_id: str) -> MagicMock | None:
+        if entity_id.startswith("cover."):
+            return MagicMock(state="closed")
+        if entity_id.startswith("weather."):
+            weather_state = MagicMock()
+            weather_state.attributes = {"supported_features": WeatherEntityFeature.FORECAST_DAILY}
+            return weather_state
+        return None
+
     hass = MagicMock()
-    hass.states.get.side_effect = lambda entity_id: (MagicMock(state="closed") if entity_id.startswith("cover.") else None)
+    hass.states.get.side_effect = mock_get_state
     return hass
 
 

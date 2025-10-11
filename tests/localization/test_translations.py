@@ -117,7 +117,8 @@ def test_translation_has_required_keys(language_code: str) -> None:
 
     # Test 1: Required user-step labels for initial configuration flow
     # These labels appear when users first set up the integration
-    user_data = data.get("config", {}).get("step", {}).get("user", {}).get("data", {})
+    # Note: With menu-driven flow, data fields are in user_form, not user
+    user_data = data.get("config", {}).get("step", {}).get("user_form", {}).get("data", {})
     expected_user_fields = {
         ConfKeys.COVERS.value,
         ConfKeys.WEATHER_ENTITY_ID.value,
@@ -127,7 +128,11 @@ def test_translation_has_required_keys(language_code: str) -> None:
 
     # Test 2: Required options-step labels for runtime configuration
     # These labels appear when users modify settings through the options flow
-    options_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("init", {}).get("data", {})
+    # Note: With menu-driven flow, data fields are split across init_form, 2, and 3
+    init_form_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("init_form", {}).get("data", {})
+    step2_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("2", {}).get("data", {})
+    step3_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("3", {}).get("data", {})
+    options_data = {**init_form_data, **step2_data, **step3_data}
     expected_options_fields = {
         ConfKeys.COVERS.value,
         ConfKeys.COVERS_MAX_CLOSURE.value,
