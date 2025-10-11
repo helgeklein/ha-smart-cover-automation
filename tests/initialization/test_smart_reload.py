@@ -5,7 +5,7 @@ configuration changes by detecting whether a full reload is needed or if
 just refreshing the coordinator is sufficient.
 
 Key testing areas:
-1. **Runtime-only changes**: Tests that changes to 'enabled' or 'simulating'
+1. **Runtime-only changes**: Tests that changes to 'enabled' or 'simulation_mode'
    only trigger a coordinator refresh, not a full reload
 2. **Structural changes**: Tests that changes to other configuration keys
    trigger a full reload
@@ -46,17 +46,17 @@ class TestSmartReload:
         """
         # Setup mock coordinator with old config
         mock_coordinator = MagicMock()
-        mock_coordinator._merged_config = {"enabled": True, "simulating": False, "covers": ["cover.test"]}
+        mock_coordinator._merged_config = {"enabled": True, "simulation_mode": False, "covers": ["cover.test"]}
         mock_coordinator.async_request_refresh = AsyncMock()
 
         # Setup mock runtime data
         mock_runtime_data = MagicMock(spec=RuntimeData)
         mock_runtime_data.coordinator = mock_coordinator
-        mock_runtime_data.config = {"enabled": True, "simulating": False, "covers": ["cover.test"]}
+        mock_runtime_data.config = {"enabled": True, "simulation_mode": False, "covers": ["cover.test"]}
 
         # Attach runtime data to entry
         mock_config_entry_basic.runtime_data = mock_runtime_data
-        mock_config_entry_basic.data = {"enabled": False, "simulating": False, "covers": ["cover.test"]}
+        mock_config_entry_basic.data = {"enabled": False, "simulation_mode": False, "covers": ["cover.test"]}
         mock_config_entry_basic.options = {}
 
         # Setup hass mock
@@ -81,9 +81,9 @@ class TestSmartReload:
         mock_hass_with_spec,
         mock_config_entry_basic,
     ) -> None:
-        """Test that changing only 'simulating' triggers coordinator refresh, not full reload.
+        """Test that changing only 'simulation_mode' triggers coordinator refresh, not full reload.
 
-        When only the 'simulating' flag changes, the integration should:
+        When only the 'simulation_mode' flag changes, the integration should:
         - Update the coordinator's merged config
         - Update runtime_data config
         - Trigger a coordinator refresh
@@ -91,17 +91,17 @@ class TestSmartReload:
         """
         # Setup mock coordinator with old config
         mock_coordinator = MagicMock()
-        mock_coordinator._merged_config = {"enabled": True, "simulating": False, "covers": ["cover.test"]}
+        mock_coordinator._merged_config = {"enabled": True, "simulation_mode": False, "covers": ["cover.test"]}
         mock_coordinator.async_request_refresh = AsyncMock()
 
         # Setup mock runtime data
         mock_runtime_data = MagicMock(spec=RuntimeData)
         mock_runtime_data.coordinator = mock_coordinator
-        mock_runtime_data.config = {"enabled": True, "simulating": False, "covers": ["cover.test"]}
+        mock_runtime_data.config = {"enabled": True, "simulation_mode": False, "covers": ["cover.test"]}
 
         # Attach runtime data to entry
         mock_config_entry_basic.runtime_data = mock_runtime_data
-        mock_config_entry_basic.data = {"enabled": True, "simulating": True, "covers": ["cover.test"]}
+        mock_config_entry_basic.data = {"enabled": True, "simulation_mode": True, "covers": ["cover.test"]}
         mock_config_entry_basic.options = {}
 
         # Setup hass mock
@@ -118,32 +118,32 @@ class TestSmartReload:
         mock_hass_with_spec.config_entries.async_reload.assert_not_called()
 
         # Verify configs were updated
-        assert mock_coordinator._merged_config["simulating"] is True
-        assert mock_runtime_data.config["simulating"] is True
+        assert mock_coordinator._merged_config["simulation_mode"] is True
+        assert mock_runtime_data.config["simulation_mode"] is True
 
     async def test_reload_with_both_runtime_keys_changed(
         self,
         mock_hass_with_spec,
         mock_config_entry_basic,
     ) -> None:
-        """Test that changing both 'enabled' and 'simulating' triggers coordinator refresh.
+        """Test that changing both 'enabled' and 'simulation_mode' triggers coordinator refresh.
 
         When both runtime-configurable keys change, the integration should still
         only trigger a coordinator refresh, not a full reload.
         """
         # Setup mock coordinator with old config
         mock_coordinator = MagicMock()
-        mock_coordinator._merged_config = {"enabled": True, "simulating": False, "covers": ["cover.test"]}
+        mock_coordinator._merged_config = {"enabled": True, "simulation_mode": False, "covers": ["cover.test"]}
         mock_coordinator.async_request_refresh = AsyncMock()
 
         # Setup mock runtime data
         mock_runtime_data = MagicMock(spec=RuntimeData)
         mock_runtime_data.coordinator = mock_coordinator
-        mock_runtime_data.config = {"enabled": True, "simulating": False, "covers": ["cover.test"]}
+        mock_runtime_data.config = {"enabled": True, "simulation_mode": False, "covers": ["cover.test"]}
 
         # Attach runtime data to entry
         mock_config_entry_basic.runtime_data = mock_runtime_data
-        mock_config_entry_basic.data = {"enabled": False, "simulating": True, "covers": ["cover.test"]}
+        mock_config_entry_basic.data = {"enabled": False, "simulation_mode": True, "covers": ["cover.test"]}
         mock_config_entry_basic.options = {}
 
         # Setup hass mock
@@ -171,7 +171,7 @@ class TestSmartReload:
         """
         # Setup mock coordinator with old config
         mock_coordinator = MagicMock()
-        mock_coordinator._merged_config = {"enabled": True, "simulating": False, "covers": ["cover.test1"]}
+        mock_coordinator._merged_config = {"enabled": True, "simulation_mode": False, "covers": ["cover.test1"]}
         mock_coordinator.async_request_refresh = AsyncMock()
 
         # Setup mock runtime data
@@ -180,7 +180,7 @@ class TestSmartReload:
 
         # Attach runtime data to entry
         mock_config_entry_basic.runtime_data = mock_runtime_data
-        mock_config_entry_basic.data = {"enabled": True, "simulating": False, "covers": ["cover.test1", "cover.test2"]}
+        mock_config_entry_basic.data = {"enabled": True, "simulation_mode": False, "covers": ["cover.test1", "cover.test2"]}
         mock_config_entry_basic.options = {}
 
         # Setup hass mock
@@ -208,7 +208,7 @@ class TestSmartReload:
         """
         # Setup mock coordinator with old config
         mock_coordinator = MagicMock()
-        mock_coordinator._merged_config = {"enabled": True, "simulating": False, "covers": ["cover.test1"]}
+        mock_coordinator._merged_config = {"enabled": True, "simulation_mode": False, "covers": ["cover.test1"]}
         mock_coordinator.async_request_refresh = AsyncMock()
 
         # Setup mock runtime data
@@ -217,7 +217,7 @@ class TestSmartReload:
 
         # Attach runtime data to entry
         mock_config_entry_basic.runtime_data = mock_runtime_data
-        mock_config_entry_basic.data = {"enabled": False, "simulating": False, "covers": ["cover.test1", "cover.test2"]}
+        mock_config_entry_basic.data = {"enabled": False, "simulation_mode": False, "covers": ["cover.test1", "cover.test2"]}
         mock_config_entry_basic.options = {}
 
         # Setup hass mock
@@ -245,7 +245,7 @@ class TestSmartReload:
         """
         # Setup mock coordinator with same config
         mock_coordinator = MagicMock()
-        mock_coordinator._merged_config = {"enabled": True, "simulating": False, "covers": ["cover.test"]}
+        mock_coordinator._merged_config = {"enabled": True, "simulation_mode": False, "covers": ["cover.test"]}
         mock_coordinator.async_request_refresh = AsyncMock()
 
         # Setup mock runtime data
@@ -254,7 +254,7 @@ class TestSmartReload:
 
         # Attach runtime data to entry
         mock_config_entry_basic.runtime_data = mock_runtime_data
-        mock_config_entry_basic.data = {"enabled": True, "simulating": False, "covers": ["cover.test"]}
+        mock_config_entry_basic.data = {"enabled": True, "simulation_mode": False, "covers": ["cover.test"]}
         mock_config_entry_basic.options = {}
 
         # Setup hass mock
@@ -282,7 +282,7 @@ class TestSmartReload:
         """
         # Don't set runtime_data on the entry
         mock_config_entry_basic.runtime_data = None
-        mock_config_entry_basic.data = {"enabled": False, "simulating": False, "covers": ["cover.test"]}
+        mock_config_entry_basic.data = {"enabled": False, "simulation_mode": False, "covers": ["cover.test"]}
         mock_config_entry_basic.options = {}
 
         # Setup hass mock

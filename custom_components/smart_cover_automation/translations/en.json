@@ -30,12 +30,9 @@
                     "covers": "Covers to automate:",
                     "covers_max_closure": "Maximum cover closure position:",
                     "covers_min_closure": "Minimum cover closure position:",
-                    "enabled": "Enable automation:",
                     "manual_override_duration": "Manual override duration:",
-                    "simulating": "Simulation mode:",
                     "sun_azimuth_tolerance": "Sun azimuth tolerance:",
                     "sun_elevation_threshold": "Minimal sun elevation:",
-                    "temp_threshold": "Temperature threshold:",
                     "weather_entity_id": "Weather forecast sensor:"
                 },
                 "data_description": {
@@ -44,10 +41,8 @@
                     "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
                     "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
                     "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "simulating": "If enabled, the automation runs through all calculations without actually moving the covers.",
                     "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
                     "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
-                    "temp_threshold": "The automation only operates on hot days, i.e., if the forecasted daily high temperature is above this threshold (°C).",
                     "weather_entity_id": "Select a weather entity that supports daily forecasts (required)."
                 }
             }
@@ -73,6 +68,11 @@
             },
             "verbose_logging": {
                 "name": "Verbose logging"
+            }
+        },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperature threshold"
             }
         }
     }

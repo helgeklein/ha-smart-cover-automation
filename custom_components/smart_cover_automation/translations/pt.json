@@ -30,12 +30,9 @@
                     "covers": "Estores para automatizar:",
                     "covers_max_closure": "Posição máxima de fecho:",
                     "covers_min_closure": "Posição mínima de fecho:",
-                    "enabled": "Activar automação:",
                     "manual_override_duration": "Duração de substituição manual:",
-                    "simulating": "Modo de simulação:",
                     "sun_azimuth_tolerance": "Tolerância do azimute solar:",
                     "sun_elevation_threshold": "Elevação mínima do sol:",
-                    "temp_threshold": "Limite de temperatura:",
                     "weather_entity_id": "Sensor de previsão meteorológica:"
                 },
                 "data_description": {
@@ -44,10 +41,8 @@
                     "covers_max_closure": "Nunca fechar mais que isto para sempre permitir a entrada de alguma luz (0 = totalmente fechado, 100 = totalmente aberto).",
                     "covers_min_closure": "Nunca abrir mais que isto para sempre fornecer um mínimo de sombra (0 = totalmente fechado, 100 = totalmente aberto).",
                     "manual_override_duration": "Por quanto tempo ignorar uma persiana depois de ter sido movida manualmente (0 = nunca ignorar).",
-                    "simulating": "Se activado, a automação executa todos os cálculos sem realmente mover os estores.",
                     "sun_azimuth_tolerance": "Ângulo horizontal máximo no qual o sol é considerado como incidindo na janela (graus).",
                     "sun_elevation_threshold": "A automação começa a operar quando a elevação do sol está acima deste limite (graus acima do horizonte).",
-                    "temp_threshold": "A automação opera apenas em dias quentes, ou seja, se a temperatura máxima diária prevista estiver acima deste limite (°C).",
                     "weather_entity_id": "Seleccione uma entidade meteorológica que suporte previsões diárias (obrigatório)."
                 }
             }
@@ -73,6 +68,11 @@
             },
             "verbose_logging": {
                 "name": "Registração detalhada"
+            }
+        },
+        "number": {
+            "temp_threshold": {
+                "name": "Limite de temperatura"
             }
         }
     }

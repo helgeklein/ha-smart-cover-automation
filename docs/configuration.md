@@ -10,31 +10,41 @@ permalink: /configuration/
 
 This guide covers how to configure the Smart Cover Automation integration after installation.
 
-## Configuration Dialog
+## Config Flow Dialog
 
-Basic settings are managed via the integration's configuration dialog.
+Basic settings are managed via the integration's config flow dialog.
 
 1. Go to **Settings** → **Devices & Services**.
 2. Find **Smart Cover Automation**.
-3. Click the **gear icon** to open the configuration dialog.
+3. Click the **gear icon** to open the config flow dialog.
 
-### Configuration Options
-
-#### Cover Selection
+### Cover Selection
 
 Choose which covers to include in the automation.
 
-#### Weather Integration
+### Weather Integration
 
 The integration needs a weather provider to determine if the sun is shining and if it's going to be a hot day.
 
-## Configuration Switches
+## Configuration Settings
 
-Additional settings are managed via switches in the interation's UI.
+Additional settings are managed via the interation's UI.
 
 1. Go to **Settings** → **Devices & Services**.
 2. Find **Smart Cover Automation**.
 3. Click the **service** item to navigate to the integration's UI page with configuration and diagnostic options.
+
+### Enabled
+
+Enables or disables the automation.
+
+### Simulation Mode
+
+If enabled, the automation runs through all calculations without actually moving the covers.
+
+### Temperature Threshold
+
+The automation only operates on hot days, i.e., if the forecasted daily high temperature is above this threshold (°C).
 
 ## Next Steps
 

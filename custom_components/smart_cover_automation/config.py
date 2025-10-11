@@ -46,7 +46,7 @@ class ConfKeys(StrEnum):
     COVERS_MIN_POSITION_DELTA = "covers_min_position_delta"  # Ignore smaller position changes (%).
     ENABLED = "enabled"  # Global on/off for all automation.
     MANUAL_OVERRIDE_DURATION = "manual_override_duration"  # Duration (seconds) to skip a cover's automation after manual cover move.
-    SIMULATING = "simulating"  # Simulation mode: if enabled, no actual cover commands are sent.
+    SIMULATION_MODE = "simulation_mode"  # Simulation mode: if enabled, no actual cover commands are sent.
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
     TEMP_THRESHOLD = "temp_threshold"  # Temperature threshold at which heat protection activates (°C).
@@ -145,7 +145,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds),
-    ConfKeys.SIMULATING: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=20.0, converter=_Converters.to_float),
     ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=23.0, converter=_Converters.to_float),
@@ -174,7 +174,7 @@ class ResolvedConfig:
     covers_min_position_delta: int
     enabled: bool
     manual_override_duration: int
-    simulating: bool
+    simulation_mode: bool
     sun_azimuth_tolerance: int
     sun_elevation_threshold: float
     temp_threshold: float

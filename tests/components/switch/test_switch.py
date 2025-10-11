@@ -163,7 +163,7 @@ async def test_simulation_mode_switch_turn_on_persists_option_and_refresh(mock_c
     3. Proper integration with the configuration management system
 
     Test scenario:
-    - Simulation mode switch starts in disabled state (simulating = False)
+    - Simulation mode switch starts in disabled state (simulation_mode = False)
     - User turns simulation mode switch ON
     - Expected behavior: Options updated and coordinator refreshed immediately
 
@@ -172,7 +172,7 @@ async def test_simulation_mode_switch_turn_on_persists_option_and_refresh(mock_c
     """
     # Setup integration with simulation mode initially disabled
     entry = mock_coordinator_basic.config_entry
-    entry.runtime_data.config[ConfKeys.SIMULATING.value] = False
+    entry.runtime_data.config[ConfKeys.SIMULATION_MODE.value] = False
 
     # Setup mock Home Assistant environment
     mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
@@ -202,7 +202,7 @@ async def test_simulation_mode_switch_turn_on_persists_option_and_refresh(mock_c
     # This ensures the switch state is persisted to the config entry
     mock_coordinator_basic.hass.config_entries.async_update_entry.assert_called_once()
     call_args = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
-    assert call_args[1]["options"][ConfKeys.SIMULATING.value] is True
+    assert call_args[1]["options"][ConfKeys.SIMULATION_MODE.value] is True
 
 
 async def test_simulation_mode_switch_turn_off_persists_option_and_refresh(mock_coordinator_basic) -> None:
@@ -214,7 +214,7 @@ async def test_simulation_mode_switch_turn_off_persists_option_and_refresh(mock_
     3. Proper integration with the configuration management system
 
     Test scenario:
-    - Simulation mode switch starts in enabled state (simulating = True)
+    - Simulation mode switch starts in enabled state (simulation_mode = True)
     - User turns simulation mode switch OFF
     - Expected behavior: Options updated and coordinator refreshed immediately
 
@@ -223,7 +223,7 @@ async def test_simulation_mode_switch_turn_off_persists_option_and_refresh(mock_
     """
     # Setup integration with simulation mode initially enabled
     entry = mock_coordinator_basic.config_entry
-    entry.runtime_data.config[ConfKeys.SIMULATING.value] = True
+    entry.runtime_data.config[ConfKeys.SIMULATION_MODE.value] = True
 
     # Setup mock Home Assistant environment
     mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
@@ -253,7 +253,7 @@ async def test_simulation_mode_switch_turn_off_persists_option_and_refresh(mock_
     # This ensures the switch state is persisted to the config entry
     mock_coordinator_basic.hass.config_entries.async_update_entry.assert_called_once()
     call_args = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
-    assert call_args[1]["options"][ConfKeys.SIMULATING.value] is False
+    assert call_args[1]["options"][ConfKeys.SIMULATION_MODE.value] is False
 
 
 async def test_switch_entity_properties(mock_coordinator_basic) -> None:

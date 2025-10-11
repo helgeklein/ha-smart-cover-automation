@@ -167,7 +167,7 @@ class TestSimulationMode(TestDataUpdateCoordinatorBase):
 
         # Verify simulation mode is active
         resolved = simulation_coordinator._resolved_settings()
-        assert resolved.simulating is True
+        assert resolved.simulation_mode is True
 
     async def test_simulation_mode_configuration_via_data(
         self,
@@ -180,20 +180,20 @@ class TestSimulationMode(TestDataUpdateCoordinatorBase):
         """
         # Create coordinator with simulation mode enabled via data
         config = create_temperature_config()
-        config[ConfKeys.SIMULATING.value] = True
+        config[ConfKeys.SIMULATION_MODE.value] = True
         config_entry = MockConfigEntry(config)
         sim_coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
         # Verify simulation mode is enabled
         resolved = sim_coordinator._resolved_settings()
-        assert resolved.simulating is True
+        assert resolved.simulation_mode is True
 
         # Create coordinator with simulation mode disabled via data
         config_normal = create_temperature_config()
-        config_normal[ConfKeys.SIMULATING.value] = False
+        config_normal[ConfKeys.SIMULATION_MODE.value] = False
         config_entry_normal = MockConfigEntry(config_normal)
         normal_coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry_normal))
 
         # Verify simulation mode is disabled
         resolved_normal = normal_coordinator._resolved_settings()
-        assert resolved_normal.simulating is False
+        assert resolved_normal.simulation_mode is False

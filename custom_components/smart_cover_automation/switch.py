@@ -18,7 +18,7 @@ from homeassistant.components.switch import SwitchEntity, SwitchEntityDescriptio
 from homeassistant.const import EntityCategory
 
 from .config import ConfKeys, resolve_entry
-from .const import DOMAIN, SWITCH_KEY_ENABLED, SWITCH_KEY_SIMULATION_MODE, SWITCH_KEY_VERBOSE_LOGGING
+from .const import DOMAIN
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -164,9 +164,9 @@ class EnabledSwitch(IntegrationSwitch):
                         and provides state management for this switch
         """
         entity_description = SwitchEntityDescription(
-            key=SWITCH_KEY_ENABLED,
+            key=ConfKeys.ENABLED.value,
             icon="mdi:toggle-switch-outline",
-            translation_key=SWITCH_KEY_ENABLED,
+            translation_key=ConfKeys.ENABLED.value,
             entity_category=EntityCategory.CONFIG,
         )
         super().__init__(coordinator, entity_description, ConfKeys.ENABLED.value)
@@ -178,12 +178,12 @@ class SimulationModeSwitch(IntegrationSwitch):
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
         """Set the switch properties."""
         entity_description = SwitchEntityDescription(
-            key=SWITCH_KEY_SIMULATION_MODE,
+            key=ConfKeys.SIMULATION_MODE.value,
             icon="mdi:play-circle-outline",
-            translation_key=SWITCH_KEY_SIMULATION_MODE,
+            translation_key=ConfKeys.SIMULATION_MODE.value,
             entity_category=EntityCategory.CONFIG,
         )
-        super().__init__(coordinator, entity_description, ConfKeys.SIMULATING.value)
+        super().__init__(coordinator, entity_description, ConfKeys.SIMULATION_MODE.value)
 
 
 class VerboseLoggingSwitch(IntegrationSwitch):
@@ -192,9 +192,9 @@ class VerboseLoggingSwitch(IntegrationSwitch):
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
         """Set the switch properties."""
         entity_description = SwitchEntityDescription(
-            key=SWITCH_KEY_VERBOSE_LOGGING,
+            key=ConfKeys.VERBOSE_LOGGING.value,
             icon="mdi:list-status",
-            translation_key=SWITCH_KEY_VERBOSE_LOGGING,
+            translation_key=ConfKeys.VERBOSE_LOGGING.value,
             entity_category=EntityCategory.CONFIG,
         )
         super().__init__(coordinator, entity_description, ConfKeys.VERBOSE_LOGGING.value)

@@ -241,19 +241,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 domain=Platform.WEATHER,
             )
         )
-        schema_dict[
-            vol.Required(
-                ConfKeys.TEMP_THRESHOLD.value,
-                default=CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
-            )
-        ] = selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=-10,
-                max=40,
-                step=0.5,
-                unit_of_measurement=UnitOfTemperature.CELSIUS,
-            ),
-        )
 
         # === SUN POSITION SETTINGS ===
         schema_dict[vol.Required(ConfKeys.SUN_ELEVATION_THRESHOLD.value, default=resolved_settings.sun_elevation_threshold)] = (

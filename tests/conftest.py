@@ -304,7 +304,7 @@ def simulation_coordinator(mock_hass) -> "DataUpdateCoordinator":
 
     config = create_temperature_config()
     # Enable simulation mode
-    config[ConfKeys.SIMULATING.value] = True
+    config[ConfKeys.SIMULATION_MODE.value] = True
     config_entry = MockConfigEntry(config)
     return DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 

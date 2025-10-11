@@ -129,15 +129,13 @@ def test_translation_has_required_keys(language_code: str) -> None:
     # These labels appear when users modify settings through the options flow
     options_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("init", {}).get("data", {})
     expected_options_fields = {
-        ConfKeys.ENABLED.value,
         ConfKeys.COVERS.value,
-        ConfKeys.WEATHER_ENTITY_ID.value,
-        ConfKeys.TEMP_THRESHOLD.value,
-        ConfKeys.SUN_ELEVATION_THRESHOLD.value,
-        ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
         ConfKeys.COVERS_MAX_CLOSURE.value,
         ConfKeys.COVERS_MIN_CLOSURE.value,
-        const.COVER_AZIMUTH,
+        ConfKeys.MANUAL_OVERRIDE_DURATION.value,
+        ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
+        ConfKeys.SUN_ELEVATION_THRESHOLD.value,
+        ConfKeys.WEATHER_ENTITY_ID.value,
     }
     missing_options = expected_options_fields - set(options_data.keys())
     assert not missing_options, f"Missing options form labels in {language_code}.json: {sorted(missing_options)}"

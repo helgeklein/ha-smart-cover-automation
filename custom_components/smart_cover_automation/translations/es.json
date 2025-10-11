@@ -30,12 +30,9 @@
                     "covers": "Persianas/toldos a automatizar:",
                     "covers_max_closure": "Posición máxima de cierre de persianas/toldos:",
                     "covers_min_closure": "Posición mínima de cierre de persianas/toldos:",
-                    "enabled": "Habilitar automatización:",
                     "manual_override_duration": "Duración de anulación manual:",
-                    "simulating": "Modo de simulación:",
                     "sun_azimuth_tolerance": "Tolerancia de azimut solar:",
                     "sun_elevation_threshold": "Elevación mínima del sol:",
-                    "temp_threshold": "Umbral de temperatura:",
                     "weather_entity_id": "Sensor de pronóstico del tiempo:"
                 },
                 "data_description": {
@@ -44,10 +41,8 @@
                     "covers_max_closure": "Nunca cerrar más que esto para siempre dejar entrar algo de luz (0 = completamente cerrado, 100 = completamente abierto).",
                     "covers_min_closure": "Nunca abrir más que esto para siempre proporcionar un mínimo de sombra (0 = completamente cerrado, 100 = completamente abierto).",
                     "manual_override_duration": "Cuánto tiempo omitir una persiana después de que se haya movido manualmente (0 = no omitir).",
-                    "simulating": "Si está habilitado, la automatización ejecuta todos los cálculos sin mover realmente las persianas.",
                     "sun_azimuth_tolerance": "Ángulo horizontal máximo en el que se considera que el sol brilla sobre la ventana (grados).",
                     "sun_elevation_threshold": "La automatización comienza a funcionar cuando la elevación del sol está por encima de este umbral (grados sobre el horizonte).",
-                    "temp_threshold": "La automatización solo funciona en días calurosos, es decir, si la temperatura máxima diaria pronosticada está por encima de este umbral (°C).",
                     "weather_entity_id": "Seleccione una entidad meteorológica que admita pronósticos diarios (requerido)."
                 }
             }
@@ -73,6 +68,11 @@
             },
             "verbose_logging": {
                 "name": "Registro detallado"
+            }
+        },
+        "number": {
+            "temp_threshold": {
+                "name": "Umbral de temperatura"
             }
         }
     }

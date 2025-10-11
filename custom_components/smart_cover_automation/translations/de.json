@@ -30,12 +30,9 @@
                     "covers": "Zu automatisierende Rollläden:",
                     "covers_max_closure": "Maximale Rollladenposition:",
                     "covers_min_closure": "Minimale Rollladenposition:",
-                    "enabled": "Automatisierung aktivieren:",
                     "manual_override_duration": "Dauer der manuellen Übersteuerung:",
-                    "simulating": "Simulationsmodus:",
                     "sun_azimuth_tolerance": "Sonnen-Azimut-Toleranz:",
                     "sun_elevation_threshold": "Minimale Sonnenhöhe:",
-                    "temp_threshold": "Temperaturschwelle:",
                     "weather_entity_id": "Wettervorhersage-Sensor:"
                 },
                 "data_description": {
@@ -44,10 +41,8 @@
                     "covers_max_closure": "Niemals mehr als dies schließen, um immer etwas Licht hereinzulassen (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
                     "covers_min_closure": "Niemals mehr als dies öffnen, um immer etwas Schatten zu gewährleisten (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
                     "manual_override_duration": "Wie lange soll ein Rollladen übersprungen werden, nachdem er manuell verstellt wurde (0 = kein Überspringen).",
-                    "simulating": "Falls aktiviert, führt die Automatisierung alle Berechnungen durch, ohne die Rollläden tatsächlich zu bewegen.",
                     "sun_azimuth_tolerance": "Maximaler horizontaler Winkel, bei dem die Sonne als auf das Fenster scheinend betrachtet wird (Grad).",
                     "sun_elevation_threshold": "Die Automatisierung startet, wenn die Sonnenhöhe über diesem Schwellenwert liegt (Grad über dem Horizont).",
-                    "temp_threshold": "Die Automatisierung arbeitet nur an heißen Tagen, d.h. wenn die vorhergesagte Tageshöchsttemperatur über diesem Schwellenwert liegt (°C).",
                     "weather_entity_id": "Wählen Sie eine Wetterentität aus, die Tagesvorhersagen unterstützt (erforderlich)."
                 }
             }
@@ -73,6 +68,11 @@
             },
             "verbose_logging": {
                 "name": "Detaillierte Protokollierung"
+            }
+        },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperaturschwelle"
             }
         }
     }

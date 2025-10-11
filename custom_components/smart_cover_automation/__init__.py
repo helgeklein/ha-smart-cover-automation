@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from homeassistant.const import Platform
 from homeassistant.loader import async_get_loaded_integration
 
+from .config import ConfKeys
 from .config_flow import OptionsFlowHandler
 from .const import DOMAIN, HA_OPTIONS, INTEGRATION_NAME, LOGGER
 from .coordinator import DataUpdateCoordinator
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
 # List of platforms provided by this integration
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.NUMBER,
     Platform.SENSOR,
     Platform.SWITCH,
 ]
@@ -133,11 +135,17 @@ async def async_reload_entry(
 ) -> None:
     """Reload config entry or just refresh coordinator based on what changed.
 
-    For runtime options like enabled/simulating, we only need to refresh
-    the coordinator. For structural changes, we need a full reload.
+    For runtime options that have corresponding entities (switches, numbers),
+    we only need to refresh the coordinator. For structural changes, we need a full reload.
     """
-    # These keys can be changed at runtime without requiring a full reload
-    runtime_configurable_keys = {"enabled", "simulating"}
+    # These keys can be changed at runtime via their corresponding entities
+    # without requiring a full reload
+    runtime_configurable_keys = {
+        ConfKeys.ENABLED.value,
+        ConfKeys.SIMULATION_MODE.value,
+        ConfKeys.VERBOSE_LOGGING.value,
+        ConfKeys.TEMP_THRESHOLD.value,
+    }
 
     if hasattr(entry, "runtime_data") and entry.runtime_data:
         coordinator = entry.runtime_data.coordinator

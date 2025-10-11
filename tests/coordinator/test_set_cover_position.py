@@ -146,7 +146,7 @@ class TestSetCoverPosition:
         """Test that simulation mode skips actual service calls."""
         # Create config with simulation enabled
         config = create_temperature_config()
-        config["simulating"] = True
+        config["simulation_mode"] = True
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -328,7 +328,7 @@ class TestSetCoverPosition:
         """Test that simulation mode still returns correct actual position values."""
         # Create config with simulation enabled
         config = create_temperature_config()
-        config["simulating"] = True
+        config["simulation_mode"] = True
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 

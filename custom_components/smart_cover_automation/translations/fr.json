@@ -30,12 +30,9 @@
                     "covers": "Volets à automatiser :",
                     "covers_max_closure": "Position de fermeture maximale des volets :",
                     "covers_min_closure": "Position de fermeture minimale des volets :",
-                    "enabled": "Activer l'automatisation :",
                     "manual_override_duration": "Durée de dérogation manuelle :",
-                    "simulating": "Mode simulation :",
                     "sun_azimuth_tolerance": "Tolérance d'azimut du soleil :",
                     "sun_elevation_threshold": "Élévation minimale du soleil :",
-                    "temp_threshold": "Seuil de température :",
                     "weather_entity_id": "Capteur de prévisions météo :"
                 },
                 "data_description": {
@@ -44,10 +41,8 @@
                     "covers_max_closure": "Ne jamais fermer plus que cela pour toujours laisser entrer un peu de lumière (0 = complètement fermé, 100 = complètement ouvert).",
                     "covers_min_closure": "Ne jamais ouvrir plus que cela pour toujours fournir un minimum d'ombre (0 = complètement fermé, 100 = complètement ouvert).",
                     "manual_override_duration": "Combien de temps ignorer un volet après qu'il ait été déplacé manuellement (0 = pas d'ignorance).",
-                    "simulating": "Si activé, l'automatisation effectue tous les calculs sans réellement déplacer les volets.",
                     "sun_azimuth_tolerance": "Angle horizontal maximal auquel le soleil est considéré comme brillant sur la fenêtre (degrés).",
                     "sun_elevation_threshold": "L'automatisation commence à fonctionner lorsque l'élévation du soleil est supérieure à ce seuil (degrés au-dessus de l'horizon).",
-                    "temp_threshold": "L'automatisation ne fonctionne que lors des journées chaudes, c'est-à-dire si la température maximale quotidienne prévue est supérieure à ce seuil (°C).",
                     "weather_entity_id": "Sélectionnez une entité météorologique qui prend en charge les prévisions quotidiennes (requis)."
                 }
             }
@@ -73,6 +68,11 @@
             },
             "verbose_logging": {
                 "name": "Journalisation détaillée"
+            }
+        },
+        "number": {
+            "temp_threshold": {
+                "name": "Seuil de température"
             }
         }
     }

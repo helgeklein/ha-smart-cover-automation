@@ -30,12 +30,9 @@
                     "covers": "Rolluiken om te automatiseren:",
                     "covers_max_closure": "Maximale rolluik sluitingspositie:",
                     "covers_min_closure": "Minimale rolluik sluitingspositie:",
-                    "enabled": "Automatisering inschakelen:",
                     "manual_override_duration": "Handmatige overschrijvingsduur:",
-                    "simulating": "Simulatiemodus:",
                     "sun_azimuth_tolerance": "Zon azimut tolerantie:",
                     "sun_elevation_threshold": "Minimale zonhoogte:",
-                    "temp_threshold": "Temperatuurdrempel:",
                     "weather_entity_id": "Weersvoorspelling sensor:"
                 },
                 "data_description": {
@@ -44,10 +41,8 @@
                     "covers_max_closure": "Sluit nooit meer dan dit om altijd wat licht binnen te laten (0 = volledig gesloten, 100 = volledig open).",
                     "covers_min_closure": "Open nooit meer dan dit om altijd een minimum aan schaduw te bieden (0 = volledig gesloten, 100 = volledig open).",
                     "manual_override_duration": "Hoe lang een rolluik overslaan nadat het handmatig is bewogen (0 = niet overslaan).",
-                    "simulating": "Indien ingeschakeld voert de automatisering alle berekeningen uit zonder de rolluiken daadwerkelijk te bewegen.",
                     "sun_azimuth_tolerance": "Maximale horizontale hoek waarbij de zon wordt beschouwd als schijnend op het raam (graden).",
                     "sun_elevation_threshold": "De automatisering begint te werken wanneer de zonhoogte boven deze drempel ligt (graden boven de horizon).",
-                    "temp_threshold": "De automatisering werkt alleen op warme dagen, d.w.z. als de voorspelde dagelijkse maximumtemperatuur boven deze drempel ligt (°C).",
                     "weather_entity_id": "Selecteer een weersentiteit die dagelijkse voorspellingen ondersteunt (vereist)."
                 }
             }
@@ -73,6 +68,11 @@
             },
             "verbose_logging": {
                 "name": "Uitgebreide logging"
+            }
+        },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperatuurdrempel"
             }
         }
     }

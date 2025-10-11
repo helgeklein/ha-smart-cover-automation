@@ -100,7 +100,7 @@ async def test_switch_persistence_across_simulated_restart(mock_coordinator_basi
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 35.0,
         ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: 1800,
-        ConfKeys.SIMULATING.value: False,
+        ConfKeys.SIMULATION_MODE.value: False,
         ConfKeys.VERBOSE_LOGGING.value: False,
     }
 
@@ -146,8 +146,8 @@ async def test_simulation_mode_persistence_across_simulated_restart(mock_coordin
     """
     # Setup initial integration with simulation mode disabled
     entry = mock_coordinator_basic.config_entry
-    entry.runtime_data.config[ConfKeys.SIMULATING.value] = False
-    entry.options = {ConfKeys.SIMULATING.value: False}
+    entry.runtime_data.config[ConfKeys.SIMULATION_MODE.value] = False
+    entry.options = {ConfKeys.SIMULATION_MODE.value: False}
 
     # Setup mock environment
     mock_coordinator_basic.last_update_success = True
@@ -176,7 +176,7 @@ async def test_simulation_mode_persistence_across_simulated_restart(mock_coordin
     # Verify config entry was updated directly (new implementation)
     mock_coordinator_basic.hass.config_entries.async_update_entry.assert_called_once()
     call_args = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
-    assert call_args[1]["options"][ConfKeys.SIMULATING.value] is True, "Simulation mode should be persisted as True"
+    assert call_args[1]["options"][ConfKeys.SIMULATION_MODE.value] is True, "Simulation mode should be persisted as True"
 
     # Simulate restart with persisted simulation mode enabled
     persisted_config = {
@@ -187,14 +187,14 @@ async def test_simulation_mode_persistence_across_simulated_restart(mock_coordin
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 35.0,
         ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: 1800,
-        ConfKeys.SIMULATING.value: True,  # Persisted from switch change
+        ConfKeys.SIMULATION_MODE.value: True,  # Persisted from switch change
         ConfKeys.VERBOSE_LOGGING.value: False,
     }
 
     from tests.conftest import MockConfigEntry
 
     new_entry = MockConfigEntry(persisted_config)
-    new_entry.options = {ConfKeys.SIMULATING.value: True}
+    new_entry.options = {ConfKeys.SIMULATION_MODE.value: True}
 
     from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 

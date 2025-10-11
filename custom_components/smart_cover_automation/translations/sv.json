@@ -30,12 +30,9 @@
                     "covers": "Fönsterluckor att automatisera:",
                     "covers_max_closure": "Maximal fönsterlucksposition:",
                     "covers_min_closure": "Minimal fönsterlucksposition:",
-                    "enabled": "Aktivera automation:",
                     "manual_override_duration": "Manuell åsidosättningens varaktighet:",
-                    "simulating": "Simulationsläge:",
                     "sun_azimuth_tolerance": "Solens azimuttolerans:",
                     "sun_elevation_threshold": "Minimal solhöjd:",
-                    "temp_threshold": "Temperaturtröskel:",
                     "weather_entity_id": "Väderprognosensor:"
                 },
                 "data_description": {
@@ -44,10 +41,8 @@
                     "covers_max_closure": "Stäng aldrig mer än detta för att alltid släppa in lite ljus (0 = helt stängd, 100 = helt öppen).",
                     "covers_min_closure": "Öppna aldrig mer än detta för att alltid ge ett minimum av skugga (0 = helt stängd, 100 = helt öppen).",
                     "manual_override_duration": "Hur länge ska man hoppa över en rullgardin efter att den har flyttats manuellt (0 = hoppa inte över).",
-                    "simulating": "Om aktiverat kör automatiseringen alla beräkningar utan att faktiskt flytta fönsterluckorna.",
                     "sun_azimuth_tolerance": "Maximal horisontell vinkel där solen anses lysa på fönstret (grader).",
                     "sun_elevation_threshold": "Automatiseringen börjar fungera när solens höjd är över denna tröskel (grader över horisonten).",
-                    "temp_threshold": "Automatiseringen arbetar endast på varma dagar, det vill säga om den prognostiserade dagliga högsta temperaturen ligger över denna tröskel (°C).",
                     "weather_entity_id": "Välj en väderentitet som stöder dagliga prognoser (krävs)."
                 }
             }
@@ -73,6 +68,11 @@
             },
             "verbose_logging": {
                 "name": "Detaljerad loggning"
+            }
+        },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperaturtröskel"
             }
         }
     }

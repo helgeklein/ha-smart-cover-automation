@@ -463,7 +463,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
                     const.LOGGER.debug(f"[{entity_id}] Using close_cover service (no position support)")
 
             resolved = self._resolved_settings()
-            if resolved.simulating:
+            if resolved.simulation_mode:
                 # If simulation mode is enabled, skip the actual service call
                 const.LOGGER.info(
                     f"[{entity_id}] Simulation mode enabled; skipping actual {service} call; would have moved to {actual_position}%"
