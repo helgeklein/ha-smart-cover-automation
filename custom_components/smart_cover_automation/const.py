@@ -80,8 +80,7 @@ COVER_ATTR_SUN_AZIMUTH_DIFF: Final[str] = "cover_sun_azimuth_diff"  # Difference
 COVER_ATTR_SUN_HITTING: Final[str] = "cover_sun_hitting"  # Whether the sun is hitting the window
 COVER_ATTR_SUPPORTED_FEATURES: Final[str] = "cover_supported_features"  # Supported cover features bitmask
 
-# Config/options flow translation keys
-ERROR_INVALID_CONFIG: Final[str] = "invalid_config"
+# Options flow translation keys
 ERROR_INVALID_COVER: Final[str] = "invalid_cover"
 ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"
 ERROR_NO_COVERS: Final[str] = "no_covers"

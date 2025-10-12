@@ -115,21 +115,10 @@ def test_translation_has_required_keys(language_code: str) -> None:
     # Load the complete translations data structure for the specified language
     data = _load_translations(language_code)
 
-    # Test 1: Required user-step labels for initial configuration flow
-    # These labels appear when users first set up the integration
-    # Note: With menu-driven flow, data fields are in user_form, not user
-    user_data = data.get("config", {}).get("step", {}).get("user_form", {}).get("data", {})
-    expected_user_fields = {
-        ConfKeys.COVERS.value,
-        ConfKeys.WEATHER_ENTITY_ID.value,
-    }
-    missing_user = expected_user_fields - set(user_data.keys())
-    assert not missing_user, f"Missing user form labels in {language_code}.json: {sorted(missing_user)}"
-
-    # Test 2: Required options-step labels for runtime configuration
+    # Test 1: Required options-step labels for runtime configuration
     # These labels appear when users modify settings through the options flow
-    # Note: With menu-driven flow, data fields are split across init_form, 2, and 3
-    init_form_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("init_form", {}).get("data", {})
+    # Note: With sequential flow, data fields are split across init, 2, and 3
+    init_form_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("init", {}).get("data", {})
     step2_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("2", {}).get("data", {})
     step3_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("3", {}).get("data", {})
     options_data = {**init_form_data, **step2_data, **step3_data}
@@ -145,13 +134,14 @@ def test_translation_has_required_keys(language_code: str) -> None:
     missing_options = expected_options_fields - set(options_data.keys())
     assert not missing_options, f"Missing options form labels in {language_code}.json: {sorted(missing_options)}"
 
-    # Test 3: Required error strings used by config flow validation
+    # Test 2: Required error strings used by options flow validation
     # These messages provide helpful feedback when configuration validation fails
-    error_data = data.get("config", {}).get("error", {})
+    error_data = data.get("options", {}).get("error", {})
     expected_errors = {
-        const.ERROR_INVALID_COVER,  # Invalid cover entity selection
-        const.ERROR_INVALID_WEATHER_ENTITY,  # Invalid weather entity selection
-        const.ERROR_INVALID_CONFIG,  # General configuration validation failure
+        const.ERROR_INVALID_COVER,
+        const.ERROR_INVALID_WEATHER_ENTITY,
+        const.ERROR_NO_COVERS,
+        const.ERROR_NO_WEATHER_ENTITY,
     }
     missing_errors = expected_errors - set(error_data.keys())
     assert not missing_errors, f"Missing error strings in {language_code}.json: {sorted(missing_errors)}"

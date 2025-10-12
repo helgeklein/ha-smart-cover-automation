@@ -15,12 +15,18 @@ from .config import ConfKeys, ResolvedConfig, resolve
 from .util import to_float_or_none
 
 
-class ConfigFlowHelper:
+#
+# FlowHelper
+#
+class FlowHelper:
     """Helper class for config flow validation and schema building."""
 
+    #
+    # validate_user_input_step1
+    #
     @staticmethod
     def validate_user_input_step1(hass: Any, user_input: dict[str, Any]) -> dict[str, str]:
-        """Validate step 1 (user/init) input: covers and weather entity.
+        """Validate step 1 input: covers and weather entity.
 
         Args:
             hass: Home Assistant instance
@@ -67,6 +73,9 @@ class ConfigFlowHelper:
 
         return errors
 
+    #
+    # build_schema_step1
+    #
     @staticmethod
     def build_schema_step1(resolved_settings: ResolvedConfig) -> vol.Schema:
         """Build schema for step 1: cover and weather selection.
@@ -88,6 +97,9 @@ class ConfigFlowHelper:
 
         return vol.Schema(schema_dict)
 
+    #
+    # build_schema_step2
+    #
     @staticmethod
     def build_schema_step2(hass: Any, covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
         """Build schema for step 2: azimuth configuration per cover.
@@ -131,6 +143,9 @@ class ConfigFlowHelper:
 
         return vol.Schema(schema_dict)
 
+    #
+    # build_schema_step3
+    #
     @staticmethod
     def build_schema_step3(resolved_settings: ResolvedConfig) -> vol.Schema:
         """Build schema for step 3: sun position, cover behavior, manual override.
@@ -149,6 +164,18 @@ class ConfigFlowHelper:
 
         return vol.Schema(
             {
+                vol.Required(
+                    ConfKeys.TEMP_THRESHOLD.value,
+                    default=resolved_settings.temp_threshold,
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        unit_of_measurement="°C",
+                        min=10,
+                        max=40,
+                        step=0.5,
+                    )
+                ),
                 vol.Required(
                     ConfKeys.SUN_ELEVATION_THRESHOLD.value,
                     default=resolved_settings.sun_elevation_threshold,
@@ -201,6 +228,9 @@ class ConfigFlowHelper:
         )
 
 
+#
+# FlowHandler
+#
 class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
     """Config flow for the integration."""
 
@@ -210,108 +240,46 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
     # Explicit domain attribute for tests referencing FlowHandler.domain
     domain = const.DOMAIN
 
-    def __init__(self) -> None:
-        """Initialize the config flow."""
-        super().__init__()
-        self._config_data: dict[str, Any] = {}
-
+    #
+    # async_step_user
+    #
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 1: Cover and weather entity selection.
+        """Handle initial setup - create entry with empty config.
 
-        HA calls async_step_user(None) to show the menu on first entry, then calls it again with a dict after submit.
+        User will configure the integration via options flow when ready.
+        This provides a better UX by not overwhelming users during installation.
         """
-        # Show menu on first call (before any user interaction)
-        if user_input is None and not self._config_data and not hasattr(self, "_menu_shown"):
-            self._menu_shown = True
-            return self.async_show_menu(
+        if user_input is None:
+            # Show welcome message with no input fields
+            return self.async_show_form(
                 step_id="user",
-                menu_options=["user_form", "2", "3"],
+                data_schema=vol.Schema({}),
+            )
+        else:
+            # User clicked submit - create entry with empty config
+            return self.async_create_entry(
+                title=const.INTEGRATION_NAME,
+                data={},
             )
 
-        # Build defaults from current config data
-        resolved_settings = resolve({}, self._config_data)
-
-        if user_input is not None:
-            # Validate covers and weather entity
-            errors = ConfigFlowHelper.validate_user_input_step1(self.hass, user_input)
-
-            if errors:
-                # Show form again with errors
-                return self.async_show_form(
-                    step_id="user_form",
-                    data_schema=ConfigFlowHelper.build_schema_step1(resolved_settings),
-                    errors=errors,
-                )
-
-            # Store step 1 data and proceed to azimuth configuration
-            self._config_data.update(user_input)
-            return await self.async_step_2()
-
-        # Show the form
-        return self.async_show_form(
-            step_id="user_form",
-            data_schema=ConfigFlowHelper.build_schema_step1(resolved_settings),
-        )
-
-    async def async_step_user_form(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Handle user form step (called from menu)."""
-        return await self.async_step_user(user_input)
-
-    async def async_step_2(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 2: Configure azimuth for each cover."""
-        # Get covers from accumulated config data
-        covers: list[str] = self._config_data.get(ConfKeys.COVERS.value, [])
-
-        if user_input is not None:
-            # Store step 2 data and show menu
-            self._config_data.update(user_input)
-            return self.async_show_menu(
-                step_id="user",
-                menu_options=["user_form", "2", "3"],
-            )
-
-        # Show azimuth configuration form
-        return self.async_show_form(
-            step_id="2",
-            data_schema=ConfigFlowHelper.build_schema_step2(hass=self.hass, covers=covers, defaults=self._config_data),
-        )
-
-    async def async_step_3(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 3: Configure sun position, cover behavior, and manual override duration."""
-        if user_input is not None:
-            # Store step 3 data and show menu with submit option
-            self._config_data.update(user_input)
-            return self.async_show_menu(
-                step_id="user",
-                menu_options=["user_form", "2", "3", "submit"],
-            )
-
-        # Build defaults from accumulated config data
-        data = dict(self._config_data)
-        resolved_settings = resolve({}, data)
-
-        # Show final settings form
-        return self.async_show_form(
-            step_id="3",
-            data_schema=ConfigFlowHelper.build_schema_step3(resolved_settings),
-        )
-
-    async def async_step_submit(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Submit the configuration."""
-        return self.async_create_entry(
-            title=const.INTEGRATION_NAME,
-            data=dict(self._config_data),
-        )
-
+    #
+    # async_get_options_flow
+    #
     @staticmethod
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
         """Create the options flow."""
         return OptionsFlowHandler(config_entry)
 
 
+#
+# OptionsFlowHandler
+#
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options for Smart Cover Automation."""
 
+    #
+    # __init__
+    #
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow.
 
@@ -321,116 +289,100 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_entry = config_entry
         self._config_data: dict[str, Any] = {}
 
+    #
+    # async_step_init
+    #
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 1: Cover and weather entity selection.
-
-        HA calls async_step_init(None) to show the menu on first entry, then calls it again with a dict after submit.
-        """
-        # Show menu on first call (before any user interaction)
-        if user_input is None and not self._config_data and not hasattr(self, "_menu_shown"):
-            self._menu_shown = True
-            return self.async_show_menu(
-                step_id="init",
-                menu_options=["init_form", "2", "3"],
-            )
-
+        """Step 1: Cover and weather entity selection."""
         # Build defaults from existing config/options
         data = dict(self._config_entry.data) if self._config_entry.data else {}
         options = dict(self._config_entry.options) if self._config_entry.options else {}
         resolved_settings = resolve(options, data)
 
-        if user_input is not None:
-            # Validate covers and weather entity
-            errors = ConfigFlowHelper.validate_user_input_step1(self.hass, user_input)
+        if user_input is None:
+            # Show the form
+            return self.async_show_form(
+                step_id="init",
+                data_schema=FlowHelper.build_schema_step1(resolved_settings),
+            )
 
-            if errors:
-                # Show form again with errors
-                return self.async_show_form(
-                    step_id="init_form",
-                    data_schema=ConfigFlowHelper.build_schema_step1(resolved_settings),
-                    errors=errors,
-                )
-
-            # Store step 1 data and proceed to azimuth configuration
+        # Validate user input
+        errors = FlowHelper.validate_user_input_step1(self.hass, user_input)
+        if errors:
+            # Show form again with errors
+            return self.async_show_form(
+                step_id="init",
+                data_schema=FlowHelper.build_schema_step1(resolved_settings),
+                errors=errors,
+            )
+        else:
+            # Store step 1 data and proceed to step 2
             self._config_data.update(user_input)
             return await self.async_step_2()
 
-        # Show the form
-        return self.async_show_form(
-            step_id="init_form",
-            data_schema=ConfigFlowHelper.build_schema_step1(resolved_settings),
-        )
-
-    async def async_step_init_form(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Handle init form step (called from menu)."""
-        return await self.async_step_init(user_input)
-
+    #
+    # async_step_2
+    #
     async def async_step_2(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 2: Configure azimuth for each cover."""
-        # Get covers from accumulated config data, or fall back to existing config/options
-        covers: list[str] = self._config_data.get(ConfKeys.COVERS.value, [])
-        if not covers:
-            # If no covers in accumulated data, get from existing config/options
+        # Get covers from accumulated config data
+        covers = self._config_data.get(ConfKeys.COVERS.value, [])
+
+        if user_input is None:
+            # Build defaults from existing config/options (options takes precedence)
             data = dict(self._config_entry.data) if self._config_entry.data else {}
             options = dict(self._config_entry.options) if self._config_entry.options else {}
-            combined = {**data, **options}
-            covers = combined.get(ConfKeys.COVERS.value, [])
+            defaults = {**data, **options}
 
-        if user_input is not None:
-            # Store step 2 data and show menu
-            self._config_data.update(user_input)
-            return self.async_show_menu(
-                step_id="init",
-                menu_options=["init_form", "2", "3"],
+            # Show the form
+            return self.async_show_form(
+                step_id="2",
+                data_schema=FlowHelper.build_schema_step2(hass=self.hass, covers=covers, defaults=defaults),
             )
+        else:
+            # Store step 2 data and proceed to step 3
+            self._config_data.update(user_input)
+            return await self.async_step_3()
 
-        # Build defaults from existing config/options (options takes precedence)
-        data = dict(self._config_entry.data) if self._config_entry.data else {}
-        options = dict(self._config_entry.options) if self._config_entry.options else {}
-        defaults = {**data, **options}
-
-        # Show azimuth configuration form
-        return self.async_show_form(
-            step_id="2",
-            data_schema=ConfigFlowHelper.build_schema_step2(hass=self.hass, covers=covers, defaults=defaults),
-        )
-
+    #
+    # async_step_3
+    #
     async def async_step_3(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 3: Configure sun position, cover behavior, and manual override duration."""
-        if user_input is not None:
-            # Store step 3 data
-            self._config_data.update(user_input)
+        if user_input is None:
+            # Build defaults from existing config/options (options takes precedence)
+            data = dict(self._config_entry.data) if self._config_entry.data else {}
+            options = dict(self._config_entry.options) if self._config_entry.options else {}
+            defaults = {**data, **options}
+            resolved_settings = resolve({}, defaults)
 
-            # Clean up orphaned cover settings
-            covers_in_input = self._config_data.get(ConfKeys.COVERS.value, [])
-            keys_to_remove = []
-            for key in self._config_data.keys():
-                if key.endswith(f"_{const.COVER_SFX_AZIMUTH}"):
-                    cover_entity = key.replace(f"_{const.COVER_SFX_AZIMUTH}", "")
-                    if cover_entity not in covers_in_input:
-                        keys_to_remove.append(key)
-
-            for key in keys_to_remove:
-                self._config_data.pop(key, None)
-
-            # Show menu with submit option
-            return self.async_show_menu(
-                step_id="init",
-                menu_options=["init_form", "2", "3", "submit"],
+            # Show the form
+            return self.async_show_form(
+                step_id="3",
+                data_schema=FlowHelper.build_schema_step3(resolved_settings),
             )
 
-        # Build defaults from existing config/options (options takes precedence)
+        # Store step 3 data
+        self._config_data.update(user_input)
+
+        # Build existing data and options
         data = dict(self._config_entry.data) if self._config_entry.data else {}
         options = dict(self._config_entry.options) if self._config_entry.options else {}
-        defaults = {**data, **options}
-        resolved_settings = resolve({}, defaults)
+        combined = {**data, **options}
 
-        # Show final settings form
-        return self.async_show_form(
-            step_id="3",
-            data_schema=ConfigFlowHelper.build_schema_step3(resolved_settings),
-        )
+        # Update with new values from the flow
+        combined.update(self._config_data)
 
-    async def async_step_submit(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Submit the configuration."""
-        return self.async_create_entry(title="", data=self._config_data)
+        # Clean up orphaned cover settings from the combined data
+        covers_in_input = self._config_data.get(ConfKeys.COVERS.value, [])
+        keys_to_remove = []
+        for key in combined.keys():
+            if key.endswith(f"_{const.COVER_SFX_AZIMUTH}"):
+                cover_entity = key.replace(f"_{const.COVER_SFX_AZIMUTH}", "")
+                if cover_entity not in covers_in_input:
+                    keys_to_remove.append(key)
+
+        for key in keys_to_remove:
+            combined.pop(key, None)
+
+        return self.async_create_entry(title="", data=combined)

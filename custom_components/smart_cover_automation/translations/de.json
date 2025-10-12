@@ -2,78 +2,20 @@
     "config": {
         "step": {
             "user": {
-                "title": "Smart Cover Automation einrichten",
-                "description": "Wählen Sie aus, was konfiguriert werden soll. Dokumentation: https://helgeklein.github.io/ha-smart-cover-automation/.",
-                "menu_options": {
-                    "user_form": "Schritt 1: Covers & weather",
-                    "2": "Schritt 2: Cover-Azimut",
-                    "3": "Schritt 3: Weitere Einstellungen",
-                    "submit": "Absenden"
-                }
-            },
-            "user_form": {
-                "title": "Smart Cover Automation - Schritt 1 von 3",
-                "description": "Wetterentität und Rollläden auswählen.",
-                "data": {
-                    "covers": "Zu automatisierende Rollläden:",
-                    "weather_entity_id": "Wettervorhersage-Sensor:"
-                },
-                "data_description": {
-                    "covers": "Wählen Sie die Rollläden/Jalousien aus, die von der Automatisierung gesteuert werden sollen (erforderlich).",
-                    "weather_entity_id": "Wählen Sie eine Wetterentität aus, die Tagesvorhersagen unterstützt (erforderlich)."
-                }
-            },
-            "2": {
-                "title": "Smart Cover Automation - Schritt 2 von 3",
-                "description": "Konfigurieren Sie den Azimut (Richtung) für jeden Rollladen.\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West).\nWird verwendet, um zu berechnen, ob die Sonne auf das Fenster trifft.",
-                "data": {
-                    "cover_azimuth": "**{cover_name}** Azimut:"
-                }
-            },
-            "3": {
-                "title": "Smart Cover Automation - Schritt 3 von 3",
-                "description": "Konfigurieren Sie Sonnenpositionsschwellenwerte, Rollladenverhalten und Dauer der manuellen Übersteuerung.",
-                "data": {
-                    "covers_max_closure": "Maximale Rollladenposition:",
-                    "covers_min_closure": "Minimale Rollladenposition:",
-                    "manual_override_duration": "Dauer der manuellen Übersteuerung:",
-                    "sun_azimuth_tolerance": "Sonnen-Azimut-Toleranz:",
-                    "sun_elevation_threshold": "Minimale Sonnenhöhe:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon)."
-                }
-            },
-            "submit": {
-                "title": "Konfiguration absenden",
-                "description": "Speichern Sie Ihre Konfiguration."
+                "title": "Willkommen bei Smart Cover Automation",
+                "description": "Diese Integration wird mit Standardeinstellungen installiert.\n\nBitte konfigurieren Sie Rollläden, Wetterentität und Automatisierungseinstellungen später, indem Sie auf das **Zahnradsymbol** (Konfigurationsschaltfläche) auf der Integrationskarte klicken.\n\nDokumentation: https://helgeklein.github.io/ha-smart-cover-automation/\n\nKlicken Sie auf **Absenden**, um die Installation abzuschließen."
             }
-        },
+        }
+    },
+    "options": {
         "error": {
-            "invalid_config": "Ungültige Konfiguration. Bitte überprüfen Sie das Protokoll für Details.",
             "invalid_cover": "Ein oder mehrere ausgewählte Rollläden/Jalousien sind ungültig oder nicht verfügbar.",
             "invalid_weather_entity": "Die ausgewählte Wetterentität unterstützt keine Tagesvorhersagen.",
             "no_covers": "Keine Rollläden ausgewählt.",
             "no_weather_entity": "Keine Wetterentität ausgewählt."
-        }
-    },
-    "options": {
+        },
         "step": {
             "init": {
-                "title": "Smart Cover Automation konfigurieren",
-                "description": "Wählen Sie aus, was konfiguriert werden soll. Dokumentation: https://helgeklein.github.io/ha-smart-cover-automation/.",
-                "menu_options": {
-                    "init_form": "Schritt 1: Covers & weather",
-                    "2": "Schritt 2: Cover-Azimut",
-                    "3": "Schritt 3: Weitere Einstellungen",
-                    "submit": "Absenden"
-                }
-            },
-            "init_form": {
                 "title": "Smart Cover Automation - Schritt 1 von 3",
                 "description": "Rollläden und Wetterentität auswählen.",
                 "data": {
@@ -87,7 +29,7 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Schritt 2 von 3",
-                "description": "Konfigurieren Sie den Azimut (Richtung) für jeden Rollladen.\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West).\nWird verwendet, um zu berechnen, ob die Sonne auf das Fenster trifft.",
+                "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen.\n\nDer Azimut wird verwendet, um zu berechnen, ob die Sonne auf das Fenster scheint.\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)",
                 "data": {
                     "cover_azimuth": "**{cover_name}** Azimut:"
                 }
@@ -100,14 +42,16 @@
                     "covers_min_closure": "Minimale Rollladenposition:",
                     "manual_override_duration": "Dauer der manuellen Übersteuerung:",
                     "sun_azimuth_tolerance": "Sonnen-Azimut-Toleranz:",
-                    "sun_elevation_threshold": "Minimale Sonnenhöhe:"
+                    "sun_elevation_threshold": "Minimale Sonnenhöhe:",
+                    "temp_threshold": "Temperaturschwelle:"
                 },
                 "data_description": {
                     "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
                     "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
                     "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
                     "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon)."
+                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
+                    "temp_threshold": "Temperatur, bei der die Automatisierung beginnt, Rollläden zum Schutz vor Hitze zu schließen (Grad Celsius)."
                 }
             },
             "submit": {

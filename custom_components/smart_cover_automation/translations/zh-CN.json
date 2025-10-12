@@ -2,94 +2,36 @@
     "config": {
         "step": {
             "user": {
-                "title": "Setup Smart Cover Automation",
-                "description": "Choose what to configure. Documentation: https://helgeklein.github.io/ha-smart-cover-automation/.",
-                "menu_options": {
-                    "user_form": "Step 1: Covers & weather",
-                    "2": "Step 2: Cover azimuth",
-                    "3": "Step 3: Other settings",
-                    "submit": "Submit"
-                }
-            },
-            "user_form": {
-                "title": "Smart Cover Automation - Step 1 of 3",
-                "description": "Select weather entity and covers.",
-                "data": {
-                    "covers": "Covers to automate:",
-                    "weather_entity_id": "Weather forecast sensor:"
-                },
-                "data_description": {
-                    "covers": "Select the covers the automation should control (required).",
-                    "weather_entity_id": "Select a weather entity that supports daily forecasts (required)."
-                }
-            },
-            "2": {
-                "title": "Smart Cover Automation - Step 2 of 3",
-                "description": "Configure the azimuth (direction) for each cover.\n(0°=North, 90°=East, 180°=South, 270°=West).\nUsed to calculate if the sun is hitting the window.",
-                "data": {
-                    "cover_azimuth": "**{cover_name}** azimuth:"
-                }
-            },
-            "3": {
-                "title": "Smart Cover Automation - Step 3 of 3",
-                "description": "Configure sun position thresholds, cover behavior, and manual override duration.",
-                "data": {
-                    "covers_max_closure": "Maximum cover closure position:",
-                    "covers_min_closure": "Minimum cover closure position:",
-                    "manual_override_duration": "Manual override duration:",
-                    "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon)."
-                }
-            },
-            "submit": {
-                "title": "Submit Configuration",
-                "description": "Save your configuration."
+                "title": "欢迎使用智能遮阳自动化",
+                "description": "此集成已使用默认设置安装。\n\n请稍后通过点击集成卡片上的**齿轮图标**（配置按钮）来配置遮阳设备、天气实体和自动化设置。\n\n文档： https://helgeklein.github.io/ha-smart-cover-automation/\n\n点击**提交**完成安装。"
             }
-        },
-        "error": {
-            "invalid_config": "Invalid configuration. Please check the log for details.",
-            "invalid_cover": "One or more selected covers are invalid or unavailable.",
-            "invalid_weather_entity": "The selected weather entity does not support daily forecasts.",
-            "no_covers": "No covers selected.",
-            "no_weather_entity": "No weather entity selected."
         }
     },
     "options": {
+        "error": {
+            "invalid_cover": "一个或多个选定的遮阳设备无效或不可用。",
+            "invalid_weather_entity": "所选天气实体不支持每日预报。",
+            "no_covers": "未选择遮阳设备。",
+            "no_weather_entity": "未选择天气实体。"
+        },
         "step": {
             "init": {
-                "title": "Configure Smart Cover Automation",
-                "description": "Choose what to configure. Documentation: https://helgeklein.github.io/ha-smart-cover-automation/.",
-                "menu_options": {
-                    "init_form": "Step 1: Covers & weather",
-                    "2": "Step 2: Cover azimuth",
-                    "3": "Step 3: Other settings",
-                    "submit": "Submit"
-                }
-            },
-            "init_form": {
-                "title": "Smart Cover Automation - Step 1 of 3",
-                "description": "Select weather entity and covers.",
+                "title": "智能遮阳自动化 - 第 1 步，共 3 步",
+                "description": "选择天气实体和遮阳设备。",
                 "data": {
-                    "covers": "Covers to automate:",
-                    "weather_entity_id": "Weather forecast sensor:"
+                    "covers": "要自动化的遮阳设备：",
+                    "weather_entity_id": "天气预报传感器："
                 },
                 "data_description": {
-                    "covers": "Select the covers the automation should control (required).",
-                    "weather_entity_id": "Select a weather entity that supports daily forecasts (required)."
+                    "covers": "选择自动化应控制的遮阳设备（必需）。",
+                    "weather_entity_id": "选择支持每日预报的天气实体（必需）。"
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Step 2 of 3",
-                "description": "Configure the azimuth (direction) for each cover.\n(0°=North, 90°=East, 180°=South, 270°=West).\nThis is used to calculate if the sun is hitting the window.",
+                "title": "Smart Cover Automation - 第 2 步，共 3 步",
+                "description": "为每个遮阳设备配置**方位角**（方向）。\n\n方位角用于计算太阳是否照射到窗户。\n(0°=北, 90°=东, 180°=南, 270°=西)",
                 "data": {
-                    "cover_azimuth": "**{cover_name}** azimuth:"
+                    "cover_azimuth": "**{cover_name}** 方位角："
                 }
             },
             "3": {
@@ -100,14 +42,16 @@
                     "covers_min_closure": "Minimum cover closure position:",
                     "manual_override_duration": "Manual override duration:",
                     "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:"
+                    "sun_elevation_threshold": "Minimal sun elevation:",
+                    "temp_threshold": "温度阈值："
                 },
                 "data_description": {
                     "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
                     "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
                     "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
                     "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon)."
+                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
+                    "temp_threshold": "自动化开始关闭遮阳设备以防止热量的温度（摄氏度）。"
                 }
             },
             "submit": {

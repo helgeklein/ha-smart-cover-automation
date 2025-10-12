@@ -2,94 +2,36 @@
     "config": {
         "step": {
             "user": {
-                "title": "Setup Smart Cover Automation",
-                "description": "Choose what to configure. Documentation: https://helgeklein.github.io/ha-smart-cover-automation/.",
-                "menu_options": {
-                    "user_form": "Step 1: Covers & weather",
-                    "2": "Step 2: Cover azimuth",
-                    "3": "Step 3: Other settings",
-                    "submit": "Submit"
-                }
-            },
-            "user_form": {
-                "title": "Smart Cover Automation - Step 1 of 3",
-                "description": "Select weather entity and covers.",
-                "data": {
-                    "covers": "Covers to automate:",
-                    "weather_entity_id": "Weather forecast sensor:"
-                },
-                "data_description": {
-                    "covers": "Select the covers the automation should control (required).",
-                    "weather_entity_id": "Select a weather entity that supports daily forecasts (required)."
-                }
-            },
-            "2": {
-                "title": "Smart Cover Automation - Step 2 of 3",
-                "description": "Configure the azimuth (direction) for each cover.\n(0°=North, 90°=East, 180°=South, 270°=West).\nUsed to calculate if the sun is hitting the window.",
-                "data": {
-                    "cover_azimuth": "**{cover_name}** azimuth:"
-                }
-            },
-            "3": {
-                "title": "Smart Cover Automation - Step 3 of 3",
-                "description": "Configure sun position thresholds, cover behavior, and manual override duration.",
-                "data": {
-                    "covers_max_closure": "Maximum cover closure position:",
-                    "covers_min_closure": "Minimum cover closure position:",
-                    "manual_override_duration": "Manual override duration:",
-                    "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon)."
-                }
-            },
-            "submit": {
-                "title": "Submit Configuration",
-                "description": "Save your configuration."
+                "title": "Bem-vindo ao Smart Cover Automation",
+                "description": "Esta integração está instalada com as configurações padrão.\n\nConfigure as persianas, a entidade meteorológica e as configurações de automação mais tarde clicando no **ícone de engrenagem** (botão de configuração) no cartão de integração.\n\nDocumentação: https://helgeklein.github.io/ha-smart-cover-automation/\n\nClique em **Enviar** para concluir a instalação."
             }
-        },
-        "error": {
-            "invalid_config": "Invalid configuration. Please check the log for details.",
-            "invalid_cover": "One or more selected covers are invalid or unavailable.",
-            "invalid_weather_entity": "The selected weather entity does not support daily forecasts.",
-            "no_covers": "No covers selected.",
-            "no_weather_entity": "No weather entity selected."
         }
     },
     "options": {
+        "error": {
+            "invalid_cover": "Uma ou mais persianas selecionadas são inválidas ou indisponíveis.",
+            "invalid_weather_entity": "A entidade meteorológica selecionada não suporta previsões diárias.",
+            "no_covers": "Nenhuma persiana selecionada.",
+            "no_weather_entity": "Nenhuma entidade meteorológica selecionada."
+        },
         "step": {
             "init": {
-                "title": "Configure Smart Cover Automation",
-                "description": "Choose what to configure. Documentation: https://helgeklein.github.io/ha-smart-cover-automation/.",
-                "menu_options": {
-                    "init_form": "Step 1: Covers & weather",
-                    "2": "Step 2: Cover azimuth",
-                    "3": "Step 3: Other settings",
-                    "submit": "Submit"
-                }
-            },
-            "init_form": {
-                "title": "Smart Cover Automation - Step 1 of 3",
-                "description": "Select weather entity and covers.",
+                "title": "Smart Cover Automation - Passo 1 de 3",
+                "description": "Selecione a entidade meteorológica e as persianas.",
                 "data": {
-                    "covers": "Covers to automate:",
-                    "weather_entity_id": "Weather forecast sensor:"
+                    "covers": "Persianas para automatizar:",
+                    "weather_entity_id": "Sensor de previsão do tempo:"
                 },
                 "data_description": {
-                    "covers": "Select the covers the automation should control (required).",
-                    "weather_entity_id": "Select a weather entity that supports daily forecasts (required)."
+                    "covers": "Selecione as persianas que a automação deve controlar (obrigatório).",
+                    "weather_entity_id": "Selecione uma entidade meteorológica que suporte previsões diárias (obrigatório)."
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Step 2 of 3",
-                "description": "Configure the azimuth (direction) for each cover.\n(0°=North, 90°=East, 180°=South, 270°=West).\nThis is used to calculate if the sun is hitting the window.",
+                "title": "Smart Cover Automation - Passo 2 de 3",
+                "description": "Configure o **azimute** (direção) para cada persiana.\n\nO azimute é usado para calcular se o sol está incidindo na janela.\n(0°=Norte, 90°=Leste, 180°=Sul, 270°=Oeste)",
                 "data": {
-                    "cover_azimuth": "**{cover_name}** azimuth:"
+                    "cover_azimuth": "**{cover_name}** azimute:"
                 }
             },
             "3": {
@@ -100,14 +42,16 @@
                     "covers_min_closure": "Minimum cover closure position:",
                     "manual_override_duration": "Manual override duration:",
                     "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:"
+                    "sun_elevation_threshold": "Minimal sun elevation:",
+                    "temp_threshold": "Limiar de temperatura:"
                 },
                 "data_description": {
                     "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
                     "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
                     "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
                     "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon)."
+                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
+                    "temp_threshold": "Temperatura na qual a automação começa a fechar as persianas para proteger do calor (graus Celsius)."
                 }
             },
             "submit": {

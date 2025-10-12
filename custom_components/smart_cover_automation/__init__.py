@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 # List of platforms provided by this integration
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
-    Platform.NUMBER,
     Platform.SENSOR,
     Platform.SWITCH,
 ]

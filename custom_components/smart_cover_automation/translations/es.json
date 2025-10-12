@@ -2,78 +2,20 @@
     "config": {
         "step": {
             "user": {
-                "title": "Configurar Smart Cover Automation",
-                "description": "Elija qué configurar. Documentación: https://helgeklein.github.io/ha-smart-cover-automation/.",
-                "menu_options": {
-                    "user_form": "Paso 1: Covers & weather",
-                    "2": "Paso 2: Azimut del cover",
-                    "3": "Paso 3: Otras configuraciones",
-                    "submit": "Enviar"
-                }
-            },
-            "user_form": {
-                "title": "Smart Cover Automation - Paso 1 de 3",
-                "description": "Seleccione entidad meteorológica y persianas.",
-                "data": {
-                    "covers": "Persianas/toldos a automatizar:",
-                    "weather_entity_id": "Sensor de pronóstico del tiempo:"
-                },
-                "data_description": {
-                    "covers": "Seleccione las persianas/toldos que la automatización debe controlar (requerido).",
-                    "weather_entity_id": "Seleccione una entidad meteorológica que admita pronósticos diarios (requerido)."
-                }
-            },
-            "2": {
-                "title": "Smart Cover Automation - Paso 2 de 3",
-                "description": "Configure el azimut (dirección) para cada persiana.\n(0°=Norte, 90°=Este, 180°=Sur, 270°=Oeste).\nSe usa para calcular si el sol incide sobre la ventana.",
-                "data": {
-                    "cover_azimuth": "Azimut de **{cover_name}**:"
-                }
-            },
-            "3": {
-                "title": "Smart Cover Automation - Paso 3 de 3",
-                "description": "Configure los umbrales de posición del sol, el comportamiento de las persianas y la duración de la anulación manual.",
-                "data": {
-                    "covers_max_closure": "Posición máxima de cierre de persianas/toldos:",
-                    "covers_min_closure": "Posición mínima de cierre de persianas/toldos:",
-                    "manual_override_duration": "Duración de anulación manual:",
-                    "sun_azimuth_tolerance": "Tolerancia de azimut solar:",
-                    "sun_elevation_threshold": "Elevación mínima del sol:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon)."
-                }
-            },
-            "submit": {
-                "title": "Enviar configuración",
-                "description": "Guarde su configuración."
+                "title": "Bienvenido a Smart Cover Automation",
+                "description": "Esta integración se instala con la configuración predeterminada.\n\nPor favor, configure las persianas, la entidad meteorológica y los ajustes de automatización más tarde haciendo clic en el **icono de engranaje** (botón de configuración) en la tarjeta de integración.\n\nDocumentación: https://helgeklein.github.io/ha-smart-cover-automation/\n\nHaga clic en **Enviar** para completar la instalación."
             }
-        },
+        }
+    },
+    "options": {
         "error": {
-            "invalid_config": "Configuración inválida. Por favor, revise el registro para más detalles.",
             "invalid_cover": "Una o más persianas/toldos seleccionados son inválidos o no están disponibles.",
             "invalid_weather_entity": "La entidad meteorológica seleccionada no admite pronósticos diarios.",
             "no_covers": "No se seleccionaron persianas.",
             "no_weather_entity": "No se seleccionó entidad meteorológica."
-        }
-    },
-    "options": {
+        },
         "step": {
             "init": {
-                "title": "Configurar Smart Cover Automation",
-                "description": "Elija qué configurar. Documentación: https://helgeklein.github.io/ha-smart-cover-automation/.",
-                "menu_options": {
-                    "init_form": "Paso 1: Covers & weather",
-                    "2": "Paso 2: Azimut del cover",
-                    "3": "Paso 3: Otras configuraciones",
-                    "submit": "Enviar"
-                }
-            },
-            "init_form": {
                 "title": "Smart Cover Automation - Paso 1 de 3",
                 "description": "Seleccione persianas y entidad meteorológica.",
                 "data": {
@@ -87,9 +29,9 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Paso 2 de 3",
-                "description": "Configure el azimut (dirección) para cada persiana.\n(0°=Norte, 90°=Este, 180°=Sur, 270°=Oeste).\nSe usa para calcular si el sol incide sobre la ventana.",
+                "description": "Configure el **azimut** (dirección) para cada persiana.\n\nEl azimut se utiliza para calcular si el sol incide en la ventana.\n(0°=Norte, 90°=Este, 180°=Sur, 270°=Oeste)",
                 "data": {
-                    "cover_azimuth": "Azimut de **{cover_name}**:"
+                    "cover_azimuth": "**{cover_name}** azimut:"
                 }
             },
             "3": {
@@ -100,14 +42,16 @@
                     "covers_min_closure": "Posición mínima de cierre de persianas/toldos:",
                     "manual_override_duration": "Duración de anulación manual:",
                     "sun_azimuth_tolerance": "Tolerancia de azimut solar:",
-                    "sun_elevation_threshold": "Elevación mínima del sol:"
+                    "sun_elevation_threshold": "Elevación mínima del sol:",
+                    "temp_threshold": "Umbral de temperatura:"
                 },
                 "data_description": {
                     "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
                     "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
                     "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
                     "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon)."
+                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
+                    "temp_threshold": "Temperatura a la que la automatización comienza a cerrar persianas para proteger del calor (grados Celsius)."
                 }
             },
             "submit": {

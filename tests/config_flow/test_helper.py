@@ -1,4 +1,4 @@
-"""Tests for ConfigFlowHelper utility class.
+"""Tests for FlowHelper utility class.
 
 This module tests the static helper methods used by both config and options flows.
 """
@@ -12,12 +12,12 @@ from homeassistant.components.weather.const import WeatherEntityFeature
 
 from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.config_flow import ConfigFlowHelper
+from custom_components.smart_cover_automation.config_flow import FlowHelper
 
 from ..conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2, MOCK_WEATHER_ENTITY_ID
 
 
-class TestConfigFlowHelperValidation:
+class TestFlowHelperValidation:
     """Test validate_user_input_step1 method."""
 
     def test_validation_succeeds_with_valid_input(self, mock_hass_with_covers: MagicMock) -> None:
@@ -27,7 +27,7 @@ class TestConfigFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
 
         assert errors == {}
 
@@ -38,7 +38,7 @@ class TestConfigFlowHelperValidation:
             ConfKeys.COVERS.value: [],
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
 
         assert ConfKeys.COVERS.value in errors
         assert errors[ConfKeys.COVERS.value] == const.ERROR_NO_COVERS
@@ -49,7 +49,7 @@ class TestConfigFlowHelperValidation:
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
 
         assert ConfKeys.COVERS.value in errors
         assert errors[ConfKeys.COVERS.value] == const.ERROR_NO_COVERS
@@ -76,7 +76,7 @@ class TestConfigFlowHelperValidation:
             ConfKeys.COVERS.value: ["cover.nonexistent"],
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
 
         assert ConfKeys.COVERS.value in errors
         assert errors[ConfKeys.COVERS.value] == const.ERROR_INVALID_COVER
@@ -95,7 +95,7 @@ class TestConfigFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
 
         # Should not error, just warn
         assert ConfKeys.COVERS.value not in errors
@@ -107,7 +107,7 @@ class TestConfigFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
 
         assert ConfKeys.WEATHER_ENTITY_ID.value in errors
         assert errors[ConfKeys.WEATHER_ENTITY_ID.value] == const.ERROR_NO_WEATHER_ENTITY
@@ -118,7 +118,7 @@ class TestConfigFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
 
         assert ConfKeys.WEATHER_ENTITY_ID.value in errors
         assert errors[ConfKeys.WEATHER_ENTITY_ID.value] == const.ERROR_NO_WEATHER_ENTITY
@@ -141,7 +141,7 @@ class TestConfigFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
 
         assert ConfKeys.WEATHER_ENTITY_ID.value in errors
         assert errors[ConfKeys.WEATHER_ENTITY_ID.value] == const.ERROR_INVALID_WEATHER_ENTITY
@@ -161,7 +161,7 @@ class TestConfigFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
 
         assert ConfKeys.WEATHER_ENTITY_ID.value in errors
         assert errors[ConfKeys.WEATHER_ENTITY_ID.value] == const.ERROR_INVALID_WEATHER_ENTITY
@@ -184,7 +184,7 @@ class TestConfigFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step1(mock_hass_with_covers, user_input)
 
         assert errors == {}
 
@@ -195,13 +195,13 @@ class TestConfigFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = ConfigFlowHelper.validate_user_input_step1(None, user_input)
+        errors = FlowHelper.validate_user_input_step1(None, user_input)
 
         # Without hass, we can't validate entity existence, but basic checks should pass
         assert errors == {}
 
 
-class TestConfigFlowHelperSchemaBuilding:
+class TestFlowHelperSchemaBuilding:
     """Test schema building methods."""
 
     def test_build_schema_step1_includes_required_fields(self) -> None:
@@ -210,7 +210,7 @@ class TestConfigFlowHelperSchemaBuilding:
 
         resolved_settings = resolve({}, {})
 
-        schema = ConfigFlowHelper.build_schema_step1(resolved_settings)
+        schema = FlowHelper.build_schema_step1(resolved_settings)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert ConfKeys.WEATHER_ENTITY_ID.value in schema_keys
@@ -221,7 +221,7 @@ class TestConfigFlowHelperSchemaBuilding:
         covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
         defaults = {}
 
-        schema = ConfigFlowHelper.build_schema_step2(mock_hass_with_covers, covers, defaults)
+        schema = FlowHelper.build_schema_step2(mock_hass_with_covers, covers, defaults)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
@@ -232,7 +232,7 @@ class TestConfigFlowHelperSchemaBuilding:
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {}  # No existing azimuth
 
-        schema = ConfigFlowHelper.build_schema_step2(mock_hass_with_covers, covers, defaults)
+        schema = FlowHelper.build_schema_step2(mock_hass_with_covers, covers, defaults)
 
         # Schema should be created (default 180 will be used internally)
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
@@ -245,7 +245,7 @@ class TestConfigFlowHelperSchemaBuilding:
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 270.0,
         }
 
-        schema = ConfigFlowHelper.build_schema_step2(mock_hass_with_covers, covers, defaults)
+        schema = FlowHelper.build_schema_step2(mock_hass_with_covers, covers, defaults)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
@@ -260,7 +260,7 @@ class TestConfigFlowHelperSchemaBuilding:
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {}
 
-        schema = ConfigFlowHelper.build_schema_step2(mock_hass_with_covers, covers, defaults)
+        schema = FlowHelper.build_schema_step2(mock_hass_with_covers, covers, defaults)
 
         # Schema should be created (friendly name used internally)
         assert schema is not None
@@ -270,7 +270,7 @@ class TestConfigFlowHelperSchemaBuilding:
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {}
 
-        schema = ConfigFlowHelper.build_schema_step2(None, covers, defaults)
+        schema = FlowHelper.build_schema_step2(None, covers, defaults)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
@@ -281,7 +281,7 @@ class TestConfigFlowHelperSchemaBuilding:
 
         resolved_settings = resolve({}, {})
 
-        schema = ConfigFlowHelper.build_schema_step3(resolved_settings)
+        schema = FlowHelper.build_schema_step3(resolved_settings)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert ConfKeys.SUN_ELEVATION_THRESHOLD.value in schema_keys
@@ -300,7 +300,7 @@ class TestConfigFlowHelperSchemaBuilding:
         }
         resolved_settings = resolve({}, custom_config)
 
-        schema = ConfigFlowHelper.build_schema_step3(resolved_settings)
+        schema = FlowHelper.build_schema_step3(resolved_settings)
 
         # Schema should be created with custom defaults
         assert schema is not None
@@ -314,7 +314,7 @@ class TestConfigFlowHelperSchemaBuilding:
         }
         resolved_settings = resolve({}, custom_config)
 
-        schema = ConfigFlowHelper.build_schema_step3(resolved_settings)
+        schema = FlowHelper.build_schema_step3(resolved_settings)
 
         # Schema should be created (duration converted internally)
         assert schema is not None

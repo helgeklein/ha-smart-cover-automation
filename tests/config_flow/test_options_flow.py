@@ -39,7 +39,7 @@ class TestOptionsFlowStep1:
     """Test step 1 (init): Cover and weather entity selection."""
 
     async def test_step_init_shows_form_with_existing_config(self, mock_hass_with_covers: MagicMock) -> None:
-        """Test that step 1 shows menu on initial entry."""
+        """Test that step 1 shows form on initial entry."""
         existing_data = {
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
@@ -52,9 +52,8 @@ class TestOptionsFlowStep1:
         result = await flow.async_step_init(None)
         result_dict = _as_dict(result)
 
-        assert result_dict["type"] == FlowResultType.MENU
+        assert result_dict["type"] == FlowResultType.FORM
         assert result_dict["step_id"] == "init"
-        assert "menu_options" in result_dict
 
     async def test_step_init_validates_and_proceeds_to_step2(self, mock_hass_with_covers: MagicMock) -> None:
         """Test that valid input proceeds to step 2."""
@@ -95,7 +94,7 @@ class TestOptionsFlowStep1:
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.FORM
-        assert result_dict["step_id"] == "init_form"
+        assert result_dict["step_id"] == "init"
         assert ConfKeys.COVERS.value in result_dict["errors"]
         assert result_dict["errors"][ConfKeys.COVERS.value] == const.ERROR_NO_COVERS
 
@@ -116,43 +115,9 @@ class TestOptionsFlowStep1:
         result = await flow.async_step_init(None)
         result_dict = _as_dict(result)
 
-        # Menu should be shown on initial entry
-        assert result_dict["type"] == FlowResultType.MENU
+        # Form should be shown on initial entry
+        assert result_dict["type"] == FlowResultType.FORM
         assert result_dict["step_id"] == "init"
-
-    async def test_step_init_form_delegates_to_init(self, mock_hass_with_covers: MagicMock) -> None:
-        """Test that async_step_init_form delegates to async_step_init."""
-        mock_entry = _create_mock_entry()
-        flow = OptionsFlowHandler(mock_entry)
-        flow.hass = mock_hass_with_covers
-
-        user_input = {
-            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
-            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
-        }
-
-        result = await flow.async_step_init_form(user_input)
-        result_dict = _as_dict(result)
-
-        # Should delegate to async_step_init and proceed to step 2
-        assert result_dict["type"] == FlowResultType.FORM
-        assert result_dict["step_id"] == "2"
-
-    async def test_step_init_shows_form_when_called_from_menu(self, mock_hass_with_covers: MagicMock) -> None:
-        """Test that async_step_init shows form when called from menu click."""
-        mock_entry = _create_mock_entry()
-        flow = OptionsFlowHandler(mock_entry)
-        flow.hass = mock_hass_with_covers
-        # Simulate that menu was already shown
-        flow._menu_shown = True
-
-        # Call with None (simulates menu click)
-        result = await flow.async_step_init(None)
-        result_dict = _as_dict(result)
-
-        # Should show the form, not the menu again
-        assert result_dict["type"] == FlowResultType.FORM
-        assert result_dict["step_id"] == "init_form"
 
 
 class TestOptionsFlowStep2:
@@ -238,8 +203,8 @@ class TestOptionsFlowStep2:
         result = await flow.async_step_2(user_input)
         result_dict = _as_dict(result)
 
-        assert result_dict["type"] == FlowResultType.MENU
-        assert result_dict["step_id"] == "init"
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "3"
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in flow._config_data
 
 
@@ -297,17 +262,11 @@ class TestOptionsFlowStep3:
         result3 = await flow.async_step_3(user_input)
         result3_dict = _as_dict(result3)
 
-        # Step 3 returns to menu, need to submit
-        assert result3_dict["type"] == FlowResultType.MENU
-        assert result3_dict["step_id"] == "init"
+        # Step 3 now directly creates the entry
+        assert result3_dict["type"] == FlowResultType.CREATE_ENTRY
+        assert result3_dict["title"] == ""  # Options flow uses empty title
 
-        result = await flow.async_step_submit()
-        result_dict = _as_dict(result)
-
-        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
-        assert result_dict["title"] == ""  # Options flow uses empty title
-
-        data = result_dict["data"]
+        data = result3_dict["data"]
         assert data[ConfKeys.SUN_ELEVATION_THRESHOLD.value] == 35
         assert data[ConfKeys.COVERS_MAX_CLOSURE.value] == 85
 
@@ -341,16 +300,10 @@ class TestOptionsFlowStep3:
         result3 = await flow.async_step_3(user_input)
         result3_dict = _as_dict(result3)
 
-        # Step 3 returns to menu, need to submit
-        assert result3_dict["type"] == FlowResultType.MENU
-        assert result3_dict["step_id"] == "init"
+        # Step 3 now directly creates the entry
+        assert result3_dict["type"] == FlowResultType.CREATE_ENTRY
 
-        result = await flow.async_step_submit()
-        result_dict = _as_dict(result)
-
-        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
-
-        data = result_dict["data"]
+        data = result3_dict["data"]
         # First cover's azimuth should remain
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in data
         # Second cover's azimuth should be removed
@@ -383,20 +336,17 @@ class TestOptionsFlowIntegration:
         assert _as_dict(result1)["type"] == FlowResultType.FORM
         assert _as_dict(result1)["step_id"] == "2"
 
-        # Step 2: Configure azimuth for both covers (returns to menu)
+        # Step 2: Configure azimuth for both covers (now proceeds directly to step 3)
         result2 = await flow.async_step_2(
             {
                 f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
                 f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}": 270.0,
             }
         )
-        assert _as_dict(result2)["type"] == FlowResultType.MENU
-        assert _as_dict(result2)["step_id"] == "init"
+        assert _as_dict(result2)["type"] == FlowResultType.FORM
+        assert _as_dict(result2)["step_id"] == "3"
 
-        # Step 3: Click step 3 from menu, then submit data
-        result3_form = await flow.async_step_3(None)
-        assert _as_dict(result3_form)["type"] == FlowResultType.FORM
-
+        # Step 3: Submit data (now directly creates entry)
         result3 = await flow.async_step_3(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 25,
@@ -406,16 +356,11 @@ class TestOptionsFlowIntegration:
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 2, "minutes": 30, "seconds": 0},
             }
         )
-        assert _as_dict(result3)["type"] == FlowResultType.MENU
-        assert _as_dict(result3)["step_id"] == "init"
-
-        # Submit the configuration
-        result4 = await flow.async_step_submit()
-        result_dict = _as_dict(result4)
-        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        result3_dict = _as_dict(result3)
+        assert result3_dict["type"] == FlowResultType.CREATE_ENTRY
 
         # Verify updated configuration
-        data = result_dict["data"]
+        data = result3_dict["data"]
         assert len(data[ConfKeys.COVERS.value]) == 2
         assert data[ConfKeys.SUN_ELEVATION_THRESHOLD.value] == 25
         assert data[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}"] == 270.0
@@ -447,8 +392,8 @@ class TestOptionsFlowIntegration:
             }
         )
 
-        # Step 3: Complete
-        await flow.async_step_3(
+        # Step 3: Complete (now directly creates entry)
+        result = await flow.async_step_3(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
@@ -458,9 +403,66 @@ class TestOptionsFlowIntegration:
             }
         )
 
-        # Submit the configuration
-        result = await flow.async_step_submit()
-
         data = _as_dict(result)["data"]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in data
         assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}" not in data
+
+    async def test_preserves_settings_not_in_ui(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test that settings not in the UI (like simulation_mode) are preserved.
+
+        This is a regression test for the bug where submitting the options flow
+        would reset simulation_mode, enabled, verbose_logging, and other settings
+        that are controlled via entities rather than the config flow UI.
+        """
+        existing_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
+            # Settings not in UI that should be preserved
+            ConfKeys.SIMULATION_MODE.value: True,
+            ConfKeys.ENABLED.value: False,
+            ConfKeys.VERBOSE_LOGGING.value: True,
+            ConfKeys.TEMP_THRESHOLD.value: 25.0,
+            ConfKeys.COVERS_MIN_POSITION_DELTA.value: 10,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Go through all steps without changing covers
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            }
+        )
+
+        await flow.async_step_2(
+            {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            }
+        )
+
+        result = await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 25,  # Changed from 20
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 2, "minutes": 0, "seconds": 0},
+            }
+        )
+
+        data = _as_dict(result)["data"]
+
+        # Verify settings that were in the UI were updated
+        assert data[ConfKeys.SUN_ELEVATION_THRESHOLD.value] == 25
+
+        # Verify settings that were NOT in the UI were preserved
+        assert data[ConfKeys.SIMULATION_MODE.value] is True
+        assert data[ConfKeys.ENABLED.value] is False
+        assert data[ConfKeys.VERBOSE_LOGGING.value] is True
+        assert data[ConfKeys.TEMP_THRESHOLD.value] == 25.0
+        assert data[ConfKeys.COVERS_MIN_POSITION_DELTA.value] == 10

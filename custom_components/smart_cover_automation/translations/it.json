@@ -2,94 +2,36 @@
     "config": {
         "step": {
             "user": {
-                "title": "Setup Smart Cover Automation",
-                "description": "Choose what to configure. Documentation: https://helgeklein.github.io/ha-smart-cover-automation/.",
-                "menu_options": {
-                    "user_form": "Step 1: Covers & weather",
-                    "2": "Step 2: Cover azimuth",
-                    "3": "Step 3: Other settings",
-                    "submit": "Submit"
-                }
-            },
-            "user_form": {
-                "title": "Smart Cover Automation - Step 1 of 3",
-                "description": "Select weather entity and covers.",
-                "data": {
-                    "covers": "Covers to automate:",
-                    "weather_entity_id": "Weather forecast sensor:"
-                },
-                "data_description": {
-                    "covers": "Select the covers the automation should control (required).",
-                    "weather_entity_id": "Select a weather entity that supports daily forecasts (required)."
-                }
-            },
-            "2": {
-                "title": "Smart Cover Automation - Step 2 of 3",
-                "description": "Configure the azimuth (direction) for each cover.\n(0°=North, 90°=East, 180°=South, 270°=West).\nUsed to calculate if the sun is hitting the window.",
-                "data": {
-                    "cover_azimuth": "**{cover_name}** azimuth:"
-                }
-            },
-            "3": {
-                "title": "Smart Cover Automation - Step 3 of 3",
-                "description": "Configure sun position thresholds, cover behavior, and manual override duration.",
-                "data": {
-                    "covers_max_closure": "Maximum cover closure position:",
-                    "covers_min_closure": "Minimum cover closure position:",
-                    "manual_override_duration": "Manual override duration:",
-                    "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon)."
-                }
-            },
-            "submit": {
-                "title": "Submit Configuration",
-                "description": "Save your configuration."
+                "title": "Benvenuti in Smart Cover Automation",
+                "description": "Questa integrazione viene installata con le impostazioni predefinite.\n\nConfigura le tapparelle, l'entità meteo e le impostazioni di automazione in seguito facendo clic sull'**icona dell'ingranaggio** (pulsante di configurazione) sulla scheda di integrazione.\n\nDocumentazione: https://helgeklein.github.io/ha-smart-cover-automation/\n\nFai clic su **Invia** per completare l'installazione."
             }
-        },
-        "error": {
-            "invalid_config": "Invalid configuration. Please check the log for details.",
-            "invalid_cover": "One or more selected covers are invalid or unavailable.",
-            "invalid_weather_entity": "The selected weather entity does not support daily forecasts.",
-            "no_covers": "No covers selected.",
-            "no_weather_entity": "No weather entity selected."
         }
     },
     "options": {
+        "error": {
+            "invalid_cover": "Una o più tapparelle selezionate non sono valide o non disponibili.",
+            "invalid_weather_entity": "L'entità meteo selezionata non supporta le previsioni giornaliere.",
+            "no_covers": "Nessuna tapparella selezionata.",
+            "no_weather_entity": "Nessuna entità meteo selezionata."
+        },
         "step": {
             "init": {
-                "title": "Configure Smart Cover Automation",
-                "description": "Choose what to configure. Documentation: https://helgeklein.github.io/ha-smart-cover-automation/.",
-                "menu_options": {
-                    "init_form": "Step 1: Covers & weather",
-                    "2": "Step 2: Cover azimuth",
-                    "3": "Step 3: Other settings",
-                    "submit": "Submit"
-                }
-            },
-            "init_form": {
-                "title": "Smart Cover Automation - Step 1 of 3",
-                "description": "Select weather entity and covers.",
+                "title": "Smart Cover Automation - Passo 1 di 3",
+                "description": "Seleziona l'entità meteo e le tapparelle.",
                 "data": {
-                    "covers": "Covers to automate:",
-                    "weather_entity_id": "Weather forecast sensor:"
+                    "covers": "Tapparelle da automatizzare:",
+                    "weather_entity_id": "Sensore previsioni meteo:"
                 },
                 "data_description": {
-                    "covers": "Select the covers the automation should control (required).",
-                    "weather_entity_id": "Select a weather entity that supports daily forecasts (required)."
+                    "covers": "Seleziona le tapparelle che l'automazione deve controllare (obbligatorio).",
+                    "weather_entity_id": "Seleziona un'entità meteo che supporta le previsioni giornaliere (obbligatorio)."
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Step 2 of 3",
-                "description": "Configure the azimuth (direction) for each cover.\n(0°=North, 90°=East, 180°=South, 270°=West).\nThis is used to calculate if the sun is hitting the window.",
+                "title": "Smart Cover Automation - Passo 2 di 3",
+                "description": "Configura l'**azimut** (direzione) per ogni tapparella.\n\nL'azimut è utilizzato per calcolare se il sole colpisce la finestra.\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)",
                 "data": {
-                    "cover_azimuth": "**{cover_name}** azimuth:"
+                    "cover_azimuth": "**{cover_name}** azimut:"
                 }
             },
             "3": {
@@ -100,14 +42,16 @@
                     "covers_min_closure": "Minimum cover closure position:",
                     "manual_override_duration": "Manual override duration:",
                     "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:"
+                    "sun_elevation_threshold": "Minimal sun elevation:",
+                    "temp_threshold": "Soglia di temperatura:"
                 },
                 "data_description": {
                     "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
                     "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
                     "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
                     "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon)."
+                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
+                    "temp_threshold": "Temperatura alla quale l'automazione inizia a chiudere le tapparelle per proteggere dal calore (gradi Celsius)."
                 }
             },
             "submit": {
