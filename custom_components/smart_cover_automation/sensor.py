@@ -54,6 +54,8 @@ async def async_setup_entry(
     entities = [
         # Last movement timestamp sensor - shows when covers were last moved
         LastMovementTimestampSensor(coordinator),
+        SunAzimuthSensor(coordinator),
+        SunElevationSensor(coordinator),
     ]
 
     async_add_entities(entities)

@@ -57,6 +57,8 @@ async def async_setup_entry(
     entities = [
         # Status binary sensor - indicates system problems
         StatusBinarySensor(coordinator),
+        TempHotBinarySensor(coordinator),
+        WeatherSunnyBinarySensor(coordinator),
     ]
 
     async_add_entities(entities)
