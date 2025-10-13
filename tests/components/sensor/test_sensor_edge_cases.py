@@ -13,12 +13,10 @@ Coverage targets:
 from __future__ import annotations
 
 import pytest
-from homeassistant.components.sensor import SensorEntityDescription
 
 from custom_components.smart_cover_automation.const import (
     COVER_ATTR_POS_TARGET_DESIRED,
     SENSOR_ATTR_TEMP_CURRENT_MAX,
-    SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
 )
 from custom_components.smart_cover_automation.sensor import LastMovementTimestampSensor
 
@@ -49,13 +47,8 @@ async def test_sensor_native_value_with_various_data_states(
     mock_coordinator_basic.data = coordinator_data
     mock_coordinator_basic.last_update_success = last_update_success
 
-    # Create sensor instance with entity description
-    entity_description = SensorEntityDescription(
-        key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
-        icon="mdi:information-outline",
-        translation_key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
-    )
-    sensor = LastMovementTimestampSensor(mock_coordinator_basic, entity_description)
+    # Create sensor instance (entity description is created internally)
+    sensor = LastMovementTimestampSensor(mock_coordinator_basic)
 
     # Get native value (will be None without movement history)
     native_value = sensor.native_value
@@ -82,13 +75,8 @@ async def test_sensor_availability_property_delegation(mock_coordinator_basic, l
     # Set coordinator update status
     mock_coordinator_basic.last_update_success = last_update_success
 
-    # Create sensor instance
-    entity_description = SensorEntityDescription(
-        key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
-        icon="mdi:information-outline",
-        translation_key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
-    )
-    sensor = LastMovementTimestampSensor(mock_coordinator_basic, entity_description)
+    # Create sensor instance (entity description is created internally)
+    sensor = LastMovementTimestampSensor(mock_coordinator_basic)
 
     # Test that availability property delegates to parent and reflects update status
     availability = sensor.available
@@ -124,13 +112,8 @@ async def test_sensor_with_valid_coordinator_data_and_movement_history(mock_coor
     now = datetime.now(timezone.utc)
     mock_coordinator_basic._cover_pos_history_mgr.add("cover.test", 50, cover_moved=True, timestamp=now)
 
-    # Create sensor instance with entity description
-    entity_description = SensorEntityDescription(
-        key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
-        icon="mdi:information-outline",
-        translation_key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
-    )
-    sensor = LastMovementTimestampSensor(mock_coordinator_basic, entity_description)
+    # Create sensor instance (entity description is created internally)
+    sensor = LastMovementTimestampSensor(mock_coordinator_basic)
 
     # Verify sensor returns valid datetime when movement history exists
     native_value = sensor.native_value

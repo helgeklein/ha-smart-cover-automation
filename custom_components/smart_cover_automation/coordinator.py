@@ -443,7 +443,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         actual_position = None
 
         try:
-            if features & CoverEntityFeature.SET_POSITION:
+            if int(features) & CoverEntityFeature.SET_POSITION:
                 # The cover supports setting a specific position
                 service = SERVICE_SET_COVER_POSITION
                 service_data = {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos}
@@ -514,7 +514,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         default_pos = const.COVER_POS_FULLY_OPEN
 
         # Check if cover supports position control
-        if features & CoverEntityFeature.SET_POSITION:
+        if int(features) & CoverEntityFeature.SET_POSITION:
             # Cover supports positioning - use current_position attribute
             current_pos = state.attributes.get(ATTR_CURRENT_POSITION)
             if current_pos is None:
