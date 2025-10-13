@@ -16,7 +16,6 @@ import pytest
 
 from custom_components.smart_cover_automation.const import (
     COVER_ATTR_POS_TARGET_DESIRED,
-    SENSOR_ATTR_TEMP_CURRENT_MAX,
 )
 from custom_components.smart_cover_automation.sensor import LastMovementTimestampSensor
 
@@ -104,7 +103,7 @@ async def test_sensor_with_valid_coordinator_data_and_movement_history(mock_coor
                 COVER_ATTR_POS_TARGET_DESIRED: 75,
             }
         },
-        SENSOR_ATTR_TEMP_CURRENT_MAX: 22.5,
+        "temp_current_max": 22.5,
     }
     mock_coordinator_basic.last_update_success = True
 

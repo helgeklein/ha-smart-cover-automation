@@ -46,27 +46,11 @@ COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Translation key for cover/window 
 
 # Entity keys
 BINARY_SENSOR_KEY_STATUS: Final[str] = "status"  # Key for the status binary sensor entity
+BINARY_SENSOR_KEY_TEMP_HOT: Final[str] = "temp_hot"  # Key for the temp_hot binary sensor entity
+BINARY_SENSOR_KEY_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Key for the weather_sunny binary sensor entity
 SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP: Final[str] = "last_movement_timestamp"  # Key for the last movement timestamp sensor entity
-
-# Sensor attribute keys (exposed on the automation status sensor)
-SENSOR_ATTR_AUTOMATION_ENABLED: Final[str] = "automation_enabled"  # Config value
-SENSOR_ATTR_COVERS_MAX_CLOSURE_POS: Final[str] = "covers_max_closure_pos"  # Config value
-SENSOR_ATTR_COVERS_MIN_CLOSURE_POS: Final[str] = "covers_min_closure_pos"  # Config value
-SENSOR_ATTR_COVERS_MIN_POSITION_DELTA: Final[str] = "covers_min_position_delta"  # Config value
-SENSOR_ATTR_COVERS_NUM_MOVED: Final[str] = "covers_num_moved"  # Current value
-SENSOR_ATTR_COVERS_NUM_TOTAL: Final[str] = "covers_num_total"  # Current value
-SENSOR_ATTR_MESSAGE: Final[str] = "message"  # Info or error message for the integration
-SENSOR_ATTR_MANUAL_OVERRIDE_DURATION: Final[str] = "manual_override_duration"  # Config value
-SENSOR_ATTR_SIMULATION_ENABLED: Final[str] = "simulation_enabled"  # Config value
-SENSOR_ATTR_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Current value
-SENSOR_ATTR_TEMP_HOT: Final[str] = "temp_hot"  # Current value
-SENSOR_ATTR_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Config value
-SENSOR_ATTR_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Current value
-SENSOR_ATTR_SUN_AZIMUTH_TOLERANCE: Final[str] = "sun_azimuth_tolerance"  # Config value
-SENSOR_ATTR_SUN_ELEVATION: Final[str] = "sun_elevation"  # Current value
-SENSOR_ATTR_SUN_ELEVATION_THRESH: Final[str] = "sun_elevation_threshold"  # Config value
-SENSOR_ATTR_WEATHER_ENTITY_ID: Final[str] = "weather_entity_id"  # Config value
-SENSOR_ATTR_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Current value
+SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
+SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity
 
 # Cover attribute keys (exposed on each cover entity)
 COVER_ATTR_COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)

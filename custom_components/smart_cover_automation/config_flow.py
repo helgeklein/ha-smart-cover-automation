@@ -183,7 +183,7 @@ class FlowHelper:
                     selector.NumberSelectorConfig(
                         mode=selector.NumberSelectorMode.BOX,
                         unit_of_measurement="°",
-                        min=-90,
+                        min=0,
                         max=90,
                     )
                 ),

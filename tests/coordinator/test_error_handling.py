@@ -20,7 +20,6 @@ from custom_components.smart_cover_automation.const import (
     COVER_ATTR_MESSAGE,
     COVER_ATTR_SUN_HITTING,
     COVER_SFX_AZIMUTH,
-    SENSOR_ATTR_TEMP_HOT,
 )
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
@@ -371,7 +370,7 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert result[SENSOR_ATTR_TEMP_HOT] is not None
+        assert "temp_hot" in result and result["temp_hot"] is not None
         assert COVER_ATTR_SUN_HITTING in cover1_data
 
     async def test_cover_invalid_azimuth_configuration(
@@ -433,7 +432,7 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert result[SENSOR_ATTR_TEMP_HOT] is not None
+        assert "temp_hot" in result and result["temp_hot"] is not None
         assert COVER_ATTR_SUN_HITTING in cover1_data
 
     async def test_sun_azimuth_unavailable(

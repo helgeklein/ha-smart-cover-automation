@@ -23,7 +23,7 @@ import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION
 
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED, SENSOR_ATTR_TEMP_CURRENT_MAX
+from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import (
@@ -98,7 +98,7 @@ class TestSimulationMode(TestDataUpdateCoordinatorBase):
         # But verify that the coordinator still processed the automation logic
         result = simulation_coordinator.data
         assert result is not None
-        assert result[SENSOR_ATTR_TEMP_CURRENT_MAX] == float(TEST_HOT_TEMP)
+        assert "temp_current_max" in result and result["temp_current_max"] == float(TEST_HOT_TEMP)
 
         # The automation should have calculated a desired position even in simulation mode
         cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]

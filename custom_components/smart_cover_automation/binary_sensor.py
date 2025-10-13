@@ -11,7 +11,6 @@ The sensors that appear in Home Assistant are:
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING
 
 from homeassistant.components.binary_sensor import (
@@ -21,7 +20,12 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.const import EntityCategory
 
-from .const import BINARY_SENSOR_KEY_STATUS, DOMAIN
+from .const import (
+    BINARY_SENSOR_KEY_STATUS,
+    BINARY_SENSOR_KEY_TEMP_HOT,
+    BINARY_SENSOR_KEY_WEATHER_SUNNY,
+    DOMAIN,
+)
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -96,54 +100,105 @@ class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright
         #   binary_sensor.smart_cover_automation_{translated_key}
         self._attr_unique_id = f"{DOMAIN}_{entity_description.key}"
 
-    # Note: Multiple inheritance from IntegrationEntity (CoordinatorEntity) and
-    # BinarySensorEntity causes a Pylance conflict on the 'available' property.
-    # Both base classes define it differently, but they're compatible at runtime.
-    # The CoordinatorEntity's implementation provides the correct coordinator-based
-    # availability logic we want, so no override is needed.
 
-
+#
+# StatusBinarySensor
+#
 class StatusBinarySensor(IntegrationBinarySensor):
-    """Binary sensor for monitoring Smart Cover Automation system health.
+    """Binary sensor that reports the integration's health.
 
     This sensor indicates whether the cover automation system has any issues.
     The sensor's state is automatically derived from the coordinator's operational status.
 
-    The sensor provides:
-    - Problem device class for appropriate UI representation
-    - Automatic availability tracking based on coordinator health
-    - Integration with Home Assistant's binary sensor platform
-
     State meanings:
-    - 'on' (Problem): Automation system has issues or coordinator failed
-    - 'off' (OK): Automation system is working, coordinator is healthy
+    - on: Problem
+    - off: OK
     """
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the status binary sensor.
+        """Initialize the sensor.
 
         Args:
-            coordinator: The DataUpdateCoordinator that manages automation logic
-                         and provides the status for this sensor
+            coordinator: Provides the data for this sensor
         """
         entity_description = BinarySensorEntityDescription(
             key=BINARY_SENSOR_KEY_STATUS,
-            device_class=BinarySensorDeviceClass.PROBLEM,
-            # icon="mdi:check-circle-outline",
             translation_key=BINARY_SENSOR_KEY_STATUS,
             entity_category=EntityCategory.DIAGNOSTIC,
+            device_class=BinarySensorDeviceClass.PROBLEM,
         )
         super().__init__(coordinator, entity_description)
 
-    @cached_property
-    def is_on(self) -> bool:
-        """Return True if the integration has problems.
-
-        The binary sensor state reflects the coordinator's operational health:
-        - True (on/Problem): Coordinator has failed or encountered errors
-        - False (off/OK): Coordinator is successfully fetching and processing data
-
-        This allows users to monitor automation system status and create
-        automations based on system status. Note: Problem sensors use inverted logic.
-        """
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
+        """Return True if the integration has problems."""
         return not self.coordinator.last_update_success
+
+
+#
+# TempHotBinarySensor
+#
+class TempHotBinarySensor(IntegrationBinarySensor):
+    """Binary sensor that reports whether it's a hot day.
+
+    State meanings:
+    - on: Hot day
+    - off: Not a hot day
+    """
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+        entity_description = BinarySensorEntityDescription(
+            key=BINARY_SENSOR_KEY_TEMP_HOT,
+            translation_key=BINARY_SENSOR_KEY_TEMP_HOT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            device_class=BinarySensorDeviceClass.HEAT,
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
+        """Return True if it's a hot day."""
+        if self.coordinator.data and "temp_hot" in self.coordinator.data:
+            return self.coordinator.data["temp_hot"]
+        else:
+            return False
+
+
+#
+# WeatherSunnyBinarySensor
+#
+class WeatherSunnyBinarySensor(IntegrationBinarySensor):
+    """Binary sensor that reports if the weather is sunny.
+
+    State meanings:
+    - on: Sunny
+    - off: Not sunny
+    """
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+        entity_description = BinarySensorEntityDescription(
+            key=BINARY_SENSOR_KEY_WEATHER_SUNNY,
+            translation_key=BINARY_SENSOR_KEY_WEATHER_SUNNY,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            # No suitable device class exists for sunny weather - using icon instead
+            icon="mdi:weather-sunny",
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
+        """Return True if the weather is sunny."""
+        if self.coordinator.data and "weather_sunny" in self.coordinator.data:
+            return self.coordinator.data["weather_sunny"]
+        else:
+            return False

@@ -64,11 +64,23 @@
         "sensor": {
             "last_movement_timestamp": {
                 "name": "Last movement"
+            },
+            "sun_azimuth": {
+                "name": "太阳方位角"
+            },
+            "sun_elevation": {
+                "name": "太阳高度角"
             }
         },
         "binary_sensor": {
             "status": {
-                "name": "Status"
+                "name": "状态"
+            },
+            "temp_hot": {
+                "name": "温度偏高"
+            },
+            "weather_sunny": {
+                "name": "天气晴朗"
             }
         },
         "switch": {
@@ -80,11 +92,6 @@
             },
             "verbose_logging": {
                 "name": "Verbose logging"
-            }
-        },
-        "number": {
-            "temp_threshold": {
-                "name": "Temperature threshold"
             }
         }
     }

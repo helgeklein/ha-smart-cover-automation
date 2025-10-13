@@ -29,6 +29,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from . import const
 from .config import ConfKeys, ResolvedConfig, resolve_entry
 from .cover_position_history import CoverPositionHistoryManager
+from .data import CoordinatorData
 from .util import to_float_or_none
 
 if TYPE_CHECKING:
@@ -82,7 +83,7 @@ class ServiceCallError(SmartCoverError):
 #
 # DataUpdateCoordinator
 #
-class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
+class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
     """Automation engine."""
 
     config_entry: IntegrationConfigEntry
@@ -135,7 +136,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
     #
     # _async_update_data
     #
-    async def _async_update_data(self) -> dict[str, Any]:
+    async def _async_update_data(self) -> CoordinatorData:
         """Update automation state and control covers.
 
         This is the heart of the automation logic. It evaluates sensor states and
@@ -148,15 +149,15 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         - Integration reload
 
         Returns:
-        Dict that stores details of the last automation run.
-        Dict entries are converted to HA entity attributes which are visible
+        CoordinatorData that stores details of the last automation run.
+        Data entries are converted to HA entity attributes which are visible
         in the integration's automation sensor.
 
         Raises:
         UpdateFailed: For critical errors that should make entities unavailable
         """
         # Prepare minimal valid state to keep integration entities available
-        error_result: dict[str, Any] = {ConfKeys.COVERS.value: {}}
+        error_result: CoordinatorData = {ConfKeys.COVERS.value: {}}
 
         try:
             const.LOGGER.info("Starting cover automation update")
@@ -223,13 +224,13 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         self,
         states: dict[str, State | None],
         config: dict[str, Any],
-    ) -> dict[str, Any]:
+    ) -> CoordinatorData:
         """Implements the automation logic.
 
         Called by _async_update_data after initial checks and state collection.
         """
         # Prepare empty result
-        result: dict[str, Any] = {ConfKeys.COVERS.value: {}}
+        result: CoordinatorData = {ConfKeys.COVERS.value: {}}
 
         # Get the resolved settings
         resolved = self._resolved_settings()
@@ -278,15 +279,11 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             return result
 
         # Store sensor attributes
-        result.update(
-            {
-                const.SENSOR_ATTR_SUN_AZIMUTH: sun_azimuth,
-                const.SENSOR_ATTR_SUN_ELEVATION: sun_elevation,
-                const.SENSOR_ATTR_TEMP_CURRENT_MAX: temp_max,
-                const.SENSOR_ATTR_TEMP_HOT: temp_hot,
-                const.SENSOR_ATTR_WEATHER_SUNNY: weather_sunny,
-            }
-        )
+        result["sun_azimuth"] = sun_azimuth
+        result["sun_elevation"] = sun_elevation
+        result["temp_current_max"] = temp_max
+        result["temp_hot"] = temp_hot
+        result["weather_sunny"] = weather_sunny
 
         # Copy result without covers for logging
         result_copy = {k: v for k, v in result.items() if k != ConfKeys.COVERS.value}
@@ -763,7 +760,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
     #
     # _log_automation_result
     #
-    def _log_automation_result(self, message: str, severity: const.LogSeverity, result: dict[str, Any]) -> None:
+    def _log_automation_result(self, message: str, severity: const.LogSeverity, result: CoordinatorData) -> None:
         """Log and store the result of an automation run."""
         # Log the message
         if severity == const.LogSeverity.DEBUG:
@@ -776,7 +773,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
             const.LOGGER.error(message)
 
         # Record the message in the result
-        result[const.SENSOR_ATTR_MESSAGE] = message
+        result["message"] = message
 
     #
     # _log_cover_result
@@ -786,7 +783,7 @@ class DataUpdateCoordinator(BaseCoordinator[dict[str, Any]]):
         entity_id: str,
         error_description: str,
         cover_attrs: dict[str, Any],
-        result: dict[str, Any],
+        result: CoordinatorData,
     ) -> None:
         """Log and store the the result for one cover."""
         message = f"[{entity_id}] {error_description}"

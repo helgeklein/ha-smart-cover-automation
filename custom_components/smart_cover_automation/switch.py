@@ -165,9 +165,9 @@ class EnabledSwitch(IntegrationSwitch):
         """
         entity_description = SwitchEntityDescription(
             key=ConfKeys.ENABLED.value,
-            icon="mdi:toggle-switch-outline",
             translation_key=ConfKeys.ENABLED.value,
             entity_category=EntityCategory.CONFIG,
+            icon="mdi:toggle-switch-outline",
         )
         super().__init__(coordinator, entity_description, ConfKeys.ENABLED.value)
 
@@ -179,9 +179,9 @@ class SimulationModeSwitch(IntegrationSwitch):
         """Set the switch properties."""
         entity_description = SwitchEntityDescription(
             key=ConfKeys.SIMULATION_MODE.value,
-            icon="mdi:play-circle-outline",
             translation_key=ConfKeys.SIMULATION_MODE.value,
             entity_category=EntityCategory.CONFIG,
+            icon="mdi:play-circle-outline",
         )
         super().__init__(coordinator, entity_description, ConfKeys.SIMULATION_MODE.value)
 
@@ -193,9 +193,9 @@ class VerboseLoggingSwitch(IntegrationSwitch):
         """Set the switch properties."""
         entity_description = SwitchEntityDescription(
             key=ConfKeys.VERBOSE_LOGGING.value,
-            icon="mdi:list-status",
             translation_key=ConfKeys.VERBOSE_LOGGING.value,
             entity_category=EntityCategory.CONFIG,
+            icon="mdi:list-status",
         )
         super().__init__(coordinator, entity_description, ConfKeys.VERBOSE_LOGGING.value)
 

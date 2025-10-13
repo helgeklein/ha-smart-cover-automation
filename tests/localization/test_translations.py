@@ -147,6 +147,61 @@ def test_translation_has_required_keys(language_code: str) -> None:
     assert not missing_errors, f"Missing error strings in {language_code}.json: {sorted(missing_errors)}"
 
 
+@pytest.mark.parametrize("language_code", _get_available_languages())
+def test_translation_file_is_valid_json(language_code: str) -> None:
+    """Test that each translation file contains valid, parseable JSON.
+
+    This test validates the JSON syntax and structure of translation files to catch
+    common issues early in development:
+    - Syntax errors (missing commas, brackets, quotes)
+    - Encoding problems (invalid UTF-8 characters)
+    - Structural issues (malformed JSON)
+
+    Valid JSON is critical because:
+    - Home Assistant fails to load integrations with invalid translation files
+    - JSON errors prevent users from seeing any translations at all
+    - Syntax errors in one language can break the entire integration
+    - Invalid JSON causes confusing runtime errors during setup
+
+    This test ensures that all translation files are well-formed and can be
+    successfully parsed before deployment, preventing integration load failures
+    and providing early feedback to developers about JSON formatting issues.
+
+    Args:
+        language_code: The language code being tested (e.g., 'en', 'de', 'fr')
+
+    Raises:
+        AssertionError: If the translation file contains invalid JSON
+    """
+    translation_file = TRANSLATIONS_DIR / f"{language_code}.json"
+
+    # Verify the file exists
+    assert translation_file.exists(), f"Translation file {language_code}.json not found"
+
+    # Attempt to load and parse the JSON file
+    try:
+        with translation_file.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        # Verify it loaded as a dictionary (expected root structure)
+        assert isinstance(data, dict), (
+            f"Translation file {language_code}.json should contain a JSON object at root level, got {type(data).__name__}"
+        )
+
+        # Verify it's not empty
+        assert len(data) > 0, f"Translation file {language_code}.json is empty"
+
+    except json.JSONDecodeError as e:
+        pytest.fail(
+            f"Translation file {language_code}.json contains invalid JSON:\n"
+            f"  Error: {e.msg}\n"
+            f"  Line: {e.lineno}, Column: {e.colno}\n"
+            f"  Position: {e.pos}"
+        )
+    except UnicodeDecodeError as e:
+        pytest.fail(f"Translation file {language_code}.json has encoding issues: {e}")
+
+
 def test_available_languages_detected() -> None:
     """Test that the language detection function finds all translation files.
 

@@ -64,11 +64,23 @@
         "sensor": {
             "last_movement_timestamp": {
                 "name": "Last movement"
+            },
+            "sun_azimuth": {
+                "name": "Azymut słońca"
+            },
+            "sun_elevation": {
+                "name": "Wysokość słońca"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "temp_hot": {
+                "name": "Temperatura wysoka"
+            },
+            "weather_sunny": {
+                "name": "Pogoda słoneczna"
             }
         },
         "switch": {
@@ -80,11 +92,6 @@
             },
             "verbose_logging": {
                 "name": "Verbose logging"
-            }
-        },
-        "number": {
-            "temp_threshold": {
-                "name": "Temperature threshold"
             }
         }
     }

@@ -17,7 +17,12 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, Sen
 from homeassistant.const import EntityCategory
 
 from .config import ConfKeys
-from .const import DOMAIN, SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP
+from .const import (
+    DOMAIN,
+    SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
+    SENSOR_KEY_SUN_AZIMUTH,
+    SENSOR_KEY_SUN_ELEVATION,
+)
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -54,6 +59,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
+#
+# IntegrationSensor
+#
 class IntegrationSensor(IntegrationEntity, SensorEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
     """Base sensor entity for Smart Cover Automation integration.
 
@@ -99,6 +107,9 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):  # pyright: ignore[rep
     # availability logic we want, so no override is needed.
 
 
+#
+# LastMovementTimestampSensor
+#
 class LastMovementTimestampSensor(IntegrationSensor):
     """Sensor that reports the timestamp of the last cover movement.
 
@@ -117,18 +128,17 @@ class LastMovementTimestampSensor(IntegrationSensor):
     """
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the last movement timestamp sensor.
+        """Initialize the sensor.
 
         Args:
-            coordinator: The DataUpdateCoordinator that manages automation logic
-                         and provides the data for this sensor
+            coordinator: Provides the data for this sensor
         """
         entity_description = SensorEntityDescription(
             key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
-            icon="mdi:clock-outline",
             translation_key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
             entity_category=EntityCategory.DIAGNOSTIC,
             device_class=SensorDeviceClass.TIMESTAMP,
+            icon="mdi:clock-outline",
         )
         super().__init__(coordinator, entity_description)
 
@@ -141,10 +151,6 @@ class LastMovementTimestampSensor(IntegrationSensor):
             or None if no movements have been recorded yet.
             Home Assistant will automatically format this according to
             the user's locale and timezone settings.
-
-        Examples:
-            datetime(2025, 10, 9, 14, 32, 15, 123456, tzinfo=timezone.utc)
-            None (when no movements recorded)
         """
         latest_timestamp: datetime | None = None
 
@@ -162,3 +168,75 @@ class LastMovementTimestampSensor(IntegrationSensor):
                 latest_timestamp = entry.timestamp
 
         return latest_timestamp
+
+
+#
+# SunAzimuthSensor
+#
+class SunAzimuthSensor(IntegrationSensor):
+    """Sensor that reports the current sun azimuth angle."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+        entity_description = SensorEntityDescription(
+            key=SENSOR_KEY_SUN_AZIMUTH,
+            translation_key=SENSOR_KEY_SUN_AZIMUTH,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            # No suitable device class exists for angles - using icon instead
+            icon="mdi:sun-compass",
+            native_unit_of_measurement="°",
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def native_value(self) -> float | None:  # pyright: ignore
+        """Return the current sun azimuth angle in degrees.
+
+        Returns:
+            Float representing the sun's azimuth angle (0° to 360°),
+            or None if sun position data is unavailable.
+        """
+        if self.coordinator.data and "sun_azimuth" in self.coordinator.data:
+            return self.coordinator.data["sun_azimuth"]
+        else:
+            return None
+
+
+#
+# SunElevationSensor
+#
+class SunElevationSensor(IntegrationSensor):
+    """Sensor that reports the current sun elevation angle."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+        entity_description = SensorEntityDescription(
+            key=SENSOR_KEY_SUN_ELEVATION,
+            translation_key=SENSOR_KEY_SUN_ELEVATION,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            # No suitable device class exists for angles - using icon instead
+            icon="mdi:sun-angle-outline",
+            native_unit_of_measurement="°",
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def native_value(self) -> float | None:  # pyright: ignore
+        """Return the current sun elevation angle in degrees.
+
+        Returns:
+            Float representing the sun's elevation angle (min. -90° at nadir to max. +90° at zenith),
+            or None if sun position data is unavailable.
+        """
+        if self.coordinator.data and "sun_elevation" in self.coordinator.data:
+            return self.coordinator.data["sun_elevation"]
+        else:
+            return None
