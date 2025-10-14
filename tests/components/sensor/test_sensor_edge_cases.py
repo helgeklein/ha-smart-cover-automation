@@ -119,3 +119,25 @@ async def test_sensor_with_valid_coordinator_data_and_movement_history(mock_coor
     assert native_value is not None
     assert isinstance(native_value, datetime)
     assert native_value == now
+
+
+async def test_sensor_with_invalid_covers_type(mock_coordinator_basic) -> None:
+    """Test timestamp sensor handles non-dict covers data gracefully.
+
+    This test ensures that when coordinator data has covers but it's not a dict
+    (e.g., a string or list), the sensor handles it safely and returns None.
+
+    Coverage target: sensor.py line 162 (isinstance check for covers)
+    """
+    # Set coordinator data with covers as a non-dict type
+    mock_coordinator_basic.data = {
+        "covers": "invalid_string_instead_of_dict",
+    }
+    mock_coordinator_basic.last_update_success = True
+
+    # Create sensor instance
+    sensor = LastMovementTimestampSensor(mock_coordinator_basic)
+
+    # Verify sensor returns None when covers is not a dict
+    native_value = sensor.native_value
+    assert native_value is None

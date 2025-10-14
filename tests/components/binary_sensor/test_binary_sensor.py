@@ -54,8 +54,8 @@ async def test_binary_sensor_entity_properties(mock_hass_with_spec, mock_config_
         add_entities,
     )
 
-    # Binary sensor platform should expose exactly one entity (status)
-    assert len(captured) == 1
+    # Binary sensor platform should expose three entities
+    assert len(captured) == 3
 
 
 async def test_binary_sensor_is_on_state_with_failed_coordinator(mock_hass_with_spec, mock_config_entry_basic) -> None:
@@ -90,3 +90,41 @@ async def test_binary_sensor_is_on_state_with_failed_coordinator(mock_hass_with_
     status_entity = next((entity for entity in captured if entity.entity_description.key == BINARY_SENSOR_KEY_STATUS), None)
     assert status_entity is not None, "Status binary sensor not found"
     assert getattr(status_entity, "is_on") is True
+
+
+async def test_binary_sensor_translation_keys_set(mock_hass_with_spec, mock_config_entry_basic) -> None:
+    """Test that binary sensors have translation_key attribute set for state translations.
+
+    This test verifies that binary sensors have the translation_key attribute properly
+    set, which is required for entity state translations (e.g., "Yes/No" instead of "On/Off").
+    """
+    # Coordinator with predefined data and success state
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    coordinator.last_update_success = True  # type: ignore[attr-defined]
+
+    # Wire coordinator into runtime_data
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+
+    # Capture entities
+    captured: list[Entity] = []
+
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:
+        """Mock entity addition function that captures created entities."""
+        captured.extend(list(new_entities))
+
+    # Setup the binary sensor platform
+    await async_setup_entry_binary_sensor(
+        mock_hass_with_spec,
+        cast(IntegrationConfigEntry, mock_config_entry_basic),
+        add_entities,
+    )
+
+    # Verify all binary sensors have translation_key set
+    assert len(captured) == 3
+    for entity in captured:
+        # Check that translation_key attribute exists and matches the entity key
+        assert hasattr(entity, "translation_key"), f"Entity {entity.entity_description.key} missing translation_key attribute"
+        assert entity.translation_key == entity.entity_description.key, (
+            f"Entity {entity.entity_description.key} has mismatched translation_key: "
+            f"{entity.translation_key} != {entity.entity_description.key}"
+        )

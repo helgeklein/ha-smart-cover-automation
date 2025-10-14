@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Välkommen till Smart Cover Automation",
-                "description": "Denna integration installeras med standardinställningar.\n\nKonfigurera persienner, väderentitet och automatiseringsinställningar senare genom att klicka på **kugghjulsikonen** (konfigurationsknappen) på integrationskortet.\n\nDokumentation: https://helgeklein.github.io/ha-smart-cover-automation/\n\nKlicka på **Skicka** för att slutföra installationen."
+                "description": "Denna integration installeras med standardinställningar.\n\nKonfigurera persienner, väderentitet och automatiseringsinställningar senare genom att klicka på **kugghjulsikonen** (konfigurationsknappen) på integrationskortet.\n\nDokumentation: https://helgeklein.github.io/ha-smart-cover-automation/"
             }
         }
     },
@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Steg 1 av 3",
-                "description": "Välj väderentitet och persienner.",
+                "description": "Välj en väderprognossensor och persiennerna som ska automatiseras (obligatoriskt).",
                 "data": {
                     "covers": "Persienner att automatisera:",
                     "weather_entity_id": "Väderprognosensor:"
@@ -29,29 +29,29 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Steg 2 av 3",
-                "description": "Konfigurera **azimut** (riktning) för varje persienne.\n\nAzimut används för att beräkna om solen träffar fönstret.\n(0°=Norr, 90°=Öst, 180°=Söder, 270°=Väst)",
+                "description": "Konfigurera **azimut** (riktning) för varje persienne (obligatoriskt).\n\n(0°=Norr, 90°=Öst, 180°=Söder, 270°=Väst)",
                 "data": {
                     "cover_azimuth": "**{cover_name}** azimut:"
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Step 3 of 3",
-                "description": "Configure sun position thresholds, cover behavior, and manual override duration.",
+                "title": "Smart Cover Automation - Steg 3 av 3",
+                "description": "Konfigurera ytterligare inställningar (valfritt).\n\nDetta steg är markerat som valfritt eftersom standardvärdena bör fungera bra för de flesta användare.",
                 "data": {
-                    "covers_max_closure": "Maximum cover closure position:",
-                    "covers_min_closure": "Minimum cover closure position:",
-                    "manual_override_duration": "Manual override duration:",
-                    "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:",
-                    "temp_threshold": "Temperaturtrösklar:"
+                    "covers_max_closure": "Högsta stängningsläge för persienner:",
+                    "covers_min_closure": "Lägsta stängningsläge för persienner:",
+                    "manual_override_duration": "Varaktighet för manuell överstyrning:",
+                    "sun_azimuth_tolerance": "Tolerans för solens azimut:",
+                    "sun_elevation_threshold": "Minimal solhöjd:",
+                    "temp_threshold": "Temperaturtröskel:"
                 },
                 "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
-                    "temp_threshold": "Temperatur vid vilken automationen börjar stänga persienner för att skydda mot värme (grader Celsius)."
+                    "covers_max_closure": "Stäng aldrig mer än detta värde så att lite ljus alltid släpps in (0 = helt stängd, 100 = helt öppen).",
+                    "covers_min_closure": "Öppna aldrig mer än detta värde för att alltid behålla lite skugga (0 = helt stängd, 100 = helt öppen).",
+                    "manual_override_duration": "Hur länge en persienn ska hoppas över efter manuell manövrering (0 = hoppa inte över).",
+                    "sun_azimuth_tolerance": "Maximal horisontell vinkel där solen anses lysa direkt på fönstret (grader).",
+                    "sun_elevation_threshold": "Automationen börjar arbeta när solhöjden överstiger denna tröskel (grader över horisonten).",
+                    "temp_threshold": "Temperatur vid vilken automationen stänger persiennerna för att skydda mot värme (grader Celsius)."
                 }
             },
             "submit": {
@@ -63,13 +63,19 @@
     "entity": {
         "sensor": {
             "last_movement_timestamp": {
-                "name": "Last movement"
+                "name": "Senaste rörelse"
             },
             "sun_azimuth": {
                 "name": "Solazimut"
             },
             "sun_elevation": {
                 "name": "Solhöjd"
+            },
+            "temp_current_max": {
+                "name": "Temperatur: dagens högsta"
+            },
+            "temp_threshold": {
+                "name": "Temperatur: tröskelvärde"
             }
         },
         "binary_sensor": {
@@ -77,21 +83,29 @@
                 "name": "Status"
             },
             "temp_hot": {
-                "name": "Temperatur varm"
+                "name": "Väder: varm dag?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nej"
+                }
             },
             "weather_sunny": {
-                "name": "Väder soligt"
+                "name": "Väder: soligt?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nej"
+                }
             }
         },
         "switch": {
             "enabled": {
-                "name": "Automation enabled"
+                "name": "Automatisering aktiverad"
             },
             "simulation_mode": {
-                "name": "Simulation mode"
+                "name": "Simuleringsläge"
             },
             "verbose_logging": {
-                "name": "Verbose logging"
+                "name": "Utförlig loggning"
             }
         }
     }

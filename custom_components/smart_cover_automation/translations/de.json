@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Willkommen bei Smart Cover Automation",
-                "description": "Diese Integration wird mit Standardeinstellungen installiert.\n\nBitte konfigurieren Sie Rollläden, Wetterentität und Automatisierungseinstellungen später, indem Sie auf das **Zahnradsymbol** (Konfigurationsschaltfläche) auf der Integrationskarte klicken.\n\nDokumentation: https://helgeklein.github.io/ha-smart-cover-automation/\n\nKlicken Sie auf **Absenden**, um die Installation abzuschließen."
+                "description": "Diese Integration wird mit Standardeinstellungen installiert.\n\nBitte konfigurieren Sie Rollläden, Wetterentität und Automatisierungseinstellungen später, indem Sie auf das **Zahnradsymbol** (Konfigurationsschaltfläche) auf der Integrationskarte klicken.\n\nDokumentation: https://helgeklein.github.io/ha-smart-cover-automation/"
             }
         }
     },
@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Schritt 1 von 3",
-                "description": "Rollläden und Wetterentität auswählen.",
+                "description": "Wählen Sie einen Wettervorhersage-Sensor und die zu automatisierenden Rollläden aus (erforderlich).",
                 "data": {
                     "covers": "Zu automatisierende Rollläden:",
                     "weather_entity_id": "Wettervorhersage-Sensor:"
@@ -29,14 +29,14 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Schritt 2 von 3",
-                "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen.\n\nDer Azimut wird verwendet, um zu berechnen, ob die Sonne auf das Fenster scheint.\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)",
+                "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen (erforderlich).\n\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)",
                 "data": {
                     "cover_azimuth": "**{cover_name}** Azimut:"
                 }
             },
             "3": {
                 "title": "Smart Cover Automation - Schritt 3 von 3",
-                "description": "Konfigurieren Sie Sonnenpositionsschwellenwerte, Rollladenverhalten und Dauer der manuellen Übersteuerung.",
+                "description": "Konfigurieren Sie zusätzliche Einstellungen (optional).\n\nDieser Schritt ist als optional markiert, da die Standardwerte für die meisten Nutzer gut funktionieren sollten.",
                 "data": {
                     "covers_max_closure": "Maximale Rollladenposition:",
                     "covers_min_closure": "Minimale Rollladenposition:",
@@ -46,12 +46,12 @@
                     "temp_threshold": "Temperaturschwelle:"
                 },
                 "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
-                    "temp_threshold": "Temperatur, bei der die Automatisierung beginnt, Rollläden zum Schutz vor Hitze zu schließen (Grad Celsius)."
+                    "covers_max_closure": "Nie weiter schließen als diesen Wert, damit stets etwas Licht bleibt (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
+                    "covers_min_closure": "Nie weiter öffnen als diesen Wert, um immer etwas Schatten zu behalten (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
+                    "manual_override_duration": "Wie lange ein Rollladen nach manueller Bewegung übersprungen wird (0 = kein Überspringen).",
+                    "sun_azimuth_tolerance": "Maximaler horizontaler Winkel, bei dem die Sonne als direkt auf das Fenster scheinend gilt (Grad).",
+                    "sun_elevation_threshold": "Die Automatisierung wird aktiv, sobald die Sonnenhöhe diesen Schwellenwert übersteigt (Grad über dem Horizont).",
+                    "temp_threshold": "Temperatur, ab der die Automatisierung die Rollläden zum Hitzeschutz schließt (Grad Celsius)."
                 }
             },
             "submit": {
@@ -63,13 +63,19 @@
     "entity": {
         "sensor": {
             "last_movement_timestamp": {
-                "name": "Last movement"
+                "name": "Letzte Bewegung"
             },
             "sun_azimuth": {
                 "name": "Sonnenazimut"
             },
             "sun_elevation": {
                 "name": "Sonnenhöhe"
+            },
+            "temp_current_max": {
+                "name": "Temperatur: Tagesmaximum"
+            },
+            "temp_threshold": {
+                "name": "Temperatur: Grenzwert"
             }
         },
         "binary_sensor": {
@@ -77,21 +83,29 @@
                 "name": "Status"
             },
             "temp_hot": {
-                "name": "Temperatur heiß"
+                "name": "Wetter: heißer Tag?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nein"
+                }
             },
             "weather_sunny": {
-                "name": "Wetter sonnig"
+                "name": "Wetter: sonnig?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nein"
+                }
             }
         },
         "switch": {
             "enabled": {
-                "name": "Automation enabled"
+                "name": "Automatisierung aktiviert"
             },
             "simulation_mode": {
-                "name": "Simulation mode"
+                "name": "Simulationsmodus"
             },
             "verbose_logging": {
-                "name": "Verbose logging"
+                "name": "Ausführliches Logging"
             }
         }
     }

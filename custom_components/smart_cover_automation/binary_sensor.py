@@ -158,7 +158,8 @@ class TempHotBinarySensor(IntegrationBinarySensor):
             key=BINARY_SENSOR_KEY_TEMP_HOT,
             translation_key=BINARY_SENSOR_KEY_TEMP_HOT,
             entity_category=EntityCategory.DIAGNOSTIC,
-            device_class=BinarySensorDeviceClass.HEAT,
+            # No device class - allows custom state translations (Yes/No)
+            icon="mdi:thermometer-alert",
         )
         super().__init__(coordinator, entity_description)
 
@@ -192,7 +193,7 @@ class WeatherSunnyBinarySensor(IntegrationBinarySensor):
             key=BINARY_SENSOR_KEY_WEATHER_SUNNY,
             translation_key=BINARY_SENSOR_KEY_WEATHER_SUNNY,
             entity_category=EntityCategory.DIAGNOSTIC,
-            # No suitable device class exists for sunny weather - using icon instead
+            # No device class - allows custom state translations (Yes/No)
             icon="mdi:weather-sunny",
         )
         super().__init__(coordinator, entity_description)

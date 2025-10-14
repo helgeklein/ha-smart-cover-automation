@@ -85,10 +85,21 @@ class TestFlowHelperValidation:
         """Test validation passes for unavailable cover (warns but doesn't error)."""
         from homeassistant.const import STATE_UNAVAILABLE
 
-        # Mock unavailable cover
+        # Mock unavailable cover but valid weather entity
         cover_state = MagicMock()
         cover_state.state = STATE_UNAVAILABLE
-        mock_hass_with_covers.states.get.return_value = cover_state
+
+        weather_state = MagicMock()
+        weather_state.attributes = {"supported_features": WeatherEntityFeature.FORECAST_DAILY}
+
+        def mock_get_state(entity_id: str) -> Any:
+            if entity_id == MOCK_COVER_ENTITY_ID:
+                return cover_state  # Unavailable cover
+            if entity_id == MOCK_WEATHER_ENTITY_ID:
+                return weather_state  # Valid weather
+            return None
+
+        mock_hass_with_covers.states.get.side_effect = mock_get_state
 
         user_input = {
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
@@ -99,6 +110,7 @@ class TestFlowHelperValidation:
 
         # Should not error, just warn
         assert ConfKeys.COVERS.value not in errors
+        assert ConfKeys.WEATHER_ENTITY_ID.value not in errors
 
     def test_validation_error_no_weather_entity(self, mock_hass_with_covers: MagicMock) -> None:
         """Test validation fails when weather entity is missing."""

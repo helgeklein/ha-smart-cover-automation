@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Welkom bij Smart Cover Automation",
-                "description": "Deze integratie wordt geïnstalleerd met standaardinstellingen.\n\nConfigureer later de rolluiken, weersentiteit en automatiseringsinstellingen door op het **tandwielpictogram** (configuratieknop) op de integratiekaart te klikken.\n\nDocumentatie: https://helgeklein.github.io/ha-smart-cover-automation/\n\nKlik op **Verzenden** om de installatie te voltooien."
+                "description": "Deze integratie wordt geïnstalleerd met standaardinstellingen.\n\nConfigureer later de rolluiken, weersentiteit en automatiseringsinstellingen door op het **tandwielpictogram** (configuratieknop) op de integratiekaart te klikken.\n\nDocumentatie: https://helgeklein.github.io/ha-smart-cover-automation/"
             }
         }
     },
@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Stap 1 van 3",
-                "description": "Selecteer weersentiteit en rolluiken.",
+                "description": "Selecteer een weersvoorspellingssensor en de rolluiken die moeten worden geautomatiseerd (verplicht).",
                 "data": {
                     "covers": "Te automatiseren rolluiken:",
                     "weather_entity_id": "Weersverwachting sensor:"
@@ -29,29 +29,29 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Stap 2 van 3",
-                "description": "Configureer de **azimut** (richting) voor elk rolluik.\n\nDe azimut wordt gebruikt om te berekenen of de zon het raam raakt.\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)",
+                "description": "Configureer de **azimut** (richting) voor elk rolluik (verplicht).\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)",
                 "data": {
                     "cover_azimuth": "**{cover_name}** azimut:"
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Step 3 of 3",
-                "description": "Configure sun position thresholds, cover behavior, and manual override duration.",
+                "title": "Smart Cover Automation - Stap 3 van 3",
+                "description": "Configureer aanvullende instellingen (optioneel).\n\nDeze stap is als optioneel gemarkeerd omdat de standaardwaarden voor de meeste gebruikers goed zouden moeten werken.",
                 "data": {
-                    "covers_max_closure": "Maximum cover closure position:",
-                    "covers_min_closure": "Minimum cover closure position:",
-                    "manual_override_duration": "Manual override duration:",
-                    "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:",
+                    "covers_max_closure": "Maximale sluitpositie van de rolluiken:",
+                    "covers_min_closure": "Minimale sluitpositie van de rolluiken:",
+                    "manual_override_duration": "Duur van de handmatige override:",
+                    "sun_azimuth_tolerance": "Tolerantie voor zonazimut:",
+                    "sun_elevation_threshold": "Minimale zonhoogte:",
                     "temp_threshold": "Temperatuurdrempel:"
                 },
                 "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
-                    "temp_threshold": "Temperatuur waarbij de automatisering begint met het sluiten van rolluiken ter bescherming tegen hitte (graden Celsius)."
+                    "covers_max_closure": "Sluit nooit verder dan deze waarde zodat er altijd wat licht binnenkomt (0 = volledig gesloten, 100 = volledig open).",
+                    "covers_min_closure": "Open nooit verder dan deze waarde om altijd wat schaduw te behouden (0 = volledig gesloten, 100 = volledig open).",
+                    "manual_override_duration": "Hoe lang een rolluik wordt overgeslagen nadat het handmatig is bediend (0 = niet overslaan).",
+                    "sun_azimuth_tolerance": "Maximale horizontale hoek waarbij de zon als direct op het raam schijnend wordt beschouwd (graden).",
+                    "sun_elevation_threshold": "De automatisering start wanneer de zonhoogte deze drempel overschrijdt (graden boven de horizon).",
+                    "temp_threshold": "Temperatuur waarbij de automatisering de rolluiken sluit om tegen hitte te beschermen (graden Celsius)."
                 }
             },
             "submit": {
@@ -63,13 +63,19 @@
     "entity": {
         "sensor": {
             "last_movement_timestamp": {
-                "name": "Last movement"
+                "name": "Laatste beweging"
             },
             "sun_azimuth": {
                 "name": "Zonazimut"
             },
             "sun_elevation": {
                 "name": "Zonhoogte"
+            },
+            "temp_current_max": {
+                "name": "Temperatuur: maximum van vandaag"
+            },
+            "temp_threshold": {
+                "name": "Temperatuur: drempel"
             }
         },
         "binary_sensor": {
@@ -77,21 +83,29 @@
                 "name": "Status"
             },
             "temp_hot": {
-                "name": "Temperatuur heet"
+                "name": "Weer: hete dag?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nee"
+                }
             },
             "weather_sunny": {
-                "name": "Weer zonnig"
+                "name": "Weer: zonnig?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nee"
+                }
             }
         },
         "switch": {
             "enabled": {
-                "name": "Automation enabled"
+                "name": "Automatisering ingeschakeld"
             },
             "simulation_mode": {
-                "name": "Simulation mode"
+                "name": "Simulatiemodus"
             },
             "verbose_logging": {
-                "name": "Verbose logging"
+                "name": "Uitgebreide logging"
             }
         }
     }

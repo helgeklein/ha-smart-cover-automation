@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Bienvenido a Smart Cover Automation",
-                "description": "Esta integración se instala con la configuración predeterminada.\n\nPor favor, configure las persianas, la entidad meteorológica y los ajustes de automatización más tarde haciendo clic en el **icono de engranaje** (botón de configuración) en la tarjeta de integración.\n\nDocumentación: https://helgeklein.github.io/ha-smart-cover-automation/\n\nHaga clic en **Enviar** para completar la instalación."
+                "description": "Esta integración se instala con la configuración predeterminada.\n\nPor favor, configure las persianas, la entidad meteorológica y los ajustes de automatización más tarde haciendo clic en el **icono de engranaje** (botón de configuración) en la tarjeta de integración.\n\nDocumentación: https://helgeklein.github.io/ha-smart-cover-automation/"
             }
         }
     },
@@ -17,26 +17,26 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Paso 1 de 3",
-                "description": "Seleccione persianas y entidad meteorológica.",
+                "description": "Seleccione un sensor de previsión meteorológica y las persianas a automatizar (obligatorio).",
                 "data": {
-                    "covers": "Persianas/toldos a automatizar:",
-                    "weather_entity_id": "Sensor de pronóstico del tiempo:"
+                    "covers": "Persianas a automatizar:",
+                    "weather_entity_id": "Sensor de previsión meteorológica:"
                 },
                 "data_description": {
-                    "covers": "Seleccione las persianas/toldos que la automatización debe controlar (requerido).",
-                    "weather_entity_id": "Seleccione una entidad meteorológica que admita pronósticos diarios (requerido)."
+                    "covers": "Seleccione las persianas/toldos que la automatización debe controlar (obligatorio).",
+                    "weather_entity_id": "Seleccione una entidad meteorológica que admita pronósticos diarios (obligatorio)."
                 }
             },
             "2": {
                 "title": "Smart Cover Automation - Paso 2 de 3",
-                "description": "Configure el **azimut** (dirección) para cada persiana.\n\nEl azimut se utiliza para calcular si el sol incide en la ventana.\n(0°=Norte, 90°=Este, 180°=Sur, 270°=Oeste)",
+                "description": "Configure el **azimut** (dirección) de cada persiana (obligatorio).\n\n(0°=Norte, 90°=Este, 180°=Sur, 270°=Oeste)",
                 "data": {
                     "cover_azimuth": "**{cover_name}** azimut:"
                 }
             },
             "3": {
                 "title": "Smart Cover Automation - Paso 3 de 3",
-                "description": "Configure los umbrales de posición del sol, el comportamiento de las persianas y la duración de la anulación manual.",
+                "description": "Configure ajustes adicionales (opcional).\n\nEste paso se marca como opcional porque los valores predeterminados deberían funcionar bien para la mayoría de los usuarios.",
                 "data": {
                     "covers_max_closure": "Posición máxima de cierre de persianas/toldos:",
                     "covers_min_closure": "Posición mínima de cierre de persianas/toldos:",
@@ -46,12 +46,12 @@
                     "temp_threshold": "Umbral de temperatura:"
                 },
                 "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
-                    "temp_threshold": "Temperatura a la que la automatización comienza a cerrar persianas para proteger del calor (grados Celsius)."
+                    "covers_max_closure": "Nunca cerrar más allá de este valor para dejar pasar algo de luz (0 = totalmente cerrado, 100 = totalmente abierto).",
+                    "covers_min_closure": "Nunca abrir más allá de este valor para mantener siempre algo de sombra (0 = totalmente cerrado, 100 = totalmente abierto).",
+                    "manual_override_duration": "Tiempo durante el cual se omite una persiana después de moverla manualmente (0 = no omitir).",
+                    "sun_azimuth_tolerance": "Ángulo horizontal máximo en el que se considera que el sol da directamente en la ventana (grados).",
+                    "sun_elevation_threshold": "La automatización empieza a funcionar cuando la elevación solar supera este umbral (grados sobre el horizonte).",
+                    "temp_threshold": "Temperatura a partir de la cual la automatización cierra las persianas para proteger del calor (grados Celsius)."
                 }
             },
             "submit": {
@@ -63,13 +63,19 @@
     "entity": {
         "sensor": {
             "last_movement_timestamp": {
-                "name": "Last movement"
+                "name": "Último movimiento"
             },
             "sun_azimuth": {
                 "name": "Acimut solar"
             },
             "sun_elevation": {
                 "name": "Elevación solar"
+            },
+            "temp_current_max": {
+                "name": "Temperatura: máximo de hoy"
+            },
+            "temp_threshold": {
+                "name": "Temperatura: umbral"
             }
         },
         "binary_sensor": {
@@ -77,21 +83,29 @@
                 "name": "Estado"
             },
             "temp_hot": {
-                "name": "Temperatura alta"
+                "name": "Tiempo: ¿día caluroso?",
+                "state": {
+                    "on": "Sí",
+                    "off": "No"
+                }
             },
             "weather_sunny": {
-                "name": "Clima soleado"
+                "name": "Tiempo: ¿soleado?",
+                "state": {
+                    "on": "Sí",
+                    "off": "No"
+                }
             }
         },
         "switch": {
             "enabled": {
-                "name": "Automation enabled"
+                "name": "Automatización activada"
             },
             "simulation_mode": {
-                "name": "Simulation mode"
+                "name": "Modo de simulación"
             },
             "verbose_logging": {
-                "name": "Verbose logging"
+                "name": "Registro detallado"
             }
         }
     }

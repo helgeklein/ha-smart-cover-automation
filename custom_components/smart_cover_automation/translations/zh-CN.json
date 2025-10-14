@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "欢迎使用智能遮阳自动化",
-                "description": "此集成已使用默认设置安装。\n\n请稍后通过点击集成卡片上的**齿轮图标**（配置按钮）来配置遮阳设备、天气实体和自动化设置。\n\n文档： https://helgeklein.github.io/ha-smart-cover-automation/\n\n点击**提交**完成安装。"
+                "description": "此集成已使用默认设置安装。\n\n请稍后通过点击集成卡片上的**齿轮图标**（配置按钮）来配置遮阳设备、天气实体和自动化设置。\n\n文档： https://helgeklein.github.io/ha-smart-cover-automation/"
             }
         }
     },
@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "智能遮阳自动化 - 第 1 步，共 3 步",
-                "description": "选择天气实体和遮阳设备。",
+                "description": "选择一个天气预报传感器以及要自动化的遮阳设备（必需）。",
                 "data": {
                     "covers": "要自动化的遮阳设备：",
                     "weather_entity_id": "天气预报传感器："
@@ -29,29 +29,29 @@
             },
             "2": {
                 "title": "Smart Cover Automation - 第 2 步，共 3 步",
-                "description": "为每个遮阳设备配置**方位角**（方向）。\n\n方位角用于计算太阳是否照射到窗户。\n(0°=北, 90°=东, 180°=南, 270°=西)",
+                "description": "为每个遮阳设备配置**方位角**（方向）（必需）。\n\n(0°=北, 90°=东, 180°=南, 270°=西)",
                 "data": {
                     "cover_azimuth": "**{cover_name}** 方位角："
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Step 3 of 3",
-                "description": "Configure sun position thresholds, cover behavior, and manual override duration.",
+                "title": "智能遮阳自动化 - 第 3 步，共 3 步",
+                "description": "配置其他设置（可选）。\n\n此步骤被标记为可选，因为默认值通常适用于大多数用户。",
                 "data": {
-                    "covers_max_closure": "Maximum cover closure position:",
-                    "covers_min_closure": "Minimum cover closure position:",
-                    "manual_override_duration": "Manual override duration:",
-                    "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:",
+                    "covers_max_closure": "遮阳设备最大关闭位置：",
+                    "covers_min_closure": "遮阳设备最小关闭位置：",
+                    "manual_override_duration": "手动覆盖持续时间：",
+                    "sun_azimuth_tolerance": "太阳方位角容差：",
+                    "sun_elevation_threshold": "最低太阳高度角：",
                     "temp_threshold": "温度阈值："
                 },
                 "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
-                    "temp_threshold": "自动化开始关闭遮阳设备以防止热量的温度（摄氏度）。"
+                    "covers_max_closure": "不要超过此值关闭，以便始终留下一点光线（0 = 完全关闭，100 = 完全打开）。",
+                    "covers_min_closure": "不要超过此值打开，以便始终保留一些阴影（0 = 完全关闭，100 = 完全打开）。",
+                    "manual_override_duration": "手动移动遮阳后忽略该遮阳的时间长度（0 = 不忽略）。",
+                    "sun_azimuth_tolerance": "认为阳光直射窗户时允许的最大水平角度（度）。",
+                    "sun_elevation_threshold": "当太阳高度超过此阈值时，自动化开始运行（度，参照地平线）。",
+                    "temp_threshold": "达到该温度时，自动化会关闭遮阳以防止高温（摄氏度）。"
                 }
             },
             "submit": {
@@ -63,13 +63,19 @@
     "entity": {
         "sensor": {
             "last_movement_timestamp": {
-                "name": "Last movement"
+                "name": "上次移动"
             },
             "sun_azimuth": {
                 "name": "太阳方位角"
             },
             "sun_elevation": {
                 "name": "太阳高度角"
+            },
+            "temp_current_max": {
+                "name": "温度：今日最高值"
+            },
+            "temp_threshold": {
+                "name": "温度：阈值"
             }
         },
         "binary_sensor": {
@@ -77,21 +83,29 @@
                 "name": "状态"
             },
             "temp_hot": {
-                "name": "温度偏高"
+                "name": "天气：炎热的一天？",
+                "state": {
+                    "on": "是",
+                    "off": "否"
+                }
             },
             "weather_sunny": {
-                "name": "天气晴朗"
+                "name": "天气：晴朗？",
+                "state": {
+                    "on": "是",
+                    "off": "否"
+                }
             }
         },
         "switch": {
             "enabled": {
-                "name": "Automation enabled"
+                "name": "自动化已启用"
             },
             "simulation_mode": {
-                "name": "Simulation mode"
+                "name": "模拟模式"
             },
             "verbose_logging": {
-                "name": "Verbose logging"
+                "name": "详细日志记录"
             }
         }
     }

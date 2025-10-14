@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Witamy w Smart Cover Automation",
-                "description": "Ta integracja jest instalowana z domyślnymi ustawieniami.\n\nSkonfiguruj rolety, encję pogodową i ustawienia automatyzacji później, klikając **ikonę koła zębatego** (przycisk konfiguracji) na karcie integracji.\n\nDokumentacja: https://helgeklein.github.io/ha-smart-cover-automation/\n\nKliknij **Prześlij**, aby zakończyć instalację."
+                "description": "Ta integracja jest instalowana z domyślnymi ustawieniami.\n\nSkonfiguruj rolety, encję pogodową i ustawienia automatyzacji później, klikając **ikonę koła zębatego** (przycisk konfiguracji) na karcie integracji.\n\nDokumentacja: https://helgeklein.github.io/ha-smart-cover-automation/"
             }
         }
     },
@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Krok 1 z 3",
-                "description": "Wybierz encję pogodową i rolety.",
+                "description": "Wybierz czujnik prognozy pogody oraz rolety do automatyzacji (wymagane).",
                 "data": {
                     "covers": "Rolety do automatyzacji:",
                     "weather_entity_id": "Czujnik prognozy pogody:"
@@ -29,29 +29,29 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Krok 2 z 3",
-                "description": "Skonfiguruj **azymut** (kierunek) dla każdej rolety.\n\nAzymut służy do obliczania, czy słońce pada na okno.\n(0°=Północ, 90°=Wschód, 180°=Południe, 270°=Zachód)",
+                "description": "Skonfiguruj **azymut** (kierunek) dla każdej rolety (wymagane).\n\n(0°=Północ, 90°=Wschód, 180°=Południe, 270°=Zachód)",
                 "data": {
                     "cover_azimuth": "**{cover_name}** azymut:"
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Step 3 of 3",
-                "description": "Configure sun position thresholds, cover behavior, and manual override duration.",
+                "title": "Smart Cover Automation - Krok 3 z 3",
+                "description": "Skonfiguruj dodatkowe ustawienia (opcjonalne).\n\nTen krok jest oznaczony jako opcjonalny, ponieważ wartości domyślne powinny dobrze działać dla większości użytkowników.",
                 "data": {
-                    "covers_max_closure": "Maximum cover closure position:",
-                    "covers_min_closure": "Minimum cover closure position:",
-                    "manual_override_duration": "Manual override duration:",
-                    "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:",
+                    "covers_max_closure": "Maksymalna pozycja zamknięcia rolet:",
+                    "covers_min_closure": "Minimalna pozycja zamknięcia rolet:",
+                    "manual_override_duration": "Czas trwania ręcznego pominięcia:",
+                    "sun_azimuth_tolerance": "Tolerancja azymutu słońca:",
+                    "sun_elevation_threshold": "Minimalna wysokość słońca:",
                     "temp_threshold": "Próg temperatury:"
                 },
                 "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
-                    "temp_threshold": "Temperatura, przy której automatyka zaczyna zamykać rolety w celu ochrony przed upałem (stopnie Celsjusza)."
+                    "covers_max_closure": "Nigdy nie zamykaj dalej niż do tej wartości, aby zawsze wpuszczać odrobinę światła (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
+                    "covers_min_closure": "Nigdy nie otwieraj dalej niż do tej wartości, aby zapewnić minimum cienia (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
+                    "manual_override_duration": "Jak długo pomijać roletę po jej ręcznym poruszeniu (0 = nie pomijaj).",
+                    "sun_azimuth_tolerance": "Maksymalny kąt poziomy, przy którym uznaje się, że słońce świeci bezpośrednio w okno (stopnie).",
+                    "sun_elevation_threshold": "Automatyzacja zaczyna działać, gdy wysokość słońca przekroczy ten próg (stopnie nad horyzontem).",
+                    "temp_threshold": "Temperatura, przy której automatyzacja zamyka rolety w celu ochrony przed upałem (stopnie Celsjusza)."
                 }
             },
             "submit": {
@@ -63,13 +63,19 @@
     "entity": {
         "sensor": {
             "last_movement_timestamp": {
-                "name": "Last movement"
+                "name": "Ostatni ruch"
             },
             "sun_azimuth": {
                 "name": "Azymut słońca"
             },
             "sun_elevation": {
                 "name": "Wysokość słońca"
+            },
+            "temp_current_max": {
+                "name": "Temperatura: dzisiejsze maksimum"
+            },
+            "temp_threshold": {
+                "name": "Temperatura: próg"
             }
         },
         "binary_sensor": {
@@ -77,21 +83,29 @@
                 "name": "Status"
             },
             "temp_hot": {
-                "name": "Temperatura wysoka"
+                "name": "Pogoda: gorący dzień?",
+                "state": {
+                    "on": "Tak",
+                    "off": "Nie"
+                }
             },
             "weather_sunny": {
-                "name": "Pogoda słoneczna"
+                "name": "Pogoda: słonecznie?",
+                "state": {
+                    "on": "Tak",
+                    "off": "Nie"
+                }
             }
         },
         "switch": {
             "enabled": {
-                "name": "Automation enabled"
+                "name": "Automatyzacja włączona"
             },
             "simulation_mode": {
-                "name": "Simulation mode"
+                "name": "Tryb symulacji"
             },
             "verbose_logging": {
-                "name": "Verbose logging"
+                "name": "Szczegółowe logowanie"
             }
         }
     }

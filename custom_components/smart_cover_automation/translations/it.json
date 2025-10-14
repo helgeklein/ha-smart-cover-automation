@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Benvenuti in Smart Cover Automation",
-                "description": "Questa integrazione viene installata con le impostazioni predefinite.\n\nConfigura le tapparelle, l'entità meteo e le impostazioni di automazione in seguito facendo clic sull'**icona dell'ingranaggio** (pulsante di configurazione) sulla scheda di integrazione.\n\nDocumentazione: https://helgeklein.github.io/ha-smart-cover-automation/\n\nFai clic su **Invia** per completare l'installazione."
+                "description": "Questa integrazione viene installata con le impostazioni predefinite.\n\nConfigura le tapparelle, l'entità meteo e le impostazioni di automazione in seguito facendo clic sull'**icona dell'ingranaggio** (pulsante di configurazione) sulla scheda di integrazione.\n\nDocumentazione: https://helgeklein.github.io/ha-smart-cover-automation/"
             }
         }
     },
@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Passo 1 di 3",
-                "description": "Seleziona l'entità meteo e le tapparelle.",
+                "description": "Seleziona un sensore di previsione meteo e le tapparelle da automatizzare (obbligatorio).",
                 "data": {
                     "covers": "Tapparelle da automatizzare:",
                     "weather_entity_id": "Sensore previsioni meteo:"
@@ -29,29 +29,29 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Passo 2 di 3",
-                "description": "Configura l'**azimut** (direzione) per ogni tapparella.\n\nL'azimut è utilizzato per calcolare se il sole colpisce la finestra.\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)",
+                "description": "Configura l'**azimut** (direzione) per ogni tapparella (obbligatorio).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)",
                 "data": {
                     "cover_azimuth": "**{cover_name}** azimut:"
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Step 3 of 3",
-                "description": "Configure sun position thresholds, cover behavior, and manual override duration.",
+                "title": "Smart Cover Automation - Passo 3 di 3",
+                "description": "Configura impostazioni aggiuntive (opzionale).\n\nQuesto passaggio è contrassegnato come opzionale perché i valori predefiniti dovrebbero andare bene per la maggior parte degli utenti.",
                 "data": {
-                    "covers_max_closure": "Maximum cover closure position:",
-                    "covers_min_closure": "Minimum cover closure position:",
-                    "manual_override_duration": "Manual override duration:",
-                    "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:",
+                    "covers_max_closure": "Posizione massima di chiusura delle tapparelle:",
+                    "covers_min_closure": "Posizione minima di chiusura delle tapparelle:",
+                    "manual_override_duration": "Durata dell'override manuale:",
+                    "sun_azimuth_tolerance": "Tolleranza dell'azimut solare:",
+                    "sun_elevation_threshold": "Elevazione solare minima:",
                     "temp_threshold": "Soglia di temperatura:"
                 },
                 "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
-                    "temp_threshold": "Temperatura alla quale l'automazione inizia a chiudere le tapparelle per proteggere dal calore (gradi Celsius)."
+                    "covers_max_closure": "Non chiudere mai oltre questo valore per lasciare sempre entrare un po' di luce (0 = completamente chiuso, 100 = completamente aperto).",
+                    "covers_min_closure": "Non aprire mai oltre questo valore per garantire sempre un minimo di ombra (0 = completamente chiuso, 100 = completamente aperto).",
+                    "manual_override_duration": "Durata per cui ignorare una tapparella dopo che è stata mossa manualmente (0 = non ignorare).",
+                    "sun_azimuth_tolerance": "Angolo orizzontale massimo in cui il sole è considerato diretto sulla finestra (gradi).",
+                    "sun_elevation_threshold": "L'automazione entra in funzione quando l'elevazione del sole supera questa soglia (gradi sopra l'orizzonte).",
+                    "temp_threshold": "Temperatura alla quale l'automazione chiude le tapparelle per proteggere dal calore (gradi Celsius)."
                 }
             },
             "submit": {
@@ -63,13 +63,19 @@
     "entity": {
         "sensor": {
             "last_movement_timestamp": {
-                "name": "Last movement"
+                "name": "Ultimo movimento"
             },
             "sun_azimuth": {
                 "name": "Azimut solare"
             },
             "sun_elevation": {
                 "name": "Elevazione solare"
+            },
+            "temp_current_max": {
+                "name": "Temperatura: massimo di oggi"
+            },
+            "temp_threshold": {
+                "name": "Temperatura: soglia"
             }
         },
         "binary_sensor": {
@@ -77,21 +83,29 @@
                 "name": "Stato"
             },
             "temp_hot": {
-                "name": "Temperatura elevata"
+                "name": "Meteo: giornata calda?",
+                "state": {
+                    "on": "Sì",
+                    "off": "No"
+                }
             },
             "weather_sunny": {
-                "name": "Tempo soleggiato"
+                "name": "Meteo: soleggiato?",
+                "state": {
+                    "on": "Sì",
+                    "off": "No"
+                }
             }
         },
         "switch": {
             "enabled": {
-                "name": "Automation enabled"
+                "name": "Automazione attiva"
             },
             "simulation_mode": {
-                "name": "Simulation mode"
+                "name": "Modalità simulazione"
             },
             "verbose_logging": {
-                "name": "Verbose logging"
+                "name": "Registrazione dettagliata"
             }
         }
     }
