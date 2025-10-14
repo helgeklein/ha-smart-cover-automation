@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Stap 1 van 3",
+                "title": "Smart Cover Automation - Stap 1 van 4",
                 "description": "Selecteer een weersvoorspellingssensor en de rolluiken die moeten worden geautomatiseerd (verplicht).",
                 "data": {
                     "covers": "Te automatiseren rolluiken:",
@@ -28,14 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Stap 2 van 3",
-                "description": "Configureer de **azimut** (richting) voor elk rolluik (verplicht).\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)",
-                "data": {
-                    "cover_azimuth": "**{cover_name}** azimut:"
-                }
+                "title": "Smart Cover Automation - Stap 2 van 4",
+                "description": "Configureer de **azimut** (richting) voor elk rolluik (verplicht).\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)"
             },
             "3": {
-                "title": "Smart Cover Automation - Stap 3 van 3",
+                "title": "Smart Cover Automation - Stap 3 van 4",
                 "description": "Configureer aanvullende instellingen (optioneel).\n\nDeze stap is als optioneel gemarkeerd omdat de standaardwaarden voor de meeste gebruikers goed zouden moeten werken.",
                 "data": {
                     "covers_max_closure": "Maximale sluitpositie van de rolluiken:",
@@ -53,6 +50,10 @@
                     "sun_elevation_threshold": "De automatisering start wanneer de zonhoogte deze drempel overschrijdt (graden boven de horizon).",
                     "temp_threshold": "Temperatuur waarbij de automatisering de rolluiken sluit om tegen hitte te beschermen (graden Celsius)."
                 }
+            },
+            "4": {
+                "title": "Smart Cover Automation - Stap 4 van 4",
+                "description": "Configureer de **min/max**-posities voor elk rolluik (optioneel).\n\nAls er niets is ingesteld, worden de globale waarden uit de vorige stap gebruikt."
             },
             "submit": {
                 "title": "Submit Configuration",

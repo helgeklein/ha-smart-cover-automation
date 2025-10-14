@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Étape 1 sur 3",
+                "title": "Smart Cover Automation - Étape 1 sur 4",
                 "description": "Sélectionnez un capteur de prévisions météo et les volets à automatiser (obligatoire).",
                 "data": {
                     "covers": "Volets à automatiser :",
@@ -28,14 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Étape 2 sur 3",
-                "description": "Configurez l'**azimut** (direction) pour chaque volet (obligatoire).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest)",
-                "data": {
-                    "cover_azimuth": "**{cover_name}** azimut:"
-                }
+                "title": "Smart Cover Automation - Étape 2 sur 4",
+                "description": "Configurez l'**azimut** (direction) pour chaque volet (obligatoire).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest)"
             },
             "3": {
-                "title": "Smart Cover Automation - Étape 3 sur 3",
+                "title": "Smart Cover Automation - Étape 3 sur 4",
                 "description": "Configurez des paramètres supplémentaires (facultatif).\n\nCette étape est marquée comme facultative car les valeurs par défaut conviennent à la plupart des utilisateurs.",
                 "data": {
                     "covers_max_closure": "Position maximale de fermeture des volets :",
@@ -53,6 +50,10 @@
                     "sun_elevation_threshold": "L’automatisation commence à agir lorsque l’élévation du soleil dépasse ce seuil (degrés au-dessus de l’horizon).",
                     "temp_threshold": "Température à partir de laquelle l’automatisation ferme les volets pour se protéger de la chaleur (degrés Celsius)."
                 }
+            },
+            "4": {
+                "title": "Smart Cover Automation - Étape 4 sur 4",
+                "description": "Configurez les positions **min/max** pour chaque volet (facultatif).\n\nSi aucune valeur n'est définie, les valeurs globales configurées à l'étape précédente seront utilisées."
             },
             "submit": {
                 "title": "Submit Configuration",

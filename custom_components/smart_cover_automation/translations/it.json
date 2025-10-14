@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Passo 1 di 3",
+                "title": "Smart Cover Automation - Passo 1 di 4",
                 "description": "Seleziona un sensore di previsione meteo e le tapparelle da automatizzare (obbligatorio).",
                 "data": {
                     "covers": "Tapparelle da automatizzare:",
@@ -28,14 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Passo 2 di 3",
-                "description": "Configura l'**azimut** (direzione) per ogni tapparella (obbligatorio).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)",
-                "data": {
-                    "cover_azimuth": "**{cover_name}** azimut:"
-                }
+                "title": "Smart Cover Automation - Passo 2 di 4",
+                "description": "Configura l'**azimut** (direzione) per ogni tapparella (obbligatorio).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)"
             },
             "3": {
-                "title": "Smart Cover Automation - Passo 3 di 3",
+                "title": "Smart Cover Automation - Passo 3 di 4",
                 "description": "Configura impostazioni aggiuntive (opzionale).\n\nQuesto passaggio è contrassegnato come opzionale perché i valori predefiniti dovrebbero andare bene per la maggior parte degli utenti.",
                 "data": {
                     "covers_max_closure": "Posizione massima di chiusura delle tapparelle:",
@@ -53,6 +50,10 @@
                     "sun_elevation_threshold": "L'automazione entra in funzione quando l'elevazione del sole supera questa soglia (gradi sopra l'orizzonte).",
                     "temp_threshold": "Temperatura alla quale l'automazione chiude le tapparelle per proteggere dal calore (gradi Celsius)."
                 }
+            },
+            "4": {
+                "title": "Smart Cover Automation - Passo 4 di 4",
+                "description": "Configura le posizioni **min/max** per ciascuna tapparella (opzionale).\n\nSe non vengono impostati valori, verranno utilizzati quelli globali configurati nel passaggio precedente."
             },
             "submit": {
                 "title": "Submit Configuration",

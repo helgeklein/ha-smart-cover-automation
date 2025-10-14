@@ -12,7 +12,7 @@ from homeassistant.helpers import selector
 
 from . import const
 from .config import ConfKeys, ResolvedConfig, resolve
-from .util import to_float_or_none
+from .util import to_float_or_none, to_int_or_none
 
 
 #
@@ -22,10 +22,10 @@ class FlowHelper:
     """Helper class for config flow validation and schema building."""
 
     #
-    # validate_user_input_step1
+    # validate_user_input_step_1
     #
     @staticmethod
-    def validate_user_input_step1(hass: Any, user_input: dict[str, Any]) -> dict[str, str]:
+    def validate_user_input_step_1(hass: Any, user_input: dict[str, Any]) -> dict[str, str]:
         """Validate step 1 input: covers and weather entity.
 
         Args:
@@ -74,10 +74,10 @@ class FlowHelper:
         return errors
 
     #
-    # build_schema_step1
+    # build_schema_step_1
     #
     @staticmethod
-    def build_schema_step1(resolved_settings: ResolvedConfig) -> vol.Schema:
+    def build_schema_step_1(resolved_settings: ResolvedConfig) -> vol.Schema:
         """Build schema for step 1: cover and weather selection.
 
         Args:
@@ -98,16 +98,16 @@ class FlowHelper:
         return vol.Schema(schema_dict)
 
     #
-    # build_schema_step2
+    # build_schema_step_2
     #
     @staticmethod
-    def build_schema_step2(hass: Any, covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
+    def build_schema_step_2(hass: Any, covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
         """Build schema for step 2: azimuth configuration per cover.
 
         Args:
             hass: Home Assistant instance (for looking up cover friendly names)
             covers: List of cover entity IDs
-            defaults: Dictionary to look up default azimuth values
+            defaults: Dictionary to look up default values
 
         Returns:
             Schema for step 2 form
@@ -115,13 +115,17 @@ class FlowHelper:
         schema_dict: dict[vol.Marker, object] = {}
 
         for cover in sorted(covers):
+            # Build a key for storage
             key = f"{cover}_{const.COVER_SFX_AZIMUTH}"
-            raw = defaults.get(key)
-            default_azimuth = to_float_or_none(raw)
-            if default_azimuth is None:
-                default_azimuth = 180
 
-            azimuth_selector = selector.NumberSelector(
+            # Get the default value
+            raw = defaults.get(key)
+            default_value = to_float_or_none(raw)
+            if default_value is None:
+                default_value = 180
+
+            # Configure a selector
+            value_selector = selector.NumberSelector(
                 selector.NumberSelectorConfig(
                     min=0,
                     max=359,
@@ -131,23 +135,16 @@ class FlowHelper:
                 )
             )
 
-            # Look up cover's friendly name
-            cover_name = cover
-            if hass:
-                cover_state = hass.states.get(cover)
-                if cover_state:
-                    cover_name = cover_state.name
-
-            description = {"key": const.COVER_AZIMUTH, "placeholder": {"cover_name": cover_name}}
-            schema_dict[vol.Required(key, default=default_azimuth, description=description)] = azimuth_selector
+            # Show the friendly name in the UI but store the entity ID
+            schema_dict[vol.Required(key, default=default_value)] = value_selector
 
         return vol.Schema(schema_dict)
 
     #
-    # build_schema_step3
+    # build_schema_step_3
     #
     @staticmethod
-    def build_schema_step3(resolved_settings: ResolvedConfig) -> vol.Schema:
+    def build_schema_step_3(resolved_settings: ResolvedConfig) -> vol.Schema:
         """Build schema for step 3: sun position, cover behavior, manual override.
 
         Args:
@@ -227,6 +224,55 @@ class FlowHelper:
             }
         )
 
+    #
+    # build_schema_step_4
+    #
+    @staticmethod
+    def build_schema_step_4(hass: Any, covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
+        """Build schema for step 4: min/max position per cover.
+
+        Args:
+            hass: Home Assistant instance (for looking up cover friendly names)
+            covers: List of cover entity IDs
+            defaults: Dictionary to look up default values
+
+        Returns:
+            Schema for step 4 form
+        """
+        schema_dict: dict[vol.Marker, object] = {}
+
+        for cover in sorted(covers):
+            # Build a key for storage
+            key = f"{cover}_{const.COVER_SFX_MAX_CLOSURE}"
+
+            # Get the default value, ensuring it's never None to avoid "expected float" errors
+            raw = defaults.get(key)
+            default_value = to_int_or_none(raw)
+            if default_value is None:
+                # If no value exists, leave the field empty (use an empty string or don't set a default)
+                # But since vol.Optional with no default causes issues, we'll make it optional without default
+                pass
+
+            # Number selector for the position
+            value_selector = selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    unit_of_measurement="%",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+
+            # Show the friendly name in the UI but store the entity ID
+            # Only add default if we have a value, otherwise make it truly optional
+            if default_value is not None:
+                schema_dict[vol.Optional(key, default=default_value)] = value_selector
+            else:
+                schema_dict[vol.Optional(key)] = value_selector
+
+        return vol.Schema(schema_dict)
+
 
 #
 # FlowHandler
@@ -289,58 +335,66 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_entry = config_entry
         self._config_data: dict[str, Any] = {}
 
+    def _current_settings(self) -> dict[str, Any]:
+        """Build a dictionary from options flow settings (priority) and config flow settings (fallback)."""
+        data = dict(self._config_entry.data) if self._config_entry.data else {}
+        options = dict(self._config_entry.options) if self._config_entry.options else {}
+
+        # Merge options and data so that options has precedence
+        return {**data, **options}
+
     #
     # async_step_init
     #
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 1: Cover and weather entity selection."""
-        # Build defaults from existing config/options
-        data = dict(self._config_entry.data) if self._config_entry.data else {}
-        options = dict(self._config_entry.options) if self._config_entry.options else {}
-        resolved_settings = resolve(options, data)
+        # Get currently valid settings
+        current_settings = self._current_settings()
+        # Fill in defaults where there's no existing value
+        resolved_settings = resolve(current_settings)
 
         if user_input is None:
             # Show the form
             return self.async_show_form(
                 step_id="init",
-                data_schema=FlowHelper.build_schema_step1(resolved_settings),
-            )
-
-        # Validate user input
-        errors = FlowHelper.validate_user_input_step1(self.hass, user_input)
-        if errors:
-            # Show form again with errors
-            return self.async_show_form(
-                step_id="init",
-                data_schema=FlowHelper.build_schema_step1(resolved_settings),
-                errors=errors,
+                data_schema=FlowHelper.build_schema_step_1(resolved_settings),
             )
         else:
-            # Store step 1 data and proceed to step 2
-            self._config_data.update(user_input)
-            return await self.async_step_2()
+            # Validate user input
+            errors = FlowHelper.validate_user_input_step_1(self.hass, user_input)
+            if errors:
+                # Convert user input into resolved settings
+                resolved_settings = resolve(user_input)
+                # Show form again with errors
+                return self.async_show_form(
+                    step_id="init",
+                    data_schema=FlowHelper.build_schema_step_1(resolved_settings),
+                    errors=errors,
+                )
+            else:
+                # Store step 1 data (temporarily, for the next step of the flow) and proceed to step 2
+                self._config_data.update(user_input)
+                return await self.async_step_2()
 
     #
     # async_step_2
     #
     async def async_step_2(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 2: Configure azimuth for each cover."""
-        # Get covers from accumulated config data
-        covers = self._config_data.get(ConfKeys.COVERS.value, [])
-
         if user_input is None:
-            # Build defaults from existing config/options (options takes precedence)
-            data = dict(self._config_entry.data) if self._config_entry.data else {}
-            options = dict(self._config_entry.options) if self._config_entry.options else {}
-            defaults = {**data, **options}
+            # Get currently valid settings
+            current_settings = self._current_settings()
+
+            # Get the selected covers
+            selected_covers = self._config_data.get(ConfKeys.COVERS.value) or current_settings.get(ConfKeys.COVERS.value, [])
 
             # Show the form
             return self.async_show_form(
                 step_id="2",
-                data_schema=FlowHelper.build_schema_step2(hass=self.hass, covers=covers, defaults=defaults),
+                data_schema=FlowHelper.build_schema_step_2(hass=self.hass, covers=selected_covers, defaults=current_settings),
             )
         else:
-            # Store step 2 data and proceed to step 3
+            # Store step 2 data (temporarily, for the next step of the flow) and proceed to step 3
             self._config_data.update(user_input)
             return await self.async_step_3()
 
@@ -350,39 +404,63 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_3(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 3: Configure sun position, cover behavior, and manual override duration."""
         if user_input is None:
-            # Build defaults from existing config/options (options takes precedence)
-            data = dict(self._config_entry.data) if self._config_entry.data else {}
-            options = dict(self._config_entry.options) if self._config_entry.options else {}
-            defaults = {**data, **options}
-            resolved_settings = resolve({}, defaults)
+            # Get currently valid settings
+            current_settings = self._current_settings()
+            # Fill in defaults where there's no existing value
+            resolved_settings = resolve(current_settings)
 
             # Show the form
             return self.async_show_form(
                 step_id="3",
-                data_schema=FlowHelper.build_schema_step3(resolved_settings),
+                data_schema=FlowHelper.build_schema_step_3(resolved_settings),
+            )
+        else:
+            # Store step 3 data (temporarily, for the next step of the flow) and proceed to step 4
+            self._config_data.update(user_input)
+            return await self.async_step_4()
+
+    #
+    # async_step_4
+    #
+    async def async_step_4(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Step 4: Configure max/min position for each cover."""
+        if user_input is None:
+            # Get currently valid settings
+            defaults = self._current_settings()
+
+            # Get the selected covers from the temporary data accumulated during the flow so far
+            # If not in _config_data (e.g., when HA recreates the flow instance), get from current settings
+            selected_covers = self._config_data.get(ConfKeys.COVERS.value) or defaults.get(ConfKeys.COVERS.value, [])
+
+            # Show the form
+            return self.async_show_form(
+                step_id="4",
+                data_schema=FlowHelper.build_schema_step_4(hass=self.hass, covers=selected_covers, defaults=defaults),
             )
 
-        # Store step 3 data
+        # Store step 4 data and merge with existing settings
         self._config_data.update(user_input)
+        merged = {**self._current_settings(), **self._config_data}
 
-        # Build existing data and options
-        data = dict(self._config_entry.data) if self._config_entry.data else {}
-        options = dict(self._config_entry.options) if self._config_entry.options else {}
-        combined = {**data, **options}
-
-        # Update with new values from the flow
-        combined.update(self._config_data)
-
-        # Clean up orphaned cover settings from the combined data
+        # Clean up orphaned cover settings from the merged data
         covers_in_input = self._config_data.get(ConfKeys.COVERS.value, [])
         keys_to_remove = []
-        for key in combined.keys():
+        for key in merged.keys():
+            # Check for any per-cover setting suffix
             if key.endswith(f"_{const.COVER_SFX_AZIMUTH}"):
                 cover_entity = key.replace(f"_{const.COVER_SFX_AZIMUTH}", "")
                 if cover_entity not in covers_in_input:
                     keys_to_remove.append(key)
+            elif key.endswith(f"_{const.COVER_SFX_MAX_CLOSURE}"):
+                cover_entity = key.replace(f"_{const.COVER_SFX_MAX_CLOSURE}", "")
+                if cover_entity not in covers_in_input:
+                    keys_to_remove.append(key)
+            elif key.endswith(f"_{const.COVER_SFX_MIN_CLOSURE}"):
+                cover_entity = key.replace(f"_{const.COVER_SFX_MIN_CLOSURE}", "")
+                if cover_entity not in covers_in_input:
+                    keys_to_remove.append(key)
 
         for key in keys_to_remove:
-            combined.pop(key, None)
+            merged.pop(key, None)
 
-        return self.async_create_entry(title="", data=combined)
+        return self.async_create_entry(title="", data=merged)

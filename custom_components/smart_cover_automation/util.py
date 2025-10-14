@@ -19,3 +19,17 @@ def to_float_or_none(raw: Any) -> float | None:
         except (TypeError, ValueError):
             return None
     return None
+
+
+def to_int_or_none(raw: Any) -> float | None:
+    """Coerce ints/floats/strings to float; return None on failure or other types.
+
+    This is useful when accepting user-provided values from config/options or entity attributes
+    that may be numbers or numeric strings. Non-coercible values yield None.
+    """
+    if isinstance(raw, (int, float, str)):
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            return None
+    return None

@@ -129,7 +129,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
         # Get base configuration
         opts = dict(getattr(self.config_entry, const.HA_OPTIONS, {}) or {})
-        dat = dict(getattr(self.config_entry, "data", {}) or {})
+        dat = dict(getattr(self.config_entry, const.HA_DATA, {}) or {})
 
         return resolve(opts, dat)
 
