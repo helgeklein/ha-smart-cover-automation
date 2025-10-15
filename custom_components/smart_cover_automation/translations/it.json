@@ -29,14 +29,14 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Passo 2 di 4",
-                "description": "Configura l'**azimut** (direzione) per ogni tapparella (obbligatorio).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)"
+                "description": "Configura l'**azimut** (direzione) per ciascuna tapparella (obbligatorio).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)"
             },
             "3": {
                 "title": "Smart Cover Automation - Passo 3 di 4",
                 "description": "Configura impostazioni aggiuntive (opzionale).\n\nQuesto passaggio è contrassegnato come opzionale perché i valori predefiniti dovrebbero andare bene per la maggior parte degli utenti.",
                 "data": {
-                    "covers_max_closure": "Posizione massima di chiusura delle tapparelle:",
-                    "covers_min_closure": "Posizione minima di chiusura delle tapparelle:",
+                    "covers_max_closure": "Posizione massima della tapparella:",
+                    "covers_min_closure": "Posizione minima della tapparella:",
                     "manual_override_duration": "Durata dell'override manuale:",
                     "sun_azimuth_tolerance": "Tolleranza dell'azimut solare:",
                     "sun_elevation_threshold": "Elevazione solare minima:",
@@ -53,11 +53,15 @@
             },
             "4": {
                 "title": "Smart Cover Automation - Passo 4 di 4",
-                "description": "Configura le posizioni **min/max** per ciascuna tapparella (opzionale).\n\nSe non vengono impostati valori, verranno utilizzati quelli globali configurati nel passaggio precedente."
-            },
-            "submit": {
-                "title": "Submit Configuration",
-                "description": "Save your configuration."
+                "description": "Configura le posizioni **min/max** per ciascuna tapparella (opzionale).\n\nSe non vengono impostati valori, verranno utilizzati quelli globali configurati nel passaggio precedente.",
+                "sections": {
+                    "section_max_closure": {
+                        "name": "Posizioni massime della tapparella"
+                    },
+                    "section_min_closure": {
+                        "name": "Posizioni minime della tapparella"
+                    }
+                }
             }
         }
     },

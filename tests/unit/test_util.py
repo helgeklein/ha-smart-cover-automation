@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from custom_components.smart_cover_automation.util import to_float_or_none
+from custom_components.smart_cover_automation.util import to_float_or_none, to_int_or_none
 
 
 class TestToFloatOrNone:
@@ -74,3 +74,60 @@ class TestToFloatOrNone:
         # Infinity handling
         assert to_float_or_none("inf") == float("inf")
         assert to_float_or_none("-inf") == float("-inf")
+
+
+class TestToIntOrNone:
+    """Test suite for the to_int_or_none utility function."""
+
+    @pytest.mark.parametrize(
+        "input_value,expected_result,test_description",
+        [
+            # Integer conversion
+            (42, 42, "positive integer"),
+            (0, 0, "zero integer"),
+            (-10, -10, "negative integer"),
+            # Float conversion (should truncate to int)
+            (3.14, 3, "positive float truncates"),
+            (3.9, 3, "float close to 4 truncates to 3"),
+            (0.0, 0, "zero float"),
+            (-2.5, -2, "negative float truncates"),
+            (-2.9, -2, "negative float close to -3 truncates to -2"),
+            # Boolean conversion (bool is subclass of int)
+            (True, 1, "boolean True"),
+            (False, 0, "boolean False"),
+            # Numeric string conversion
+            ("180", 180, "integer string"),
+            ("0", 0, "zero string"),
+            ("-45", -45, "negative integer string"),
+            ("100", 100, "positive integer string"),
+            # Float strings cannot be directly converted to int - they fail
+            ("3.14", None, "float string fails conversion"),
+            ("180.5", None, "decimal string fails conversion"),
+            ("-90.25", None, "negative decimal string fails conversion"),
+            # Whitespace handling
+            (" 180 ", 180, "string with spaces"),
+            ("\t42\n", 42, "string with tab and newline"),
+            # Edge cases
+            ("0.0", None, "explicit zero decimal fails"),
+            ("-0.0", None, "negative zero fails"),
+            # Invalid inputs that should return None
+            ("not_a_number", None, "non-numeric string"),
+            ("180degrees", None, "string with suffix"),
+            ("", None, "empty string"),
+            (None, None, "None value"),
+            ([], None, "empty list"),
+            ({}, None, "empty dict"),
+            (set(), None, "empty set"),
+            (lambda x: x, None, "function object"),
+            (object(), None, "generic object"),
+        ],
+    )
+    def test_to_int_or_none_comprehensive(self, input_value, expected_result, test_description):
+        """Comprehensive parametrized test for to_int_or_none function."""
+        result = to_int_or_none(input_value)
+
+        if expected_result is None:
+            assert result is None, f"Expected None for {test_description}, got {result}"
+        else:
+            assert result == expected_result, f"Expected {expected_result} for {test_description}, got {result}"
+            assert isinstance(result, int), f"Result should be int for {test_description}"

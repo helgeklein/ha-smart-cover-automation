@@ -53,11 +53,15 @@
             },
             "4": {
                 "title": "Smart Cover Automation - Schritt 4 von 4",
-                "description": "Konfigurieren Sie die **Min/Max**-Positionen für jeden Rollladen (optional).\n\nWenn nichts festgelegt ist, werden die globalen Werte aus dem vorherigen Schritt verwendet."
-            },
-            "submit": {
-                "title": "Konfiguration absenden",
-                "description": "Speichern Sie Ihre Konfiguration."
+                "description": "Konfigurieren Sie die **Min/Max**-Positionen für jeden Rollladen (optional). Wenn nichts festgelegt ist, werden die globalen Werte aus dem vorherigen Schritt verwendet.\n\n(0 = vollständig geschlossen, 100 = vollständig geöffnet)",
+                "sections": {
+                    "section_max_closure": {
+                        "name": "Maximale Rollladenpositionen"
+                    },
+                    "section_min_closure": {
+                        "name": "Minimale Rollladenpositionen"
+                    }
+                }
             }
         }
     },

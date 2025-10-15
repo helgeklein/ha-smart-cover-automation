@@ -35,8 +35,8 @@
                 "title": "Smart Cover Automation - Step 3 of 4",
                 "description": "Configure additional settings (optional).\n\nThis step is marked as optional because the default values should work well for most users.",
                 "data": {
-                    "covers_max_closure": "Maximum cover closure position:",
-                    "covers_min_closure": "Minimum cover closure position:",
+                    "covers_max_closure": "Maximum cover position:",
+                    "covers_min_closure": "Minimum cover position:",
                     "manual_override_duration": "Manual override duration:",
                     "sun_azimuth_tolerance": "Sun azimuth tolerance:",
                     "sun_elevation_threshold": "Minimal sun elevation:",
@@ -53,11 +53,15 @@
             },
             "4": {
                 "title": "Smart Cover Automation - Step 4 of 4",
-                "description": "Configure the **min/max** positions for each cover (optional).\n\nIf not set, the global values configured in the previous step will be used."
-            },
-            "submit": {
-                "title": "Submit Configuration",
-                "description": "Save your configuration."
+                "description": "Configure the **min/max** positions for each cover (optional). If not set, the global values configured in the previous step will be used.\n\n(0 = fully closed, 100 = fully open)",
+                "sections": {
+                    "section_max_closure": {
+                        "name": "Maximum cover positions"
+                    },
+                    "section_min_closure": {
+                        "name": "Minimum cover positions"
+                    }
+                }
             }
         }
     },

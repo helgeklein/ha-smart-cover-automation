@@ -481,3 +481,117 @@ class TestOptionsFlowIntegration:
         assert data[ConfKeys.VERBOSE_LOGGING.value] is True
         assert data[ConfKeys.TEMP_THRESHOLD.value] == 25.0
         assert data[ConfKeys.COVERS_MIN_POSITION_DELTA.value] == 10
+
+    async def test_removes_orphaned_max_closure_settings(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test that per-cover max_closure settings are removed when covers are removed.
+
+        This exercises the cleanup logic in async_step_4 for max_closure suffixes
+        (lines 493-495).
+        """
+        existing_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}": 90.0,
+            # Per-cover max_closure settings that should be cleaned up
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}": 75,
+            f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_MAX_CLOSURE}": 85,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Step 1: Remove MOCK_COVER_ENTITY_ID_2
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],  # Only one cover
+            }
+        )
+
+        await flow.async_step_2(
+            {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            }
+        )
+
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 2, "minutes": 0, "seconds": 0},
+            }
+        )
+
+        # Step 4: Complete flow
+        result = await flow.async_step_4({})
+
+        data = _as_dict(result)["data"]
+
+        # First cover's settings should remain
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in data
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}" in data
+
+        # Second cover's settings should be removed
+        assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}" not in data
+        assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_MAX_CLOSURE}" not in data
+
+    async def test_removes_orphaned_min_closure_settings(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test that per-cover min_closure settings are removed when covers are removed.
+
+        This exercises the cleanup logic in async_step_4 for min_closure suffixes
+        (lines 497-499).
+        """
+        existing_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}": 90.0,
+            # Per-cover min_closure settings that should be cleaned up
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}": 15,
+            f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_MIN_CLOSURE}": 25,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Step 1: Remove MOCK_COVER_ENTITY_ID_2
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],  # Only one cover
+            }
+        )
+
+        await flow.async_step_2(
+            {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            }
+        )
+
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 2, "minutes": 0, "seconds": 0},
+            }
+        )
+
+        # Step 4: Complete flow
+        result = await flow.async_step_4({})
+
+        data = _as_dict(result)["data"]
+
+        # First cover's settings should remain
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in data
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}" in data
+
+        # Second cover's settings should be removed
+        assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}" not in data
+        assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_MIN_CLOSURE}" not in data

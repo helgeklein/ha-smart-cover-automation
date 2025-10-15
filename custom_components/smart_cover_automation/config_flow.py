@@ -8,6 +8,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.weather.const import WeatherEntityFeature
 from homeassistant.const import STATE_UNAVAILABLE, Platform
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 
 from . import const
@@ -101,11 +102,10 @@ class FlowHelper:
     # build_schema_step_2
     #
     @staticmethod
-    def build_schema_step_2(hass: Any, covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
+    def build_schema_step_2(covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
         """Build schema for step 2: azimuth configuration per cover.
 
         Args:
-            hass: Home Assistant instance (for looking up cover friendly names)
             covers: List of cover entity IDs
             defaults: Dictionary to look up default values
 
@@ -135,7 +135,6 @@ class FlowHelper:
                 )
             )
 
-            # Show the friendly name in the UI but store the entity ID
             schema_dict[vol.Required(key, default=default_value)] = value_selector
 
         return vol.Schema(schema_dict)
@@ -166,11 +165,11 @@ class FlowHelper:
                     default=resolved_settings.temp_threshold,
                 ): selector.NumberSelector(
                     selector.NumberSelectorConfig(
-                        mode=selector.NumberSelectorMode.BOX,
-                        unit_of_measurement="°C",
                         min=10,
                         max=40,
                         step=0.5,
+                        unit_of_measurement="°C",
+                        mode=selector.NumberSelectorMode.BOX,
                     )
                 ),
                 vol.Required(
@@ -178,10 +177,10 @@ class FlowHelper:
                     default=resolved_settings.sun_elevation_threshold,
                 ): selector.NumberSelector(
                     selector.NumberSelectorConfig(
-                        mode=selector.NumberSelectorMode.BOX,
-                        unit_of_measurement="°",
                         min=0,
                         max=90,
+                        unit_of_measurement="°",
+                        mode=selector.NumberSelectorMode.BOX,
                     )
                 ),
                 vol.Required(
@@ -189,10 +188,10 @@ class FlowHelper:
                     default=resolved_settings.sun_azimuth_tolerance,
                 ): selector.NumberSelector(
                     selector.NumberSelectorConfig(
-                        mode=selector.NumberSelectorMode.BOX,
-                        unit_of_measurement="°",
                         min=0,
                         max=180,
+                        unit_of_measurement="°",
+                        mode=selector.NumberSelectorMode.BOX,
                     )
                 ),
                 vol.Required(
@@ -200,10 +199,10 @@ class FlowHelper:
                     default=resolved_settings.covers_max_closure,
                 ): selector.NumberSelector(
                     selector.NumberSelectorConfig(
-                        mode=selector.NumberSelectorMode.BOX,
-                        unit_of_measurement="%",
                         min=0,
                         max=100,
+                        unit_of_measurement="%",
+                        mode=selector.NumberSelectorMode.BOX,
                     )
                 ),
                 vol.Required(
@@ -211,10 +210,10 @@ class FlowHelper:
                     default=resolved_settings.covers_min_closure,
                 ): selector.NumberSelector(
                     selector.NumberSelectorConfig(
-                        mode=selector.NumberSelectorMode.BOX,
-                        unit_of_measurement="%",
                         min=0,
                         max=100,
+                        unit_of_measurement="%",
+                        mode=selector.NumberSelectorMode.BOX,
                     )
                 ),
                 vol.Required(
@@ -228,11 +227,10 @@ class FlowHelper:
     # build_schema_step_4
     #
     @staticmethod
-    def build_schema_step_4(hass: Any, covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
+    def build_schema_step_4(covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
         """Build schema for step 4: min/max position per cover.
 
         Args:
-            hass: Home Assistant instance (for looking up cover friendly names)
             covers: List of cover entity IDs
             defaults: Dictionary to look up default values
 
@@ -241,37 +239,76 @@ class FlowHelper:
         """
         schema_dict: dict[vol.Marker, object] = {}
 
+        # Build schema dict for min closure positions and group inside collapsible section
+        min_schema_dict = FlowHelper._build_schema_cover_positions(covers, const.COVER_SFX_MIN_CLOSURE, defaults)
+        if min_schema_dict:
+            schema_dict[vol.Optional("section_min_closure")] = section(
+                vol.Schema(min_schema_dict),
+                {"collapsed": True},
+            )
+
+        # Build schema dict for max closure positions and group inside collapsible section
+        max_schema_dict = FlowHelper._build_schema_cover_positions(covers, const.COVER_SFX_MAX_CLOSURE, defaults)
+        if max_schema_dict:
+            schema_dict[vol.Optional("section_max_closure")] = section(
+                vol.Schema(max_schema_dict),
+                {"collapsed": True},
+            )
+
+        return vol.Schema(schema_dict)
+
+    #
+    # _build_schema_cover_positions
+    #
+    @staticmethod
+    def _build_schema_cover_positions(covers: list[str], suffix: str, defaults: Mapping[str, Any]) -> dict[vol.Marker, object]:
+        """Helper to build schema for per-cover position suffix (min or max closure).
+
+        Args:
+            covers: List of cover entity IDs
+            suffix: Suffix to append to each cover entity ID for the key
+            defaults: Dictionary to look up default values
+        """
+        schema_dict: dict[vol.Marker, object] = {}
+
         for cover in sorted(covers):
             # Build a key for storage
-            key = f"{cover}_{const.COVER_SFX_MAX_CLOSURE}"
+            key = f"{cover}_{suffix}"
 
-            # Get the default value, ensuring it's never None to avoid "expected float" errors
+            # Get the default value
             raw = defaults.get(key)
             default_value = to_int_or_none(raw)
-            if default_value is None:
-                # If no value exists, leave the field empty (use an empty string or don't set a default)
-                # But since vol.Optional with no default causes issues, we'll make it optional without default
-                pass
 
             # Number selector for the position
             value_selector = selector.NumberSelector(
                 selector.NumberSelectorConfig(
                     min=0,
                     max=100,
-                    step=1,
                     unit_of_measurement="%",
                     mode=selector.NumberSelectorMode.BOX,
                 )
             )
 
-            # Show the friendly name in the UI but store the entity ID
-            # Only add default if we have a value, otherwise make it truly optional
+            # Only add a default if we have a value, otherwise leave it completely empty
             if default_value is not None:
                 schema_dict[vol.Optional(key, default=default_value)] = value_selector
             else:
                 schema_dict[vol.Optional(key)] = value_selector
 
-        return vol.Schema(schema_dict)
+        return schema_dict
+
+    @staticmethod
+    def flatten_section_input(user_input: Mapping[str, Any]) -> dict[str, Any]:
+        """Flatten section-based input into a plain dictionary."""
+
+        flattened: dict[str, Any] = {}
+        for key, value in user_input.items():
+            if key in {"section_min_closure", "section_max_closure"} and isinstance(value, dict):
+                flattened.update(value)
+            else:
+                flattened[key] = value
+
+        return flattened
 
 
 #
@@ -391,7 +428,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Show the form
             return self.async_show_form(
                 step_id="2",
-                data_schema=FlowHelper.build_schema_step_2(hass=self.hass, covers=selected_covers, defaults=current_settings),
+                data_schema=FlowHelper.build_schema_step_2(covers=selected_covers, defaults=current_settings),
             )
         else:
             # Store step 2 data (temporarily, for the next step of the flow) and proceed to step 3
@@ -435,11 +472,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Show the form
             return self.async_show_form(
                 step_id="4",
-                data_schema=FlowHelper.build_schema_step_4(hass=self.hass, covers=selected_covers, defaults=defaults),
+                data_schema=FlowHelper.build_schema_step_4(covers=selected_covers, defaults=defaults),
             )
 
         # Store step 4 data and merge with existing settings
-        self._config_data.update(user_input)
+        flattened_input = FlowHelper.flatten_section_input(user_input)
+        self._config_data.update(flattened_input)
         merged = {**self._current_settings(), **self._config_data}
 
         # Clean up orphaned cover settings from the merged data

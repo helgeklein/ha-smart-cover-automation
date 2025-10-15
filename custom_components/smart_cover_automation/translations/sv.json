@@ -29,14 +29,14 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Steg 2 av 4",
-                "description": "Konfigurera **azimut** (riktning) för varje persienne (obligatoriskt).\n\n(0°=Norr, 90°=Öst, 180°=Söder, 270°=Väst)"
+                "description": "Konfigurera **azimut** (riktning) för varje persienn (obligatoriskt).\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)"
             },
             "3": {
                 "title": "Smart Cover Automation - Steg 3 av 4",
                 "description": "Konfigurera ytterligare inställningar (valfritt).\n\nDetta steg är markerat som valfritt eftersom standardvärdena bör fungera bra för de flesta användare.",
                 "data": {
-                    "covers_max_closure": "Högsta stängningsläge för persienner:",
-                    "covers_min_closure": "Lägsta stängningsläge för persienner:",
+                    "covers_max_closure": "Högsta läge för persienn:",
+                    "covers_min_closure": "Lägsta läge för persienn:",
                     "manual_override_duration": "Varaktighet för manuell överstyrning:",
                     "sun_azimuth_tolerance": "Tolerans för solens azimut:",
                     "sun_elevation_threshold": "Minimal solhöjd:",
@@ -53,11 +53,15 @@
             },
             "4": {
                 "title": "Smart Cover Automation - Steg 4 av 4",
-                "description": "Konfigurera **min/max**-lägena för varje persienn (valfritt).\n\nOm inget anges används de globala värdena från föregående steg."
-            },
-            "submit": {
-                "title": "Submit Configuration",
-                "description": "Save your configuration."
+                "description": "Konfigurera **min/max**-lägena för varje persienn (valfritt).\n\nOm inget anges används de globala värdena från föregående steg.",
+                "sections": {
+                    "section_max_closure": {
+                        "name": "Högsta persiennlägen"
+                    },
+                    "section_min_closure": {
+                        "name": "Lägsta persiennlägen"
+                    }
+                }
             }
         }
     },

@@ -29,14 +29,14 @@
             },
             "2": {
                 "title": "智能遮阳自动化 - 第 2 步，共 4 步",
-                "description": "为每个遮阳设备配置**方位角**（方向）（必需）。\n\n(0°=北, 90°=东, 180°=南, 270°=西)"
+                "description": "为每个遮阳设备配置**方位角**（方向）（必需）。\n\n(0°=北，90°=东，180°=南，270°=西)"
             },
             "3": {
                 "title": "智能遮阳自动化 - 第 3 步，共 4 步",
                 "description": "配置其他设置（可选）。\n\n此步骤被标记为可选，因为默认值通常适用于大多数用户。",
                 "data": {
-                    "covers_max_closure": "遮阳设备最大关闭位置：",
-                    "covers_min_closure": "遮阳设备最小关闭位置：",
+                    "covers_max_closure": "遮阳设备最大位置：",
+                    "covers_min_closure": "遮阳设备最小位置：",
                     "manual_override_duration": "手动覆盖持续时间：",
                     "sun_azimuth_tolerance": "太阳方位角容差：",
                     "sun_elevation_threshold": "最低太阳高度角：",
@@ -53,11 +53,15 @@
             },
             "4": {
                 "title": "智能遮阳自动化 - 第 4 步，共 4 步",
-                "description": "为每个遮阳设备配置 **最小/最大** 位置（可选）。\n\n如果未设置，将使用上一步配置的全局值。"
-            },
-            "submit": {
-                "title": "Submit Configuration",
-                "description": "Save your configuration."
+                "description": "为每个遮阳设备配置 **最小/最大** 位置（可选）。\n\n如果未设置，将使用上一步配置的全局值。",
+                "sections": {
+                    "section_max_closure": {
+                        "name": "遮阳设备的最大位置"
+                    },
+                    "section_min_closure": {
+                        "name": "遮阳设备的最小位置"
+                    }
+                }
             }
         }
     },

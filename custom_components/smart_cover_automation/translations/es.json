@@ -35,8 +35,8 @@
                 "title": "Smart Cover Automation - Paso 3 de 4",
                 "description": "Configure ajustes adicionales (opcional).\n\nEste paso se marca como opcional porque los valores predeterminados deberían funcionar bien para la mayoría de los usuarios.",
                 "data": {
-                    "covers_max_closure": "Posición máxima de cierre de persianas/toldos:",
-                    "covers_min_closure": "Posición mínima de cierre de persianas/toldos:",
+                    "covers_max_closure": "Posición máxima de la persiana:",
+                    "covers_min_closure": "Posición mínima de la persiana:",
                     "manual_override_duration": "Duración de anulación manual:",
                     "sun_azimuth_tolerance": "Tolerancia de azimut solar:",
                     "sun_elevation_threshold": "Elevación mínima del sol:",
@@ -53,11 +53,15 @@
             },
             "4": {
                 "title": "Smart Cover Automation - Paso 4 de 4",
-                "description": "Configura las posiciones **mín./máx.** para cada persiana (opcional).\n\nSi no se definen, se usarán los valores globales configurados en el paso anterior."
-            },
-            "submit": {
-                "title": "Enviar configuración",
-                "description": "Guarde su configuración."
+                "description": "Configura las posiciones **mín./máx.** para cada persiana (opcional).\n\nSi no se definen, se usarán los valores globales configurados en el paso anterior.",
+                "sections": {
+                    "section_max_closure": {
+                        "name": "Posiciones máximas de la persiana"
+                    },
+                    "section_min_closure": {
+                        "name": "Posiciones mínimas de la persiana"
+                    }
+                }
             }
         }
     },

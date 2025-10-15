@@ -233,7 +233,7 @@ class TestFlowHelperSchemaBuilding:
         covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
         defaults = {}
 
-        schema = FlowHelper.build_schema_step_2(mock_hass_with_covers, covers, defaults)
+        schema = FlowHelper.build_schema_step_2(covers, defaults)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
@@ -244,7 +244,7 @@ class TestFlowHelperSchemaBuilding:
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {}  # No existing azimuth
 
-        schema = FlowHelper.build_schema_step_2(mock_hass_with_covers, covers, defaults)
+        schema = FlowHelper.build_schema_step_2(covers, defaults)
 
         # Schema should be created (default 180 will be used internally)
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
@@ -257,7 +257,7 @@ class TestFlowHelperSchemaBuilding:
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 270.0,
         }
 
-        schema = FlowHelper.build_schema_step_2(mock_hass_with_covers, covers, defaults)
+        schema = FlowHelper.build_schema_step_2(covers, defaults)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
@@ -272,7 +272,7 @@ class TestFlowHelperSchemaBuilding:
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {}
 
-        schema = FlowHelper.build_schema_step_2(mock_hass_with_covers, covers, defaults)
+        schema = FlowHelper.build_schema_step_2(covers, defaults)
 
         # Schema should be created (friendly name used internally)
         assert schema is not None
@@ -282,7 +282,7 @@ class TestFlowHelperSchemaBuilding:
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {}
 
-        schema = FlowHelper.build_schema_step_2(None, covers, defaults)
+        schema = FlowHelper.build_schema_step_2(covers, defaults)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
@@ -331,3 +331,145 @@ class TestFlowHelperSchemaBuilding:
         # Schema should be created (duration converted internally)
         assert schema is not None
         assert resolved_settings.manual_override_duration == 7380
+
+    def test_build_schema_step_4_with_no_per_cover_defaults(self) -> None:
+        """Test step 4 schema when covers have no per-cover min/max closure defaults.
+
+        This exercises the else branch in _build_schema_cover_positions where
+        default_value is None (lines 294, 306-309).
+        """
+        covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
+        defaults = {}  # No per-cover defaults
+
+        schema = FlowHelper.build_schema_step_4(covers, defaults)
+
+        # Verify schema was created
+        assert schema is not None
+
+        # Extract section schemas
+        sections = {}
+        for key, value in schema.schema.items():
+            section_name = str(key.schema) if hasattr(key, "schema") else str(key)
+            sections[section_name] = value
+
+        # Verify section structure
+        assert "section_min_closure" in sections
+        assert "section_max_closure" in sections
+
+        # Verify that fields for all covers exist in the sections
+        # (The actual structure is nested, but we're checking the schema was created)
+        assert len(sections) >= 2
+
+    def test_build_schema_step_4_with_per_cover_defaults(self) -> None:
+        """Test step 4 schema when covers have per-cover min/max closure defaults."""
+        covers = [MOCK_COVER_ENTITY_ID]
+        defaults = {
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}": 20,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}": 80,
+        }
+
+        schema = FlowHelper.build_schema_step_4(covers, defaults)
+
+        # Verify schema was created
+        assert schema is not None
+
+        # Extract section schemas
+        sections = {}
+        for key, value in schema.schema.items():
+            section_name = str(key.schema) if hasattr(key, "schema") else str(key)
+            sections[section_name] = value
+
+        # Verify both sections exist
+        assert "section_min_closure" in sections
+        assert "section_max_closure" in sections
+
+
+class TestFlowHelperFlattenSection:
+    """Test flatten_section_input utility method."""
+
+    def test_flatten_section_input_with_sections_only(self) -> None:
+        """Test flattening input that only contains section data."""
+        user_input = {
+            "section_min_closure": {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}": 20,
+            },
+            "section_max_closure": {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}": 80,
+            },
+        }
+
+        result = FlowHelper.flatten_section_input(user_input)
+
+        # Sections should be flattened
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}" in result
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}" in result
+        assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}"] == 20
+        assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}"] == 80
+
+        # Section keys should not be in result
+        assert "section_min_closure" not in result
+        assert "section_max_closure" not in result
+
+    def test_flatten_section_input_with_mixed_data(self) -> None:
+        """Test flattening input with both sections and non-section keys.
+
+        This exercises the else branch (lines 306-309) where non-section keys
+        are directly copied to the flattened dictionary.
+        """
+        user_input = {
+            "section_min_closure": {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}": 20,
+            },
+            "section_max_closure": {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}": 80,
+            },
+            "some_other_key": "some_value",  # Non-section key
+            "another_key": 42,  # Another non-section key
+        }
+
+        result = FlowHelper.flatten_section_input(user_input)
+
+        # Sections should be flattened
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}" in result
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}" in result
+
+        # Non-section keys should be preserved
+        assert "some_other_key" in result
+        assert "another_key" in result
+        assert result["some_other_key"] == "some_value"
+        assert result["another_key"] == 42
+
+        # Section keys should not be in result
+        assert "section_min_closure" not in result
+        assert "section_max_closure" not in result
+
+    def test_flatten_section_input_with_non_dict_section_value(self) -> None:
+        """Test that non-dict values for section keys are preserved as-is."""
+        user_input = {
+            "section_min_closure": "not_a_dict",  # Should be preserved since it's not a dict
+            "section_max_closure": {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}": 80,
+            },
+        }
+
+        result = FlowHelper.flatten_section_input(user_input)
+
+        # section_min_closure with non-dict value should be preserved
+        assert "section_min_closure" in result
+        assert result["section_min_closure"] == "not_a_dict"
+
+        # section_max_closure with dict value should be flattened
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}" in result
+        assert "section_max_closure" not in result
+
+    def test_flatten_section_input_with_empty_sections(self) -> None:
+        """Test flattening input with empty section dictionaries."""
+        user_input = {
+            "section_min_closure": {},
+            "section_max_closure": {},
+        }
+
+        result = FlowHelper.flatten_section_input(user_input)
+
+        # Empty sections should result in empty flattened dict
+        assert len(result) == 0
