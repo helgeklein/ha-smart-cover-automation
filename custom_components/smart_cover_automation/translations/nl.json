@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Welkom bij Smart Cover Automation",
-                "description": "Deze integratie wordt geïnstalleerd met standaardinstellingen.\n\nConfigureer later de rolluiken, weersentiteit en automatiseringsinstellingen door op het **tandwielpictogram** (configuratieknop) op de integratiekaart te klikken.\n\nDocumentatie: https://helgeklein.github.io/ha-smart-cover-automation/"
+                "description": "Deze integratie wordt geïnstalleerd met standaardinstellingen.\n\nConfigureer later de rolluiken, weersentiteit en automatiseringsinstellingen door op het **tandwielpictogram** (configuratieknop) op de integratiekaart te klikken.\n\nDocumentatie: https://ha-smart-cover-automation.helgeklein.com/"
             }
         }
     },

@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Välkommen till Smart Cover Automation",
-                "description": "Denna integration installeras med standardinställningar.\n\nKonfigurera persienner, väderentitet och automatiseringsinställningar senare genom att klicka på **kugghjulsikonen** (konfigurationsknappen) på integrationskortet.\n\nDokumentation: https://helgeklein.github.io/ha-smart-cover-automation/"
+                "description": "Denna integration installeras med standardinställningar.\n\nKonfigurera persienner, väderentitet och automatiseringsinställningar senare genom att klicka på **kugghjulsikonen** (konfigurationsknappen) på integrationskortet.\n\nDokumentation: https://ha-smart-cover-automation.helgeklein.com/"
             }
         }
     },

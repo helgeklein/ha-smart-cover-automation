@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Bem-vindo ao Smart Cover Automation",
-                "description": "Esta integração está instalada com as configurações padrão.\n\nConfigure as persianas, a entidade meteorológica e as configurações de automação mais tarde clicando no **ícone de engrenagem** (botão de configuração) no cartão de integração.\n\nDocumentação: https://helgeklein.github.io/ha-smart-cover-automation/"
+                "description": "Esta integração está instalada com as configurações padrão.\n\nConfigure as persianas, a entidade meteorológica e as configurações de automação mais tarde clicando no **ícone de engrenagem** (botão de configuração) no cartão de integração.\n\nDocumentação: https://ha-smart-cover-automation.helgeklein.com/"
             }
         }
     },

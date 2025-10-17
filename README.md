@@ -49,11 +49,11 @@ The integration helps you understand what's going on in the following ways:
 
 ## Installation & Usage
 
-For installation instructions, configuration guides, and troubleshooting info please **visit the [documentation website](https://helgeklein.github.io/ha-smart-cover-automation/).**
+For installation instructions, configuration guides, and troubleshooting info please **visit the [documentation website](https://ha-smart-cover-automation.helgeklein.com/).**
 
 ## Developer Information
 
-This repository contains the source code for the integration. For user documentation and guides, please visit the [documentation website](https://helgeklein.github.io/ha-smart-cover-automation/).
+This repository contains the source code for the integration. For user documentation and guides, please visit the [documentation website](https://ha-smart-cover-automation.helgeklein.com/).
 
 ### Setting Up a Development Environment
 

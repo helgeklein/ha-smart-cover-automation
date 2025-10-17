@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "欢迎使用智能遮阳自动化",
-                "description": "此集成已使用默认设置安装。\n\n请稍后通过点击集成卡片上的**齿轮图标**（配置按钮）来配置遮阳设备、天气实体和自动化设置。\n\n文档： https://helgeklein.github.io/ha-smart-cover-automation/"
+                "description": "此集成已使用默认设置安装。\n\n请稍后通过点击集成卡片上的**齿轮图标**（配置按钮）来配置遮阳设备、天气实体和自动化设置。\n\n文档： https://ha-smart-cover-automation.helgeklein.com/"
             }
         }
     },

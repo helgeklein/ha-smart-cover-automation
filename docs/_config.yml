@@ -2,8 +2,7 @@
 title: Smart Cover Automation for Home Assistant
 description: >-
   A Home Assistant integration to automate the control of your smart home's window covers with a focus is on quality, reliability, and flexibility.
-baseurl: "/ha-smart-cover-automation"
-url: "https://helgeklein.github.io"
+url: "https://ha-smart-cover-automation.helgeklein.com"
 
 # Logo configuration
 logo: "/assets/img/logo.png"

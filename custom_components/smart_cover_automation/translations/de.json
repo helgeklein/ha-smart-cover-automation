@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Willkommen bei Smart Cover Automation",
-                "description": "Diese Integration wird mit Standardeinstellungen installiert.\n\nBitte konfigurieren Sie Rollläden, Wetterentität und Automatisierungseinstellungen später, indem Sie auf das **Zahnradsymbol** (Konfigurationsschaltfläche) auf der Integrationskarte klicken.\n\nDokumentation: https://helgeklein.github.io/ha-smart-cover-automation/"
+                "description": "Diese Integration wird mit Standardeinstellungen installiert.\n\nBitte konfigurieren Sie Rollläden, Wetterentität und Automatisierungseinstellungen später, indem Sie auf das **Zahnradsymbol** (Konfigurationsschaltfläche) auf der Integrationskarte klicken.\n\nDokumentation: https://ha-smart-cover-automation.helgeklein.com/"
             }
         }
     },
