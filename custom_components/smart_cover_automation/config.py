@@ -11,7 +11,7 @@ from dataclasses import dataclass, fields
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
-from custom_components.smart_cover_automation.const import HA_OPTIONS
+from custom_components.smart_cover_automation.const import HA_DATA, HA_OPTIONS
 
 T = TypeVar("T")
 
@@ -164,8 +164,6 @@ __all__ = [
 
 
 # Simple, explicit settings structure resolved from options → data → defaults.
-# This provides a lightweight alternative to the descriptor-based Settings above
-# without changing existing callers. Consumers can migrate to this over time.
 @dataclass(frozen=True, slots=True)
 class ResolvedConfig:
     covers: tuple[str, ...]
@@ -190,7 +188,7 @@ class ResolvedConfig:
         return {k: getattr(self, k.value) for k in ConfKeys}
 
 
-def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None) -> ResolvedConfig:
+def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None = None) -> ResolvedConfig:
     """Resolve settings from options → data → defaults using ConfKeys.
 
     Only shallow keys are considered. Performs light normalization (covers → tuple).
@@ -231,5 +229,5 @@ def resolve_entry(entry: Any) -> ResolvedConfig:
     Accepts any object with 'options' and 'data' attributes (works with test mocks).
     """
     opts = getattr(entry, HA_OPTIONS, None) or {}
-    dat = getattr(entry, "data", None) or {}
+    dat = getattr(entry, HA_DATA, None) or {}
     return resolve(opts, dat)

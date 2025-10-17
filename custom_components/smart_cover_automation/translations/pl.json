@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Krok 1 z 3",
+                "title": "Smart Cover Automation - Krok 1 z 4",
                 "description": "Wybierz czujnik prognozy pogody oraz rolety do automatyzacji (wymagane).",
                 "data": {
                     "covers": "Rolety do automatyzacji:",
@@ -28,18 +28,15 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Krok 2 z 3",
-                "description": "Skonfiguruj **azymut** (kierunek) dla każdej rolety (wymagane).\n\n(0°=Północ, 90°=Wschód, 180°=Południe, 270°=Zachód)",
-                "data": {
-                    "cover_azimuth": "**{cover_name}** azymut:"
-                }
+                "title": "Smart Cover Automation - Krok 2 z 4",
+                "description": "Skonfiguruj **azymut** (kierunek) dla każdej rolety (wymagane).\n\n(0°=Północ, 90°=Wschód, 180°=Południe, 270°=Zachód)"
             },
             "3": {
-                "title": "Smart Cover Automation - Krok 3 z 3",
+                "title": "Smart Cover Automation - Krok 3 z 4",
                 "description": "Skonfiguruj dodatkowe ustawienia (opcjonalne).\n\nTen krok jest oznaczony jako opcjonalny, ponieważ wartości domyślne powinny dobrze działać dla większości użytkowników.",
                 "data": {
-                    "covers_max_closure": "Maksymalna pozycja zamknięcia rolet:",
-                    "covers_min_closure": "Minimalna pozycja zamknięcia rolet:",
+                    "covers_max_closure": "Maksymalna pozycja rolety:",
+                    "covers_min_closure": "Minimalna pozycja rolety:",
                     "manual_override_duration": "Czas trwania ręcznego pominięcia:",
                     "sun_azimuth_tolerance": "Tolerancja azymutu słońca:",
                     "sun_elevation_threshold": "Minimalna wysokość słońca:",
@@ -54,9 +51,17 @@
                     "temp_threshold": "Temperatura, przy której automatyzacja zamyka rolety w celu ochrony przed upałem (stopnie Celsjusza)."
                 }
             },
-            "submit": {
-                "title": "Submit Configuration",
-                "description": "Save your configuration."
+            "4": {
+                "title": "Smart Cover Automation - Krok 4 z 4",
+                "description": "Skonfiguruj pozycje **min/max** dla każdej rolety (opcjonalne).\n\nJeśli nic nie ustawisz, zostaną użyte wartości globalne skonfigurowane w poprzednim kroku.",
+                "sections": {
+                    "section_max_closure": {
+                        "name": "Maksymalne pozycje rolet"
+                    },
+                    "section_min_closure": {
+                        "name": "Minimalne pozycje rolet"
+                    }
+                }
             }
         }
     },

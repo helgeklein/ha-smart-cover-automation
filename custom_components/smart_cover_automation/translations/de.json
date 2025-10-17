@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Schritt 1 von 3",
+                "title": "Smart Cover Automation - Schritt 1 von 4",
                 "description": "Wählen Sie einen Wettervorhersage-Sensor und die zu automatisierenden Rollläden aus (erforderlich).",
                 "data": {
                     "covers": "Zu automatisierende Rollläden:",
@@ -28,14 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Schritt 2 von 3",
-                "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen (erforderlich).\n\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)",
-                "data": {
-                    "cover_azimuth": "**{cover_name}** Azimut:"
-                }
+                "title": "Smart Cover Automation - Schritt 2 von 4",
+                "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen (erforderlich).\n\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)"
             },
             "3": {
-                "title": "Smart Cover Automation - Schritt 3 von 3",
+                "title": "Smart Cover Automation - Schritt 3 von 4",
                 "description": "Konfigurieren Sie zusätzliche Einstellungen (optional).\n\nDieser Schritt ist als optional markiert, da die Standardwerte für die meisten Nutzer gut funktionieren sollten.",
                 "data": {
                     "covers_max_closure": "Maximale Rollladenposition:",
@@ -54,9 +51,17 @@
                     "temp_threshold": "Temperatur, ab der die Automatisierung die Rollläden zum Hitzeschutz schließt (Grad Celsius)."
                 }
             },
-            "submit": {
-                "title": "Konfiguration absenden",
-                "description": "Speichern Sie Ihre Konfiguration."
+            "4": {
+                "title": "Smart Cover Automation - Schritt 4 von 4",
+                "description": "Konfigurieren Sie die **Min/Max**-Positionen für jeden Rollladen (optional). Wenn nichts festgelegt ist, werden die globalen Werte aus dem vorherigen Schritt verwendet.\n\n(0 = vollständig geschlossen, 100 = vollständig geöffnet)",
+                "sections": {
+                    "section_max_closure": {
+                        "name": "Maximale Rollladenpositionen"
+                    },
+                    "section_min_closure": {
+                        "name": "Minimale Rollladenpositionen"
+                    }
+                }
             }
         }
     },

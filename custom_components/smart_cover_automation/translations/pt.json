@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Passo 1 de 3",
+                "title": "Smart Cover Automation - Passo 1 de 4",
                 "description": "Selecione um sensor de previsão do tempo e as persianas para automatizar (obrigatório).",
                 "data": {
                     "covers": "Persianas para automatizar:",
@@ -28,18 +28,15 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Passo 2 de 3",
-                "description": "Configure o **azimute** (direção) para cada persiana (obrigatório).\n\n(0°=Norte, 90°=Leste, 180°=Sul, 270°=Oeste)",
-                "data": {
-                    "cover_azimuth": "**{cover_name}** azimute:"
-                }
+                "title": "Smart Cover Automation - Passo 2 de 4",
+                "description": "Configure o **azimute** (direção) de cada persiana (obrigatório).\n\n(0°=Norte, 90°=Este, 180°=Sul, 270°=Oeste)"
             },
             "3": {
-                "title": "Smart Cover Automation - Passo 3 de 3",
+                "title": "Smart Cover Automation - Passo 3 de 4",
                 "description": "Configure definições adicionais (opcional).\n\nEste passo é marcado como opcional porque os valores predefinidos devem funcionar bem para a maioria dos utilizadores.",
                 "data": {
-                    "covers_max_closure": "Posição máxima de fecho das persianas:",
-                    "covers_min_closure": "Posição mínima de fecho das persianas:",
+                    "covers_max_closure": "Posição máxima da persiana:",
+                    "covers_min_closure": "Posição mínima da persiana:",
                     "manual_override_duration": "Duração da override manual:",
                     "sun_azimuth_tolerance": "Tolerância do azimute solar:",
                     "sun_elevation_threshold": "Elevação solar mínima:",
@@ -54,9 +51,17 @@
                     "temp_threshold": "Temperatura a partir da qual a automatização fecha as persianas para proteger do calor (graus Celsius)."
                 }
             },
-            "submit": {
-                "title": "Submit Configuration",
-                "description": "Save your configuration."
+            "4": {
+                "title": "Smart Cover Automation - Passo 4 de 4",
+                "description": "Configure as posições **mín/máx** para cada persiana (opcional).\n\nSe nada for definido, serão utilizados os valores globais configurados na etapa anterior.",
+                "sections": {
+                    "section_max_closure": {
+                        "name": "Posições máximas da persiana"
+                    },
+                    "section_min_closure": {
+                        "name": "Posições mínimas da persiana"
+                    }
+                }
             }
         }
     },

@@ -37,6 +37,8 @@ INTEGRATION_NAME: Final[str] = "Smart Cover Automation"
 
 # Per-cover configuration key suffixes
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
+COVER_SFX_MAX_CLOSURE: Final[str] = "cover_max_closure"  # Cover maximum closure position (%)
+COVER_SFX_MIN_CLOSURE: Final[str] = "cover_min_closure"  # Cover minimum closure position (%)
 
 # Per-cover position history configuration
 COVER_POSITION_HISTORY_SIZE: Final[int] = 3  # Number of positions to store in history
@@ -73,6 +75,7 @@ ERROR_NO_COVERS: Final[str] = "no_covers"
 ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"
 
 # Home Assistant string literals
+HA_DATA: Final[str] = "data"
 HA_OPTIONS: Final[str] = "options"
 HA_SUN_ATTR_AZIMUTH: Final[str] = "azimuth"
 HA_SUN_ATTR_ELEVATION: Final[str] = "elevation"
