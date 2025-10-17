@@ -34,6 +34,18 @@ A Home Assistant integration to automate the control of your smart home's window
 - **Supported covers:** Works with any cover entity that supports open/close or position control.
 - **Rich language support:** UI translations available for English, German, French, Spanish, Dutch, Italian, Portuguese, Chinese, Swedish, Polish.
 
+## Configuration Options
+
+Need of sunlight and desire for shade are individually very different. The integration allows you to tailor the way your covers move according to your needs. Extensive configuration options should make it possible to implement most scenarios easily.
+
+## Monitoring the Integration's Operation
+
+The integration helps you understand what's going on in the following ways:
+
+- **Simulation mode** showing exactly what the integration would do without actually moving the covers.
+- **Log file** showing the integration's workings in detail.
+- Binary **availability sensor** showing if the integration is working correctly or if there's a problem.
+- Automation **status sensor** summarizing the recent activity.
 
 ## Installation & Usage
 

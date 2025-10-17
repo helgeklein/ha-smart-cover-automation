@@ -44,16 +44,7 @@ A Home Assistant integration to automate the control of your smart home's window
 
 ## Configuration Options
 
-- **Enabled:** Turn the automation on or off via a switch.
-- **Cover selection:** Choose which covers you want the integration to control.
-- **Window direction:** Set each window's horizontal angle from north (azimuth).
-- **Temperature threshold:** The automation only operates on hot days, i.e., if the forecasted daily high temperature is above a threshold.
-- **Sun:**
-	- Minimal sun elevation above the horizon.
-	- Maximum angle at which the sun is considered to be shining on the window.
-- **Covers:**
-	- Maximum closure (never close more than this).
-	- Minimum closure (never open more than this).
+Need of sunlight and desire for shade are individually very different. The integration allows you to tailor the way your covers move according to your needs. Extensive configuration options should make it possible to implement most scenarios easily.
 
 ## Monitoring the Integration's Operation
 
