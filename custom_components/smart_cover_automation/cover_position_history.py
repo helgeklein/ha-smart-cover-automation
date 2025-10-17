@@ -94,7 +94,7 @@ class CoverPositionHistoryManager:
         newest_entry = history.add_position(new_position, cover_moved, timestamp)
 
         # Log the new entry for debugging
-        timestamp_str = newest_entry.timestamp.isoformat()
+        timestamp_str = newest_entry.timestamp.astimezone().strftime("%Y-%m-%d %H:%M:%S")
         current_pos = newest_entry.position
         const.LOGGER.debug(f"[{entity_id}] Updated position history with new entry: {current_pos}% at {timestamp_str}")
 

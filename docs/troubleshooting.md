@@ -1,50 +1,27 @@
 ---
 layout: default
 title: Troubleshooting
-nav_order: 4
+nav_order: 5
 description: "Common issues and solutions for Smart Cover Automation for Home Assistant."
 permalink: /troubleshooting/
 ---
 
 # Troubleshooting Guide
 
-This guide helps resolve common issues with the Smart Cover Automation integration.
+This guide helps resolve issues with the Smart Cover Automation integration.
 
-## Installation Problems
+## Sensors
 
-### Integration Not Found After Installation
+The integration comes with the following sensors that help you understand the integration's inner workings:
 
-**Symptoms:**
-
-- Integration doesn't appear in the add integration list
-- Error: "Integration not found"
-
-**Solutions:**
-
-1. **Restart Home Assistant** completely (not just reload)
-2. **Verify file location:**
-   ```
-   config/
-      custom_components/
-         smart_cover_automation/
-         ├── __init__.py
-         ├── manifest.json
-         └── ... (other files)
-   ```
-3. **Check file permissions** (should be readable by Home Assistant user)
-
-### HACS Installation Fails
-
-**Symptoms:**
-
-- "Repository not found" error
-- Download fails
-
-**Solutions:**
-
-1. **Check repository URL:** `https://github.com/helgeklein/ha-smart-cover-automation`
-2. **Update HACS** to the latest version
-3. **Check internet connectivity** from Home Assistant instance
+- **Last movement:** Timestamp of the cover movement initiated by the integration.
+- **Status:** Overall status returned by the last automation update.
+- **Sun azimuth:** Current sun azimuth (angle from north).
+- **Sun elevation:** Current sun elevation (angle above the horizon).
+- **Temperature: today's maximum:** Maximum (expected) temperature of the current day. Derived from the configured weather forecast sensor.
+- **Temperature: threshold:** The configured temperature at which the automation starts closing covers to protect from heat.
+- **Weather: hot day?:** Is the maximum temperature of the current day expected to rise above the configured threshold temperature?
+- **Weather: sunny?:** Is the day expected to be at least partly sunny? Derived from the configured weather forecast sensor.
 
 ## Debugging
 
@@ -62,12 +39,12 @@ In the UI, you can find the same log at **Settings** → **Systems** → **Logs*
 
 ### Before Seeking Help
 
-1. **Enable verbose logging** and reproduce the issue
-2. **Check Home Assistant logs**
-3. **Document your configuration** and the exact problem
+1. **Enable verbose logging** and reproduce the issue.
+1. **Check the logs** to understand what's going on.
+1. **Document your configuration** and the exact problem.
 
 ### Where to Get Help
 
-1. **GitHub Issues:** [Report a bug](https://github.com/helgeklein/ha-smart-cover-automation/issues)
-2. **Home Assistant Community:** [Forum discussion](https://community.home-assistant.io/)
-3. **Documentation:** Review all sections of this documentation
+1. **Documentation:** Review all sections of this documentation.
+1. **GitHub Issues:** [Report a bug](https://github.com/helgeklein/ha-smart-cover-automation/issues).
+1. **Home Assistant Community:** [Join a forum discussion](https://community.home-assistant.io/).

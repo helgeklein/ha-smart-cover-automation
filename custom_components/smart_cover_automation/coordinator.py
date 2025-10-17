@@ -30,7 +30,7 @@ from . import const
 from .config import ConfKeys, ResolvedConfig, resolve_entry
 from .cover_position_history import CoverPositionHistoryManager
 from .data import CoordinatorData
-from .util import to_float_or_none
+from .util import to_float_or_none, to_int_or_none
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, State
@@ -214,9 +214,6 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             # This prevents system instability from unknown issues
             return error_result
 
-        finally:
-            const.LOGGER.info("Finished cover automation update")
-
     #
     # _handle_automation
     #
@@ -287,7 +284,16 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
         # Copy result without covers for logging
         result_copy = {k: v for k, v in result.items() if k != ConfKeys.COVERS.value}
-        const.LOGGER.info(f"Calculated sensor states: {str(result_copy)}")
+        const.LOGGER.info(f"Sensor states: {str(result_copy)}")
+
+        # Log relevant global settings
+        global_settings = {
+            "temp_threshold": temp_threshold,
+            "sun_elevation_threshold": sun_elevation_threshold,
+            "sun_azimuth_tolerance": resolved.sun_azimuth_tolerance,
+            "covers_min_position_delta": covers_min_position_delta,
+        }
+        const.LOGGER.info(f"Global settings: {str(global_settings)}")
 
         # Iterate over covers
         for entity_id, state in states.items():
@@ -340,9 +346,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                     time_delta = (time_now - last_history_entry.timestamp).total_seconds()
                     if time_delta < resolved.manual_override_duration:
                         time_remaining = resolved.manual_override_duration - time_delta
-                        message = (
-                            f"Manual override detected (position changed externally), skipping this cover for another {time_remaining} s"
-                        )
+                        message = f"Manual override detected (position changed externally), skipping this cover for another {time_remaining:.0f} s"
                         self._log_cover_result(entity_id, message, cover_attrs, result)
                         continue
 
@@ -358,28 +362,37 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
             # Calculate the cover position
             if temp_hot and weather_sunny and sun_hitting:
+                # Get the max closure limit for this cover
+                max_closure_limit = self._get_cover_closure_limit(entity_id, config, get_max=True)
                 # Close the cover (but respect max closure limit)
-                target_desired_pos = max(const.COVER_POS_FULLY_CLOSED, resolved.covers_max_closure)
+                target_desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
+                reason = "heat protection (closed)"
             else:
+                # Get the min closure limit for this cover
+                min_closure_limit = self._get_cover_closure_limit(entity_id, config, get_max=False)
                 # Open the cover (but respect min closure limit)
-                target_desired_pos = min(const.COVER_POS_FULLY_OPEN, resolved.covers_min_closure)
+                target_desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
+                reason = "normal state (open)"
+
+            # Store and log desired target position
             cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = target_desired_pos
+            const.LOGGER.debug(f"[{entity_id}] Desired position: {target_desired_pos}%. Reason: {reason}")
 
             # Determine if cover movement is necessary
             movement_needed = False
             if target_desired_pos == current_pos:
                 message = "No movement needed"
             elif abs(target_desired_pos - current_pos) < covers_min_position_delta:
-                message = "Skipping minor adjustment"
+                message = "Skipped minor adjustment"
             else:
-                message = "Moving cover"
+                message = "Moved cover"
                 movement_needed = True
 
             if movement_needed:
                 try:
                     # Move the cover
                     actual_pos = await self._set_cover_position(entity_id, target_desired_pos, features)
-                    const.LOGGER.debug(f"[{entity_id}] Cover moved to position: {actual_pos}%")
+                    const.LOGGER.debug(f"[{entity_id}] Actual position: {actual_pos}%")
                     if actual_pos is not None:
                         # Store the position after movement
                         cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
@@ -406,7 +419,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             result[ConfKeys.COVERS.value][entity_id] = cover_attrs
 
             # Log per-cover attributes
-            const.LOGGER.debug(f"[{entity_id}] {message} {str(cover_attrs)}")
+            const.LOGGER.debug(f"[{entity_id}] Cover result: {message}. Cover data: {str(cover_attrs)}")
 
         return result
 
@@ -445,19 +458,19 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                 service = SERVICE_SET_COVER_POSITION
                 service_data = {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos}
                 actual_position = desired_pos  # For position-supporting covers, actual equals desired
-                const.LOGGER.debug(f"[{entity_id}] Using set_position service to move to {desired_pos}%")
+                const.LOGGER.debug(f"[{entity_id}] Moving to {desired_pos}% via set_position service")
             else:
                 # Fallback to open/close - determine actual position based on service used
                 if desired_pos > const.COVER_POS_FULLY_OPEN / 2:
                     service = SERVICE_OPEN_COVER
                     service_data = {ATTR_ENTITY_ID: entity_id}
                     actual_position = const.COVER_POS_FULLY_OPEN  # Binary covers go to fully open
-                    const.LOGGER.debug(f"[{entity_id}] Using open_cover service (no position support)")
+                    const.LOGGER.debug(f"[{entity_id}] Opening fully via open_cover service (no position support)")
                 else:
                     service = SERVICE_CLOSE_COVER
                     service_data = {ATTR_ENTITY_ID: entity_id}
                     actual_position = const.COVER_POS_FULLY_CLOSED  # Binary covers go to fully closed
-                    const.LOGGER.debug(f"[{entity_id}] Using close_cover service (no position support)")
+                    const.LOGGER.debug(f"[{entity_id}] Closing fully via close_cover service (no position support)")
 
             resolved = self._resolved_settings()
             if resolved.simulation_mode:
@@ -489,6 +502,45 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             error_msg = f"Unexpected error during cover control: {err}"
             const.LOGGER.error(f"[{entity_id}] {error_msg}")
             raise ServiceCallError(service, entity_id, str(err)) from err
+
+    #
+    # _get_cover_closure_limit
+    #
+    def _get_cover_closure_limit(self, entity_id: str, config: dict[str, Any], get_max: bool) -> int:
+        """Get the min or max closure limit for a cover.
+
+        Checks for per-cover override first, then falls back to global setting.
+
+        Args:
+            entity_id: The cover entity ID
+            config: Raw configuration dictionary containing per-cover settings
+            get_max: True to get max_closure limit, False to get min_closure limit
+
+        Returns:
+            The closure limit (0-100, where 0=closed, 100=open)
+        """
+        resolved = self._resolved_settings()
+
+        if get_max:
+            cover_suffix = const.COVER_SFX_MAX_CLOSURE
+            limit_type = "max_closure"
+        else:
+            cover_suffix = const.COVER_SFX_MIN_CLOSURE
+            limit_type = "min_closure"
+
+        # Check for per-cover override
+        per_cover_value = to_int_or_none(config.get(f"{entity_id}_{cover_suffix}"))
+        if per_cover_value is not None:
+            const.LOGGER.debug(f"[{entity_id}] Per-cover {limit_type} limit: {per_cover_value}%")
+            return per_cover_value
+
+        # Fall back to global setting
+        if get_max:
+            global_value = resolved.covers_max_closure
+        else:
+            global_value = resolved.covers_min_closure
+
+        return global_value
 
     #
     # _get_cover_position
@@ -644,7 +696,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             if today_forecast:
                 max_temp = self._extract_max_temperature(today_forecast)
                 if max_temp is not None:
-                    const.LOGGER.debug(f"Using forecast max temperature: {max_temp}°C")
+                    const.LOGGER.debug(f"Forecast max temperature: {max_temp}°C")
                     return max_temp
                 else:
                     const.LOGGER.warning(f"Could not extract max temperature from today's forecast for {entity_id}")
