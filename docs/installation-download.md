@@ -1,3 +1,4 @@
+---
 layout: default
 title: "Installation 1/2"
 nav_order: 2
