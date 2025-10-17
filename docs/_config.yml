@@ -14,6 +14,9 @@ favicon: "/assets/img/favicon-32.png"
 # Theme
 remote_theme: just-the-docs/just-the-docs
 
+# Navigation settings - force nav_order to be respected
+nav_sort: case_insensitive
+
 # Search functionality
 search_enabled: true
 search:
