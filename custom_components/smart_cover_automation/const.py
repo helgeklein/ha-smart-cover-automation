@@ -50,7 +50,6 @@ COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Translation key for cover/window 
 BINARY_SENSOR_KEY_STATUS: Final[str] = "status"  # Key for the status binary sensor entity
 BINARY_SENSOR_KEY_TEMP_HOT: Final[str] = "temp_hot"  # Key for the temp_hot binary sensor entity
 BINARY_SENSOR_KEY_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Key for the weather_sunny binary sensor entity
-SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP: Final[str] = "last_movement_timestamp"  # Key for the last movement timestamp sensor entity
 SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity
 SENSOR_KEY_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Key for the current maximum temperature sensor entity

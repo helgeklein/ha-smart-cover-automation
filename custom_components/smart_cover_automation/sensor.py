@@ -10,16 +10,13 @@ The sensors that appear in Home Assistant are:
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorEntityDescription
 from homeassistant.const import EntityCategory, UnitOfTemperature
 
-from .config import ConfKeys
 from .const import (
     DOMAIN,
-    SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
@@ -54,8 +51,6 @@ async def async_setup_entry(
 
     # Create all sensor entities
     entities = [
-        # Last movement timestamp sensor - shows when covers were last moved
-        LastMovementTimestampSensor(coordinator),
         SunAzimuthSensor(coordinator),
         SunElevationSensor(coordinator),
         TempCurrentMaxSensor(coordinator),
@@ -114,69 +109,6 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):  # pyright: ignore[rep
 
 
 #
-# LastMovementTimestampSensor
-#
-class LastMovementTimestampSensor(IntegrationSensor):
-    """Sensor that reports the timestamp of the last cover movement.
-
-    This sensor tracks when any cover in the automation was last moved.
-    It provides a timestamp that Home Assistant will automatically format
-    according to the user's locale and timezone settings.
-
-    The sensor provides:
-    - Timestamp device class for appropriate UI representation
-    - Automatic availability tracking based on coordinator health
-    - Integration with Home Assistant's sensor platform
-
-    Value meanings:
-    - datetime: Most recent timestamp when a cover was moved
-    - None: No movements have been recorded yet
-    """
-
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the sensor.
-
-        Args:
-            coordinator: Provides the data for this sensor
-        """
-        entity_description = SensorEntityDescription(
-            key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
-            translation_key=SENSOR_KEY_LAST_MOVEMENT_TIMESTAMP,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            device_class=SensorDeviceClass.TIMESTAMP,
-            icon="mdi:clock-outline",
-        )
-        super().__init__(coordinator, entity_description)
-
-    @property
-    def native_value(self) -> datetime | None:  # pyright: ignore
-        """Return the timestamp of the most recent cover movement.
-
-        Returns:
-            Datetime object of the most recent movement,
-            or None if no movements have been recorded yet.
-            Home Assistant will automatically format this according to
-            the user's locale and timezone settings.
-        """
-        latest_timestamp: datetime | None = None
-
-        # Iterate through all covers in coordinator data and find the most recent position history entry
-        covers = self.coordinator.data.get(ConfKeys.COVERS.value) if self.coordinator.data else {}
-        if not isinstance(covers, dict):
-            covers = {}
-        for entity_id in covers.keys():
-            entry = self.coordinator._cover_pos_history_mgr.get_latest_entry(entity_id)
-
-            if not entry or not entry.cover_moved:
-                continue
-
-            if latest_timestamp is None or entry.timestamp > latest_timestamp:
-                latest_timestamp = entry.timestamp
-
-        return latest_timestamp
-
-
-#
 # SunAzimuthSensor
 #
 class SunAzimuthSensor(IntegrationSensor):
@@ -193,6 +125,7 @@ class SunAzimuthSensor(IntegrationSensor):
             translation_key=SENSOR_KEY_SUN_AZIMUTH,
             entity_category=EntityCategory.DIAGNOSTIC,
             # No suitable device class exists for angles - using icon instead
+            # We're not setting state_class (SensorStateClass) to avoid cluttering long-term statistics
             icon="mdi:sun-compass",
             native_unit_of_measurement="°",
         )
@@ -229,6 +162,7 @@ class SunElevationSensor(IntegrationSensor):
             translation_key=SENSOR_KEY_SUN_ELEVATION,
             entity_category=EntityCategory.DIAGNOSTIC,
             # No suitable device class exists for angles - using icon instead
+            # We're not setting state_class (SensorStateClass) to avoid cluttering long-term statistics
             icon="mdi:sun-angle-outline",
             native_unit_of_measurement="°",
         )
@@ -265,6 +199,7 @@ class TempCurrentMaxSensor(IntegrationSensor):
             translation_key=SENSOR_KEY_TEMP_CURRENT_MAX,
             entity_category=EntityCategory.DIAGNOSTIC,
             device_class=SensorDeviceClass.TEMPERATURE,
+            # We're not setting state_class (SensorStateClass) to avoid cluttering long-term statistics
             icon="mdi:thermometer-chevron-up",
             native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         )
@@ -301,6 +236,7 @@ class TempThresholdSensor(IntegrationSensor):
             translation_key=SENSOR_KEY_TEMP_THRESHOLD,
             entity_category=EntityCategory.DIAGNOSTIC,
             device_class=SensorDeviceClass.TEMPERATURE,
+            # We're not setting state_class (SensorStateClass) to avoid cluttering long-term statistics
             icon="mdi:thermometer-lines",
             native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         )

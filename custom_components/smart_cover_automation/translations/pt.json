@@ -67,9 +67,6 @@
     },
     "entity": {
         "sensor": {
-            "last_movement_timestamp": {
-                "name": "Último movimento"
-            },
             "sun_azimuth": {
                 "name": "Azimute solar"
             },

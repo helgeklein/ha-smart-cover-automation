@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_POSITION, CoverEntityFeature
+from homeassistant.components.logbook import async_log_entry
 from homeassistant.components.weather import SERVICE_GET_FORECASTS
 from homeassistant.const import (
     ATTR_ENTITY_ID,
@@ -365,24 +366,24 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                 # Get the max closure limit for this cover
                 max_closure_limit = self._get_cover_closure_limit(entity_id, config, get_max=True)
                 # Close the cover (but respect max closure limit)
-                target_desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
+                desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
                 reason = "heat protection (closed)"
             else:
                 # Get the min closure limit for this cover
                 min_closure_limit = self._get_cover_closure_limit(entity_id, config, get_max=False)
                 # Open the cover (but respect min closure limit)
-                target_desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
+                desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
                 reason = "normal state (open)"
 
             # Store and log desired target position
-            cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = target_desired_pos
-            const.LOGGER.debug(f"[{entity_id}] Desired position: {target_desired_pos}%. Reason: {reason}")
+            cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = desired_pos
+            const.LOGGER.debug(f"[{entity_id}] Desired position: {desired_pos}%. Reason: {reason}")
 
             # Determine if cover movement is necessary
             movement_needed = False
-            if target_desired_pos == current_pos:
+            if desired_pos == current_pos:
                 message = "No movement needed"
-            elif abs(target_desired_pos - current_pos) < covers_min_position_delta:
+            elif abs(desired_pos - current_pos) < covers_min_position_delta:
                 message = "Skipped minor adjustment"
             else:
                 message = "Moved cover"
@@ -391,13 +392,19 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             if movement_needed:
                 try:
                     # Move the cover
-                    actual_pos = await self._set_cover_position(entity_id, target_desired_pos, features)
+                    actual_pos = await self._set_cover_position(entity_id, desired_pos, features)
                     const.LOGGER.debug(f"[{entity_id}] Actual position: {actual_pos}%")
                     if actual_pos is not None:
                         # Store the position after movement
                         cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
                         # Add the new position to the history
                         self._cover_pos_history_mgr.add(entity_id, actual_pos, cover_moved=True)
+                        # Add detailed logbook entry
+                        self._add_logbook_entry_cover_movement(
+                            entity_id=entity_id,
+                            reason=reason,
+                            cover_attrs=cover_attrs,
+                        )
                 except ServiceCallError as err:
                     # Log the error but continue with other covers
                     const.LOGGER.error(f"[{entity_id}] Failed to control cover: {err}")
@@ -479,10 +486,10 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                     f"[{entity_id}] Simulation mode enabled; skipping actual {service} call; would have moved to {actual_position}%"
                 )
             else:
-                # Call the service
+                # Call the service (waiting until HA has processed it, but not waiting until the cover has finished moving)
                 await self.hass.services.async_call(Platform.COVER, service, service_data)
 
-            # Return the actual position that the cover was moved to
+            # Return the actual position the cover is moving to
             return actual_position
 
         except (OSError, ConnectionError, TimeoutError) as err:
@@ -842,3 +849,23 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         const.LOGGER.warning(message)
         cover_attrs[const.COVER_ATTR_MESSAGE] = message
         result[ConfKeys.COVERS.value][entity_id] = cover_attrs
+
+    def _add_logbook_entry_cover_movement(
+        self,
+        entity_id: str,
+        reason: str,
+        cover_attrs: dict[str, Any],
+    ) -> None:
+        """Add a detailed logbook entry for cover movement."""
+
+        try:
+            async_log_entry(
+                self.hass,
+                name=const.INTEGRATION_NAME,
+                message=f"Moving cover. Reason: {reason}. Details: {str(cover_attrs)}.",
+                domain=const.DOMAIN,
+                entity_id=entity_id,
+            )
+        except Exception as err:
+            # Don't fail the entire automation if logbook entry fails
+            const.LOGGER.debug(f"[{entity_id}] Failed to add logbook entry: {err}")

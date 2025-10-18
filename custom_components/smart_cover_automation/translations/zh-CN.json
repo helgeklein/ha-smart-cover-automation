@@ -67,9 +67,6 @@
     },
     "entity": {
         "sensor": {
-            "last_movement_timestamp": {
-                "name": "上次移动"
-            },
             "sun_azimuth": {
                 "name": "太阳方位角"
             },
