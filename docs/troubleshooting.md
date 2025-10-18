@@ -10,11 +10,16 @@ permalink: /troubleshooting/
 
 This guide helps resolve issues with the Smart Cover Automation integration.
 
-## Sensors
+## Monitoring the Integration from the UI
+
+### Activity Logbook
+
+All cover movements are logged in Home Assistant's [activity logbook](https://www.home-assistant.io/integrations/logbook/). Fully translated, of course.
+
+### Sensors
 
 The integration comes with the following sensors that help you understand the integration's inner workings:
 
-- **Last movement:** Timestamp of the cover movement initiated by the integration.
 - **Status:** Overall status returned by the last automation update.
 - **Sun azimuth:** Current sun azimuth (angle from north).
 - **Sun elevation:** Current sun elevation (angle above the horizon).

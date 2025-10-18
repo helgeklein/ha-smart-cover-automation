@@ -110,5 +110,12 @@
                 "name": "Registro detallado"
             }
         }
+    },
+    "logbook": {
+        "template_cover_movement": "{verb} {entity_id} para {reason}. Nueva posición: {position}%.",
+        "verb_opening": "Abriendo",
+        "verb_closing": "Cerrando",
+        "reason_heat_protection": "proteger del calor",
+        "reason_let_light_in": "dejar pasar la luz"
     }
 }

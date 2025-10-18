@@ -24,6 +24,8 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as ha_entity_registry
+from homeassistant.helpers import translation
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator as BaseCoordinator
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
@@ -107,6 +109,10 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
         # Store merged config for comparison during reload
         self._merged_config: dict[str, Any] = {}
+
+        # Store the unique_id of the status binary sensor (set by the sensor during __init__)
+        # Used to look up the actual entity_id from the entity registry for logbook entries
+        self.status_sensor_unique_id: str | None = None
 
         resolved = resolve_entry(config_entry)
         const.LOGGER.info(
@@ -367,17 +373,21 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                 max_closure_limit = self._get_cover_closure_limit(entity_id, config, get_max=True)
                 # Close the cover (but respect max closure limit)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
-                reason = "heat protection (closed)"
+                desired_pos_friendly_name = "heat protection state (closed)"
+                verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
+                reason_key = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
             else:
                 # Get the min closure limit for this cover
                 min_closure_limit = self._get_cover_closure_limit(entity_id, config, get_max=False)
                 # Open the cover (but respect min closure limit)
                 desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
-                reason = "normal state (open)"
+                desired_pos_friendly_name = "normal state (open)"
+                verb_key = const.TRANSL_LOGBOOK_VERB_OPENING
+                reason_key = const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN
 
             # Store and log desired target position
             cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = desired_pos
-            const.LOGGER.debug(f"[{entity_id}] Desired position: {desired_pos}%. Reason: {reason}")
+            const.LOGGER.debug(f"[{entity_id}] Desired position: {desired_pos}%, {desired_pos_friendly_name}")
 
             # Determine if cover movement is necessary
             movement_needed = False
@@ -400,10 +410,11 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                         # Add the new position to the history
                         self._cover_pos_history_mgr.add(entity_id, actual_pos, cover_moved=True)
                         # Add detailed logbook entry
-                        self._add_logbook_entry_cover_movement(
+                        await self._add_logbook_entry_cover_movement(
+                            verb_key=verb_key,
                             entity_id=entity_id,
-                            reason=reason,
-                            cover_attrs=cover_attrs,
+                            reason_key=reason_key,
+                            target_pos=actual_pos,
                         )
                 except ServiceCallError as err:
                     # Log the error but continue with other covers
@@ -850,21 +861,83 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         cover_attrs[const.COVER_ATTR_MESSAGE] = message
         result[ConfKeys.COVERS.value][entity_id] = cover_attrs
 
-    def _add_logbook_entry_cover_movement(
+    #
+    # _add_logbook_entry_cover_movement
+    #
+    async def _add_logbook_entry_cover_movement(
         self,
+        verb_key: str,
         entity_id: str,
-        reason: str,
-        cover_attrs: dict[str, Any],
+        reason_key: str,
+        target_pos: int,
     ) -> None:
-        """Add a detailed logbook entry for cover movement."""
+        """Add a detailed logbook entry for cover movement.
+
+        Associates the entry with the integration's status binary sensor so it appears
+        when filtering the logbook by this integration's device.
+
+        Uses the stored unique_id to look up the current entity_id from the registry,
+        which handles cases where users have renamed the entity.
+
+        Translates the message using the current language setting.
+        """
 
         try:
+            # Look up the entity ID from the entity registry using the stored unique_id
+            # This handles entity renames correctly since unique_id never changes
+            registry = ha_entity_registry.async_get(self.hass)
+            unique_id = self.status_sensor_unique_id
+
+            # Find the entity by unique_id
+            integration_entity_id = None
+            for entity in registry.entities.values():
+                if entity.unique_id == unique_id and entity.platform == const.DOMAIN:
+                    integration_entity_id = entity.entity_id
+                    break
+
+            if integration_entity_id is None:
+                const.LOGGER.warning(f"Could not find integration entity for logbook entry by its unique_id: {unique_id}")
+                return
+
+            # Get translations for the current language.
+            # HA falls back to English automatically if a translation is missing.
+            translations = await translation.async_get_translations(
+                self.hass,
+                self.hass.config.language,
+                const.TRANSL_LOGBOOK,
+                [const.DOMAIN],
+            )
+
+            # Build translation keys
+            verb_key = f"component.{const.DOMAIN}.{const.TRANSL_LOGBOOK}.{verb_key}"
+            reason_key = f"component.{const.DOMAIN}.{const.TRANSL_LOGBOOK}.{reason_key}"
+            template_key = f"component.{const.DOMAIN}.{const.TRANSL_LOGBOOK}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}"
+
+            # Get translated strings
+            translated_verb = translations.get(verb_key)
+            translated_reason = translations.get(reason_key)
+            translated_template = translations.get(template_key)
+            if translated_verb is None or translated_reason is None or translated_template is None:
+                const.LOGGER.warning(
+                    f"Missing translations for logbook entry: verb='{verb_key}', reason='{reason_key}', template='{template_key}'"
+                )
+                return
+
+            # Build the message
+            message = translated_template.format(
+                verb=translated_verb,
+                entity_id=entity_id,
+                reason=translated_reason,
+                position=target_pos,
+            )
+
+            # Add the logbook entry
             async_log_entry(
                 self.hass,
                 name=const.INTEGRATION_NAME,
-                message=f"Moving cover. Reason: {reason}. Details: {str(cover_attrs)}.",
+                message=message,
                 domain=const.DOMAIN,
-                entity_id=entity_id,
+                entity_id=integration_entity_id,
             )
         except Exception as err:
             # Don't fail the entire automation if logbook entry fails

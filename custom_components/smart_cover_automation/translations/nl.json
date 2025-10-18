@@ -110,5 +110,12 @@
                 "name": "Uitgebreide logging"
             }
         }
+    },
+    "logbook": {
+        "template_cover_movement": "{verb} {entity_id} om {reason}. Nieuwe positie: {position}%.",
+        "verb_opening": "Openen van",
+        "verb_closing": "Sluiten van",
+        "reason_heat_protection": "te beschermen tegen hitte",
+        "reason_let_light_in": "licht binnen te laten"
     }
 }

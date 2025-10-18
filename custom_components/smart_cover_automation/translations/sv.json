@@ -110,5 +110,12 @@
                 "name": "Utförlig loggning"
             }
         }
+    },
+    "logbook": {
+        "template_cover_movement": "{verb} {entity_id} för att {reason}. Ny position: {position}%.",
+        "verb_opening": "Öppnar",
+        "verb_closing": "Stänger",
+        "reason_heat_protection": "skydda mot värme",
+        "reason_let_light_in": "släppa in ljus"
     }
 }

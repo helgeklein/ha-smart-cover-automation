@@ -131,6 +131,9 @@ class StatusBinarySensor(IntegrationBinarySensor):
         )
         super().__init__(coordinator, entity_description)
 
+        # Store the unique ID in the coordinator for logbook use
+        coordinator.status_sensor_unique_id = self._attr_unique_id
+
     @property
     def is_on(self) -> bool:  # pyright: ignore
         """Return True if the integration has problems."""

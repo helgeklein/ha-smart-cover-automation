@@ -1,12 +1,12 @@
 ---
 layout: default
-title: "Installation 2/2"
+title: "Installation: Add to HA"
 nav_order: 3
 description: "Installation guide part 2 for Smart Cover Automation for Home Assistant, via HACS or manually."
 permalink: /installation-add/
 ---
 
-# Installation Guide 2/2: Add Integration
+# Installation Guide 2: Add Integration
 
 ### Add the Integration
 

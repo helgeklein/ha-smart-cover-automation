@@ -94,3 +94,11 @@ COVER_POS_FULLY_CLOSED: Final = 0
 
 # Coordinator
 UPDATE_INTERVAL: Final = timedelta(seconds=60)
+
+# Logbook translation keys
+TRANSL_LOGBOOK: Final[str] = "logbook"
+TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT: Final[str] = "template_cover_movement"
+TRANSL_LOGBOOK_VERB_OPENING: Final[str] = "verb_opening"
+TRANSL_LOGBOOK_VERB_CLOSING: Final[str] = "verb_closing"
+TRANSL_LOGBOOK_REASON_HEAT_PROTECTION: Final[str] = "reason_heat_protection"
+TRANSL_LOGBOOK_REASON_LET_LIGHT_IN: Final[str] = "reason_let_light_in"
