@@ -112,21 +112,45 @@
         }
     },
     "services": {
-        "logbook": {
-            "template_cover_movement": {
-                "name": "{verb} {entity_id} per {reason}. Nuova posizione: {position} %."
-            },
-            "verb_opening": {
-                "name": "Apertura di"
-            },
-            "verb_closing": {
-                "name": "Chiusura di"
-            },
-            "reason_heat_protection": {
-                "name": "proteggere dal calore"
-            },
-            "reason_let_light_in": {
-                "name": "far entrare la luce"
+        "logbook_entry": {
+            "name": "Crea voce nel registro",
+            "description": "Crea una voce del registro Smart Cover Automation.",
+            "fields": {
+                "entity_id": {
+                    "name": "Entità della tapparella",
+                    "description": "ID dell'entità della tapparella per la voce di registro."
+                },
+                "target_position": {
+                    "name": "Posizione target",
+                    "description": "Posizione target della tapparella tra 0 e 100."
+                },
+                "verb_key": {
+                    "name": "Chiave del verbo",
+                    "description": "Chiave di traduzione che descrive il verbo del movimento."
+                },
+                "reason_key": {
+                    "name": "Chiave del motivo",
+                    "description": "Chiave di traduzione che spiega perché la tapparella si è mossa."
+                },
+                "config_entry_id": {
+                    "name": "ID voce di configurazione",
+                    "description": "ID di configurazione facoltativo per indirizzare la voce di registro a un'istanza specifica."
+                },
+                "template_cover_movement": {
+                    "name": "{verb} {entity_id} per {reason}. Nuova posizione: {position} %."
+                },
+                "verb_opening": {
+                    "name": "Apertura di"
+                },
+                "verb_closing": {
+                    "name": "Chiusura di"
+                },
+                "reason_heat_protection": {
+                    "name": "proteggere dal calore"
+                },
+                "reason_let_light_in": {
+                    "name": "far entrare la luce"
+                }
             }
         }
     }

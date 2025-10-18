@@ -112,21 +112,45 @@
         }
     },
     "services": {
-        "logbook": {
-            "template_cover_movement": {
-                "name": "{verb} {entity_id} om {reason}. Nieuwe positie: {position} %."
-            },
-            "verb_opening": {
-                "name": "Openen van"
-            },
-            "verb_closing": {
-                "name": "Sluiten van"
-            },
-            "reason_heat_protection": {
-                "name": "te beschermen tegen hitte"
-            },
-            "reason_let_light_in": {
-                "name": "licht binnen te laten"
+        "logbook_entry": {
+            "name": "Logboekvermelding maken",
+            "description": "Maak een Smart Cover Automation-logboekvermelding.",
+            "fields": {
+                "entity_id": {
+                    "name": "Rolluik-entiteit",
+                    "description": "Entiteits-ID van het rolluik voor de logboekvermelding."
+                },
+                "target_position": {
+                    "name": "Doelpositie",
+                    "description": "Doelpositie van het rolluik tussen 0 en 100."
+                },
+                "verb_key": {
+                    "name": "Werkwoordsleutel",
+                    "description": "Vertalingssleutel die het werkwoord van de beweging beschrijft."
+                },
+                "reason_key": {
+                    "name": "Redensleutel",
+                    "description": "Vertalingssleutel die uitlegt waarom het rolluik bewoog."
+                },
+                "config_entry_id": {
+                    "name": "Configuratie-ID",
+                    "description": "Optionele configuratie-ID om de logboekvermelding naar een specifieke integratie-instantie te sturen."
+                },
+                "template_cover_movement": {
+                    "name": "{verb} {entity_id} om {reason}. Nieuwe positie: {position} %."
+                },
+                "verb_opening": {
+                    "name": "Openen van"
+                },
+                "verb_closing": {
+                    "name": "Sluiten van"
+                },
+                "reason_heat_protection": {
+                    "name": "te beschermen tegen hitte"
+                },
+                "reason_let_light_in": {
+                    "name": "licht binnen te laten"
+                }
             }
         }
     }

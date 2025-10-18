@@ -112,21 +112,45 @@
         }
     },
     "services": {
-        "logbook": {
-            "template_cover_movement": {
-                "name": "{verb} {entity_id} ，以{reason}。新位置：{position}%."
-            },
-            "verb_opening": {
-                "name": "开启"
-            },
-            "verb_closing": {
-                "name": "关闭"
-            },
-            "reason_heat_protection": {
-                "name": "防止过热"
-            },
-            "reason_let_light_in": {
-                "name": "引入光线"
+        "logbook_entry": {
+            "name": "创建日志条目",
+            "description": "创建 Smart Cover Automation 的日志条目。",
+            "fields": {
+                "entity_id": {
+                    "name": "遮阳设备实体",
+                    "description": "用于日志条目的遮阳设备实体 ID。"
+                },
+                "target_position": {
+                    "name": "目标位置",
+                    "description": "遮阳设备的目标位置，范围 0 至 100。"
+                },
+                "verb_key": {
+                    "name": "动词键",
+                    "description": "描述移动动作的翻译键。"
+                },
+                "reason_key": {
+                    "name": "原因键",
+                    "description": "解释遮阳设备为何移动的翻译键。"
+                },
+                "config_entry_id": {
+                    "name": "配置项 ID",
+                    "description": "可选的配置项 ID，用于将日志条目发送到特定的集成实例。"
+                },
+                "template_cover_movement": {
+                    "name": "{verb} {entity_id}，以{reason}。新位置：{position}%."
+                },
+                "verb_opening": {
+                    "name": "开启"
+                },
+                "verb_closing": {
+                    "name": "关闭"
+                },
+                "reason_heat_protection": {
+                    "name": "防止过热"
+                },
+                "reason_let_light_in": {
+                    "name": "引入光线"
+                }
             }
         }
     }

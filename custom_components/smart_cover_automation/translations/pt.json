@@ -112,21 +112,45 @@
         }
     },
     "services": {
-        "logbook": {
-            "template_cover_movement": {
-                "name": "{verb} {entity_id} para {reason}. Nova posição: {position} %."
-            },
-            "verb_opening": {
-                "name": "Abrindo"
-            },
-            "verb_closing": {
-                "name": "Fechando"
-            },
-            "reason_heat_protection": {
-                "name": "proteger do calor"
-            },
-            "reason_let_light_in": {
-                "name": "deixar entrar luz"
+        "logbook_entry": {
+            "name": "Criar entrada no registo",
+            "description": "Cria uma entrada de registo do Smart Cover Automation.",
+            "fields": {
+                "entity_id": {
+                    "name": "Entidade da persiana",
+                    "description": "ID da entidade da persiana para a entrada do registo."
+                },
+                "target_position": {
+                    "name": "Posição alvo",
+                    "description": "Posição alvo da persiana entre 0 e 100."
+                },
+                "verb_key": {
+                    "name": "Chave do verbo",
+                    "description": "Chave de tradução que descreve o verbo do movimento."
+                },
+                "reason_key": {
+                    "name": "Chave do motivo",
+                    "description": "Chave de tradução que explica porque a persiana se moveu."
+                },
+                "config_entry_id": {
+                    "name": "ID da entrada de configuração",
+                    "description": "ID de entrada de configuração opcional para direcionar o registo para uma instância específica."
+                },
+                "template_cover_movement": {
+                    "name": "{verb} {entity_id} para {reason}. Nova posição: {position} %."
+                },
+                "verb_opening": {
+                    "name": "Abrindo"
+                },
+                "verb_closing": {
+                    "name": "Fechando"
+                },
+                "reason_heat_protection": {
+                    "name": "proteger do calor"
+                },
+                "reason_let_light_in": {
+                    "name": "deixar entrar luz"
+                }
             }
         }
     }

@@ -10,11 +10,21 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
+from homeassistant.core import ServiceCall
 from homeassistant.loader import async_get_loaded_integration
 
 from .config import ConfKeys
 from .config_flow import OptionsFlowHandler
-from .const import DOMAIN, HA_OPTIONS, INTEGRATION_NAME, LOGGER
+from .const import (
+    DATA_COORDINATORS,
+    DOMAIN,
+    HA_OPTIONS,
+    INTEGRATION_NAME,
+    LOGGER,
+    SERVICE_LOGBOOK_ENTRY,
+    TRANSL_LOGBOOK_REASON_HEAT_PROTECTION,
+    TRANSL_LOGBOOK_VERB_OPENING,
+)
 from .coordinator import DataUpdateCoordinator
 from .data import RuntimeData
 
@@ -72,6 +82,72 @@ async def async_setup_entry(
             config=merged_config,
         )
 
+        # Track coordinator references for service handling
+        domain_data = hass.data.setdefault(DOMAIN, {})
+        coordinators = domain_data.setdefault(DATA_COORDINATORS, {})
+        coordinators[entry.entry_id] = coordinator
+
+        # Register services once per hass instance
+        if not hass.services.has_service(DOMAIN, SERVICE_LOGBOOK_ENTRY):
+
+            async def handle_logbook_entry(call: ServiceCall) -> None:
+                """Handle service calls that create logbook entries."""
+
+                domain_state = hass.data.get(DOMAIN) or {}
+                registered_coordinators = domain_state.get(DATA_COORDINATORS, {})
+
+                if not registered_coordinators:
+                    LOGGER.warning("Logbook service called but no coordinators are registered")
+                    return
+
+                entity_id = call.data.get("entity_id")
+                target_position = call.data.get("target_position")
+
+                if entity_id is None or target_position is None:
+                    LOGGER.warning("Logbook service requires 'entity_id' and 'target_position'")
+                    return
+
+                try:
+                    target_pos_int = int(target_position)
+                except (TypeError, ValueError):
+                    LOGGER.warning("Invalid target_position '%s' provided to logbook service", target_position)
+                    return
+
+                verb_key = call.data.get("verb_key", TRANSL_LOGBOOK_VERB_OPENING)
+                reason_key = call.data.get("reason_key", TRANSL_LOGBOOK_REASON_HEAT_PROTECTION)
+
+                coordinator_for_call: DataUpdateCoordinator | None = None
+
+                # Optional explicit config entry targeting
+                config_entry_id = call.data.get("config_entry_id")
+                if config_entry_id:
+                    coordinator_for_call = registered_coordinators.get(config_entry_id)
+
+                # Try to match coordinator by cover entity if still unresolved
+                if coordinator_for_call is None:
+                    for candidate in registered_coordinators.values():
+                        covers = {} if candidate.data is None else candidate.data.get("covers", {})
+                        if entity_id in covers:
+                            coordinator_for_call = candidate
+                            break
+
+                # Fall back to the first available coordinator
+                if coordinator_for_call is None:
+                    coordinator_for_call = next(iter(registered_coordinators.values()), None)
+
+                if coordinator_for_call is None:
+                    LOGGER.warning("Logbook service could not locate an active coordinator")
+                    return
+
+                await coordinator_for_call._add_logbook_entry_cover_movement(
+                    verb_key=verb_key,
+                    entity_id=entity_id,
+                    reason_key=reason_key,
+                    target_pos=target_pos_int,
+                )
+
+            hass.services.async_register(DOMAIN, SERVICE_LOGBOOK_ENTRY, handle_logbook_entry)
+
         # Call each platform's async_setup_entry()
         LOGGER.debug(f"Setting up platforms: {PLATFORMS}")
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -117,7 +193,21 @@ async def async_unload_entry(
     """Handle removal of an entry."""
     LOGGER.info(f"Unloading {INTEGRATION_NAME} integration")
     try:
-        return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+        result = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+        domain_state = hass.data.get(DOMAIN)
+        if domain_state and DATA_COORDINATORS in domain_state:
+            coordinators: dict[str, DataUpdateCoordinator] = domain_state[DATA_COORDINATORS]
+            coordinators.pop(entry.entry_id, None)
+
+            if not coordinators:
+                domain_state.pop(DATA_COORDINATORS, None)
+                if not domain_state:
+                    hass.data.pop(DOMAIN, None)
+                if hass.services.has_service(DOMAIN, SERVICE_LOGBOOK_ENTRY):
+                    hass.services.async_remove(DOMAIN, SERVICE_LOGBOOK_ENTRY)
+
+        return result
     except (OSError, ValueError, TypeError) as err:
         # "Expected" errors: only log an error message
         LOGGER.error(f"Error unloading {INTEGRATION_NAME} integration: {err}")

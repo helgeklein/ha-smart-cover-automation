@@ -112,21 +112,45 @@
         }
     },
     "services": {
-        "logbook": {
-            "template_cover_movement": {
-                "name": "{verb} {entity_id} um {reason}. Neue Position: {position} %."
-            },
-            "verb_opening": {
-                "name": "Öffne"
-            },
-            "verb_closing": {
-                "name": "Schließe"
-            },
-            "reason_heat_protection": {
-                "name": "vor Hitze zu schützen"
-            },
-            "reason_let_light_in": {
-                "name": "Licht hereinzulassen"
+        "logbook_entry": {
+            "name": "Logbucheintrag erstellen",
+            "description": "Erstellt einen Smart Cover Automation Logbucheintrag.",
+            "fields": {
+                "entity_id": {
+                    "name": "Rollladen",
+                    "description": "Entitäts-ID für den Logbucheintrag."
+                },
+                "target_position": {
+                    "name": "Zielposition",
+                    "description": "Zielposition des Rollladens (0 bis 100)."
+                },
+                "verb_key": {
+                    "name": "Verb-Schlüssel",
+                    "description": "Übersetzungsschlüssel für die Bewegung."
+                },
+                "reason_key": {
+                    "name": "Grund-Schlüssel",
+                    "description": "Übersetzungsschlüssel für den Bewegungsgrund."
+                },
+                "config_entry_id": {
+                    "name": "Konfigurations-ID",
+                    "description": "Optionale Konfigurations-ID, um den Logbucheintrag einer bestimmten Instanz zuzuordnen."
+                },
+                "template_cover_movement": {
+                    "name": "{verb} {entity_id} um {reason}. Neue Position: {position} %."
+                },
+                "verb_opening": {
+                    "name": "Öffne"
+                },
+                "verb_closing": {
+                    "name": "Schließe"
+                },
+                "reason_heat_protection": {
+                    "name": "vor Hitze zu schützen"
+                },
+                "reason_let_light_in": {
+                    "name": "Licht hereinzulassen"
+                }
             }
         }
     }

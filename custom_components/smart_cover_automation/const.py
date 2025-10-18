@@ -96,10 +96,16 @@ COVER_POS_FULLY_CLOSED: Final = 0
 UPDATE_INTERVAL: Final = timedelta(seconds=60)
 
 # Logbook translation keys
-TRANSL_LOGBOOK: Final[str] = "logbook"
+TRANSL_LOGBOOK: Final[str] = "logbook_entry"
 TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT: Final[str] = "template_cover_movement"
 TRANSL_LOGBOOK_VERB_OPENING: Final[str] = "verb_opening"
 TRANSL_LOGBOOK_VERB_CLOSING: Final[str] = "verb_closing"
 TRANSL_LOGBOOK_REASON_HEAT_PROTECTION: Final[str] = "reason_heat_protection"
 TRANSL_LOGBOOK_REASON_LET_LIGHT_IN: Final[str] = "reason_let_light_in"
 TRANSL_ATTR_NAME: Final[str] = "name"
+
+# Services
+SERVICE_LOGBOOK_ENTRY: Final[str] = "logbook_entry"
+
+# hass.data keys
+DATA_COORDINATORS: Final[str] = "coordinators"

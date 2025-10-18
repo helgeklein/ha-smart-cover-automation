@@ -112,21 +112,45 @@
         }
     },
     "services": {
-        "logbook": {
-            "template_cover_movement": {
-                "name": "{verb} {entity_id} pour {reason}. Nouvelle position : {position} %."
-            },
-            "verb_opening": {
-                "name": "Ouverture de"
-            },
-            "verb_closing": {
-                "name": "Fermeture de"
-            },
-            "reason_heat_protection": {
-                "name": "protéger de la chaleur"
-            },
-            "reason_let_light_in": {
-                "name": "laisser entrer la lumière"
+        "logbook_entry": {
+            "name": "Créer une entrée de journal",
+            "description": "Crée une entrée de journal Smart Cover Automation.",
+            "fields": {
+                "entity_id": {
+                    "name": "Entité du volet",
+                    "description": "Identifiant de l'entité du volet pour l'entrée de journal."
+                },
+                "target_position": {
+                    "name": "Position cible",
+                    "description": "Position cible du volet entre 0 et 100."
+                },
+                "verb_key": {
+                    "name": "Clé du verbe",
+                    "description": "Clé de traduction décrivant le verbe du mouvement."
+                },
+                "reason_key": {
+                    "name": "Clé du motif",
+                    "description": "Clé de traduction expliquant pourquoi le volet s'est déplacé."
+                },
+                "config_entry_id": {
+                    "name": "ID d'entrée de configuration",
+                    "description": "ID d'entrée de configuration facultative pour diriger l'entrée de journal vers une instance spécifique."
+                },
+                "template_cover_movement": {
+                    "name": "{verb} {entity_id} pour {reason}. Nouvelle position : {position} %."
+                },
+                "verb_opening": {
+                    "name": "Ouverture de"
+                },
+                "verb_closing": {
+                    "name": "Fermeture de"
+                },
+                "reason_heat_protection": {
+                    "name": "protéger de la chaleur"
+                },
+                "reason_let_light_in": {
+                    "name": "laisser entrer la lumière"
+                }
             }
         }
     }

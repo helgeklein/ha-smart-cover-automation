@@ -112,21 +112,45 @@
         }
     },
     "services": {
-        "logbook": {
-            "template_cover_movement": {
-                "name": "{verb} {entity_id} to {reason}. New position: {position}%."
-            },
-            "verb_opening": {
-                "name": "Opening"
-            },
-            "verb_closing": {
-                "name": "Closing"
-            },
-            "reason_heat_protection": {
-                "name": "protect from heat"
-            },
-            "reason_let_light_in": {
-                "name": "let light in"
+        "logbook_entry": {
+            "name": "Create logbook entry",
+            "description": "Create a Smart Cover Automation logbook entry.",
+            "fields": {
+                "entity_id": {
+                    "name": "Cover entity",
+                    "description": "Cover entity ID for the logbook entry."
+                },
+                "target_position": {
+                    "name": "Target position",
+                    "description": "Target cover position between 0 and 100."
+                },
+                "verb_key": {
+                    "name": "Verb key",
+                    "description": "Translation key describing the movement verb."
+                },
+                "reason_key": {
+                    "name": "Reason key",
+                    "description": "Translation key explaining why the cover moved."
+                },
+                "config_entry_id": {
+                    "name": "Config entry ID",
+                    "description": "Optional config entry ID to route the logbook entry to a specific integration instance."
+                },
+                "template_cover_movement": {
+                    "name": "{verb} {entity_id} to {reason}. New position: {position}%."
+                },
+                "verb_opening": {
+                    "name": "Opening"
+                },
+                "verb_closing": {
+                    "name": "Closing"
+                },
+                "reason_heat_protection": {
+                    "name": "protect from heat"
+                },
+                "reason_let_light_in": {
+                    "name": "let light in"
+                }
             }
         }
     }

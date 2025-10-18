@@ -112,21 +112,45 @@
         }
     },
     "services": {
-        "logbook": {
-            "template_cover_movement": {
-                "name": "{verb} {entity_id}, aby {reason}. Nowa pozycja: {position} %."
-            },
-            "verb_opening": {
-                "name": "Otwieranie"
-            },
-            "verb_closing": {
-                "name": "Zamykanie"
-            },
-            "reason_heat_protection": {
-                "name": "chronić przed upałem"
-            },
-            "reason_let_light_in": {
-                "name": "wpuścić światło"
+        "logbook_entry": {
+            "name": "Utwórz wpis w dzienniku",
+            "description": "Tworzy wpis dziennika Smart Cover Automation.",
+            "fields": {
+                "entity_id": {
+                    "name": "Encja rolety",
+                    "description": "ID encji rolety dla wpisu w dzienniku."
+                },
+                "target_position": {
+                    "name": "Pozycja docelowa",
+                    "description": "Docelowa pozycja rolety w zakresie 0-100."
+                },
+                "verb_key": {
+                    "name": "Klucz czasownika",
+                    "description": "Klucz tłumaczenia opisujący czasownik ruchu."
+                },
+                "reason_key": {
+                    "name": "Klucz powodu",
+                    "description": "Klucz tłumaczenia wyjaśniający, dlaczego roleta się poruszyła."
+                },
+                "config_entry_id": {
+                    "name": "ID wpisu konfiguracji",
+                    "description": "Opcjonalny identyfikator konfiguracji kierujący wpis dziennika do konkretnej instancji integracji."
+                },
+                "template_cover_movement": {
+                    "name": "{verb} {entity_id}, aby {reason}. Nowa pozycja: {position} %."
+                },
+                "verb_opening": {
+                    "name": "Otwieranie"
+                },
+                "verb_closing": {
+                    "name": "Zamykanie"
+                },
+                "reason_heat_protection": {
+                    "name": "chronić przed upałem"
+                },
+                "reason_let_light_in": {
+                    "name": "wpuścić światło"
+                }
             }
         }
     }
