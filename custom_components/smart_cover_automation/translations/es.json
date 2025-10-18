@@ -113,11 +113,21 @@
     },
     "services": {
         "logbook": {
-            "template_cover_movement": "{verb} {entity_id} para {reason}. Nueva posición: {position} %.",
-            "verb_opening": "Abriendo",
-            "verb_closing": "Cerrando",
-            "reason_heat_protection": "proteger del calor",
-            "reason_let_light_in": "dejar pasar la luz"
+            "template_cover_movement": {
+                "name": "{verb} {entity_id} para {reason}. Nueva posición: {position} %."
+            },
+            "verb_opening": {
+                "name": "Abriendo"
+            },
+            "verb_closing": {
+                "name": "Cerrando"
+            },
+            "reason_heat_protection": {
+                "name": "proteger del calor"
+            },
+            "reason_let_light_in": {
+                "name": "dejar pasar la luz"
+            }
         }
     }
 }

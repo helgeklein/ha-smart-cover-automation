@@ -910,9 +910,9 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
             # Build translation keys
             base_key = f"component.{const.DOMAIN}.services.{const.TRANSL_LOGBOOK}"
-            verb_key = f"{base_key}.{verb_key}"
-            reason_key = f"{base_key}.{reason_key}"
-            template_key = f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}"
+            verb_key = f"{base_key}.{verb_key}.{const.TRANSL_ATTR_NAME}"
+            reason_key = f"{base_key}.{reason_key}.{const.TRANSL_ATTR_NAME}"
+            template_key = f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}.{const.TRANSL_ATTR_NAME}"
 
             # Get translated strings
             translated_verb = translations.get(verb_key)

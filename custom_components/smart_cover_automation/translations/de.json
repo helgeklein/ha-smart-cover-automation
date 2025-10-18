@@ -113,11 +113,21 @@
     },
     "services": {
         "logbook": {
-            "template_cover_movement": "{verb} {entity_id} um {reason}. Neue Position: {position} %.",
-            "verb_opening": "Öffne",
-            "verb_closing": "Schließe",
-            "reason_heat_protection": "vor Hitze zu schützen",
-            "reason_let_light_in": "Licht hereinzulassen"
+            "template_cover_movement": {
+                "name": "{verb} {entity_id} um {reason}. Neue Position: {position} %."
+            },
+            "verb_opening": {
+                "name": "Öffne"
+            },
+            "verb_closing": {
+                "name": "Schließe"
+            },
+            "reason_heat_protection": {
+                "name": "vor Hitze zu schützen"
+            },
+            "reason_let_light_in": {
+                "name": "Licht hereinzulassen"
+            }
         }
     }
 }

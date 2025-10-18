@@ -47,11 +47,11 @@ class TestLogbookEntries:
         """Create mock translations."""
         base_key = f"component.{const.DOMAIN}.services.{const.TRANSL_LOGBOOK}"
         return {
-            f"{base_key}.verb_opening": "Opening",
-            f"{base_key}.verb_closing": "Closing",
-            f"{base_key}.reason_heat_protection": "protect from heat",
-            f"{base_key}.reason_let_light_in": "let light in",
-            f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}": "{verb} {entity_id} to {reason}. New position: {position}%.",
+            f"{base_key}.{const.TRANSL_LOGBOOK_VERB_OPENING}.{const.TRANSL_ATTR_NAME}": "Opening",
+            f"{base_key}.{const.TRANSL_LOGBOOK_VERB_CLOSING}.{const.TRANSL_ATTR_NAME}": "Closing",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION}.{const.TRANSL_ATTR_NAME}": "protect from heat",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN}.{const.TRANSL_ATTR_NAME}": "let light in",
+            f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}.{const.TRANSL_ATTR_NAME}": "{verb} {entity_id} to {reason}. New position: {position}%.",
         }
 
     async def test_logbook_entry_with_valid_entity(
@@ -326,11 +326,11 @@ class TestLogbookEntries:
         # Provide German translations
         base_key = f"component.{const.DOMAIN}.services.{const.TRANSL_LOGBOOK}"
         german_translations = {
-            f"{base_key}.verb_opening": "Öffne",
-            f"{base_key}.verb_closing": "Schließe",
-            f"{base_key}.reason_heat_protection": "vor Hitze zu schützen",
-            f"{base_key}.reason_let_light_in": "Licht hereinzulassen",
-            f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}": "{verb} {entity_id} um {reason}. Neue Position: {position}%.",
+            f"{base_key}.{const.TRANSL_LOGBOOK_VERB_OPENING}.{const.TRANSL_ATTR_NAME}": "Öffne",
+            f"{base_key}.{const.TRANSL_LOGBOOK_VERB_CLOSING}.{const.TRANSL_ATTR_NAME}": "Schließe",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION}.{const.TRANSL_ATTR_NAME}": "vor Hitze zu schützen",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN}.{const.TRANSL_ATTR_NAME}": "Licht hereinzulassen",
+            f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}.{const.TRANSL_ATTR_NAME}": "{verb} {entity_id} um {reason}. Neue Position: {position}%.",
         }
 
         with (

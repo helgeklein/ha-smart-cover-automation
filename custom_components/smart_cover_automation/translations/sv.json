@@ -113,11 +113,21 @@
     },
     "services": {
         "logbook": {
-            "template_cover_movement": "{verb} {entity_id} för att {reason}. Ny position: {position} %.",
-            "verb_opening": "Öppnar",
-            "verb_closing": "Stänger",
-            "reason_heat_protection": "skydda mot värme",
-            "reason_let_light_in": "släppa in ljus"
+            "template_cover_movement": {
+                "name": "{verb} {entity_id} för att {reason}. Ny position: {position} %."
+            },
+            "verb_opening": {
+                "name": "Öppnar"
+            },
+            "verb_closing": {
+                "name": "Stänger"
+            },
+            "reason_heat_protection": {
+                "name": "skydda mot värme"
+            },
+            "reason_let_light_in": {
+                "name": "släppa in ljus"
+            }
         }
     }
 }

@@ -113,11 +113,21 @@
     },
     "services": {
         "logbook": {
-            "template_cover_movement": "{verb} {entity_id}, aby {reason}. Nowa pozycja: {position} %.",
-            "verb_opening": "Otwieranie",
-            "verb_closing": "Zamykanie",
-            "reason_heat_protection": "chronić przed upałem",
-            "reason_let_light_in": "wpuścić światło"
+            "template_cover_movement": {
+                "name": "{verb} {entity_id}, aby {reason}. Nowa pozycja: {position} %."
+            },
+            "verb_opening": {
+                "name": "Otwieranie"
+            },
+            "verb_closing": {
+                "name": "Zamykanie"
+            },
+            "reason_heat_protection": {
+                "name": "chronić przed upałem"
+            },
+            "reason_let_light_in": {
+                "name": "wpuścić światło"
+            }
         }
     }
 }
