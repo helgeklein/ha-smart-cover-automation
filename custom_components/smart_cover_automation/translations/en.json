@@ -111,11 +111,13 @@
             }
         }
     },
-    "logbook": {
-        "template_cover_movement": "{verb} {entity_id} to {reason}. New position: {position}%.",
-        "verb_opening": "Opening",
-        "verb_closing": "Closing",
-        "reason_heat_protection": "protect from heat",
-        "reason_let_light_in": "let light in"
+    "services": {
+        "logbook": {
+            "template_cover_movement": "{verb} {entity_id} to {reason}. New position: {position}%.",
+            "verb_opening": "Opening",
+            "verb_closing": "Closing",
+            "reason_heat_protection": "protect from heat",
+            "reason_let_light_in": "let light in"
+        }
     }
 }

@@ -904,14 +904,15 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             translations = await translation.async_get_translations(
                 self.hass,
                 self.hass.config.language,
-                const.TRANSL_LOGBOOK,
+                "services",
                 [const.DOMAIN],
             )
 
             # Build translation keys
-            verb_key = f"component.{const.DOMAIN}.{const.TRANSL_LOGBOOK}.{verb_key}"
-            reason_key = f"component.{const.DOMAIN}.{const.TRANSL_LOGBOOK}.{reason_key}"
-            template_key = f"component.{const.DOMAIN}.{const.TRANSL_LOGBOOK}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}"
+            base_key = f"component.{const.DOMAIN}.services.{const.TRANSL_LOGBOOK}"
+            verb_key = f"{base_key}.{verb_key}"
+            reason_key = f"{base_key}.{reason_key}"
+            template_key = f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}"
 
             # Get translated strings
             translated_verb = translations.get(verb_key)

@@ -111,11 +111,13 @@
             }
         }
     },
-    "logbook": {
-        "template_cover_movement": "{verb} {entity_id} per {reason}. Nuova posizione: {position}%.",
-        "verb_opening": "Apertura di",
-        "verb_closing": "Chiusura di",
-        "reason_heat_protection": "proteggere dal calore",
-        "reason_let_light_in": "far entrare la luce"
+    "services": {
+        "logbook": {
+            "template_cover_movement": "{verb} {entity_id} per {reason}. Nuova posizione: {position} %.",
+            "verb_opening": "Apertura di",
+            "verb_closing": "Chiusura di",
+            "reason_heat_protection": "proteggere dal calore",
+            "reason_let_light_in": "far entrare la luce"
+        }
     }
 }

@@ -111,11 +111,13 @@
             }
         }
     },
-    "logbook": {
-        "template_cover_movement": "{verb} {entity_id} ，以{reason}。新位置：{position}%.",
-        "verb_opening": "开启",
-        "verb_closing": "关闭",
-        "reason_heat_protection": "防止过热",
-        "reason_let_light_in": "引入光线"
+    "services": {
+        "logbook": {
+            "template_cover_movement": "{verb} {entity_id} ，以{reason}。新位置：{position}%.",
+            "verb_opening": "开启",
+            "verb_closing": "关闭",
+            "reason_heat_protection": "防止过热",
+            "reason_let_light_in": "引入光线"
+        }
     }
 }
