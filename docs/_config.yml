@@ -1,7 +1,7 @@
 # Jekyll configuration for HA Smart Cover Automation
 title: Smart Cover Automation for Home Assistant
 description: >-
-  A Home Assistant integration to automate the control of your smart home's window covers with a focus is on quality, reliability, and flexibility.
+  A Home Assistant integration to automate the control of your smart home's window covers with a focus on quality, reliability, and flexibility.
 url: "https://ha-smart-cover-automation.helgeklein.com"
 
 # Logo configuration
@@ -46,6 +46,7 @@ plugins:
   - jekyll-feed
   - jekyll-sitemap
   - jekyll-seo-tag
+  - jekyll-target-blank
 
 # Markdown settings
 markdown: kramdown

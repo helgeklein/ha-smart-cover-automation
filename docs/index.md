@@ -2,7 +2,7 @@
 layout: default
 title: Home
 nav_order: 1
-description: "A Home Assistant integration to automate the control of your smart home's window covers with a focus is on quality, reliability, and flexibility."
+description: "A Home Assistant integration to automate the control of your smart home's window covers with a focus on quality, reliability, and flexibility."
 permalink: /
 ---
 
@@ -13,7 +13,7 @@ permalink: /
 
 **Current development status:** *beta, use with caution*
 
-A Home Assistant integration to automate the control of your smart home's window covers with a focus is on quality, reliability, and flexibility.
+A Home Assistant integration to automate the control of your smart home's window covers with a focus on quality, reliability, and flexibility.
 
 ## Functionality
 
@@ -33,7 +33,7 @@ A Home Assistant integration to automate the control of your smart home's window
 	- Detect manual adjustments and pause automation to avoid conflicts.
 - **Night silence**: (TODO)
 	- Don't move the covers when people are sleeping.
-- **Prepositioning before silent phases:** (TODO)
+- **Pre-positioning before silent phases:** (TODO)
 	- Move the covers to the position they need to be in ahead of time so that there's silence at night but the covers are closed when the sun starts shining in the morning.
 - **Plant light:**
 	- Define min/max positions for the covers so that plants on the windowsill receive enough light.

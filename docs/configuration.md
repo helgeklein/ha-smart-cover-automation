@@ -26,18 +26,16 @@ The integration's settings are managed via a multi-step wizard. To invoke the co
 **Config Flow vs. Options Flow**
 
 - In more technical terms, the configuration wizard would be called the options flow.
-- The integration doesn't use a config flow. This means there's nothing to configure while adding the integration.
+- The integration doesn't use a config flow. This means there's nothing to configure while adding the integration. Instead, the user is expected to configure the integration after having added it to Home Assistant.
 
 ### Step 1: Weather Forecast Sensor and Covers to Automate
-
-In the first step of the configuration wizard, choose the following:
 
 #### Weather Forecast Sensor
 
 The integration needs to determine:
 
 - Is the **weather hot** enough to require sun protection?
-- Is the **sun** is currently **shining**?
+- Is the **sun** currently **shining**?
 
 This is done with the help of a weather forecast sensor. Home Assistant provides various weather integrations that should work well. See this [official list of weather integrations](https://www.home-assistant.io/integrations/#weather) and this [community guide to weather integrations](https://community.home-assistant.io/t/definitive-guide-to-weather-integrations/736419/1) for help choosing one.
 
@@ -48,12 +46,12 @@ I've **tested** the following weather integrations successfully:
 
 To determine if the **weather is hot enough** to require sun protection, the integration needs today's maximum temperature. Unfortunately, some weather forecast services only provide the maximum temperature for the remaining hours of the day. To compensate, this integration switches to the next day's temperature reading starting at 16:00 (afternoon).
 
-The maximum temperature received from the weather forecast service is compared with the temperature threshold (see below). If forecast temperature is above the threshold, the integration considers the weather to be hot.
+The maximum temperature received from the weather forecast service is compared with the temperature threshold (see below). If the forecast temperature is above the threshold, the integration considers the weather to be hot.
 
 The integration considers the following current weather conditions as the **sun is shining** (as reported by the weather forecast service):
 
-- sunny
-- partlycloudy
+- `sunny`
+- `partlycloudy`
 
 #### Covers
 
@@ -71,7 +69,7 @@ In the third step of the configuration wizard, the following settings can be con
 - **Minimum cover position:** Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).
 - **Manual override duration:** How long to skip a cover after it has been moved manually (0 = no skipping).
 - **Sun azimuth tolerance:** Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).
-- **Minimal sun elevation:** The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).
+- **Minimal sun elevation:** The automation starts operating when the sun's elevation is above this threshold (degrees above the horizon).
 - **Temperature threshold:** Temperature at which the automation starts closing covers to protect from heat (degrees Celsius).
 
 ### Step 4: Per-Cover Max/Min Positions (Optional)
@@ -80,11 +78,11 @@ In the fourth step of the configuration wizard, you can specify maximum and mini
 
 ## Switches on the Integration Card
 
-In addition to the abovementioned rather static configuration settings, the integration's behavior can be controlled via switches on the integration card:
+In addition to the above-mentioned rather static configuration settings, the integration's behavior can be controlled via switches on the integration card:
 
 - **Enabled:** Enables or disables the automation.
 - **Simulation mode:** If enabled, the automation runs through all calculations without actually moving the covers.
-- **Verbose logging:** Enables or disabled detailed logging.
+- **Verbose logging:** Enables or disables detailed logging.
 
 ## Next Steps
 
