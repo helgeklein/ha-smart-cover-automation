@@ -126,6 +126,8 @@ async def async_setup_entry(
                 # Try to match coordinator by cover entity if still unresolved
                 if coordinator_for_call is None:
                     for candidate in registered_coordinators.values():
+                        if candidate is None:
+                            continue
                         covers = {} if candidate.data is None else candidate.data.get("covers", {})
                         if entity_id in covers:
                             coordinator_for_call = candidate

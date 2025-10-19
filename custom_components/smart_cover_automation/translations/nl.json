@@ -146,10 +146,12 @@
                     "name": "Sluiten van"
                 },
                 "reason_heat_protection": {
-                    "name": "te beschermen tegen hitte"
+                    "name": "te beschermen tegen hitte",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik beweegt om de kamer tegen hitte te beschermen."
                 },
                 "reason_let_light_in": {
-                    "name": "licht binnen te laten"
+                    "name": "licht binnen te laten",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik beweegt om meer licht binnen te laten."
                 }
             }
         }

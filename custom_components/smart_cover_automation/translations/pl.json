@@ -146,10 +146,12 @@
                     "name": "Zamykanie"
                 },
                 "reason_heat_protection": {
-                    "name": "chronić przed upałem"
+                    "name": "chronić przed upałem",
+                    "description": "Powód używany, gdy roleta porusza się, aby chronić pomieszczenie przed upałem."
                 },
                 "reason_let_light_in": {
-                    "name": "wpuścić światło"
+                    "name": "wpuścić światło",
+                    "description": "Powód używany, gdy roleta porusza się, aby wpuścić więcej światła."
                 }
             }
         }

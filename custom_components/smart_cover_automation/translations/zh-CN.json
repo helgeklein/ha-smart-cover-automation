@@ -146,10 +146,12 @@
                     "name": "关闭"
                 },
                 "reason_heat_protection": {
-                    "name": "防止过热"
+                    "name": "防止过热",
+                    "description": "当遮阳设备为了防止房间过热而移动时使用的原因。"
                 },
                 "reason_let_light_in": {
-                    "name": "引入光线"
+                    "name": "引入光线",
+                    "description": "当遮阳设备为了让更多光线进入而移动时使用的原因。"
                 }
             }
         }

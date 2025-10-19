@@ -146,10 +146,12 @@
                     "name": "Schließe"
                 },
                 "reason_heat_protection": {
-                    "name": "vor Hitze zu schützen"
+                    "name": "vor Hitze zu schützen",
+                    "description": "Grund, wenn der Rollladen bewegt wird, um vor Hitze zu schützen."
                 },
                 "reason_let_light_in": {
-                    "name": "Licht hereinzulassen"
+                    "name": "Licht hereinzulassen",
+                    "description": "Grund, wenn der Rollladen bewegt wird, um mehr Licht hereinzulassen."
                 }
             }
         }

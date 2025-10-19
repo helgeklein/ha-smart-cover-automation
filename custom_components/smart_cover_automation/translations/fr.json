@@ -146,10 +146,12 @@
                     "name": "Fermeture de"
                 },
                 "reason_heat_protection": {
-                    "name": "protéger de la chaleur"
+                    "name": "protéger de la chaleur",
+                    "description": "Motif utilisé lorsque le volet se déplace pour protéger la pièce de la chaleur."
                 },
                 "reason_let_light_in": {
-                    "name": "laisser entrer la lumière"
+                    "name": "laisser entrer la lumière",
+                    "description": "Motif utilisé lorsque le volet se déplace pour laisser entrer davantage de lumière."
                 }
             }
         }

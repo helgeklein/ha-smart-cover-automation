@@ -146,10 +146,12 @@
                     "name": "Fechando"
                 },
                 "reason_heat_protection": {
-                    "name": "proteger do calor"
+                    "name": "proteger do calor",
+                    "description": "Motivo usado quando a persiana se move para proteger o ambiente do calor."
                 },
                 "reason_let_light_in": {
-                    "name": "deixar entrar luz"
+                    "name": "deixar entrar luz",
+                    "description": "Motivo usado quando a persiana se move para deixar entrar mais luz."
                 }
             }
         }

@@ -146,10 +146,12 @@
                     "name": "Stänger"
                 },
                 "reason_heat_protection": {
-                    "name": "skydda mot värme"
+                    "name": "skydda mot värme",
+                    "description": "Orsak som används när persiennen rör sig för att skydda rummet mot värme."
                 },
                 "reason_let_light_in": {
-                    "name": "släppa in ljus"
+                    "name": "släppa in ljus",
+                    "description": "Orsak som används när persiennen rör sig för att släppa in mer ljus."
                 }
             }
         }

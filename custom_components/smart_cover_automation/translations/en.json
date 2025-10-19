@@ -146,10 +146,12 @@
                     "name": "Closing"
                 },
                 "reason_heat_protection": {
-                    "name": "protect from heat"
+                    "name": "protect from heat",
+                    "description": "Reason used when the cover moves to protect the room from heat."
                 },
                 "reason_let_light_in": {
-                    "name": "let light in"
+                    "name": "let light in",
+                    "description": "Reason used when the cover moves to let more light inside."
                 }
             }
         }

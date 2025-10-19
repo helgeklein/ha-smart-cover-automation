@@ -146,10 +146,12 @@
                     "name": "Chiusura di"
                 },
                 "reason_heat_protection": {
-                    "name": "proteggere dal calore"
+                    "name": "proteggere dal calore",
+                    "description": "Motivo usato quando la tapparella si muove per proteggere la stanza dal calore."
                 },
                 "reason_let_light_in": {
-                    "name": "far entrare la luce"
+                    "name": "far entrare la luce",
+                    "description": "Motivo usato quando la tapparella si muove per far entrare più luce."
                 }
             }
         }
