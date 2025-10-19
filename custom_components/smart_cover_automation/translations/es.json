@@ -137,13 +137,16 @@
                     "description": "ID de entrada de configuración opcional para dirigir la entrada del registro a una instancia específica."
                 },
                 "template_cover_movement": {
-                    "name": "{verb} {entity_id} para {reason}. Nueva posición: {position} %."
+                    "name": "{verb} {entity_id} para {reason}. Nueva posición: {position} %.",
+                    "description": "Cadena de plantilla utilizada al mostrar la entrada del registro; admite los marcadores {verb}, {entity_id}, {reason} y {position}."
                 },
                 "verb_opening": {
-                    "name": "Abriendo"
+                    "name": "Abriendo",
+                    "description": "Traducción utilizada cuando la persiana se está abriendo."
                 },
                 "verb_closing": {
-                    "name": "Cerrando"
+                    "name": "Cerrando",
+                    "description": "Traducción utilizada cuando la persiana se está cerrando."
                 },
                 "reason_heat_protection": {
                     "name": "proteger del calor",

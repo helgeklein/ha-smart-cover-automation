@@ -137,13 +137,16 @@
                     "description": "ID de entrada de configuração opcional para direcionar o registo para uma instância específica."
                 },
                 "template_cover_movement": {
-                    "name": "{verb} {entity_id} para {reason}. Nova posição: {position} %."
+                    "name": "{verb} {entity_id} para {reason}. Nova posição: {position} %.",
+                    "description": "Texto de modelo usado ao apresentar a entrada de registo; suporta os marcadores {verb}, {entity_id}, {reason} e {position}."
                 },
                 "verb_opening": {
-                    "name": "Abrindo"
+                    "name": "Abrindo",
+                    "description": "Tradução usada quando a persiana está a abrir."
                 },
                 "verb_closing": {
-                    "name": "Fechando"
+                    "name": "Fechando",
+                    "description": "Tradução usada quando a persiana está a fechar."
                 },
                 "reason_heat_protection": {
                     "name": "proteger do calor",

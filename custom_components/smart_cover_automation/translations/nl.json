@@ -137,13 +137,16 @@
                     "description": "Optionele configuratie-ID om de logboekvermelding naar een specifieke integratie-instantie te sturen."
                 },
                 "template_cover_movement": {
-                    "name": "{verb} {entity_id} om {reason}. Nieuwe positie: {position} %."
+                    "name": "{verb} {entity_id} om {reason}. Nieuwe positie: {position} %.",
+                    "description": "Sjabloontekst die wordt gebruikt om de logboekvermelding weer te geven; ondersteunt de placeholders {verb}, {entity_id}, {reason} en {position}."
                 },
                 "verb_opening": {
-                    "name": "Openen van"
+                    "name": "Openen van",
+                    "description": "Vertaling die wordt gebruikt wanneer het rolluik opent."
                 },
                 "verb_closing": {
-                    "name": "Sluiten van"
+                    "name": "Sluiten van",
+                    "description": "Vertaling die wordt gebruikt wanneer het rolluik sluit."
                 },
                 "reason_heat_protection": {
                     "name": "te beschermen tegen hitte",

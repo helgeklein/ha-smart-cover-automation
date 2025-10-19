@@ -137,13 +137,16 @@
                     "description": "ID d'entrée de configuration facultative pour diriger l'entrée de journal vers une instance spécifique."
                 },
                 "template_cover_movement": {
-                    "name": "{verb} {entity_id} pour {reason}. Nouvelle position : {position} %."
+                    "name": "{verb} {entity_id} pour {reason}. Nouvelle position : {position} %.",
+                    "description": "Chaîne modèle utilisée pour afficher l'entrée du journal ; prend en charge les variables {verb}, {entity_id}, {reason} et {position}."
                 },
                 "verb_opening": {
-                    "name": "Ouverture de"
+                    "name": "Ouverture de",
+                    "description": "Traduction utilisée lorsque le volet est en train de s'ouvrir."
                 },
                 "verb_closing": {
-                    "name": "Fermeture de"
+                    "name": "Fermeture de",
+                    "description": "Traduction utilisée lorsque le volet est en train de se fermer."
                 },
                 "reason_heat_protection": {
                     "name": "protéger de la chaleur",

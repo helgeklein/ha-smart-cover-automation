@@ -137,13 +137,16 @@
                     "description": "Opcjonalny identyfikator konfiguracji kierujący wpis dziennika do konkretnej instancji integracji."
                 },
                 "template_cover_movement": {
-                    "name": "{verb} {entity_id}, aby {reason}. Nowa pozycja: {position} %."
+                    "name": "{verb} {entity_id}, aby {reason}. Nowa pozycja: {position} %.",
+                    "description": "Ciąg szablonu używany do wyświetlania wpisu w dzienniku; obsługuje znaczniki {verb}, {entity_id}, {reason} i {position}."
                 },
                 "verb_opening": {
-                    "name": "Otwieranie"
+                    "name": "Otwieranie",
+                    "description": "Tłumaczenie używane, gdy roleta się otwiera."
                 },
                 "verb_closing": {
-                    "name": "Zamykanie"
+                    "name": "Zamykanie",
+                    "description": "Tłumaczenie używane, gdy roleta się zamyka."
                 },
                 "reason_heat_protection": {
                     "name": "chronić przed upałem",

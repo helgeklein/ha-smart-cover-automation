@@ -137,13 +137,16 @@
                     "description": "Valfritt konfigurations-ID för att koppla loggboksinlägget till en specifik integrationsinstans."
                 },
                 "template_cover_movement": {
-                    "name": "{verb} {entity_id} för att {reason}. Ny position: {position} %."
+                    "name": "{verb} {entity_id} för att {reason}. Ny position: {position} %.",
+                    "description": "Mallsträng som används för att visa loggboksinlägget; stöder platshållarna {verb}, {entity_id}, {reason} och {position}."
                 },
                 "verb_opening": {
-                    "name": "Öppnar"
+                    "name": "Öppnar",
+                    "description": "Översättning som används när persiennen öppnas."
                 },
                 "verb_closing": {
-                    "name": "Stänger"
+                    "name": "Stänger",
+                    "description": "Översättning som används när persiennen stängs."
                 },
                 "reason_heat_protection": {
                     "name": "skydda mot värme",

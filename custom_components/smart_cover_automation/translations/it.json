@@ -137,13 +137,16 @@
                     "description": "ID di configurazione facoltativo per indirizzare la voce di registro a un'istanza specifica."
                 },
                 "template_cover_movement": {
-                    "name": "{verb} {entity_id} per {reason}. Nuova posizione: {position} %."
+                    "name": "{verb} {entity_id} per {reason}. Nuova posizione: {position} %.",
+                    "description": "Stringa modello utilizzata per visualizzare la voce di registro; supporta i segnaposto {verb}, {entity_id}, {reason} e {position}."
                 },
                 "verb_opening": {
-                    "name": "Apertura di"
+                    "name": "Apertura di",
+                    "description": "Traduzione utilizzata quando la tapparella si sta aprendo."
                 },
                 "verb_closing": {
-                    "name": "Chiusura di"
+                    "name": "Chiusura di",
+                    "description": "Traduzione utilizzata quando la tapparella si sta chiudendo."
                 },
                 "reason_heat_protection": {
                     "name": "proteggere dal calore",

@@ -137,13 +137,16 @@
                     "description": "Optionale Konfigurations-ID, um den Logbucheintrag einer bestimmten Instanz zuzuordnen."
                 },
                 "template_cover_movement": {
-                    "name": "{verb} {entity_id} um {reason}. Neue Position: {position} %."
+                    "name": "{verb} {entity_id} um {reason}. Neue Position: {position} %.",
+                    "description": "Vorlagentext zur Darstellung des Logbucheintrags; unterstützt die Platzhalter {verb}, {entity_id}, {reason} und {position}."
                 },
                 "verb_opening": {
-                    "name": "Öffne"
+                    "name": "Öffne",
+                    "description": "Übersetzung, wenn der Rollladen geöffnet wird."
                 },
                 "verb_closing": {
-                    "name": "Schließe"
+                    "name": "Schließe",
+                    "description": "Übersetzung, wenn der Rollladen geschlossen wird."
                 },
                 "reason_heat_protection": {
                     "name": "vor Hitze zu schützen",

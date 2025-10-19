@@ -137,13 +137,16 @@
                     "description": "Optional config entry ID to route the logbook entry to a specific integration instance."
                 },
                 "template_cover_movement": {
-                    "name": "{verb} {entity_id} to {reason}. New position: {position}%."
+                    "name": "{verb} {entity_id} to {reason}. New position: {position}%.",
+                    "description": "Template string used when rendering the logbook entry; supports {verb}, {entity_id}, {reason}, and {position} placeholders."
                 },
                 "verb_opening": {
-                    "name": "Opening"
+                    "name": "Opening",
+                    "description": "Translation used when the cover is opening."
                 },
                 "verb_closing": {
-                    "name": "Closing"
+                    "name": "Closing",
+                    "description": "Translation used when the cover is closing."
                 },
                 "reason_heat_protection": {
                     "name": "protect from heat",

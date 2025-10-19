@@ -137,13 +137,16 @@
                     "description": "可选的配置项 ID，用于将日志条目发送到特定的集成实例。"
                 },
                 "template_cover_movement": {
-                    "name": "{verb} {entity_id}，以{reason}。新位置：{position}%."
+                    "name": "{verb} {entity_id}，以{reason}。新位置：{position}%.",
+                    "description": "用于渲染日志条目的模板字符串；支持 {verb}、{entity_id}、{reason} 和 {position} 占位符。"
                 },
                 "verb_opening": {
-                    "name": "开启"
+                    "name": "开启",
+                    "description": "遮阳设备开启时使用的翻译。"
                 },
                 "verb_closing": {
-                    "name": "关闭"
+                    "name": "关闭",
+                    "description": "遮阳设备关闭时使用的翻译。"
                 },
                 "reason_heat_protection": {
                     "name": "防止过热",
