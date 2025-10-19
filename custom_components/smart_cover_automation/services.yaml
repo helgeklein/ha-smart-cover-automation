@@ -1,3 +1,9 @@
+#
+# Service to create a logbook entry for cover movements.
+#
+# We need this service for localization:
+# Hassfest validation requires logbook entries in the translation files to be associated with a service.
+#
 logbook_entry:
   name: Create logbook entry
   description: Create a Smart Cover Automation logbook entry.

@@ -879,7 +879,9 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         Uses the stored unique_id to look up the current entity_id from the registry,
         which handles cases where users have renamed the entity.
 
-        Translates the message using the current language setting.
+        Translates the message using the current language setting with English as fallback.
+        The translation keys require an associated service to pass Hassfest validation.
+        We don't actually use the service, though.
         """
 
         try:
@@ -904,12 +906,14 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             translations = await translation.async_get_translations(
                 self.hass,
                 self.hass.config.language,
-                "services",
+                const.TRANSL_KEY_SERVICES,
                 [const.DOMAIN],
             )
 
             # Build translation keys
-            base_fields_key = f"component.{const.DOMAIN}.services.{const.TRANSL_LOGBOOK}.fields"
+            base_fields_key = (
+                f"component.{const.DOMAIN}.{const.TRANSL_KEY_SERVICES}.{const.SERVICE_LOGBOOK_ENTRY}.{const.TRANSL_KEY_FIELDS}"
+            )
             verb_key = f"{base_fields_key}.{verb_key}.{const.TRANSL_ATTR_NAME}"
             reason_key = f"{base_fields_key}.{reason_key}.{const.TRANSL_ATTR_NAME}"
             template_key = f"{base_fields_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}.{const.TRANSL_ATTR_NAME}"

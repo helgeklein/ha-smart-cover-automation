@@ -16,6 +16,8 @@ This guide helps resolve issues with the Smart Cover Automation integration.
 
 All cover movements are logged in Home Assistant's [activity logbook](https://www.home-assistant.io/integrations/logbook/). Fully translated, of course.
 
+Filter the logbook for this integration's entries by selecting `Smart Cover Automation` as device.
+
 ### Sensors
 
 The integration comes with the following sensors that help you understand the integration's inner workings:

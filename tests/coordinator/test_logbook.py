@@ -45,7 +45,7 @@ class TestLogbookEntries:
     @pytest.fixture
     def mock_translations(self) -> dict[str, str]:
         """Create mock translations."""
-        base_key = f"component.{const.DOMAIN}.services.{const.TRANSL_LOGBOOK}.fields"
+        base_key = f"component.{const.DOMAIN}.{const.TRANSL_KEY_SERVICES}.{const.SERVICE_LOGBOOK_ENTRY}.{const.TRANSL_KEY_FIELDS}"
         return {
             f"{base_key}.{const.TRANSL_LOGBOOK_VERB_OPENING}.{const.TRANSL_ATTR_NAME}": "Opening",
             f"{base_key}.{const.TRANSL_LOGBOOK_VERB_CLOSING}.{const.TRANSL_ATTR_NAME}": "Closing",
@@ -324,7 +324,7 @@ class TestLogbookEntries:
         mock_registry.entities = {"test_entity_registry_id": mock_entity}
 
         # Provide German translations
-        base_key = f"component.{const.DOMAIN}.services.{const.TRANSL_LOGBOOK}.fields"
+        base_key = f"component.{const.DOMAIN}.{const.TRANSL_KEY_SERVICES}.{const.SERVICE_LOGBOOK_ENTRY}.{const.TRANSL_KEY_FIELDS}"
         german_translations = {
             f"{base_key}.{const.TRANSL_LOGBOOK_VERB_OPENING}.{const.TRANSL_ATTR_NAME}": "Öffne",
             f"{base_key}.{const.TRANSL_LOGBOOK_VERB_CLOSING}.{const.TRANSL_ATTR_NAME}": "Schließe",
