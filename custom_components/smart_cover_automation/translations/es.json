@@ -85,7 +85,7 @@
                 "name": "Estado"
             },
             "temp_hot": {
-                "name": "Tiempo: ¿día caluroso?",
+                "name": "Tiempo: ¿hace calor?",
                 "state": {
                     "on": "Sí",
                     "off": "No"

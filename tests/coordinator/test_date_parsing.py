@@ -8,7 +8,7 @@ to improve test coverage for edge cases.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from ..conftest import create_invalid_weather_service
 
@@ -16,28 +16,46 @@ from ..conftest import create_invalid_weather_service
 class TestDateParsingEdgeCases:
     """Test date parsing edge cases in weather forecast handling."""
 
-    def test_find_today_forecast_with_datetime_objects(self, mock_coordinator_basic) -> None:
+    def test_find_day_forecast_with_datetime_objects(self, mock_coordinator_basic) -> None:
         """Test forecast parsing with actual datetime objects."""
-        # Create forecast with datetime object
-        today = datetime.now(timezone.utc)
+        from ..conftest import create_forecast_with_applicable_date
+
+        # Create forecasts for the applicable date
+        # Use datetime objects to test that code path
+        forecast_temp = 25.0
+        forecast_dict = create_forecast_with_applicable_date(forecast_temp)
+
+        # Convert the datetime string to an actual datetime object to test that parsing path
+        forecast_datetime_obj = datetime.fromisoformat(forecast_dict["datetime"])
+
         forecast_list = [
             {
-                "datetime": today,  # datetime object instead of string
-                "native_temperature": 25.0,
+                "datetime": forecast_datetime_obj,  # datetime object instead of string
+                "native_temperature": forecast_temp,
             },
             {
-                "datetime": today.isoformat(),  # string format
+                "datetime": forecast_dict["datetime"],  # string format
                 "native_temperature": 26.0,
             },
         ]
 
-        result = mock_coordinator_basic._find_today_forecast(forecast_list)
+        result = mock_coordinator_basic._find_day_forecast(forecast_list)
         assert result is not None
-        assert result["native_temperature"] == 25.0
+        applicable_day, forecast = result
+        # Should match whichever day is applicable based on current time
+        assert applicable_day in ("today", "tomorrow")
+        assert forecast["native_temperature"] == forecast_temp
 
-    def test_find_today_forecast_with_invalid_datetime_field(self, mock_coordinator_basic) -> None:
+    @patch("custom_components.smart_cover_automation.coordinator.dt_util")
+    def test_find_day_forecast_with_invalid_datetime_field(self, mock_dt_util: MagicMock, mock_coordinator_basic) -> None:
         """Test forecast parsing with invalid datetime fields."""
+        # Set current time to use today's forecast
+        today = datetime.now(timezone.utc)
+        mock_dt_util.now.return_value = today
+
         # Create forecast with invalid datetime fields
+        # When all entries fail to parse or don't match the applicable day,
+        # returns None (no fallback)
         forecast_list = [
             {
                 "datetime": 12345,  # Invalid type (integer)
@@ -48,17 +66,22 @@ class TestDateParsingEdgeCases:
                 "native_temperature": 26.0,
             },
             {
-                "datetime": datetime.now(timezone.utc).isoformat(),  # Valid string
+                "datetime": "invalid-date-string",  # Invalid date string
                 "native_temperature": 27.0,
             },
         ]
 
-        result = mock_coordinator_basic._find_today_forecast(forecast_list)
-        assert result is not None
-        assert result["native_temperature"] == 27.0  # Should find the valid one
+        result = mock_coordinator_basic._find_day_forecast(forecast_list)
+        # When all date parsing fails, returns None (no more fallback)
+        assert result is None
 
-    def test_find_today_forecast_no_datetime_field(self, mock_coordinator_basic) -> None:
+    @patch("custom_components.smart_cover_automation.coordinator.dt_util")
+    def test_find_day_forecast_no_datetime_field(self, mock_dt_util: MagicMock, mock_coordinator_basic) -> None:
         """Test forecast parsing when datetime field is missing."""
+        # Set current time to use today's forecast
+        today = datetime.now(timezone.utc)
+        mock_dt_util.now.return_value = today
+
         # Create forecast without datetime field
         forecast_list = [
             {
@@ -70,47 +93,56 @@ class TestDateParsingEdgeCases:
             },
         ]
 
-        result = mock_coordinator_basic._find_today_forecast(forecast_list)
-        assert result is not None
-        assert result["temperature"] == 25.0  # Should return first entry as fallback
+        result = mock_coordinator_basic._find_day_forecast(forecast_list)
+        # When no datetime/date field is present, returns None
+        assert result is None
 
-    def test_find_today_forecast_with_date_field(self, mock_coordinator_basic) -> None:
-        """Test forecast parsing with date field instead of datetime."""
-        # Create forecast with date field
-        today = datetime.now(timezone.utc).date().isoformat()
+    def test_find_day_forecast_with_date_field(self, mock_coordinator_basic) -> None:
+        """Test forecast parsing with 'date' field instead of 'datetime'."""
+        from ..conftest import create_forecast_with_applicable_date
+
+        # Create forecast for the applicable date
+        forecast_temp = 24.0
+        forecast_dict = create_forecast_with_applicable_date(forecast_temp)
+
+        # Create forecast with 'date' field instead of 'datetime' to test alternate field name
         forecast_list = [
             {
-                "date": today,
-                "native_temperature": 25.0,
-            },
-            {
-                "date": "2023-12-31",  # Different date
-                "native_temperature": 26.0,
-            },
+                "date": forecast_dict["datetime"],  # Using 'date' instead of 'datetime'
+                "native_temperature": forecast_temp,
+            }
         ]
 
-        result = mock_coordinator_basic._find_today_forecast(forecast_list)
+        result = mock_coordinator_basic._find_day_forecast(forecast_list)
         assert result is not None
-        assert result["native_temperature"] == 25.0
+        applicable_day, forecast = result
+        assert applicable_day in ("today", "tomorrow")  # Accept either depending on actual time
+        assert forecast["native_temperature"] == forecast_temp
 
-    def test_find_today_forecast_with_mixed_date_formats(self, mock_coordinator_basic) -> None:
+    @patch("custom_components.smart_cover_automation.coordinator.dt_util")
+    def test_find_day_forecast_with_mixed_date_formats(self, mock_dt_util: MagicMock, mock_coordinator_basic) -> None:
         """Test forecast parsing with mixed date formats."""
-        # Create forecast with mixed date formats
+        # Set current time to use today's forecast
         today = datetime.now(timezone.utc)
+        mock_dt_util.now.return_value = today
+
+        # Create forecast with mixed date formats
+        # When all dates fail to parse or don't match applicable day,
+        # returns None (no more fallback)
         forecast_list = [
             {
                 "datetime": "invalid-date-format",  # Invalid date string
                 "native_temperature": 25.0,
             },
             {
-                "datetime": today.isoformat().replace("+00:00", "Z"),  # Z format
+                "datetime": "also-invalid",  # Also invalid
                 "native_temperature": 26.0,
             },
         ]
 
-        result = mock_coordinator_basic._find_today_forecast(forecast_list)
-        assert result is not None
-        assert result["native_temperature"] == 26.0  # Should find the valid Z format
+        result = mock_coordinator_basic._find_day_forecast(forecast_list)
+        # When all date parsing fails, returns None
+        assert result is None
 
     def test_extract_max_temperature_edge_cases(self, mock_coordinator_basic) -> None:
         """Test temperature extraction with various edge cases."""

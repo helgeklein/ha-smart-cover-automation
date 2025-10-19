@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_POSITION, CoverEntityFeature
@@ -28,6 +28,7 @@ from homeassistant.helpers import entity_registry as ha_entity_registry
 from homeassistant.helpers import translation
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator as BaseCoordinator
 from homeassistant.helpers.update_coordinator import UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from . import const
 from .config import ConfKeys, ResolvedConfig, resolve_entry
@@ -115,9 +116,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         self.status_sensor_unique_id: str | None = None
 
         resolved = resolve_entry(config_entry)
-        const.LOGGER.info(
-            f"Initializing {const.INTEGRATION_NAME} coordinator: covers={tuple(resolved.covers)}, update_interval={const.UPDATE_INTERVAL}"
-        )
+        const.LOGGER.info(f"Initializing coordinator: update_interval={const.UPDATE_INTERVAL.total_seconds()} s")
 
         # Adjust log level if verbose logging is enabled
         try:
@@ -299,6 +298,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             "sun_elevation_threshold": sun_elevation_threshold,
             "sun_azimuth_tolerance": resolved.sun_azimuth_tolerance,
             "covers_min_position_delta": covers_min_position_delta,
+            "weather_hot_cutover_time": resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
         }
         const.LOGGER.info(f"Global settings: {str(global_settings)}")
 
@@ -708,18 +708,19 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                 return None
 
             # Find today's forecast and extract the max temperature
-            today_forecast = self._find_today_forecast(forecast_list)
-            const.LOGGER.debug(f"Today's forecast for {entity_id}: {today_forecast}")
-
-            if today_forecast:
-                max_temp = self._extract_max_temperature(today_forecast)
-                if max_temp is not None:
-                    const.LOGGER.debug(f"Forecast max temperature: {max_temp}°C")
-                    return max_temp
-                else:
-                    const.LOGGER.warning(f"Could not extract max temperature from today's forecast for {entity_id}")
+            applicable_day = day_forecast = None
+            forecast_result = self._find_day_forecast(forecast_list)
+            if forecast_result is None:
+                return None
             else:
-                const.LOGGER.warning(f"Could not find today's forecast for {entity_id}")
+                applicable_day, day_forecast = forecast_result
+
+            max_temp = self._extract_max_temperature(day_forecast)
+            if max_temp is not None:
+                const.LOGGER.debug(f"Forecast max temperature: {max_temp} °C for {applicable_day}")
+                return max_temp
+            else:
+                const.LOGGER.warning(f"Could not extract max temperature from today's forecast for {entity_id}")
 
         except HomeAssistantError as err:
             const.LOGGER.warning(f"Failed to call weather forecast service for {entity_id}: {err}")
@@ -736,27 +737,43 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         return abs(((sun_azimuth - cover_azimuth + 180) % 360) - 180)
 
     #
-    # _find_today_forecast
+    # _find_day_forecast
     #
-    def _find_today_forecast(self, forecast_list: list[Any]) -> dict[str, Any] | None:
-        """Find today's forecast from the forecast list.
+    def _find_day_forecast(self, forecast_list: list[Any]) -> tuple[str, dict[str, Any]] | None:
+        """Find the applicable daily forecast from the forecast list.
 
-        Attempts to find today's forecast by checking the datetime field.
-        Falls back to first entry if no datetime matching is possible.
+        Attempts to find the applicable forecast by checking the datetime field.
+        Before weather_hot_cutover_time (default 16:00), uses today's forecast;
+        after cutover time, uses tomorrow's forecast for hot weather detection.
 
         Args:
             forecast_list: List of forecast dictionaries
 
         Returns:
-            Today's forecast dictionary or None if not found
+            Applicable forecast dictionary or None if not found
         """
         if not forecast_list:
+            const.LOGGER.warning("Forecast list is empty")
             return None
 
-        # Get today's date for comparison
-        today = datetime.now(timezone.utc).date()
+        # Get the cutover time from configuration
+        resolved = self._resolved_settings()
+        cutover_time = resolved.weather_hot_cutover_time
 
-        # Try to find forecast entry for today by datetime
+        # Determine which day's forecast to use based on current time in local timezone
+        # Use Home Assistant's configured timezone for the cutover comparison
+        now_local = dt_util.now()
+        current_time = now_local.time()
+
+        # If current time is after cutover time, use tomorrow's forecast
+        if current_time >= cutover_time:
+            applicable_day = (now_local + timedelta(days=1)).date()
+            applicable_day_friendly = "tomorrow"
+        else:
+            applicable_day = now_local.date()
+            applicable_day_friendly = "today"
+
+        # Try to find forecast entry for applicable day by datetime
         for forecast in forecast_list:
             if not isinstance(forecast, dict):
                 continue
@@ -776,17 +793,16 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                 else:
                     continue
 
-                if forecast_date == today:
-                    return forecast
+                if forecast_date == applicable_day:
+                    return (applicable_day_friendly, forecast)
 
             except (ValueError, TypeError, AttributeError) as err:
                 const.LOGGER.debug(f"Could not parse forecast datetime '{datetime_field}': {err}")
                 continue
 
         # Fallback: use first entry and log the assumption
-        const.LOGGER.debug("Could not find today's forecast by date, using first entry as fallback")
-        first_forecast = forecast_list[0]
-        return first_forecast if isinstance(first_forecast, dict) else None
+        const.LOGGER.warning("Could not find weather forecast by date")
+        return None
 
     #
     # _extract_max_temperature
@@ -857,7 +873,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
     ) -> None:
         """Log and store the the result for one cover."""
         message = f"[{entity_id}] {error_description}"
-        const.LOGGER.warning(message)
+        const.LOGGER.info(message)
         cover_attrs[const.COVER_ATTR_MESSAGE] = message
         result[ConfKeys.COVERS.value][entity_id] = cover_attrs
 

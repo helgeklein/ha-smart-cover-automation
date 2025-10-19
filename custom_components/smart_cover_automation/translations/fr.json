@@ -85,7 +85,7 @@
                 "name": "Statut"
             },
             "temp_hot": {
-                "name": "Météo : journée chaude ?",
+                "name": "Météo : chaud ?",
                 "state": {
                     "on": "Oui",
                     "off": "Non"

@@ -85,7 +85,7 @@
                 "name": "Status"
             },
             "temp_hot": {
-                "name": "Väder: varm dag?",
+                "name": "Väder: varmt?",
                 "state": {
                     "on": "Ja",
                     "off": "Nej"

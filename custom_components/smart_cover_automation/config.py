@@ -8,6 +8,7 @@ ConfigEntry (options → data → defaults).
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
+from datetime import time
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
@@ -52,6 +53,7 @@ class ConfKeys(StrEnum):
     TEMP_THRESHOLD = "temp_threshold"  # Temperature threshold at which heat protection activates (°C).
     VERBOSE_LOGGING = "verbose_logging"  # Enable DEBUG logs for this entry.
     WEATHER_ENTITY_ID = "weather_entity_id"  # Weather entity_id.
+    WEATHER_HOT_CUTOVER_TIME = "weather_hot_cutover_time"  # Time of day to switch to next day's forecast for hot weather detection.
 
 
 class _Converters:
@@ -129,6 +131,31 @@ class _Converters:
             total_seconds = (days * 24 * 60 * 60) + (hours * 60 * 60) + (minutes * 60) + seconds
             return max(0, int(total_seconds))
 
+    @staticmethod
+    def to_time(v: Any) -> time:
+        """Convert various time representations to datetime.time.
+
+        Accepts:
+        - time: returned as-is
+        - str: parsed as HH:MM:SS or HH:MM format
+
+        Returns datetime.time object.
+        """
+        if isinstance(v, time):
+            return v
+
+        if isinstance(v, str):
+            # Parse string like "16:00:00" or "16:00"
+            parts = v.strip().split(":")
+            if len(parts) == 2:
+                # HH:MM format
+                return time(hour=int(parts[0]), minute=int(parts[1]))
+            elif len(parts) == 3:
+                # HH:MM:SS format
+                return time(hour=int(parts[0]), minute=int(parts[1]), second=int(parts[2]))
+
+        raise ValueError(f"Cannot convert {v!r} to time")
+
 
 # Type-only aliases so annotations can refer without exporting helpers.
 if TYPE_CHECKING:  # pragma: no cover - type checking only
@@ -151,6 +178,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=23.0, converter=_Converters.to_float),
     ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.WEATHER_ENTITY_ID: _ConfSpec(default="", converter=_Converters.to_str),
+    ConfKeys.WEATHER_HOT_CUTOVER_TIME: _ConfSpec(default=time(16, 0, 0), converter=_Converters.to_time),
 }
 
 # Public API of this module (keep helper class internal)
@@ -178,6 +206,7 @@ class ResolvedConfig:
     temp_threshold: float
     verbose_logging: bool
     weather_entity_id: str
+    weather_hot_cutover_time: time
 
     def get(self, key: ConfKeys) -> Any:
         # Generic access: ConfKeys values match dataclass field names

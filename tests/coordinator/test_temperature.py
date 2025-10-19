@@ -74,9 +74,9 @@ class TestGetForecastMaxTemp:
 
     async def test_successful_forecast(self, mock_hass: MagicMock, coordinator: DataUpdateCoordinator):
         """Test successful retrieval of a forecast."""
-        forecast_response = {
-            WEATHER_ENTITY_ID: {"forecast": [{"native_temperature": 28.0, "datetime": datetime.now(timezone.utc).isoformat()}]}
-        }
+        from ..conftest import create_forecast_with_applicable_date
+
+        forecast_response = {WEATHER_ENTITY_ID: {"forecast": [create_forecast_with_applicable_date(28.0)]}}
         mock_hass.services.async_call = AsyncMock(return_value=forecast_response)
         temp = await coordinator._get_forecast_max_temp(WEATHER_ENTITY_ID)
         assert temp == 28.0
@@ -107,43 +107,50 @@ class TestGetForecastMaxTemp:
         assert temp is None
 
 
-@patch("custom_components.smart_cover_automation.coordinator.datetime", wraps=datetime)
+@patch("custom_components.smart_cover_automation.coordinator.dt_util")
 class TestFindTodayForecast:
-    """Tests for the _find_today_forecast method."""
+    """Tests for the _find_day_forecast method."""
 
-    def test_find_by_datetime_string(self, mock_dt: MagicMock, coordinator: DataUpdateCoordinator):
+    def test_find_by_datetime_string(self, mock_dt_util: MagicMock, coordinator: DataUpdateCoordinator):
         """Test finding today's forecast by matching a datetime string."""
         today = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-        mock_dt.now.return_value = today
+        mock_dt_util.now.return_value = today
 
         yesterday_forecast = {"datetime": (today - timedelta(days=1)).isoformat(), "native_temperature": 10}
         today_forecast = {"datetime": today.isoformat(), "native_temperature": 15}
         tomorrow_forecast = {"datetime": (today + timedelta(days=1)).isoformat(), "native_temperature": 20}
 
         forecast_list = [yesterday_forecast, today_forecast, tomorrow_forecast]
-        result = coordinator._find_today_forecast(forecast_list)
-        assert result == today_forecast
+        result = coordinator._find_day_forecast(forecast_list)
+        assert result is not None
+        applicable_day, forecast = result
+        assert applicable_day == "today"
+        assert forecast == today_forecast
 
-    def test_find_by_date_key(self, mock_dt: MagicMock, coordinator: DataUpdateCoordinator):
+    def test_find_by_date_key(self, mock_dt_util: MagicMock, coordinator: DataUpdateCoordinator):
         """Test finding today's forecast using the 'date' key."""
         today = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-        mock_dt.now.return_value = today
+        mock_dt_util.now.return_value = today
 
         forecast_list = [{"date": today.isoformat(), "native_temperature": 15}]
-        result = coordinator._find_today_forecast(forecast_list)
-        assert result == forecast_list[0]
+        result = coordinator._find_day_forecast(forecast_list)
+        assert result is not None
+        applicable_day, forecast = result
+        assert applicable_day == "today"
+        assert forecast == forecast_list[0]
 
-    def test_fallback_to_first_entry(self, mock_dt: MagicMock, coordinator: DataUpdateCoordinator):
-        """Test that it falls back to the first entry if no date matches."""
+    def test_fallback_to_first_entry(self, mock_dt_util: MagicMock, coordinator: DataUpdateCoordinator):
+        """Test that it returns None if no date matches (no more fallback to first entry)."""
         today = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-        mock_dt.now.return_value = today
+        mock_dt_util.now.return_value = today
 
         yesterday_forecast = {"datetime": (today - timedelta(days=1)).isoformat(), "native_temperature": 10}
         day_before_forecast = {"datetime": (today - timedelta(days=2)).isoformat(), "native_temperature": 5}
 
         forecast_list = [yesterday_forecast, day_before_forecast]
-        result = coordinator._find_today_forecast(forecast_list)
-        assert result == yesterday_forecast
+        result = coordinator._find_day_forecast(forecast_list)
+        # No fallback - returns None when no matching date is found
+        assert result is None
 
     @pytest.mark.parametrize(
         "forecast_list, expected",
@@ -151,13 +158,13 @@ class TestFindTodayForecast:
             ([], None),
             (None, None),
             (["not a dict"], None),
-            ([{"datetime": "invalid-date"}], {"datetime": "invalid-date"}),  # Fallback
+            ([{"datetime": "invalid-date"}], None),  # No fallback - returns None
         ],
     )
-    def test_edge_cases(self, mock_dt: MagicMock, coordinator: DataUpdateCoordinator, forecast_list: Any, expected: Any):
+    def test_edge_cases(self, mock_dt_util: MagicMock, coordinator: DataUpdateCoordinator, forecast_list: Any, expected: Any):
         """Test edge cases like empty lists or invalid data."""
-        mock_dt.now.return_value = datetime(2023, 1, 1, tzinfo=timezone.utc)
-        result = coordinator._find_today_forecast(forecast_list)
+        mock_dt_util.now.return_value = datetime(2023, 1, 1, tzinfo=timezone.utc)
+        result = coordinator._find_day_forecast(forecast_list)
         assert result == expected
 
 

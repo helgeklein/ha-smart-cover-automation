@@ -14,7 +14,7 @@ Key components:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
@@ -97,6 +97,61 @@ def set_weather_forecast_temp(temp: float) -> None:
     """Set the temperature that the weather service mock will return."""
     global _CURRENT_WEATHER_TEMP
     _CURRENT_WEATHER_TEMP = temp
+
+
+def get_applicable_forecast_date(cutover_time: time | None = None) -> date:
+    """Get the date that forecast matching logic will use.
+
+    This centralizes the logic for determining which day's forecast to use based on
+    the current time and cutover time. Before cutover (default 16:00), uses today's
+    forecast. After cutover, uses tomorrow's forecast.
+
+    This ensures tests provide forecasts for the correct day, avoiding time-dependent
+    test failures.
+
+    Args:
+        cutover_time: Time to switch from today to tomorrow forecast.
+                     If None, uses default from CONF_SPECS.
+
+    Returns:
+        The date that should be used in forecast data for matching.
+    """
+    from datetime import timedelta
+
+    from homeassistant.util import dt as dt_util
+
+    cutover = cutover_time if cutover_time is not None else time(16, 0)
+
+    now_local = dt_util.now()
+    current_time = now_local.time()
+
+    # If current time is after cutover time, use tomorrow's forecast
+    if current_time >= cutover:
+        return (now_local + timedelta(days=1)).date()
+    else:
+        return now_local.date()
+
+
+def create_forecast_with_applicable_date(temp: float, cutover_time: time | None = None) -> dict[str, Any]:
+    """Create a forecast entry with the correct date for current time.
+
+    This helper ensures forecast data will match the date that _find_day_forecast
+    expects based on the current time and cutover logic.
+
+    Args:
+        temp: Temperature value for the forecast
+        cutover_time: Optional cutover time (defaults to 16:00)
+
+    Returns:
+        Forecast dictionary with datetime matching applicable day logic
+    """
+    forecast_date = get_applicable_forecast_date(cutover_time)
+    forecast_datetime = datetime.combine(forecast_date, datetime.min.time(), tzinfo=timezone.utc)
+
+    return {
+        "datetime": forecast_datetime.isoformat(),
+        "native_temperature": temp,
+    }
 
 
 @pytest.fixture
@@ -653,11 +708,15 @@ def create_mock_weather_service():
         """Mock weather forecast service that returns temperature data."""
         if domain == Platform.WEATHER and service == "get_forecasts":
             entity_id = service_data.get("entity_id", MOCK_WEATHER_ENTITY_ID)
+            # Use applicable date helper to ensure forecast matches current time logic
+            forecast_date = get_applicable_forecast_date()
+            forecast_datetime = datetime.combine(forecast_date, datetime.min.time(), tzinfo=timezone.utc)
+
             return {
                 entity_id: {
                     "forecast": [
                         {
-                            "datetime": datetime.now(timezone.utc).isoformat(),
+                            "datetime": forecast_datetime.isoformat(),
                             "native_temperature": _CURRENT_WEATHER_TEMP,
                             "temp_max": _CURRENT_WEATHER_TEMP,
                         }
@@ -711,11 +770,15 @@ def create_weather_service_with_cover_error(cover_error_type: type[Exception], *
     async def mock_weather_service(domain, service, service_data, **kwargs):
         if domain == "weather":
             # Get current temperature from global variable
+            # Use applicable date helper to ensure forecast matches current time logic
+            forecast_date = get_applicable_forecast_date()
+            forecast_datetime = datetime.combine(forecast_date, datetime.min.time(), tzinfo=timezone.utc)
+
             return {
                 service_data.get("entity_id", "weather.forecast"): {
                     "forecast": [
                         {
-                            "datetime": datetime.now(timezone.utc).isoformat(),
+                            "datetime": forecast_datetime.isoformat(),
                             "native_temperature": _CURRENT_WEATHER_TEMP,
                             "temp_max": _CURRENT_WEATHER_TEMP,
                         }

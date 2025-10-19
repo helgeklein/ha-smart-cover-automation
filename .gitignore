@@ -9,6 +9,7 @@ __pycache__
 # misc
 .coverage
 coverage.xml
+coverage.json
 .ruff_cache
 
 # VS Code - exclude personal settings but include project settings

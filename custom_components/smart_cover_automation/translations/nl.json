@@ -85,7 +85,7 @@
                 "name": "Status"
             },
             "temp_hot": {
-                "name": "Weer: hete dag?",
+                "name": "Weer: heet?",
                 "state": {
                     "on": "Ja",
                     "off": "Nee"

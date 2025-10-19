@@ -27,7 +27,8 @@ The integration comes with the following sensors that help you understand the in
 - **Sun elevation:** Current sun elevation (angle above the horizon).
 - **Temperature: today's maximum:** Maximum (expected) temperature of the current day. Derived from the configured weather forecast sensor.
 - **Temperature: threshold:** The configured temperature at which the automation starts closing covers to protect from heat.
-- **Weather: hot day?:** Is the maximum temperature of the current day expected to rise above the configured threshold temperature?
+- **Weather: hot?:** Is today's forecast maximum temperature expected to rise above the configured threshold temperature?
+  - After 16:00, tomorrow's forecast maximum temperature is used instead of today's.
 - **Weather: sunny?:** Is the day expected to be at least partly sunny? Derived from the configured weather forecast sensor.
 
 ## Debugging

@@ -29,6 +29,7 @@ valid configuration objects that the automation logic can rely on.
 from __future__ import annotations
 
 from dataclasses import fields
+from datetime import time
 from types import SimpleNamespace
 
 import pytest
@@ -441,6 +442,146 @@ class TestConfigurationAccessors:
         enum_dict = rs.as_enum_dict()
         assert set(enum_dict.keys()) == set(ConfKeys)  # Contains all configuration keys
         assert enum_dict[ConfKeys.ENABLED] is True  # Preserves configured values
+
+
+# =============================================================================
+# Time Converter Tests
+# =============================================================================
+
+
+class TestTimeConverter:
+    """Tests for time converter functionality.
+
+    These tests verify that the time converter properly handles various
+    input formats for time-of-day values and converts them to datetime.time objects.
+    """
+
+    @pytest.mark.parametrize(
+        "time_input,expected_hour,expected_minute,expected_second,test_description",
+        [
+            # time object inputs (should be returned as-is)
+            (time(0, 0, 0), 0, 0, 0, "midnight as time object"),
+            (time(12, 0, 0), 12, 0, 0, "noon as time object"),
+            (time(16, 0, 0), 16, 0, 0, "default cutover time as time object"),
+            (time(23, 59, 59), 23, 59, 59, "end of day as time object"),
+            (time(8, 30, 0), 8, 30, 0, "morning time as time object"),
+            (time(18, 45, 30), 18, 45, 30, "evening time with seconds as time object"),
+            # String inputs - HH:MM format
+            ("00:00", 0, 0, 0, "midnight HH:MM string"),
+            ("12:00", 12, 0, 0, "noon HH:MM string"),
+            ("16:00", 16, 0, 0, "default cutover time HH:MM string"),
+            ("23:59", 23, 59, 0, "end of day HH:MM string"),
+            ("08:30", 8, 30, 0, "morning time HH:MM string"),
+            ("18:45", 18, 45, 0, "evening time HH:MM string"),
+            ("01:05", 1, 5, 0, "single-digit hour/minute HH:MM string"),
+            # String inputs - HH:MM:SS format
+            ("00:00:00", 0, 0, 0, "midnight HH:MM:SS string"),
+            ("12:00:00", 12, 0, 0, "noon HH:MM:SS string"),
+            ("16:00:00", 16, 0, 0, "default cutover time HH:MM:SS string"),
+            ("23:59:59", 23, 59, 59, "end of day HH:MM:SS string"),
+            ("08:30:45", 8, 30, 45, "morning time HH:MM:SS string"),
+            ("18:45:30", 18, 45, 30, "evening time HH:MM:SS string"),
+            ("01:05:09", 1, 5, 9, "single-digit values HH:MM:SS string"),
+            # String inputs with whitespace
+            (" 16:00 ", 16, 0, 0, "HH:MM with surrounding spaces"),
+            (" 16:00:00 ", 16, 0, 0, "HH:MM:SS with surrounding spaces"),
+            ("\t12:30\n", 12, 30, 0, "HH:MM with tabs and newlines"),
+            # Common real-world scenarios
+            ("06:00", 6, 0, 0, "early morning"),
+            ("07:30", 7, 30, 0, "breakfast time"),
+            ("09:00", 9, 0, 0, "work start"),
+            ("12:30", 12, 30, 0, "lunch time"),
+            ("15:00", 15, 0, 0, "mid-afternoon"),
+            ("17:00", 17, 0, 0, "evening"),
+            ("20:00", 20, 0, 0, "dinner time"),
+            ("22:00", 22, 0, 0, "late evening"),
+        ],
+    )
+    def test_time_converter_valid_inputs(self, time_input, expected_hour, expected_minute, expected_second, test_description):
+        """Comprehensive parametrized test for time converter with valid inputs."""
+        from custom_components.smart_cover_automation.config import _Converters
+
+        result = _Converters.to_time(time_input)
+        assert isinstance(result, time), f"Result should be time object for {test_description}"
+        assert result.hour == expected_hour, f"Failed hour for {test_description}: expected {expected_hour}, got {result.hour}"
+        assert result.minute == expected_minute, f"Failed minute for {test_description}: expected {expected_minute}, got {result.minute}"
+        assert result.second == expected_second, f"Failed second for {test_description}: expected {expected_second}, got {result.second}"
+
+    @pytest.mark.parametrize(
+        "invalid_input,test_description",
+        [
+            # Invalid types
+            (12345, "integer input"),
+            (16.5, "float input"),
+            (None, "None value"),
+            ([], "empty list"),
+            ({}, "empty dict"),
+            ({"hour": 16, "minute": 0}, "dict with time components"),
+            # Invalid string formats
+            ("", "empty string"),
+            ("invalid", "non-time string"),
+            ("25:00", "invalid hour (>23)"),
+            ("12:60", "invalid minute (>59)"),
+            ("12:30:60", "invalid second (>59)"),
+            ("-1:00", "negative hour"),
+            ("12:-30", "negative minute"),
+            ("12:30:-15", "negative second"),
+            ("12", "single number"),
+            ("12:30:45:00", "too many components"),
+            ("12:30:45:00:00", "way too many components"),
+            ("12:abc", "non-numeric minute"),
+            ("ab:30", "non-numeric hour"),
+            ("12:30:xy", "non-numeric second"),
+        ],
+    )
+    def test_time_converter_invalid_inputs(self, invalid_input, test_description):
+        """Test that time converter raises ValueError for invalid inputs."""
+        from custom_components.smart_cover_automation.config import _Converters
+
+        with pytest.raises((ValueError, AttributeError, TypeError)) as exc_info:
+            _Converters.to_time(invalid_input)
+        # Verify that an exception was raised (the specific type may vary)
+        assert exc_info.value is not None, f"Should raise exception for {test_description}"
+
+    def test_time_converter_integration_with_conf_specs(self):
+        """Test that the time converter works correctly with CONF_SPECS."""
+        from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
+
+        # Get the weather hot cutover time spec
+        spec = CONF_SPECS[ConfKeys.WEATHER_HOT_CUTOVER_TIME]
+
+        # Test that the default value is handled correctly
+        default_time = spec.converter(spec.default)
+        assert isinstance(default_time, time)
+        assert default_time == time(16, 0, 0)  # Default should be 16:00:00
+
+        # Test that the converter is the correct function
+        assert spec.converter.__name__ == "to_time"
+
+        # Test various inputs through the spec converter
+        assert spec.converter("14:30") == time(14, 30, 0)
+        assert spec.converter("18:45:30") == time(18, 45, 30)
+        assert spec.converter(time(20, 0, 0)) == time(20, 0, 0)
+
+    def test_time_converter_in_resolved_config(self):
+        """Test that time values are properly resolved in ResolvedConfig."""
+        from custom_components.smart_cover_automation.config import ConfKeys, resolve
+
+        # Test with string input
+        config = resolve(options={ConfKeys.WEATHER_HOT_CUTOVER_TIME.value: "15:30"})
+        assert config.weather_hot_cutover_time == time(15, 30, 0)
+
+        # Test with time object input
+        config = resolve(options={ConfKeys.WEATHER_HOT_CUTOVER_TIME.value: time(17, 45, 0)})
+        assert config.weather_hot_cutover_time == time(17, 45, 0)
+
+        # Test with default
+        config = resolve(options={})
+        assert config.weather_hot_cutover_time == time(16, 0, 0)
+
+        # Test fallback on invalid input
+        config = resolve(options={ConfKeys.WEATHER_HOT_CUTOVER_TIME.value: "invalid"})
+        assert config.weather_hot_cutover_time == time(16, 0, 0)  # Should fall back to default
 
 
 # =============================================================================

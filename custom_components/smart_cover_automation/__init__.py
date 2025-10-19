@@ -7,6 +7,7 @@ https://github.com/helgeklein/ha-smart_cover_automation
 
 from __future__ import annotations
 
+from functools import partial
 from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
@@ -41,6 +42,77 @@ PLATFORMS: list[Platform] = [
 ]
 
 
+#
+# _handle_logbook_entry_service
+#
+async def _handle_logbook_entry_service(hass: HomeAssistant, call: ServiceCall) -> None:
+    """Handle service calls that create logbook entries.
+
+    This service is registered once per Home Assistant instance and routes
+    logbook entry requests to the appropriate coordinator based on:
+    1. Explicit config_entry_id (if provided)
+    2. Cover entity_id match
+    3. First available coordinator (fallback)
+    """
+    domain_state = hass.data.get(DOMAIN) or {}
+    registered_coordinators = domain_state.get(DATA_COORDINATORS, {})
+
+    if not registered_coordinators:
+        LOGGER.warning("Logbook service called but no coordinators are registered")
+        return
+
+    entity_id = call.data.get("entity_id")
+    target_position = call.data.get("target_position")
+
+    if entity_id is None or target_position is None:
+        LOGGER.warning("Logbook service requires 'entity_id' and 'target_position'")
+        return
+
+    try:
+        target_pos_int = int(target_position)
+    except (TypeError, ValueError):
+        LOGGER.warning("Invalid target_position '%s' provided to logbook service", target_position)
+        return
+
+    verb_key = call.data.get("verb_key", TRANSL_LOGBOOK_VERB_OPENING)
+    reason_key = call.data.get("reason_key", TRANSL_LOGBOOK_REASON_HEAT_PROTECTION)
+
+    coordinator_for_call: DataUpdateCoordinator | None = None
+
+    # Optional explicit config entry targeting
+    config_entry_id = call.data.get("config_entry_id")
+    if config_entry_id:
+        coordinator_for_call = registered_coordinators.get(config_entry_id)
+
+    # Try to match coordinator by cover entity if still unresolved
+    if coordinator_for_call is None:
+        for candidate in registered_coordinators.values():
+            if candidate is None:
+                continue
+            covers = {} if candidate.data is None else candidate.data.get("covers", {})
+            if entity_id in covers:
+                coordinator_for_call = candidate
+                break
+
+    # Fall back to the first available coordinator
+    if coordinator_for_call is None:
+        coordinator_for_call = next(iter(registered_coordinators.values()), None)
+
+    if coordinator_for_call is None:
+        LOGGER.warning("Logbook service could not locate an active coordinator")
+        return
+
+    await coordinator_for_call._add_logbook_entry_cover_movement(
+        verb_key=verb_key,
+        entity_id=entity_id,
+        reason_key=reason_key,
+        target_pos=target_pos_int,
+    )
+
+
+#
+# async_setup_entry
+#
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: IntegrationConfigEntry,
@@ -60,7 +132,8 @@ async def async_setup_entry(
     - Sets up platforms
     - Sets up the reload listener
     """
-    LOGGER.info(f"Setting up {INTEGRATION_NAME} integration")
+    LOGGER.info("=========================================================")
+    LOGGER.info("Starting integration setup")
 
     try:
         # Create the coordinator
@@ -89,66 +162,11 @@ async def async_setup_entry(
 
         # Register services once per hass instance
         if not hass.services.has_service(DOMAIN, SERVICE_LOGBOOK_ENTRY):
-
-            async def handle_logbook_entry(call: ServiceCall) -> None:
-                """Handle service calls that create logbook entries."""
-
-                domain_state = hass.data.get(DOMAIN) or {}
-                registered_coordinators = domain_state.get(DATA_COORDINATORS, {})
-
-                if not registered_coordinators:
-                    LOGGER.warning("Logbook service called but no coordinators are registered")
-                    return
-
-                entity_id = call.data.get("entity_id")
-                target_position = call.data.get("target_position")
-
-                if entity_id is None or target_position is None:
-                    LOGGER.warning("Logbook service requires 'entity_id' and 'target_position'")
-                    return
-
-                try:
-                    target_pos_int = int(target_position)
-                except (TypeError, ValueError):
-                    LOGGER.warning("Invalid target_position '%s' provided to logbook service", target_position)
-                    return
-
-                verb_key = call.data.get("verb_key", TRANSL_LOGBOOK_VERB_OPENING)
-                reason_key = call.data.get("reason_key", TRANSL_LOGBOOK_REASON_HEAT_PROTECTION)
-
-                coordinator_for_call: DataUpdateCoordinator | None = None
-
-                # Optional explicit config entry targeting
-                config_entry_id = call.data.get("config_entry_id")
-                if config_entry_id:
-                    coordinator_for_call = registered_coordinators.get(config_entry_id)
-
-                # Try to match coordinator by cover entity if still unresolved
-                if coordinator_for_call is None:
-                    for candidate in registered_coordinators.values():
-                        if candidate is None:
-                            continue
-                        covers = {} if candidate.data is None else candidate.data.get("covers", {})
-                        if entity_id in covers:
-                            coordinator_for_call = candidate
-                            break
-
-                # Fall back to the first available coordinator
-                if coordinator_for_call is None:
-                    coordinator_for_call = next(iter(registered_coordinators.values()), None)
-
-                if coordinator_for_call is None:
-                    LOGGER.warning("Logbook service could not locate an active coordinator")
-                    return
-
-                await coordinator_for_call._add_logbook_entry_cover_movement(
-                    verb_key=verb_key,
-                    entity_id=entity_id,
-                    reason_key=reason_key,
-                    target_pos=target_pos_int,
-                )
-
-            hass.services.async_register(DOMAIN, SERVICE_LOGBOOK_ENTRY, handle_logbook_entry)
+            hass.services.async_register(
+                DOMAIN,
+                SERVICE_LOGBOOK_ENTRY,
+                partial(_handle_logbook_entry_service, hass),
+            )
 
         # Call each platform's async_setup_entry()
         LOGGER.debug(f"Setting up platforms: {PLATFORMS}")
@@ -176,6 +194,7 @@ async def async_setup_entry(
         return False
     else:
         LOGGER.info(f"{INTEGRATION_NAME} integration setup completed")
+        LOGGER.info("=========================================================")
         return True
 
 

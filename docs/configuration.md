@@ -32,8 +32,32 @@ The integration's settings are managed via a multi-step wizard. To invoke the co
 
 In the first step of the configuration wizard, choose the following:
 
-- **Weather forecast sensor:** The integration needs this to determine it it's going to be a hot day, and if the sun is currently shining.
-- **Covers:** Select the covers the integration should automate.
+#### Weather Forecast Sensor
+
+The integration needs to determine:
+
+- Is the **weather hot** enough to require sun protection?
+- Is the **sun** is currently **shining**?
+
+This is done with the help of a weather forecast sensor. Home Assistant provides various weather integrations that should work well. See this [official list of weather integrations](https://www.home-assistant.io/integrations/#weather) and this [community guide to weather integrations](https://community.home-assistant.io/t/definitive-guide-to-weather-integrations/736419/1) for help choosing one.
+
+I've **tested** the following weather integrations successfully:
+
+- [Met.no](https://www.home-assistant.io/integrations/met/)
+- [Open-Meteo](https://www.home-assistant.io/integrations/open_meteo/)
+
+To determine if the **weather is hot enough** to require sun protection, the integration needs today's maximum temperature. Unfortunately, some weather forecast services only provide the maximum temperature for the remaining hours of the day. To compensate, this integration switches to the next day's temperature reading starting at 16:00 (afternoon).
+
+The maximum temperature received from the weather forecast service is compared with the temperature threshold (see below). If forecast temperature is above the threshold, the integration considers the weather to be hot.
+
+The integration considers the following current weather conditions as the **sun is shining** (as reported by the weather forecast service):
+
+- sunny
+- partlycloudy
+
+#### Covers
+
+Select the covers the integration should automate.
 
 ### Step 2: Cover Azimuth
 
