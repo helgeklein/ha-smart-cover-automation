@@ -61,6 +61,8 @@ Select the covers the integration should automate.
 
 In the second step of the configuration wizard, specify each cover's azimuth, aka the direction, as an angle from north. This is necessary so that the integration can calculate when the sun is shining on a window.
 
+There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). [This website](https://doc.forecast.solar/find_your_azimuth) has instructions for both.
+
 ### Step 3: Additional Settings (Optional)
 
 In the third step of the configuration wizard, the following settings can be configured. They don't have to, though, as the defaults should work well enough to get you started.
