@@ -28,10 +28,22 @@ def _as_dict(result: ConfigFlowResult) -> dict[str, Any]:
 
 
 def _create_mock_entry(data: dict[str, Any] | None = None, options: dict[str, Any] | None = None) -> MagicMock:
-    """Create a mock config entry for testing."""
+    """Create a mock config entry for testing.
+
+    If data is provided and options is None, data is moved to options (since all
+    user settings are now stored in options, not data).
+    """
     mock_entry = MagicMock()
-    mock_entry.data = data or {}
-    mock_entry.options = options or {}
+    # Config entry data is empty (only marks integration as installed)
+    mock_entry.data = {}
+    # All user settings are in options
+    if options is not None:
+        mock_entry.options = options
+    elif data is not None:
+        # Legacy test helper: if data is provided, put it in options
+        mock_entry.options = data
+    else:
+        mock_entry.options = {}
     return mock_entry
 
 
@@ -595,3 +607,97 @@ class TestOptionsFlowIntegration:
         # Second cover's settings should be removed
         assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}" not in data
         assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_MIN_CLOSURE}" not in data
+
+    async def test_clearing_per_cover_min_removes_from_options(self, mock_hass_with_covers: MagicMock) -> None:
+        """Clearing a per-cover minimum removes it from saved options."""
+
+        cover = MOCK_COVER_ENTITY_ID
+        existing_data = {
+            ConfKeys.COVERS.value: [cover],
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            f"{cover}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            f"{cover}_{const.COVER_SFX_MIN_CLOSURE}": 12,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [cover],
+            }
+        )
+
+        await flow.async_step_2(
+            {
+                f"{cover}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            }
+        )
+
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            }
+        )
+
+        result = await flow.async_step_4({"section_min_closure": {}})
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        # Options payload should not include the cleared per-cover minimum
+        assert f"{cover}_{const.COVER_SFX_MIN_CLOSURE}" not in saved_data
+
+    async def test_clearing_per_cover_min_with_none_section(self, mock_hass_with_covers: MagicMock) -> None:
+        """Section returning None still triggers cleanup of per-cover minimum."""
+
+        cover = MOCK_COVER_ENTITY_ID
+        existing_data = {
+            ConfKeys.COVERS.value: [cover],
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            f"{cover}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            f"{cover}_{const.COVER_SFX_MIN_CLOSURE}": 12,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [cover],
+            }
+        )
+
+        await flow.async_step_2(
+            {
+                f"{cover}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            }
+        )
+
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            }
+        )
+
+        result = await flow.async_step_4({"section_min_closure": None})
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        # Options payload should not include the cleared per-cover minimum
+        assert f"{cover}_{const.COVER_SFX_MIN_CLOSURE}" not in saved_data

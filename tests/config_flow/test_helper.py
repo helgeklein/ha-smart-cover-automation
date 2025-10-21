@@ -220,7 +220,7 @@ class TestFlowHelperSchemaBuilding:
         """Test step 1 schema has weather and covers fields."""
         from custom_components.smart_cover_automation.config import resolve
 
-        resolved_settings = resolve({}, {})
+        resolved_settings = resolve({})
 
         schema = FlowHelper.build_schema_step_1(resolved_settings)
 
@@ -291,7 +291,7 @@ class TestFlowHelperSchemaBuilding:
         """Test step 3 schema has all final settings fields."""
         from custom_components.smart_cover_automation.config import resolve
 
-        resolved_settings = resolve({}, {})
+        resolved_settings = resolve({})
 
         schema = FlowHelper.build_schema_step_3(resolved_settings)
 
@@ -310,7 +310,7 @@ class TestFlowHelperSchemaBuilding:
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 35,
             ConfKeys.COVERS_MAX_CLOSURE.value: 75,
         }
-        resolved_settings = resolve({}, custom_config)
+        resolved_settings = resolve(custom_config)
 
         schema = FlowHelper.build_schema_step_3(resolved_settings)
 
@@ -324,7 +324,7 @@ class TestFlowHelperSchemaBuilding:
         custom_config = {
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: 7380,  # 2 hours, 3 minutes
         }
-        resolved_settings = resolve({}, custom_config)
+        resolved_settings = resolve(custom_config)
 
         schema = FlowHelper.build_schema_step_3(resolved_settings)
 
@@ -385,7 +385,7 @@ class TestFlowHelperSchemaBuilding:
 
 
 class TestFlowHelperFlattenSection:
-    """Test flatten_section_input utility method."""
+    """Test extract_from_section_input utility method."""
 
     def test_flatten_section_input_with_sections_only(self) -> None:
         """Test flattening input that only contains section data."""
@@ -398,7 +398,8 @@ class TestFlowHelperFlattenSection:
             },
         }
 
-        result = FlowHelper.flatten_section_input(user_input)
+        section_names = {"section_min_closure", "section_max_closure"}
+        result, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
 
         # Sections should be flattened
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}" in result
@@ -409,6 +410,10 @@ class TestFlowHelperFlattenSection:
         # Section keys should not be in result
         assert "section_min_closure" not in result
         assert "section_max_closure" not in result
+
+        # Both sections should be marked as present
+        assert "section_min_closure" in sections_present
+        assert "section_max_closure" in sections_present
 
     def test_flatten_section_input_with_mixed_data(self) -> None:
         """Test flattening input with both sections and non-section keys.
@@ -427,7 +432,8 @@ class TestFlowHelperFlattenSection:
             "another_key": 42,  # Another non-section key
         }
 
-        result = FlowHelper.flatten_section_input(user_input)
+        section_names = {"section_min_closure", "section_max_closure"}
+        result, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
 
         # Sections should be flattened
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}" in result
@@ -443,6 +449,10 @@ class TestFlowHelperFlattenSection:
         assert "section_min_closure" not in result
         assert "section_max_closure" not in result
 
+        # Both sections should be marked as present
+        assert "section_min_closure" in sections_present
+        assert "section_max_closure" in sections_present
+
     def test_flatten_section_input_with_non_dict_section_value(self) -> None:
         """Test that non-dict values for section keys are preserved as-is."""
         user_input = {
@@ -452,7 +462,8 @@ class TestFlowHelperFlattenSection:
             },
         }
 
-        result = FlowHelper.flatten_section_input(user_input)
+        section_names = {"section_min_closure", "section_max_closure"}
+        result, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
 
         # section_min_closure with non-dict value should be preserved
         assert "section_min_closure" in result
@@ -462,6 +473,10 @@ class TestFlowHelperFlattenSection:
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}" in result
         assert "section_max_closure" not in result
 
+        # Both sections are considered present once submitted, even with non-dict values
+        assert "section_max_closure" in sections_present
+        assert "section_min_closure" in sections_present
+
     def test_flatten_section_input_with_empty_sections(self) -> None:
         """Test flattening input with empty section dictionaries."""
         user_input = {
@@ -469,7 +484,12 @@ class TestFlowHelperFlattenSection:
             "section_max_closure": {},
         }
 
-        result = FlowHelper.flatten_section_input(user_input)
+        section_names = {"section_min_closure", "section_max_closure"}
+        result, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
 
         # Empty sections should result in empty flattened dict
         assert len(result) == 0
+
+        # Both sections should be marked as present
+        assert "section_min_closure" in sections_present
+        assert "section_max_closure" in sections_present

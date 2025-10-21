@@ -91,12 +91,7 @@ class CoverPositionHistoryManager:
 
         # Add the new position to the history
         history = self._cover_position_history[entity_id]
-        newest_entry = history.add_position(new_position, cover_moved, timestamp)
-
-        # Log the new entry for debugging
-        timestamp_str = newest_entry.timestamp.astimezone().strftime("%Y-%m-%d %H:%M:%S")
-        current_pos = newest_entry.position
-        const.LOGGER.debug(f"[{entity_id}] Updated position history with new entry: {current_pos}% at {timestamp_str}")
+        history.add_position(new_position, cover_moved, timestamp)
 
     def get_entries(self, entity_id: str) -> list[PositionEntry]:
         """Get the position history entries with timestamps for a cover.

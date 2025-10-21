@@ -56,8 +56,9 @@ class TestSmartReload:
 
         # Attach runtime data to entry
         mock_config_entry_basic.runtime_data = mock_runtime_data
-        mock_config_entry_basic.data = {"enabled": False, "simulation_mode": False, "covers": ["cover.test"]}
-        mock_config_entry_basic.options = {}
+        # All user settings are in options, not data
+        mock_config_entry_basic.data = {}
+        mock_config_entry_basic.options = {"enabled": False, "simulation_mode": False, "covers": ["cover.test"]}
 
         # Setup hass mock
         mock_hass_with_spec.config_entries = MagicMock()
@@ -101,8 +102,9 @@ class TestSmartReload:
 
         # Attach runtime data to entry
         mock_config_entry_basic.runtime_data = mock_runtime_data
-        mock_config_entry_basic.data = {"enabled": True, "simulation_mode": True, "covers": ["cover.test"]}
-        mock_config_entry_basic.options = {}
+        # All user settings are in options, not data
+        mock_config_entry_basic.data = {}
+        mock_config_entry_basic.options = {"enabled": True, "simulation_mode": True, "covers": ["cover.test"]}
 
         # Setup hass mock
         mock_hass_with_spec.config_entries = MagicMock()
@@ -143,8 +145,9 @@ class TestSmartReload:
 
         # Attach runtime data to entry
         mock_config_entry_basic.runtime_data = mock_runtime_data
-        mock_config_entry_basic.data = {"enabled": False, "simulation_mode": True, "covers": ["cover.test"]}
-        mock_config_entry_basic.options = {}
+        # All user settings are in options, not data
+        mock_config_entry_basic.data = {}
+        mock_config_entry_basic.options = {"enabled": False, "simulation_mode": True, "covers": ["cover.test"]}
 
         # Setup hass mock
         mock_hass_with_spec.config_entries = MagicMock()

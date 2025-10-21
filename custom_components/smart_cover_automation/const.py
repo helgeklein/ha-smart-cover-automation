@@ -72,9 +72,10 @@ ERROR_INVALID_COVER: Final[str] = "invalid_cover"
 ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"
 ERROR_NO_COVERS: Final[str] = "no_covers"
 ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"
+STEP_4_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
+STEP_4_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
 
 # Home Assistant string literals
-HA_DATA: Final[str] = "data"
 HA_OPTIONS: Final[str] = "options"
 HA_SUN_ATTR_AZIMUTH: Final[str] = "azimuth"
 HA_SUN_ATTR_ELEVATION: Final[str] = "elevation"

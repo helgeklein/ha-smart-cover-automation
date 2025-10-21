@@ -75,9 +75,9 @@ async def test_switch_is_on_property_with_config_resolution(
 
     Coverage target: switch.py line 110 (is_on property with resolve_entry call)
     """
-    # Set the enabled configuration value
-    mock_coordinator_basic.config_entry.data = {ConfKeys.ENABLED.value: enabled_config_value}
-    mock_coordinator_basic.config_entry.options = {}
+    # Set the enabled configuration value in options
+    mock_coordinator_basic.config_entry.data = {}
+    mock_coordinator_basic.config_entry.options = {ConfKeys.ENABLED.value: enabled_config_value}
 
     # Create enabled switch instance directly
     switch = EnabledSwitch(mock_coordinator_basic)
@@ -127,13 +127,13 @@ async def test_verbose_logging_switch_checks_ha_logger_level(
 
     Coverage target: switch.py VerboseLoggingSwitch.is_on property
     """
-    # Setup configuration with verbose_logging value
-    mock_coordinator_basic.config_entry.data = {
+    # Setup configuration with verbose_logging value in options
+    mock_coordinator_basic.config_entry.data = {}
+    mock_coordinator_basic.config_entry.options = {
         ConfKeys.COVERS.value: ["cover.test"],
         ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
         ConfKeys.VERBOSE_LOGGING.value: config_verbose_logging,
     }
-    mock_coordinator_basic.config_entry.options = {}
 
     # Get the integration's logger and set its level
     integration_logger = logging.getLogger("custom_components.smart_cover_automation")

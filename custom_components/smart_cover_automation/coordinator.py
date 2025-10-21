@@ -130,14 +130,13 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
     # _resolved_settings
     #
     def _resolved_settings(self) -> ResolvedConfig:
-        """Return resolved settings from the config entry (options over data)."""
+        """Return resolved settings from the config entry options."""
         from .config import resolve
 
-        # Get base configuration
+        # Get configuration from options (all user settings are stored there)
         opts = dict(getattr(self.config_entry, const.HA_OPTIONS, {}) or {})
-        dat = dict(getattr(self.config_entry, const.HA_DATA, {}) or {})
 
-        return resolve(opts, dat)
+        return resolve(opts)
 
     #
     # _async_update_data

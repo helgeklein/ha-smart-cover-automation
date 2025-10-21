@@ -293,11 +293,11 @@ class TestIntegrationSetup:
             # Execute setup process
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
 
-            # Verify RuntimeData was created with correct parameters
+            # Verify RuntimeData was created with correct parameters (config comes from options)
             mock_data_class.assert_called_once_with(
                 integration=mock_integration,
                 coordinator=mock_coordinator,
-                config=dict(mock_config_entry_basic.data),
+                config=dict(mock_config_entry_basic.options),
             )
 
             # Verify runtime_data was attached to config entry

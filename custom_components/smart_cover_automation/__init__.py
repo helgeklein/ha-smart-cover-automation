@@ -139,13 +139,10 @@ async def async_setup_entry(
         # Create the coordinator
         coordinator = DataUpdateCoordinator(hass, entry)
 
-        # Merge config entry data with options (options override data)
-        merged_config = {
-            **dict(entry.data),
-            **dict(getattr(entry, HA_OPTIONS, {}) or {}),
-        }
+        # Get configuration from options (all user settings are stored in options)
+        merged_config = dict(getattr(entry, HA_OPTIONS, {}) or {})
 
-        # Store the merged config in the coordinator for comparison during reload
+        # Store the config in the coordinator for comparison during reload
         coordinator._merged_config = merged_config
 
         # Store shared state
@@ -263,11 +260,8 @@ async def async_reload_entry(
         # Get the old configuration that the coordinator was using
         old_config = coordinator._merged_config
 
-        # Get the new configuration from the updated entry
-        new_config = {
-            **dict(entry.data),
-            **dict(getattr(entry, HA_OPTIONS, {}) or {}),
-        }
+        # Get the new configuration from the updated entry (all settings are in options)
+        new_config = dict(getattr(entry, HA_OPTIONS, {}) or {})
 
         # Determine which keys have actually changed
         changed_keys = {key for key in set(old_config.keys()) | set(new_config.keys()) if old_config.get(key) != new_config.get(key)}

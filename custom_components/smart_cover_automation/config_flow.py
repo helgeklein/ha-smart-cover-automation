@@ -242,7 +242,7 @@ class FlowHelper:
         # Build schema dict for min closure positions and group inside collapsible section
         min_schema_dict = FlowHelper._build_schema_cover_positions(covers, const.COVER_SFX_MIN_CLOSURE, defaults)
         if min_schema_dict:
-            schema_dict[vol.Optional("section_min_closure")] = section(
+            schema_dict[vol.Optional(const.STEP_4_SECTION_MIN_CLOSURE)] = section(
                 vol.Schema(min_schema_dict),
                 {"collapsed": True},
             )
@@ -250,7 +250,7 @@ class FlowHelper:
         # Build schema dict for max closure positions and group inside collapsible section
         max_schema_dict = FlowHelper._build_schema_cover_positions(covers, const.COVER_SFX_MAX_CLOSURE, defaults)
         if max_schema_dict:
-            schema_dict[vol.Optional("section_max_closure")] = section(
+            schema_dict[vol.Optional(const.STEP_4_SECTION_MAX_CLOSURE)] = section(
                 vol.Schema(max_schema_dict),
                 {"collapsed": True},
             )
@@ -279,36 +279,71 @@ class FlowHelper:
             raw = defaults.get(key)
             default_value = to_int_or_none(raw)
 
-            # Number selector for the position
-            value_selector = selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0,
-                    max=100,
-                    unit_of_measurement="%",
-                    mode=selector.NumberSelectorMode.BOX,
+            # Text selector (number input) allows clearing the field entirely
+            value_selector = selector.TextSelector(
+                selector.TextSelectorConfig(
+                    type=selector.TextSelectorType.NUMBER,
+                    suffix="%",
                 )
             )
 
-            # Only add a default if we have a value, otherwise leave it completely empty
+            # Use suggested value instead of setting a default to allow clearing the field
             if default_value is not None:
-                schema_dict[vol.Optional(key, default=default_value)] = value_selector
+                key_marker = vol.Optional(key, description={"suggested_value": str(default_value)})
             else:
-                schema_dict[vol.Optional(key)] = value_selector
+                key_marker = vol.Optional(key)
+
+            schema_dict[key_marker] = value_selector
 
         return schema_dict
 
+    #
+    # extract_from_section_input
+    #
     @staticmethod
-    def flatten_section_input(user_input: Mapping[str, Any]) -> dict[str, Any]:
-        """Flatten section-based input into a plain dictionary."""
+    def extract_from_section_input(user_input: Mapping[str, Any], section_names: set[str]) -> tuple[dict[str, Any], set[str]]:
+        """Flatten two-level input from sections into a one-level dict.
+
+        Returns a tuple of (flattened_dict, sections_present) where sections_present
+        is a set of section names that were in the input.
+
+        A section is in the input if:
+          1) the user changed one or more of its fields, or
+          2) at least one field has a value
+        Only the fields with values are included in the dictionary, e.g.:
+          'section_max_closure': {'cover.kitchen_cover_max_closure': '20'}
+        If the user cleared all fields of a section, an empty dictionary is returned, e.g.:
+          'section_min_closure': {}
+
+        Args:
+            user_input: Raw user input from the form
+            section_names: Set of section names to extract
+
+        Returns:
+            Tuple of (flattened_dict, sections_present)
+        """
 
         flattened: dict[str, Any] = {}
+        sections_present: set[str] = set()
+
         for key, value in user_input.items():
-            if key in {"section_min_closure", "section_max_closure"} and isinstance(value, dict):
-                flattened.update(value)
+            if key in section_names:
+                # We found a section
+                sections_present.add(key)
+                if isinstance(value, Mapping):
+                    # The section has values
+                    flattened.update(value)
+                elif value in (None, vol.UNDEFINED):
+                    # Empty section
+                    continue
+                else:
+                    # We have a non-mapping value in a section (should not happen), store as-is
+                    flattened[key] = value
             else:
+                # Regular key-value pair
                 flattened[key] = value
 
-        return flattened
+        return flattened, sections_present
 
 
 #
@@ -372,13 +407,87 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_entry = config_entry
         self._config_data: dict[str, Any] = {}
 
-    def _current_settings(self) -> dict[str, Any]:
-        """Build a dictionary from options flow settings (priority) and config flow settings (fallback)."""
-        data = dict(self._config_entry.data) if self._config_entry.data else {}
-        options = dict(self._config_entry.options) if self._config_entry.options else {}
+    #
+    # _is_empty_value
+    #
+    @staticmethod
+    def _is_empty_value(value: Any) -> bool:
+        """Check if a value represents a cleared/empty field."""
+        return value in (None, "") or value is vol.UNDEFINED
 
-        # Merge options and data so that options has precedence
-        return {**data, **options}
+    #
+    # _to_int
+    #
+    @staticmethod
+    def _to_int(value: Any) -> int | None:
+        """Convert a value to int, treating cleared values as None."""
+        if OptionsFlowHandler._is_empty_value(value):
+            return None
+        return to_int_or_none(value)
+
+    #
+    # _build_section_cover_settings
+    #
+    @staticmethod
+    def _build_section_cover_settings(
+        user_input: dict[str, Any],
+        section_name: str,
+        suffix: str,
+        covers: list[str],
+    ) -> dict[str, Any]:
+        """Build a dict with all possible per-cover settings for a section.
+
+        If a section is not present in the input, returns an empty dict.
+        If a section is present, returns the "suffix" settings for all covers.
+        Each value is either the user input converted to int, or None if the field is empty.
+
+        Args:
+            user_input: Raw user input from the form (may contain sections)
+            section_name: Name of the section to extract
+            suffix: Suffix for the per-cover keys
+            covers: List of cover entity IDs
+
+        Returns:
+            Dictionary with normalized per-cover settings for this section
+        """
+        # Extract cover data and determine which sections are present
+        section_names = {const.STEP_4_SECTION_MIN_CLOSURE, const.STEP_4_SECTION_MAX_CLOSURE}
+        user_input_extracted, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
+
+        result: dict[str, Any] = {}
+        if section_name not in sections_present:
+            return result
+        for cover in covers:
+            key = f"{cover}_{suffix}"
+            if key in user_input_extracted:
+                # We have the field in the input, but it may be empty.
+                result[key] = OptionsFlowHandler._to_int(user_input_extracted[key])
+            else:
+                result[key] = None
+        return result
+
+    #
+    # _current_settings
+    #
+    def _current_settings(self) -> dict[str, Any]:
+        """Get current settings from options storage.
+
+        Returns:
+            Dictionary of current option values
+        """
+        return dict(self._config_entry.options) if self._config_entry.options else {}
+
+    #
+    # _get_covers
+    #
+    def _get_covers(self) -> list[str]:
+        """Get the list of selected covers from flow data or current settings.
+
+        The flow data only contains changed values; if the covers were not changed
+        in this options flow session, fall back to the existing settings.
+        """
+        covers: list[str] = self._config_data.get(ConfKeys.COVERS.value) or self._current_settings().get(ConfKeys.COVERS.value, [])
+        return covers
 
     #
     # async_step_init
@@ -409,6 +518,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     errors=errors,
                 )
             else:
+                const.LOGGER.debug(f"Options flow step 1 user input: {user_input}")
+
                 # Store step 1 data (temporarily, for the next step of the flow) and proceed to step 2
                 self._config_data.update(user_input)
                 return await self.async_step_2()
@@ -423,7 +534,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             current_settings = self._current_settings()
 
             # Get the selected covers
-            selected_covers = self._config_data.get(ConfKeys.COVERS.value) or current_settings.get(ConfKeys.COVERS.value, [])
+            selected_covers = self._get_covers()
 
             # Show the form
             return self.async_show_form(
@@ -431,6 +542,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=FlowHelper.build_schema_step_2(covers=selected_covers, defaults=current_settings),
             )
         else:
+            const.LOGGER.debug(f"Options flow step 2 user input: {user_input}")
+
             # Store step 2 data (temporarily, for the next step of the flow) and proceed to step 3
             self._config_data.update(user_input)
             return await self.async_step_3()
@@ -452,6 +565,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=FlowHelper.build_schema_step_3(resolved_settings),
             )
         else:
+            const.LOGGER.debug(f"Options flow step 3 user input: {user_input}")
+
             # Store step 3 data (temporarily, for the next step of the flow) and proceed to step 4
             self._config_data.update(user_input)
             return await self.async_step_4()
@@ -463,42 +578,65 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Step 4: Configure max/min position for each cover."""
         if user_input is None:
             # Get currently valid settings
-            defaults = self._current_settings()
+            current_settings = self._current_settings()
 
-            # Get the selected covers from the temporary data accumulated during the flow so far
-            # If not in _config_data (e.g., when HA recreates the flow instance), get from current settings
-            selected_covers = self._config_data.get(ConfKeys.COVERS.value) or defaults.get(ConfKeys.COVERS.value, [])
+            # Get the selected covers
+            selected_covers = self._get_covers()
 
             # Show the form
             return self.async_show_form(
                 step_id="4",
-                data_schema=FlowHelper.build_schema_step_4(covers=selected_covers, defaults=defaults),
+                data_schema=FlowHelper.build_schema_step_4(covers=selected_covers, defaults=current_settings),
             )
 
-        # Store step 4 data and merge with existing settings
-        flattened_input = FlowHelper.flatten_section_input(user_input)
-        self._config_data.update(flattened_input)
+        const.LOGGER.debug(f"Options flow step 4 user input: {user_input}")
+
+        # Get the selected covers
+        covers_in_input = self._get_covers()
+
+        # Build complete lists of min and max closure settings for all covers
+        min_closure_data = self._build_section_cover_settings(
+            user_input, const.STEP_4_SECTION_MIN_CLOSURE, const.COVER_SFX_MIN_CLOSURE, covers_in_input
+        )
+        max_closure_data = self._build_section_cover_settings(
+            user_input, const.STEP_4_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers_in_input
+        )
+
+        # Store the complete min and max per-cover settings
+        self._config_data.update(min_closure_data)
+        self._config_data.update(max_closure_data)
+
+        # Combine current settings with new input from the options flow (the latter taking precedence)
         merged = {**self._current_settings(), **self._config_data}
 
-        # Clean up orphaned cover settings from the merged data
-        covers_in_input = self._config_data.get(ConfKeys.COVERS.value, [])
+        # Clean up orphaned cover settings and empty values from the merged data
         keys_to_remove = []
-        for key in merged.keys():
-            # Check for any per-cover setting suffix
-            if key.endswith(f"_{const.COVER_SFX_AZIMUTH}"):
-                cover_entity = key.replace(f"_{const.COVER_SFX_AZIMUTH}", "")
-                if cover_entity not in covers_in_input:
-                    keys_to_remove.append(key)
-            elif key.endswith(f"_{const.COVER_SFX_MAX_CLOSURE}"):
-                cover_entity = key.replace(f"_{const.COVER_SFX_MAX_CLOSURE}", "")
-                if cover_entity not in covers_in_input:
-                    keys_to_remove.append(key)
-            elif key.endswith(f"_{const.COVER_SFX_MIN_CLOSURE}"):
-                cover_entity = key.replace(f"_{const.COVER_SFX_MIN_CLOSURE}", "")
-                if cover_entity not in covers_in_input:
-                    keys_to_remove.append(key)
+        suffixes = (
+            f"_{const.COVER_SFX_AZIMUTH}",
+            f"_{const.COVER_SFX_MAX_CLOSURE}",
+            f"_{const.COVER_SFX_MIN_CLOSURE}",
+        )
+        for key, value in list(merged.items()):
+            # Remove keys with empty values
+            if self._is_empty_value(value):
+                keys_to_remove.append(key)
+                continue
 
+            # Remove per-cover settings (from later steps) for covers no longer selected (in step 1)
+            for suffix in suffixes:
+                if key.endswith(suffix):
+                    cover_entity = key[: -len(suffix)]
+                    if cover_entity not in covers_in_input:
+                        keys_to_remove.append(key)
+                    break
+
+        # Now remove the keys identified as superfluous
         for key in keys_to_remove:
             merged.pop(key, None)
 
+        const.LOGGER.debug(f"Options flow completed. Final configuration being saved: {merged}")
+
+        # Apply the new settings
+        # This triggers a reload of the integration with the updated configuration.
+        # The reload is required to apply the changes to the coordinator.
         return self.async_create_entry(title="", data=merged)

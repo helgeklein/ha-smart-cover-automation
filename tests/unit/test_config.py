@@ -235,22 +235,19 @@ class TestConfigurationResolution:
         This ensures users can reconfigure the integration through the options flow
         while maintaining robust behavior even with invalid input.
         """
-        # Setup test data with options taking priority over data
-        data = {
-            ConfKeys.TEMP_THRESHOLD.value: "18.5",  # Will be overridden by options
-            ConfKeys.ENABLED.value: 0,  # Will be used (not in options)
-        }
+        # Setup test data with options
         options = {
-            ConfKeys.TEMP_THRESHOLD.value: "20.0",  # Takes priority over data
+            ConfKeys.TEMP_THRESHOLD.value: "20.0",  # String that will be coerced to float
+            ConfKeys.ENABLED.value: 0,  # Integer that will be coerced to boolean
             ConfKeys.COVERS_MIN_POSITION_DELTA.value: "not-an-int",  # Invalid -> falls back to default
         }
 
-        rs: ResolvedConfig = resolve(options, data)
+        rs: ResolvedConfig = resolve(options)
 
-        # Priority: options take precedence over data
+        # Coercion success: string to float
         assert rs.temp_threshold == 20.0
 
-        # Coercion success from data for enabled (not overridden in options)
+        # Coercion success: integer to boolean
         # 0 -> False (integer to boolean coercion)
         assert rs.enabled is False
 
@@ -262,30 +259,33 @@ class TestConfigurationResolution:
         """Test that resolve_entry() extracts configuration from Home Assistant config entry objects.
 
         This test verifies the convenience function that extracts configuration
-        from Home Assistant ConfigEntry objects. Home Assistant stores configuration
-        in two attributes of config entries:
+        from Home Assistant ConfigEntry objects. Home Assistant stores user configuration
+        in the options attribute of config entries:
 
-        - **options**: Runtime configuration changes made through the options flow
-        - **data**: Initial configuration data from the initial setup flow
+        - **options**: User configuration (both from initial setup and options flow)
+        - **data**: Empty (only marks integration as installed)
 
         The resolve_entry() function is a wrapper around resolve() that automatically
-        extracts these attributes from the config entry object, making it easier
+        extracts the options attribute from the config entry object, making it easier
         for the integration code to work with Home Assistant's config entry format.
 
         This pattern is common in Home Assistant integrations and provides a clean
         interface between Home Assistant's configuration management and the
         integration's internal configuration handling.
         """
-        # Create mock config entry with options and data attributes (like Home Assistant provides)
+        # Create mock config entry with options attribute (like Home Assistant provides)
         entry = SimpleNamespace(
-            options={ConfKeys.ENABLED.value: False},  # Options flow configuration
-            data={ConfKeys.TEMP_THRESHOLD.value: 22},  # Initial setup configuration
+            options={
+                ConfKeys.ENABLED.value: False,
+                ConfKeys.TEMP_THRESHOLD.value: 22,
+            },
+            data={},  # Empty (only marks integration as installed)
         )
 
         # resolve_entry() should extract and resolve configuration from the entry
         rs = resolve_entry(entry)
         assert rs.enabled is False  # From options
-        assert rs.temp_threshold == 22.0  # From data (coerced to float)
+        assert rs.temp_threshold == 22.0  # From options (coerced to float)
 
 
 # =============================================================================
@@ -322,7 +322,7 @@ class TestCoversConfiguration:
         """
         # covers provided as a list should be normalized to a tuple by resolve()
         options = {ConfKeys.COVERS.value: ["cover.a", "cover.b"]}
-        rs = resolve(options, data=None)
+        rs = resolve(options)
         assert isinstance(rs.covers, tuple)
         assert rs.covers == ("cover.a", "cover.b")
 
@@ -355,7 +355,7 @@ class TestCoversConfiguration:
         always strings, so any non-string values (like numbers from UI input)
         must be converted to strings to be valid entity references.
         """
-        rs = resolve({ConfKeys.COVERS.value: covers_input}, {})
+        rs = resolve({ConfKeys.COVERS.value: covers_input})
         assert rs.covers == expected
 
     def test_resolve_covers_string_and_non_iterable_behaviors(self):
@@ -381,7 +381,7 @@ class TestCoversConfiguration:
         manual file editing or integration reinstallation.
         """
         # String input is treated as an iterable of characters (back-compat behavior)
-        rs = resolve({ConfKeys.COVERS.value: "cover.window"}, {})
+        rs = resolve({ConfKeys.COVERS.value: "cover.window"})
         assert rs.covers == tuple("cover.window")
 
         # Non-iterable input results in an empty tuple via safe fallback
@@ -390,7 +390,7 @@ class TestCoversConfiguration:
 
             pass
 
-        rs2 = resolve({ConfKeys.COVERS.value: NotIterable()}, {})
+        rs2 = resolve({ConfKeys.COVERS.value: NotIterable()})
         assert rs2.covers == ()
 
 
@@ -431,8 +431,7 @@ class TestConfigurationAccessors:
             {
                 ConfKeys.ENABLED.value: True,  # Boolean configuration
                 ConfKeys.TEMP_THRESHOLD.value: 30,  # Numeric configuration (will be coerced to float)
-            },
-            {},
+            }
         )
 
         # get() method reads configuration values by enum key

@@ -2,7 +2,7 @@
 
 This module defines a typo-safe enum of setting keys, a registry of specs with
 defaults and coercion, and helpers to resolve effective settings from a
-ConfigEntry (options → data → defaults).
+ConfigEntry (options → defaults).
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from datetime import time
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
-from custom_components.smart_cover_automation.const import HA_DATA, HA_OPTIONS
+from custom_components.smart_cover_automation.const import HA_OPTIONS
 
 T = TypeVar("T")
 
@@ -38,7 +38,7 @@ class _ConfSpec(Generic[T]):
 class ConfKeys(StrEnum):
     """Configuration keys for the integration's settings.
 
-    Each key corresponds to a setting that can be configured via options or data.
+    Each key corresponds to a setting that can be configured via options.
     """
 
     COVERS = "covers"  # Tuple of cover entity_ids to control.
@@ -191,7 +191,7 @@ __all__ = [
 ]
 
 
-# Simple, explicit settings structure resolved from options → data → defaults.
+# Simple, explicit settings structure resolved from options → defaults.
 @dataclass(frozen=True, slots=True)
 class ResolvedConfig:
     covers: tuple[str, ...]
@@ -217,20 +217,17 @@ class ResolvedConfig:
         return {k: getattr(self, k.value) for k in ConfKeys}
 
 
-def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None = None) -> ResolvedConfig:
-    """Resolve settings from options → data → defaults using ConfKeys.
+def resolve(options: Mapping[str, Any] | None) -> ResolvedConfig:
+    """Resolve settings from options → defaults using ConfKeys.
 
     Only shallow keys are considered. Performs light normalization (covers → tuple).
     """
     options = options or {}
-    data = data or {}
 
     def _val(key: ConfKeys) -> Any:
         spec = CONF_SPECS[key]
         if key.value in options:
             raw = options[key.value]
-        elif key.value in data:
-            raw = data[key.value]
         else:
             raw = spec.default
         try:
@@ -255,8 +252,8 @@ def resolve(options: Mapping[str, Any] | None, data: Mapping[str, Any] | None = 
 def resolve_entry(entry: Any) -> ResolvedConfig:
     """Resolve settings directly from a ConfigEntry-like object.
 
-    Accepts any object with 'options' and 'data' attributes (works with test mocks).
+    All user settings are stored in options. Accepts any object with 'options'
+    attribute (works with test mocks).
     """
     opts = getattr(entry, HA_OPTIONS, None) or {}
-    dat = getattr(entry, HA_DATA, None) or {}
-    return resolve(opts, dat)
+    return resolve(opts)

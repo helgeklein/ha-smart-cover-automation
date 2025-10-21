@@ -437,6 +437,17 @@ def mock_hass_with_covers() -> MagicMock:
 
     hass = MagicMock()
     hass.states.get.side_effect = mock_get_state
+    hass.config_entries = MagicMock()
+
+    def _async_update_entry(entry: MagicMock, *, data: dict[str, Any] | None = None, options: dict[str, Any] | None = None) -> None:
+        """Simulate Home Assistant's async_update_entry by mutating the entry."""
+
+        if data is not None:
+            entry.data = data
+        if options is not None:
+            entry.options = options
+
+    hass.config_entries.async_update_entry = MagicMock(side_effect=_async_update_entry)
     return hass
 
 
@@ -456,12 +467,14 @@ class MockConfigEntry:
         """Initialize mock config entry with configuration data.
 
         Args:
-            data: Configuration dictionary matching integration schema
+            data: Configuration dictionary matching integration schema (will be stored in options)
         """
         self.domain = DOMAIN
         self.entry_id = "test_entry"
-        self.data = data
-        self.options = {}  # Add options attribute for config persistence
+        # Config entry data is empty (only marks integration as installed)
+        self.data = {}
+        # All user settings are in options
+        self.options = data
         self.runtime_data = MagicMock()
         self.runtime_data.config = data
         self.add_update_listener = MagicMock(return_value=MagicMock())
@@ -877,13 +890,14 @@ def mock_config_entry_extended() -> MagicMock:
         Mock config entry with comprehensive data and options
     """
     config_entry = MagicMock()
-    config_entry.data = {
+    # Config entry data is empty (only used to mark integration as installed)
+    config_entry.data = {}
+    # All user settings are stored in options
+    config_entry.options = {
         ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
         ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
         ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
-    }
-    config_entry.options = {
         f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": 180.0,
         f"{MOCK_COVER_ENTITY_ID_2}_{COVER_SFX_AZIMUTH}": 90.0,
     }
