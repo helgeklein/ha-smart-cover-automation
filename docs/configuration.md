@@ -23,11 +23,6 @@ The integration's settings are managed via a multi-step wizard. To invoke the co
 - The configuration wizard can be canceled at any time. When you do that, no changes are made to the configuration.
 - The configuration wizard can be invoked as often as needed to inspect the configuration or make changes to it.
 
-**Config Flow vs. Options Flow**
-
-- In more technical terms, the configuration wizard would be called the options flow.
-- The integration doesn't use a config flow. This means there's nothing to configure while adding the integration. Instead, the user is expected to configure the integration after having added it to Home Assistant.
-
 ### Step 1: Weather Forecast Sensor and Covers to Automate
 
 #### Weather Forecast Sensor
@@ -77,6 +72,16 @@ In the third step of the configuration wizard, the following settings can be con
 ### Step 4: Per-Cover Max/Min Positions (Optional)
 
 In the fourth step of the configuration wizard, you can specify maximum and minimum positions per cover. If configured, these per-cover settings override the global max/min positions which can be configured in the previous step.
+
+### Step 5: Time Exceptions (Optional)
+
+In the fourth step of the configuration wizard, you can configure exceptions for time periods when the automation should not be active.
+
+- **Disable cover opening at night:** The automation opens the covers when they needn't be closed for heat protection. By default, this auto-opening doesn't happen at night (when the sun is below the horizon). You can change that behavior by flipping this setting to disabled.
+- **Time range:**
+  - **Disable automation in time range:** Enable this if you want the automation to be inactive in a certain time range, e.g., when you sleep. Don't forget to also specify the start and end times.
+  - **Disable from:** Start time of the time period in which the automation should be inactive.
+  - **Disable until:** End time of the time period in which the automation should be inactive.
 
 ## Switches on the Integration Card
 

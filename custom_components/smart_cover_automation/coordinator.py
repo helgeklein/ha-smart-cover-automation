@@ -237,6 +237,38 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         # Get the resolved settings
         resolved = self._resolved_settings()
 
+        # Sun entity
+        sun_elevation_threshold = resolved.sun_elevation_threshold
+        sun_entity = self.hass.states.get(const.HA_SUN_ENTITY_ID)
+        if sun_entity is None:
+            # Required sun entity missing. This is a critical error.
+            raise SunSensorNotFoundError(const.HA_SUN_ENTITY_ID)
+
+        # Sun azimuth & elevation
+        sun_elevation = to_float_or_none(sun_entity.attributes.get(const.HA_SUN_ATTR_ELEVATION))
+        if sun_elevation is None:
+            message = "Sun elevation unavailable; skipping actions"
+            self._log_automation_result(message, const.LogSeverity.WARNING, result)
+            return result
+        sun_azimuth = to_float_or_none(sun_entity.attributes.get(const.HA_SUN_ATTR_AZIMUTH, 0))
+        if sun_azimuth is None:
+            message = "Sun azimuth unavailable; skipping actions"
+            self._log_automation_result(message, const.LogSeverity.WARNING, result)
+            return result
+
+        # Nighttime?
+        if self._nighttime_and_let_light_in_disabled(resolved, sun_entity):
+            message = "It's night and 'let light in' is disabled. Skipping actions"
+            self._log_automation_result(message, const.LogSeverity.DEBUG, result)
+            return result
+
+        # In automation disabled period?
+        in_disabled_period, period_string = self._in_time_period_automation_disabled(resolved)
+        if in_disabled_period:
+            message = f"Automation is disabled for the current time period ({period_string}). Skipping actions"
+            self._log_automation_result(message, const.LogSeverity.DEBUG, result)
+            return result
+
         # Weather
         weather_entity_id = resolved.weather_entity_id
         try:
@@ -260,25 +292,6 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
         # Cover settings
         covers_min_position_delta = resolved.covers_min_position_delta
-
-        # Sun entity
-        sun_elevation_threshold = resolved.sun_elevation_threshold
-        sun_state = self.hass.states.get(const.HA_SUN_ENTITY_ID)
-        if sun_state is None:
-            # Required sun entity missing. This is a critical error.
-            raise SunSensorNotFoundError(const.HA_SUN_ENTITY_ID)
-
-        # Sun azimuth & elevation
-        sun_elevation = to_float_or_none(sun_state.attributes.get(const.HA_SUN_ATTR_ELEVATION))
-        if sun_elevation is None:
-            message = "Sun elevation unavailable; skipping actions"
-            self._log_automation_result(message, const.LogSeverity.WARNING, result)
-            return result
-        sun_azimuth = to_float_or_none(sun_state.attributes.get(const.HA_SUN_ATTR_AZIMUTH, 0))
-        if sun_azimuth is None:
-            message = "Sun azimuth unavailable; skipping actions"
-            self._log_automation_result(message, const.LogSeverity.WARNING, result)
-            return result
 
         # Store sensor attributes
         result["sun_azimuth"] = sun_azimuth
@@ -368,6 +381,8 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
             # Calculate the cover position
             if temp_hot and weather_sunny and sun_hitting:
+                # Heat protection mode - close the cover
+
                 # Get the max closure limit for this cover
                 max_closure_limit = self._get_cover_closure_limit(entity_id, config, get_max=True)
                 # Close the cover (but respect max closure limit)
@@ -375,7 +390,10 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                 desired_pos_friendly_name = "heat protection state (closed)"
                 verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
                 reason_key = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+
             else:
+                # "Let light in" mode - open the cover
+
                 # Get the min closure limit for this cover
                 min_closure_limit = self._get_cover_closure_limit(entity_id, config, get_max=False)
                 # Open the cover (but respect min closure limit)
@@ -962,3 +980,64 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         except Exception as err:
             # Don't fail the entire automation if logbook entry fails
             const.LOGGER.debug(f"[{entity_id}] Failed to add logbook entry: {err}")
+
+    #
+    # _nighttime_and_let_light_in_disabled
+    #
+    def _nighttime_and_let_light_in_disabled(self, resolved: ResolvedConfig, sun_entity: State) -> bool:
+        """Check if we're currently in a time period where "let light in" should be disabled.
+
+        Args:
+            resolved: Resolved configuration settings
+
+        Returns:
+            True if we're in a disabled period, False otherwise
+        """
+        # Check if to be disabled during night time (sun below horizon)
+        if resolved.let_light_in_disabled_night:
+            if sun_entity and sun_entity.state == const.HA_SUN_STATE_BELOW_HORIZON:
+                return True
+
+        return False
+
+    #
+    # _in_time_period_automation_disabled
+    #
+    def _in_time_period_automation_disabled(self, resolved: ResolvedConfig) -> tuple[bool, str]:
+        """Check if current time is within a period where the automation should be disabled.
+
+        Args:
+            resolved: Resolved configuration settings
+
+        Returns:
+            Tuple of (is_disabled, formatted_period_string) where:
+            - is_disabled: True if we're in a disabled period, False otherwise
+            - formatted_period_string: String like "22:00:00 - 06:00:00" or empty string if not in disabled period
+        """
+        # Get current local time
+        now_local = dt_util.now().time()
+
+        # Check if disabled the automation during custom time range is configured
+        if not resolved.automation_disabled_time_range:
+            return (False, "")
+
+        # Get the start and end times
+        period_start = resolved.automation_disabled_time_range_start
+        period_end = resolved.automation_disabled_time_range_end
+
+        # Are we in a disabled period?
+        in_disabled_period = False
+        if period_start < period_end:
+            # Same day period (e.g., 09:00 to 17:00)
+            if period_start <= now_local < period_end:
+                in_disabled_period = True
+        else:
+            # Overnight period (e.g., 22:00 to 06:00)
+            if now_local >= period_start or now_local < period_end:
+                in_disabled_period = True
+
+        if in_disabled_period:
+            period_string = f"{period_start.strftime('%H:%M:%S')} - {period_end.strftime('%H:%M:%S')}"
+            return (True, period_string)
+
+        return (False, "")

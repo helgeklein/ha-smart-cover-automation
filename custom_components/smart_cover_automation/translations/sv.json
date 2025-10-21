@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Steg 1 av 4",
+                "title": "Smart Cover Automation - Steg 1 av 5",
                 "description": "Välj en väderprognossensor och persiennerna som ska automatiseras (obligatoriskt).",
                 "data": {
                     "covers": "Persienner att automatisera:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Steg 2 av 4",
+                "title": "Smart Cover Automation - Steg 2 av 5",
                 "description": "Konfigurera **azimut** (riktning) för varje persienn (obligatoriskt).\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)"
             },
             "3": {
-                "title": "Smart Cover Automation - Steg 3 av 4",
+                "title": "Smart Cover Automation - Steg 3 av 5",
                 "description": "Konfigurera ytterligare inställningar (valfritt).\n\nDetta steg är markerat som valfritt eftersom standardvärdena bör fungera bra för de flesta användare.",
                 "data": {
                     "covers_max_closure": "Högsta läge för persienn:",
@@ -52,7 +52,7 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Steg 4 av 4",
+                "title": "Smart Cover Automation - Steg 4 av 5",
                 "description": "Konfigurera **min/max**-lägena för varje persienn (valfritt).\n\nOm inget anges används de globala värdena från föregående steg.",
                 "sections": {
                     "section_max_closure": {
@@ -60,6 +60,31 @@
                     },
                     "section_min_closure": {
                         "name": "Lägsta persiennlägen"
+                    }
+                }
+            },
+            "5": {
+                "title": "Smart Cover Automation - Steg 5 av 5",
+                "description": "Konfigurera **tidsundantag** för automationen (valfritt).",
+                "data": {
+                    "let_light_in_disabled_night": "Inaktivera öppning av persienner på natten:"
+                },
+                "data_description": {
+                    "let_light_in_disabled_night": "När det är aktiverat öppnas persiennerna inte för att släppa in ljus under natten (när solen är under horisonten)."
+                },
+                "sections": {
+                    "section_time_range": {
+                        "name": "Tidsintervall",
+                        "data": {
+                            "automation_disabled_time_range": "Inaktivera automation i tidsintervall:",
+                            "automation_disabled_time_range_start": "Inaktivera från:",
+                            "automation_disabled_time_range_end": "Inaktivera till:"
+                        },
+                        "data_description": {
+                            "automation_disabled_time_range": "När det är aktiverat körs inte automationen under det angivna tidsintervallet.",
+                            "automation_disabled_time_range_start": "Starttid för perioden då automationen ska vara inaktiverad.",
+                            "automation_disabled_time_range_end": "Sluttid för perioden då automationen ska vara inaktiverad."
+                        }
                     }
                 }
             }

@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "智能遮阳自动化 - 第 1 步，共 4 步",
+                "title": "智能遮阳自动化 - 第 1 步，共 5 步",
                 "description": "选择一个天气预报传感器以及要自动化的遮阳设备（必需）。",
                 "data": {
                     "covers": "要自动化的遮阳设备：",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "智能遮阳自动化 - 第 2 步，共 4 步",
+                "title": "智能遮阳自动化 - 第 2 步，共 5 步",
                 "description": "为每个遮阳设备配置**方位角**（方向）（必需）。\n\n(0°=北，90°=东，180°=南，270°=西)"
             },
             "3": {
-                "title": "智能遮阳自动化 - 第 3 步，共 4 步",
+                "title": "智能遮阳自动化 - 第 3 步，共 5 步",
                 "description": "配置其他设置（可选）。\n\n此步骤被标记为可选，因为默认值通常适用于大多数用户。",
                 "data": {
                     "covers_max_closure": "遮阳设备最大位置：",
@@ -52,7 +52,7 @@
                 }
             },
             "4": {
-                "title": "智能遮阳自动化 - 第 4 步，共 4 步",
+                "title": "智能遮阳自动化 - 第 4 步，共 5 步",
                 "description": "为每个遮阳设备配置 **最小/最大** 位置（可选）。\n\n如果未设置，将使用上一步配置的全局值。",
                 "sections": {
                     "section_max_closure": {
@@ -60,6 +60,31 @@
                     },
                     "section_min_closure": {
                         "name": "遮阳设备的最小位置"
+                    }
+                }
+            },
+            "5": {
+                "title": "智能遮阳自动化 - 第 5 步，共 5 步",
+                "description": "为自动化配置**时间例外**（可选）。",
+                "data": {
+                    "let_light_in_disabled_night": "在夜间禁止打开遮阳设备："
+                },
+                "data_description": {
+                    "let_light_in_disabled_night": "启用后，夜间（太阳在地平线以下时）将不会打开遮阳设备以引入光线。"
+                },
+                "sections": {
+                    "section_time_range": {
+                        "name": "时间范围",
+                        "data": {
+                            "automation_disabled_time_range": "在时间范围内禁用自动化：",
+                            "automation_disabled_time_range_start": "禁用开始时间：",
+                            "automation_disabled_time_range_end": "禁用结束时间："
+                        },
+                        "data_description": {
+                            "automation_disabled_time_range": "启用后，自动化将在指定的时间范围内停用。",
+                            "automation_disabled_time_range_start": "自动化应被禁用时段的开始时间。",
+                            "automation_disabled_time_range_end": "自动化应被禁用时段的结束时间。"
+                        }
                     }
                 }
             }

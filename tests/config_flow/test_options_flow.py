@@ -312,13 +312,18 @@ class TestOptionsFlowStep3:
         assert result3_dict["type"] == FlowResultType.FORM
         assert result3_dict["step_id"] == "4"
 
-        # Now complete step 4 to create entry
+        # Now complete step 4 to proceed to step 5
         result4 = await flow.async_step_4({})
         result4_dict = _as_dict(result4)
+        assert result4_dict["type"] == FlowResultType.FORM
+        assert result4_dict["step_id"] == "5"
 
-        assert result4_dict["type"] == FlowResultType.CREATE_ENTRY
+        # Now complete step 5 to create entry
+        result5 = await flow.async_step_5({})
+        result5_dict = _as_dict(result5)
+        assert result5_dict["type"] == FlowResultType.CREATE_ENTRY
 
-        data = result4_dict["data"]
+        data = result5_dict["data"]
         # First cover's azimuth should remain
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in data
         # Second cover's azimuth should be removed
@@ -375,13 +380,19 @@ class TestOptionsFlowIntegration:
         assert result3_dict["type"] == FlowResultType.FORM
         assert result3_dict["step_id"] == "4"
 
-        # Step 4: Submit per-cover settings (creates entry)
+        # Step 4: Submit per-cover settings (now proceeds to step 5)
         result4 = await flow.async_step_4({})
         result4_dict = _as_dict(result4)
-        assert result4_dict["type"] == FlowResultType.CREATE_ENTRY
+        assert result4_dict["type"] == FlowResultType.FORM
+        assert result4_dict["step_id"] == "5"
+
+        # Step 5: Submit let light in settings (creates entry)
+        result5 = await flow.async_step_5({})
+        result5_dict = _as_dict(result5)
+        assert result5_dict["type"] == FlowResultType.CREATE_ENTRY
 
         # Verify updated configuration
-        data = result4_dict["data"]
+        data = result5_dict["data"]
         assert len(data[ConfKeys.COVERS.value]) == 2
         assert data[ConfKeys.SUN_ELEVATION_THRESHOLD.value] == 25
         assert data[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}"] == 270.0
@@ -424,8 +435,11 @@ class TestOptionsFlowIntegration:
             }
         )
 
-        # Step 4: Complete (creates entry)
-        result = await flow.async_step_4({})
+        # Step 4: Continue (proceeds to step 5)
+        await flow.async_step_4({})
+
+        # Step 5: Complete (creates entry)
+        result = await flow.async_step_5({})
 
         data = _as_dict(result)["data"]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in data
@@ -479,8 +493,11 @@ class TestOptionsFlowIntegration:
             }
         )
 
-        # Step 4: Complete flow
-        result = await flow.async_step_4({})
+        # Step 4: Continue (proceeds to step 5)
+        await flow.async_step_4({})
+
+        # Step 5: Complete flow
+        result = await flow.async_step_5({})
 
         data = _as_dict(result)["data"]
 
@@ -538,8 +555,11 @@ class TestOptionsFlowIntegration:
             }
         )
 
-        # Step 4: Complete flow
-        result = await flow.async_step_4({})
+        # Step 4: Continue (proceeds to step 5)
+        await flow.async_step_4({})
+
+        # Step 5: Complete flow
+        result = await flow.async_step_5({})
 
         data = _as_dict(result)["data"]
 
@@ -595,8 +615,11 @@ class TestOptionsFlowIntegration:
             }
         )
 
-        # Step 4: Complete flow
-        result = await flow.async_step_4({})
+        # Step 4: Continue (proceeds to step 5)
+        await flow.async_step_4({})
+
+        # Step 5: Complete flow
+        result = await flow.async_step_5({})
 
         data = _as_dict(result)["data"]
 
@@ -646,7 +669,11 @@ class TestOptionsFlowIntegration:
             }
         )
 
-        result = await flow.async_step_4({"section_min_closure": {}})
+        # Step 4: Continue with cleared section (proceeds to step 5)
+        await flow.async_step_4({"section_min_closure": {}})
+
+        # Step 5: Complete flow
+        result = await flow.async_step_5({})
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
@@ -693,7 +720,11 @@ class TestOptionsFlowIntegration:
             }
         )
 
-        result = await flow.async_step_4({"section_min_closure": None})
+        # Step 4: Continue with None section (proceeds to step 5)
+        await flow.async_step_4({"section_min_closure": None})
+
+        # Step 5: Complete flow
+        result = await flow.async_step_5({})
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
@@ -701,3 +732,124 @@ class TestOptionsFlowIntegration:
 
         # Options payload should not include the cleared per-cover minimum
         assert f"{cover}_{const.COVER_SFX_MIN_CLOSURE}" not in saved_data
+
+
+class TestOptionsFlowHelperMethods:
+    """Test private helper methods of OptionsFlowHandler."""
+
+    def test_is_empty_value_with_none(self) -> None:
+        """Test _is_empty_value returns True for None."""
+        from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
+
+        assert OptionsFlowHandler._is_empty_value(None) is True
+
+    def test_is_empty_value_with_empty_string(self) -> None:
+        """Test _is_empty_value returns True for empty string."""
+        from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
+
+        assert OptionsFlowHandler._is_empty_value("") is True
+
+    def test_is_empty_value_with_undefined(self) -> None:
+        """Test _is_empty_value returns True for vol.UNDEFINED."""
+        import voluptuous as vol
+
+        from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
+
+        assert OptionsFlowHandler._is_empty_value(vol.UNDEFINED) is True
+
+    def test_is_empty_value_with_valid_value(self) -> None:
+        """Test _is_empty_value returns False for valid values."""
+        from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
+
+        assert OptionsFlowHandler._is_empty_value(0) is False
+        assert OptionsFlowHandler._is_empty_value("test") is False
+        assert OptionsFlowHandler._is_empty_value(123) is False
+
+    def test_to_int_with_empty_value(self) -> None:
+        """Test _to_int returns None for empty values."""
+        from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
+
+        assert OptionsFlowHandler._to_int(None) is None
+        assert OptionsFlowHandler._to_int("") is None
+
+    def test_to_int_with_valid_int(self) -> None:
+        """Test _to_int converts valid integers."""
+        from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
+
+        assert OptionsFlowHandler._to_int(42) == 42
+        assert OptionsFlowHandler._to_int("100") == 100
+
+    def test_build_section_cover_settings_with_missing_key(self) -> None:
+        """Test _build_section_cover_settings when key is not in user input."""
+        from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
+
+        user_input = {
+            const.STEP_4_SECTION_MAX_CLOSURE: {
+                # Only one cover present
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}": 90,
+            }
+        }
+
+        # Request settings for two covers, but only one is in input
+        covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
+
+        result = OptionsFlowHandler._build_section_cover_settings(
+            user_input, const.STEP_4_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers
+        )
+
+        # First cover should have the value
+        assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}"] == 90
+        # Second cover should be None (missing key)
+        assert result[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_MAX_CLOSURE}"] is None
+
+    async def test_options_flow_no_changes_logs_debug(self, mock_hass_with_covers: MagicMock, caplog: Any) -> None:
+        """Test that completing flow with no changes logs at debug level."""
+        import logging
+
+        # Use dict format for manual_override_duration so it matches what the form returns
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+            ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.TEMP_THRESHOLD.value: 23,
+            ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Go through all steps with same data (no changes)
+        with caplog.at_level(logging.DEBUG, logger="custom_components.smart_cover_automation"):
+            await flow.async_step_init(
+                {
+                    ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                    ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+                }
+            )
+
+            await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
+
+            await flow.async_step_3(
+                {
+                    ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+                    ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                    ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                    ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                    ConfKeys.TEMP_THRESHOLD.value: 23,
+                    ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+                }
+            )
+
+            await flow.async_step_4({})
+
+            result = await flow.async_step_5({})
+
+            # Check that debug message was logged
+            assert "Options flow changed settings: none" in caplog.text
+
+        result_dict = _as_dict(result)
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY

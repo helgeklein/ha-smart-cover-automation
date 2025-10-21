@@ -31,7 +31,7 @@ A Home Assistant integration to automate the control of your smart home's window
 	- Pause automations for a cover if the door/window is open.
 - **Manual override detection:**
 	- Detect manual adjustments and pause automation to avoid conflicts.
-- **Night silence**: (TODO)
+- **Night silence**:
 	- Don't move the covers when people are sleeping.
 - **Pre-positioning before silent phases:** (TODO)
 	- Move the covers to the position they need to be in ahead of time so that there's silence at night but the covers are closed when the sun starts shining in the morning.

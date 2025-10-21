@@ -74,12 +74,14 @@ ERROR_NO_COVERS: Final[str] = "no_covers"
 ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"
 STEP_4_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
 STEP_4_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
+STEP_5_SECTION_TIME_RANGE: Final[str] = "section_time_range"
 
 # Home Assistant string literals
 HA_OPTIONS: Final[str] = "options"
 HA_SUN_ATTR_AZIMUTH: Final[str] = "azimuth"
 HA_SUN_ATTR_ELEVATION: Final[str] = "elevation"
 HA_SUN_ENTITY_ID: Final[str] = "sun.sun"
+HA_SUN_STATE_BELOW_HORIZON: Final[str] = "below_horizon"
 HA_WEATHER_COND_SUNNY: Final[str] = "sunny"
 HA_WEATHER_COND_PARTCLOUDY: Final[str] = "partlycloudy"
 

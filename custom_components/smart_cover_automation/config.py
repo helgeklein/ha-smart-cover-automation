@@ -46,6 +46,10 @@ class ConfKeys(StrEnum):
     COVERS_MIN_CLOSURE = "covers_min_closure"  # Minimum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_POSITION_DELTA = "covers_min_position_delta"  # Ignore smaller position changes (%).
     ENABLED = "enabled"  # Global on/off for all automation.
+    LET_LIGHT_IN_DISABLED_NIGHT = "let_light_in_disabled_night"  # Disable "let light in" automation during night hours.
+    AUTOMATION_DISABLED_TIME_RANGE = "automation_disabled_time_range"  # Disable "let light in" automation in a time range.
+    AUTOMATION_DISABLED_TIME_RANGE_START = "automation_disabled_time_range_start"  # Start time for disabling "let light in".
+    AUTOMATION_DISABLED_TIME_RANGE_END = "automation_disabled_time_range_end"  # End time for disabling "let light in".
     MANUAL_OVERRIDE_DURATION = "manual_override_duration"  # Duration (seconds) to skip a cover's automation after manual cover move.
     SIMULATION_MODE = "simulation_mode"  # Simulation mode: if enabled, no actual cover commands are sent.
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
@@ -171,6 +175,10 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int),
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.LET_LIGHT_IN_DISABLED_NIGHT: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(6, 0, 0), converter=_Converters.to_time),
     ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds),
     ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
@@ -199,6 +207,10 @@ class ResolvedConfig:
     covers_min_closure: int
     covers_min_position_delta: int
     enabled: bool
+    let_light_in_disabled_night: bool
+    automation_disabled_time_range: bool
+    automation_disabled_time_range_start: time
+    automation_disabled_time_range_end: time
     manual_override_duration: int
     simulation_mode: bool
     sun_azimuth_tolerance: int

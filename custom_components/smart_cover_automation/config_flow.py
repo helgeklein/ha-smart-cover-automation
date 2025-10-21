@@ -298,6 +298,64 @@ class FlowHelper:
         return schema_dict
 
     #
+    # build_schema_step_5
+    #
+    @staticmethod
+    def build_schema_step_5(resolved_settings: ResolvedConfig) -> vol.Schema:
+        """Build schema for step 5: let light in settings.
+
+        Args:
+            resolved_settings: Resolved configuration with defaults
+
+        Returns:
+            Schema for step 5 form
+        """
+        schema_dict: dict[vol.Marker, object] = {}
+
+        # Toggle to disable "let light in" at night (outside the section)
+        schema_dict[
+            vol.Required(
+                ConfKeys.LET_LIGHT_IN_DISABLED_NIGHT.value,
+                default=resolved_settings.let_light_in_disabled_night,
+            )
+        ] = selector.BooleanSelector()
+
+        # Build schema dict for time range section
+        time_range_schema_dict: dict[vol.Marker, object] = {}
+
+        # Toggle to enable time range
+        time_range_schema_dict[
+            vol.Required(
+                ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value,
+                default=resolved_settings.automation_disabled_time_range,
+            )
+        ] = selector.BooleanSelector()
+
+        # Start time for disabling the automation
+        time_range_schema_dict[
+            vol.Required(
+                ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value,
+                default=resolved_settings.automation_disabled_time_range_start,
+            )
+        ] = selector.TimeSelector()
+
+        # End time for disabling the automation
+        time_range_schema_dict[
+            vol.Required(
+                ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value,
+                default=resolved_settings.automation_disabled_time_range_end,
+            )
+        ] = selector.TimeSelector()
+
+        # Group time range settings in non-collapsed section
+        schema_dict[vol.Optional(const.STEP_5_SECTION_TIME_RANGE)] = section(
+            vol.Schema(time_range_schema_dict),
+            {"collapsed": False},
+        )
+
+        return vol.Schema(schema_dict)
+
+    #
     # extract_from_section_input
     #
     @staticmethod
@@ -490,6 +548,72 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return covers
 
     #
+    # _finalize_and_save
+    #
+    def _finalize_and_save(self) -> config_entries.ConfigFlowResult:
+        """Finalize configuration by merging, cleaning up, and saving.
+
+        This method:
+        1. Merges current settings with new input from the flow
+        2. Removes orphaned per-cover settings for covers no longer selected
+        3. Removes keys with empty/cleared values
+        4. Saves the configuration and triggers integration reload
+
+        Returns:
+            ConfigFlowResult to complete the options flow
+        """
+        # Get the selected covers
+        covers_in_input = self._get_covers()
+
+        # Combine current settings with new input from the options flow (the latter taking precedence)
+        current = self._current_settings()
+        merged = {**current, **self._config_data}
+
+        # Log only changed settings
+        changed_settings = {}
+        for key, new_value in merged.items():
+            old_value = current.get(key)
+            if old_value != new_value:
+                changed_settings[key] = {"old": old_value, "new": new_value}
+
+        if changed_settings:
+            const.LOGGER.info(f"Options flow changed settings: {changed_settings}")
+        else:
+            const.LOGGER.debug("Options flow changed settings: none")
+
+        # Clean up orphaned cover settings and empty values from the merged data
+        keys_to_remove = []
+        suffixes = (
+            f"_{const.COVER_SFX_AZIMUTH}",
+            f"_{const.COVER_SFX_MAX_CLOSURE}",
+            f"_{const.COVER_SFX_MIN_CLOSURE}",
+        )
+        for key, value in list(merged.items()):
+            # Remove keys with empty values
+            if self._is_empty_value(value):
+                keys_to_remove.append(key)
+                continue
+
+            # Remove per-cover settings (from later steps) for covers no longer selected (in step 1)
+            for suffix in suffixes:
+                if key.endswith(suffix):
+                    cover_entity = key[: -len(suffix)]
+                    if cover_entity not in covers_in_input:
+                        keys_to_remove.append(key)
+                    break
+
+        # Now remove the keys identified as superfluous
+        for key in keys_to_remove:
+            merged.pop(key, None)
+
+        const.LOGGER.debug(f"Options flow completed. Final configuration being saved: {merged}")
+
+        # Apply the new settings
+        # This triggers a reload of the integration with the updated configuration.
+        # The reload is required to apply the changes to the coordinator.
+        return self.async_create_entry(title="", data=merged)
+
+    #
     # async_step_init
     #
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
@@ -606,37 +730,34 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_data.update(min_closure_data)
         self._config_data.update(max_closure_data)
 
-        # Combine current settings with new input from the options flow (the latter taking precedence)
-        merged = {**self._current_settings(), **self._config_data}
+        # Proceed to step 5
+        return await self.async_step_5()
 
-        # Clean up orphaned cover settings and empty values from the merged data
-        keys_to_remove = []
-        suffixes = (
-            f"_{const.COVER_SFX_AZIMUTH}",
-            f"_{const.COVER_SFX_MAX_CLOSURE}",
-            f"_{const.COVER_SFX_MIN_CLOSURE}",
-        )
-        for key, value in list(merged.items()):
-            # Remove keys with empty values
-            if self._is_empty_value(value):
-                keys_to_remove.append(key)
-                continue
+    #
+    # async_step_5
+    #
+    async def async_step_5(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Step 5: Configure let light in settings."""
+        if user_input is None:
+            # Get currently valid settings
+            current_settings = self._current_settings()
+            # Fill in defaults where there's no existing value
+            resolved_settings = resolve(current_settings)
 
-            # Remove per-cover settings (from later steps) for covers no longer selected (in step 1)
-            for suffix in suffixes:
-                if key.endswith(suffix):
-                    cover_entity = key[: -len(suffix)]
-                    if cover_entity not in covers_in_input:
-                        keys_to_remove.append(key)
-                    break
+            # Show the form
+            return self.async_show_form(
+                step_id="5",
+                data_schema=FlowHelper.build_schema_step_5(resolved_settings),
+            )
+        else:
+            const.LOGGER.debug(f"Options flow step 5 user input: {user_input}")
 
-        # Now remove the keys identified as superfluous
-        for key in keys_to_remove:
-            merged.pop(key, None)
+            # Extract section data if present
+            section_names = {const.STEP_5_SECTION_TIME_RANGE}
+            user_input_extracted, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
 
-        const.LOGGER.debug(f"Options flow completed. Final configuration being saved: {merged}")
+            # Store step 5 data (use extracted data to handle sections properly)
+            self._config_data.update(user_input_extracted)
 
-        # Apply the new settings
-        # This triggers a reload of the integration with the updated configuration.
-        # The reload is required to apply the changes to the coordinator.
-        return self.async_create_entry(title="", data=merged)
+            # Finalize and save configuration
+            return self._finalize_and_save()

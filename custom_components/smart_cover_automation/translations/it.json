@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Passo 1 di 4",
+                "title": "Smart Cover Automation - Passo 1 di 5",
                 "description": "Seleziona un sensore di previsione meteo e le tapparelle da automatizzare (obbligatorio).",
                 "data": {
                     "covers": "Tapparelle da automatizzare:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Passo 2 di 4",
+                "title": "Smart Cover Automation - Passo 2 di 5",
                 "description": "Configura l'**azimut** (direzione) per ciascuna tapparella (obbligatorio).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)"
             },
             "3": {
-                "title": "Smart Cover Automation - Passo 3 di 4",
+                "title": "Smart Cover Automation - Passo 3 di 5",
                 "description": "Configura impostazioni aggiuntive (opzionale).\n\nQuesto passaggio è contrassegnato come opzionale perché i valori predefiniti dovrebbero andare bene per la maggior parte degli utenti.",
                 "data": {
                     "covers_max_closure": "Posizione massima della tapparella:",
@@ -52,7 +52,7 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Passo 4 di 4",
+                "title": "Smart Cover Automation - Passo 4 di 5",
                 "description": "Configura le posizioni **min/max** per ciascuna tapparella (opzionale).\n\nSe non vengono impostati valori, verranno utilizzati quelli globali configurati nel passaggio precedente.",
                 "sections": {
                     "section_max_closure": {
@@ -60,6 +60,31 @@
                     },
                     "section_min_closure": {
                         "name": "Posizioni minime della tapparella"
+                    }
+                }
+            },
+            "5": {
+                "title": "Smart Cover Automation - Passo 5 di 5",
+                "description": "Configura **eccezioni di orario** per l'automazione (opzionale).",
+                "data": {
+                    "let_light_in_disabled_night": "Disattiva l'apertura delle tapparelle di notte:"
+                },
+                "data_description": {
+                    "let_light_in_disabled_night": "Quando è attivata, le tapparelle non si apriranno per far entrare la luce durante la notte (quando il sole è sotto l'orizzonte)."
+                },
+                "sections": {
+                    "section_time_range": {
+                        "name": "Intervallo orario",
+                        "data": {
+                            "automation_disabled_time_range": "Disattiva l'automazione in un intervallo orario:",
+                            "automation_disabled_time_range_start": "Disattiva da:",
+                            "automation_disabled_time_range_end": "Disattiva fino a:"
+                        },
+                        "data_description": {
+                            "automation_disabled_time_range": "Quando è attivata, l'automazione non viene eseguita durante l'intervallo specificato.",
+                            "automation_disabled_time_range_start": "Ora di inizio del periodo in cui l'automazione deve essere disattivata.",
+                            "automation_disabled_time_range_end": "Ora di fine del periodo in cui l'automazione deve essere disattivata."
+                        }
                     }
                 }
             }

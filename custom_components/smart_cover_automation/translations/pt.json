@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Passo 1 de 4",
+                "title": "Smart Cover Automation - Passo 1 de 5",
                 "description": "Selecione um sensor de previsão do tempo e as persianas para automatizar (obrigatório).",
                 "data": {
                     "covers": "Persianas para automatizar:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Passo 2 de 4",
+                "title": "Smart Cover Automation - Passo 2 de 5",
                 "description": "Configure o **azimute** (direção) de cada persiana (obrigatório).\n\n(0°=Norte, 90°=Este, 180°=Sul, 270°=Oeste)"
             },
             "3": {
-                "title": "Smart Cover Automation - Passo 3 de 4",
+                "title": "Smart Cover Automation - Passo 3 de 5",
                 "description": "Configure definições adicionais (opcional).\n\nEste passo é marcado como opcional porque os valores predefinidos devem funcionar bem para a maioria dos utilizadores.",
                 "data": {
                     "covers_max_closure": "Posição máxima da persiana:",
@@ -52,7 +52,7 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Passo 4 de 4",
+                "title": "Smart Cover Automation - Passo 4 de 5",
                 "description": "Configure as posições **mín/máx** para cada persiana (opcional).\n\nSe nada for definido, serão utilizados os valores globais configurados na etapa anterior.",
                 "sections": {
                     "section_max_closure": {
@@ -60,6 +60,31 @@
                     },
                     "section_min_closure": {
                         "name": "Posições mínimas da persiana"
+                    }
+                }
+            },
+            "5": {
+                "title": "Smart Cover Automation - Passo 5 de 5",
+                "description": "Configure **exceções de horário** para a automação (opcional).",
+                "data": {
+                    "let_light_in_disabled_night": "Desativar abertura das persianas à noite:"
+                },
+                "data_description": {
+                    "let_light_in_disabled_night": "Quando ativada, as persianas não se abrirão para deixar entrar luz durante a noite (quando o sol está abaixo do horizonte)."
+                },
+                "sections": {
+                    "section_time_range": {
+                        "name": "Intervalo de tempo",
+                        "data": {
+                            "automation_disabled_time_range": "Desativar a automação num intervalo de tempo:",
+                            "automation_disabled_time_range_start": "Desativar de:",
+                            "automation_disabled_time_range_end": "Desativar até:"
+                        },
+                        "data_description": {
+                            "automation_disabled_time_range": "Quando ativada, a automação não será executada durante o intervalo de tempo especificado.",
+                            "automation_disabled_time_range_start": "Hora de início do período em que a automação deve ser desativada.",
+                            "automation_disabled_time_range_end": "Hora de fim do período em que a automação deve ser desativada."
+                        }
                     }
                 }
             }
