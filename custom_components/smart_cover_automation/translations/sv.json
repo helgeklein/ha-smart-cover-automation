@@ -92,6 +92,12 @@
     },
     "entity": {
         "sensor": {
+            "automation_disabled_time_range": {
+                "name": "Automation: inaktiverat tidsintervall",
+                "state": {
+                    "off": "Av"
+                }
+            },
             "sun_azimuth": {
                 "name": "Solazimut"
             },
@@ -108,6 +114,13 @@
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "nighttime_block_opening": {
+                "name": "Natt: blockera öppning?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nej"
+                }
             },
             "temp_hot": {
                 "name": "Väder: varmt?",

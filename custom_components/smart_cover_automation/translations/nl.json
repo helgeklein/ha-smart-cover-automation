@@ -92,6 +92,12 @@
     },
     "entity": {
         "sensor": {
+            "automation_disabled_time_range": {
+                "name": "Automatisering: uitgeschakeld tijdvenster",
+                "state": {
+                    "off": "Uit"
+                }
+            },
             "sun_azimuth": {
                 "name": "Zonazimut"
             },
@@ -108,6 +114,13 @@
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "nighttime_block_opening": {
+                "name": "Nacht: openen blokkeren?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nee"
+                }
             },
             "temp_hot": {
                 "name": "Weer: heet?",

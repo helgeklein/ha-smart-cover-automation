@@ -92,6 +92,12 @@
     },
     "entity": {
         "sensor": {
+            "automation_disabled_time_range": {
+                "name": "Automazione: intervallo disattivato",
+                "state": {
+                    "off": "Disattivato"
+                }
+            },
             "sun_azimuth": {
                 "name": "Azimut solare"
             },
@@ -108,6 +114,13 @@
         "binary_sensor": {
             "status": {
                 "name": "Stato"
+            },
+            "nighttime_block_opening": {
+                "name": "Notte: bloccare l'apertura?",
+                "state": {
+                    "on": "Sì",
+                    "off": "No"
+                }
             },
             "temp_hot": {
                 "name": "Meteo: caldo?",
