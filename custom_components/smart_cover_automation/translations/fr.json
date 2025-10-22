@@ -67,10 +67,10 @@
                 "title": "Smart Cover Automation - Étape 5 sur 5",
                 "description": "Configurez des **exceptions temporelles** pour l'automatisation (facultatif).",
                 "data": {
-                    "night_privacy": "Désactiver l'ouverture des volets la nuit :"
+                    "nighttime_block_opening": "Désactiver l'ouverture des volets la nuit :"
                 },
                 "data_description": {
-                    "night_privacy": "Lorsqu'elle est activée, l'automatisation n'ouvrira pas les volets pour laisser entrer la lumière pendant la nuit (quand le soleil est sous l'horizon)."
+                    "nighttime_block_opening": "Lorsqu'elle est activée, l'automatisation n'ouvrira pas les volets pour laisser entrer la lumière pendant la nuit (quand le soleil est sous l'horizon)."
                 },
                 "sections": {
                     "section_time_range": {

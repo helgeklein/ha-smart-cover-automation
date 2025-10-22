@@ -312,18 +312,18 @@ class FlowHelper:
         """
         schema_dict: dict[vol.Marker, object] = {}
 
-        # Toggle to disable "night privacy" (above the section)
+        # "Disable cover opening at night" (above the section)
         schema_dict[
             vol.Required(
-                ConfKeys.NIGHT_PRIVACY.value,
-                default=resolved_settings.night_privacy,
+                ConfKeys.NIGHTTIME_BLOCK_OPENING.value,
+                default=resolved_settings.nighttime_block_opening,
             )
         ] = selector.BooleanSelector()
 
         # Build schema dict for time range section
         time_range_schema_dict: dict[vol.Marker, object] = {}
 
-        # Toggle to enable time range
+        # Enable time range
         time_range_schema_dict[
             vol.Required(
                 ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value,

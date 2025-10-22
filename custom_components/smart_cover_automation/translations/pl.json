@@ -67,10 +67,10 @@
                 "title": "Smart Cover Automation - Krok 5 z 5",
                 "description": "Skonfiguruj **wyjątki czasowe** dla automatyzacji (opcjonalne).",
                 "data": {
-                    "night_privacy": "Wyłącz otwieranie rolet w nocy:"
+                    "nighttime_block_opening": "Wyłącz otwieranie rolet w nocy:"
                 },
                 "data_description": {
-                    "night_privacy": "Po włączeniu rolety nie będą się otwierały, aby wpuścić światło w nocy (gdy słońce jest poniżej horyzontu)."
+                    "nighttime_block_opening": "Po włączeniu rolety nie będą się otwierały, aby wpuścić światło w nocy (gdy słońce jest poniżej horyzontu)."
                 },
                 "sections": {
                     "section_time_range": {

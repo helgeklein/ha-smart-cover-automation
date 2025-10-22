@@ -67,10 +67,10 @@
                 "title": "Smart Cover Automation - Passo 5 di 5",
                 "description": "Configura **eccezioni di orario** per l'automazione (opzionale).",
                 "data": {
-                    "night_privacy": "Disattiva l'apertura delle tapparelle di notte:"
+                    "nighttime_block_opening": "Disattiva l'apertura delle tapparelle di notte:"
                 },
                 "data_description": {
-                    "night_privacy": "Quando è attivata, le tapparelle non si apriranno per far entrare la luce durante la notte (quando il sole è sotto l'orizzonte)."
+                    "nighttime_block_opening": "Quando è attivata, le tapparelle non si apriranno per far entrare la luce durante la notte (quando il sole è sotto l'orizzonte)."
                 },
                 "sections": {
                     "section_time_range": {

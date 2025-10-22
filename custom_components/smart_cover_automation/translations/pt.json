@@ -67,10 +67,10 @@
                 "title": "Smart Cover Automation - Passo 5 de 5",
                 "description": "Configure **exceções de horário** para a automação (opcional).",
                 "data": {
-                    "night_privacy": "Desativar abertura das persianas à noite:"
+                    "nighttime_block_opening": "Desativar abertura das persianas à noite:"
                 },
                 "data_description": {
-                    "night_privacy": "Quando ativada, as persianas não se abrirão para deixar entrar luz durante a noite (quando o sol está abaixo do horizonte)."
+                    "nighttime_block_opening": "Quando ativada, as persianas não se abrirão para deixar entrar luz durante a noite (quando o sol está abaixo do horizonte)."
                 },
                 "sections": {
                     "section_time_range": {

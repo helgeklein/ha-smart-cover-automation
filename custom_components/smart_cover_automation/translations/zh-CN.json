@@ -67,10 +67,10 @@
                 "title": "智能遮阳自动化 - 第 5 步，共 5 步",
                 "description": "为自动化配置**时间例外**（可选）。",
                 "data": {
-                    "night_privacy": "在夜间禁止打开遮阳设备："
+                    "nighttime_block_opening": "在夜间禁止打开遮阳设备："
                 },
                 "data_description": {
-                    "night_privacy": "启用后，夜间（太阳在地平线以下时）将不会打开遮阳设备以引入光线。"
+                    "nighttime_block_opening": "启用后，夜间（太阳在地平线以下时）将不会打开遮阳设备以引入光线。"
                 },
                 "sections": {
                     "section_time_range": {

@@ -257,8 +257,8 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             return result
 
         # Nighttime?
-        if self._nighttime_and_night_privacy(resolved, sun_entity):
-            message = "It's nighttime and 'night privacy' is enabled. Skipping actions"
+        if self._nighttime_and_block_opening(resolved, sun_entity):
+            message = "It's nighttime and 'Disable cover opening at night' is enabled. Skipping actions"
             self._log_automation_result(message, const.LogSeverity.DEBUG, result)
             return result
 
@@ -982,19 +982,19 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             const.LOGGER.debug(f"[{entity_id}] Failed to add logbook entry: {err}")
 
     #
-    # _nighttime_and_night_privacy
+    # _nighttime_and_block_opening
     #
-    def _nighttime_and_night_privacy(self, resolved: ResolvedConfig, sun_entity: State) -> bool:
-        """Check if we're currently in a time period where "night privacy" should be enabled.
+    def _nighttime_and_block_opening(self, resolved: ResolvedConfig, sun_entity: State) -> bool:
+        """Check if we're currently in a time period where "Disable cover opening at night" should be applied.
 
         Args:
             resolved: Resolved configuration settings
 
         Returns:
-            True if we're in a disabled period, False otherwise
+            True if cover opening should be blocked, False otherwise
         """
         # Check if to be disabled during night time (sun below horizon)
-        if resolved.night_privacy:
+        if resolved.nighttime_block_opening:
             if sun_entity and sun_entity.state == const.HA_SUN_STATE_BELOW_HORIZON:
                 return True
 

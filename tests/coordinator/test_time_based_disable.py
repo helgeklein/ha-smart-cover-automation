@@ -17,15 +17,15 @@ from custom_components.smart_cover_automation.coordinator import DataUpdateCoord
 
 
 class TestNighttimeAndLetLightInDisabled:
-    """Test _nighttime_and_night_privacy method."""
+    """Test _nighttime_and_block_opening method."""
 
     async def test_disabled_during_night_when_configured(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test that automation is disabled at night when night_privacy is True."""
+        """Test that automation is disabled at night when nighttime_block_opening is True."""
         # Configure to disable during night
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHT_PRIVACY.value: True,
+            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
         }
         resolved = resolve(config)
 
@@ -34,17 +34,17 @@ class TestNighttimeAndLetLightInDisabled:
         sun_entity.state = const.HA_SUN_STATE_BELOW_HORIZON
 
         # Test the method
-        result = coordinator._nighttime_and_night_privacy(resolved, sun_entity)
+        result = coordinator._nighttime_and_block_opening(resolved, sun_entity)
 
         assert result is True
 
     async def test_not_disabled_during_night_when_not_configured(self, coordinator: DataUpdateCoordinator) -> None:
-        """Test that automation runs at night when night_privacy is False."""
+        """Test that automation runs at night when nighttime_block_opening is False."""
         # Configure to NOT disable during night
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHT_PRIVACY.value: False,
+            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: False,
         }
         resolved = resolve(config)
 
@@ -53,7 +53,7 @@ class TestNighttimeAndLetLightInDisabled:
         sun_entity.state = const.HA_SUN_STATE_BELOW_HORIZON
 
         # Test the method
-        result = coordinator._nighttime_and_night_privacy(resolved, sun_entity)
+        result = coordinator._nighttime_and_block_opening(resolved, sun_entity)
 
         assert result is False
 
@@ -63,7 +63,7 @@ class TestNighttimeAndLetLightInDisabled:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHT_PRIVACY.value: True,
+            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
         }
         resolved = resolve(config)
 
@@ -72,7 +72,7 @@ class TestNighttimeAndLetLightInDisabled:
         sun_entity.state = "above_horizon"
 
         # Test the method
-        result = coordinator._nighttime_and_night_privacy(resolved, sun_entity)
+        result = coordinator._nighttime_and_block_opening(resolved, sun_entity)
 
         assert result is False
 
@@ -82,12 +82,12 @@ class TestNighttimeAndLetLightInDisabled:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHT_PRIVACY.value: True,
+            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
         }
         resolved = resolve(config)
 
         # Test with None sun entity
-        result = coordinator._nighttime_and_night_privacy(resolved, None)  # type: ignore[arg-type]
+        result = coordinator._nighttime_and_block_opening(resolved, None)  # type: ignore[arg-type]
 
         assert result is False
 
@@ -232,7 +232,7 @@ class TestTimeBasedDisableIntegration:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHT_PRIVACY.value: True,
+            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
         }
         resolved = resolve(config)
 
@@ -241,7 +241,7 @@ class TestTimeBasedDisableIntegration:
         sun_state.state = const.HA_SUN_STATE_BELOW_HORIZON
 
         # Test the method directly
-        is_disabled = coordinator._nighttime_and_night_privacy(resolved, sun_state)
+        is_disabled = coordinator._nighttime_and_block_opening(resolved, sun_state)
 
         # Verify that automation is correctly detected as disabled
         assert is_disabled is True
