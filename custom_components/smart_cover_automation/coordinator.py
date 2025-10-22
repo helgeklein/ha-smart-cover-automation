@@ -256,19 +256,6 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             self._log_automation_result(message, const.LogSeverity.WARNING, result)
             return result
 
-        # Nighttime?
-        if self._nighttime_and_block_opening(resolved, sun_entity):
-            message = "It's nighttime and 'Disable cover opening at night' is enabled. Skipping actions"
-            self._log_automation_result(message, const.LogSeverity.DEBUG, result)
-            return result
-
-        # In automation disabled period?
-        in_disabled_period, period_string = self._in_time_period_automation_disabled(resolved)
-        if in_disabled_period:
-            message = f"Automation is disabled for the current time period ({period_string}). Skipping actions"
-            self._log_automation_result(message, const.LogSeverity.DEBUG, result)
-            return result
-
         # Weather
         weather_entity_id = resolved.weather_entity_id
         try:
@@ -313,6 +300,19 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             "weather_hot_cutover_time": resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
         }
         const.LOGGER.info(f"Global settings: {str(global_settings)}")
+
+        # Nighttime?
+        if self._nighttime_and_block_opening(resolved, sun_entity):
+            message = "It's nighttime and 'Disable cover opening at night' is enabled. Skipping actions"
+            self._log_automation_result(message, const.LogSeverity.DEBUG, result)
+            return result
+
+        # In automation disabled period?
+        in_disabled_period, period_string = self._in_time_period_automation_disabled(resolved)
+        if in_disabled_period:
+            message = f"Automation is disabled for the current time period ({period_string}). Skipping actions"
+            self._log_automation_result(message, const.LogSeverity.DEBUG, result)
+            return result
 
         # Iterate over covers
         for entity_id, state in states.items():
