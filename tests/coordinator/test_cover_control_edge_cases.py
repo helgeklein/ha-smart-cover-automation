@@ -159,28 +159,26 @@ class TestCoverControlEdgeCases:
 
     def test_calculate_angle_difference_edge_cases(self) -> None:
         """Test angle difference calculation with edge cases."""
-        hass = MagicMock()
-        config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+        from custom_components.smart_cover_automation.automation_engine import CoverAutomation
 
         # Test exact same angles
-        diff = coordinator._calculate_angle_difference(180.0, 180.0)
+        diff = CoverAutomation._calculate_angle_difference(180.0, 180.0)
         assert diff == 0.0
 
         # Test angles crossing 0/360 boundary
-        diff = coordinator._calculate_angle_difference(10.0, 350.0)
+        diff = CoverAutomation._calculate_angle_difference(10.0, 350.0)
         assert diff == 20.0
 
         # Test maximum difference (180 degrees)
-        diff = coordinator._calculate_angle_difference(0.0, 180.0)
+        diff = CoverAutomation._calculate_angle_difference(0.0, 180.0)
         assert diff == 180.0
 
         # Test with negative angles (should still work)
-        diff = coordinator._calculate_angle_difference(-10.0, 10.0)
+        diff = CoverAutomation._calculate_angle_difference(-10.0, 10.0)
         assert diff == 20.0
 
         # Test with angles > 360
-        diff = coordinator._calculate_angle_difference(450.0, 90.0)
+        diff = CoverAutomation._calculate_angle_difference(450.0, 90.0)
         assert diff == 0.0  # 450 % 360 = 90
 
     async def test_cover_debug_logging_paths(self) -> None:

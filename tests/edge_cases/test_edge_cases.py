@@ -310,8 +310,13 @@ async def test_missing_current_position_behaves_safely(position_value: Any, temp
     # Execute automation
     await coordinator.async_refresh()
 
-    # Verify expected number of service calls
-    assert hass.services.async_call.call_count == expected_calls
+    # Verify expected number of service calls (only count cover service calls, not weather)
+    cover_calls = [
+        call
+        for call in hass.services.async_call.call_args_list
+        if call[0][0] == "cover" or (len(call.args) > 0 and call.args[0] == "cover")
+    ]
+    assert len(cover_calls) == expected_calls
 
 
 @pytest.mark.parametrize(

@@ -3,24 +3,17 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_POSITION, CoverEntityFeature
+from homeassistant.components.cover import ATTR_POSITION, CoverEntityFeature
 from homeassistant.components.logbook import async_log_entry
 from homeassistant.components.weather import SERVICE_GET_FORECASTS
 from homeassistant.const import (
     ATTR_ENTITY_ID,
-    ATTR_SUPPORTED_FEATURES,
     SERVICE_CLOSE_COVER,
     SERVICE_OPEN_COVER,
     SERVICE_SET_COVER_POSITION,
-    STATE_CLOSED,
-    STATE_CLOSING,
-    STATE_OPEN,
-    STATE_OPENING,
-    STATE_UNAVAILABLE,
-    STATE_UNKNOWN,
     Platform,
 )
 from homeassistant.exceptions import HomeAssistantError
@@ -31,10 +24,10 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 
 from . import const
+from .automation_engine import AutomationEngine
 from .config import ConfKeys, ResolvedConfig, resolve_entry
 from .cover_position_history import CoverPositionHistoryManager
 from .data import CoordinatorData
-from .util import to_float_or_none, to_int_or_none
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, State
@@ -201,7 +194,22 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                 return error_result
 
             # Run the automation logic
-            return await self._handle_automation(states, config)
+            engine = AutomationEngine(
+                hass=self.hass,
+                resolved=resolved,
+                config=config,
+                cover_pos_history_mgr=self._cover_pos_history_mgr,
+                get_max_temperature_callback=self._get_max_temperature,
+                get_weather_condition_callback=self._get_weather_condition,
+                log_automation_result_callback=self._log_automation_result,
+                log_cover_result_callback=self._log_cover_result,
+                nighttime_check_callback=self._nighttime_and_block_opening,
+                time_period_check_callback=self._in_time_period_automation_disabled,
+                set_cover_position_callback=self._set_cover_position,
+                add_logbook_entry_callback=self._add_logbook_entry_cover_movement,
+            )
+
+            return await engine.run(states)
 
         except (SunSensorNotFoundError, WeatherEntityNotFoundError) as err:
             # Critical sensor errors - these make the automation non-functional
@@ -218,245 +226,6 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             # For unexpected errors, return empty result to keep entities available
             # This prevents system instability from unknown issues
             return error_result
-
-    #
-    # _handle_automation
-    #
-    async def _handle_automation(
-        self,
-        states: dict[str, State | None],
-        config: dict[str, Any],
-    ) -> CoordinatorData:
-        """Implements the automation logic.
-
-        Called by _async_update_data after initial checks and state collection.
-        """
-        # Prepare empty result
-        result: CoordinatorData = {ConfKeys.COVERS.value: {}}
-
-        # Get the resolved settings
-        resolved = self._resolved_settings()
-
-        # Sun entity
-        sun_elevation_threshold = resolved.sun_elevation_threshold
-        sun_entity = self.hass.states.get(const.HA_SUN_ENTITY_ID)
-        if sun_entity is None:
-            # Required sun entity missing. This is a critical error.
-            raise SunSensorNotFoundError(const.HA_SUN_ENTITY_ID)
-
-        # Sun azimuth & elevation
-        sun_elevation = to_float_or_none(sun_entity.attributes.get(const.HA_SUN_ATTR_ELEVATION))
-        if sun_elevation is None:
-            message = "Sun elevation unavailable; skipping actions"
-            self._log_automation_result(message, const.LogSeverity.WARNING, result)
-            return result
-        sun_azimuth = to_float_or_none(sun_entity.attributes.get(const.HA_SUN_ATTR_AZIMUTH, 0))
-        if sun_azimuth is None:
-            message = "Sun azimuth unavailable; skipping actions"
-            self._log_automation_result(message, const.LogSeverity.WARNING, result)
-            return result
-
-        # Weather
-        weather_entity_id = resolved.weather_entity_id
-        try:
-            temp_max = await self._get_max_temperature(weather_entity_id)
-            weather_condition = self._get_weather_condition(weather_entity_id)
-        except (InvalidSensorReadingError, WeatherEntityNotFoundError):
-            message = "Weather data unavailable, skipping actions"
-            self._log_automation_result(message, const.LogSeverity.WARNING, result)
-            return result
-
-        # Temperature above threshold?
-        temp_threshold = resolved.temp_threshold
-        temp_hot = False
-        if temp_max > temp_threshold:
-            temp_hot = True
-
-        # Sun shining?
-        weather_sunny = False
-        if weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS:
-            weather_sunny = True
-
-        # Cover settings
-        covers_min_position_delta = resolved.covers_min_position_delta
-
-        # Store sensor attributes
-        result["sun_azimuth"] = sun_azimuth
-        result["sun_elevation"] = sun_elevation
-        result["temp_current_max"] = temp_max
-        result["temp_hot"] = temp_hot
-        result["weather_sunny"] = weather_sunny
-
-        # Copy result without covers for logging
-        result_copy = {k: v for k, v in result.items() if k != ConfKeys.COVERS.value}
-        const.LOGGER.info(f"Sensor states: {str(result_copy)}")
-
-        # Log relevant global settings
-        global_settings = {
-            "temp_threshold": temp_threshold,
-            "sun_elevation_threshold": sun_elevation_threshold,
-            "sun_azimuth_tolerance": resolved.sun_azimuth_tolerance,
-            "covers_min_position_delta": covers_min_position_delta,
-            "weather_hot_cutover_time": resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
-        }
-        const.LOGGER.info(f"Global settings: {str(global_settings)}")
-
-        # Nighttime?
-        if self._nighttime_and_block_opening(resolved, sun_entity):
-            message = "It's nighttime and 'Disable cover opening at night' is enabled. Skipping actions"
-            self._log_automation_result(message, const.LogSeverity.DEBUG, result)
-            return result
-
-        # In automation disabled period?
-        in_disabled_period, period_string = self._in_time_period_automation_disabled(resolved)
-        if in_disabled_period:
-            message = f"Automation is disabled for the current time period ({period_string}). Skipping actions"
-            self._log_automation_result(message, const.LogSeverity.DEBUG, result)
-            return result
-
-        # Iterate over covers
-        for entity_id, state in states.items():
-            # Reset the per-cover attributes
-            cover_attrs: dict[str, Any] = {}
-
-            # Cover azimuth
-            cover_azimuth_raw = config.get(f"{entity_id}_{const.COVER_SFX_AZIMUTH}")
-            cover_azimuth = to_float_or_none(cover_azimuth_raw)
-            if cover_azimuth is None:
-                self._log_cover_result(entity_id, "Cover has invalid or missing azimuth (direction), skipping", cover_attrs, result)
-                continue
-            else:
-                cover_attrs[const.COVER_ATTR_COVER_AZIMUTH] = cover_azimuth
-
-            # Cover state
-            if state is None or state.state is None:
-                self._log_cover_result(entity_id, "Cover state unavailable, skipping", cover_attrs, result)
-                continue
-            elif state.state in ("", STATE_UNAVAILABLE, STATE_UNKNOWN):
-                self._log_cover_result(entity_id, f"Cover state '{state.state}' unsupported, skipping", cover_attrs, result)
-                continue
-            else:
-                cover_attrs[const.COVER_ATTR_STATE] = state.state
-
-            # Check if cover is currently moving
-            is_moving = state.state.lower() in (STATE_OPENING, STATE_CLOSING)
-            if is_moving:
-                self._log_cover_result(entity_id, "Cover is currently moving, skipping", cover_attrs, result)
-                continue
-
-            # Get cover features (e.g., SET_POSITION), defaulting to 0
-            features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
-            cover_attrs[const.COVER_ATTR_SUPPORTED_FEATURES] = features
-
-            # Get the current position
-            current_pos = self._get_cover_position(entity_id, state, features)
-            cover_attrs[const.COVER_ATTR_POS_CURRENT] = current_pos
-
-            #
-            # Check for manual override
-            #
-            # Get the last known cover position from history
-            last_history_entry = self._cover_pos_history_mgr.get_latest_entry(entity_id)
-            if last_history_entry is not None and current_pos != last_history_entry.position:
-                # Position has changed since our last recorded desired position
-                # Beware of system time changes
-                time_now = datetime.now(timezone.utc)
-                if time_now > last_history_entry.timestamp:
-                    time_delta = (time_now - last_history_entry.timestamp).total_seconds()
-                    if time_delta < resolved.manual_override_duration:
-                        time_remaining = resolved.manual_override_duration - time_delta
-                        message = f"Manual override detected (position changed externally), skipping this cover for another {time_remaining:.0f} s"
-                        self._log_cover_result(entity_id, message, cover_attrs, result)
-                        continue
-
-            # Is the sun hitting the window?
-            sun_hitting: bool = False
-            sun_azimuth_difference = self._calculate_angle_difference(sun_azimuth, cover_azimuth)
-            if sun_elevation >= sun_elevation_threshold:
-                sun_hitting = sun_azimuth_difference < resolved.sun_azimuth_tolerance
-            else:
-                sun_hitting = False
-            cover_attrs[const.COVER_ATTR_SUN_HITTING] = sun_hitting
-            cover_attrs[const.COVER_ATTR_SUN_AZIMUTH_DIFF] = sun_azimuth_difference
-
-            # Calculate the cover position
-            if temp_hot and weather_sunny and sun_hitting:
-                # Heat protection mode - close the cover
-
-                # Get the max closure limit for this cover
-                max_closure_limit = self._get_cover_closure_limit(entity_id, config, get_max=True)
-                # Close the cover (but respect max closure limit)
-                desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
-                desired_pos_friendly_name = "heat protection state (closed)"
-                verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
-                reason_key = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
-
-            else:
-                # "Let light in" mode - open the cover
-
-                # Get the min closure limit for this cover
-                min_closure_limit = self._get_cover_closure_limit(entity_id, config, get_max=False)
-                # Open the cover (but respect min closure limit)
-                desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
-                desired_pos_friendly_name = "normal state (open)"
-                verb_key = const.TRANSL_LOGBOOK_VERB_OPENING
-                reason_key = const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN
-
-            # Store and log desired target position
-            cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = desired_pos
-            const.LOGGER.debug(f"[{entity_id}] Desired position: {desired_pos}%, {desired_pos_friendly_name}")
-
-            # Determine if cover movement is necessary
-            movement_needed = False
-            if desired_pos == current_pos:
-                message = "No movement needed"
-            elif abs(desired_pos - current_pos) < covers_min_position_delta:
-                message = "Skipped minor adjustment"
-            else:
-                message = "Moved cover"
-                movement_needed = True
-
-            if movement_needed:
-                try:
-                    # Move the cover
-                    actual_pos = await self._set_cover_position(entity_id, desired_pos, features)
-                    const.LOGGER.debug(f"[{entity_id}] Actual position: {actual_pos}%")
-                    if actual_pos is not None:
-                        # Store the position after movement
-                        cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
-                        # Add the new position to the history
-                        self._cover_pos_history_mgr.add(entity_id, actual_pos, cover_moved=True)
-                        # Add detailed logbook entry
-                        await self._add_logbook_entry_cover_movement(
-                            verb_key=verb_key,
-                            entity_id=entity_id,
-                            reason_key=reason_key,
-                            target_pos=actual_pos,
-                        )
-                except ServiceCallError as err:
-                    # Log the error but continue with other covers
-                    const.LOGGER.error(f"[{entity_id}] Failed to control cover: {err}")
-                    cover_attrs[const.COVER_ATTR_MESSAGE] = str(err)
-                except (ValueError, TypeError) as err:
-                    # Parameter validation errors
-                    error_msg = f"Invalid parameters for cover control: {err}"
-                    const.LOGGER.error(f"[{entity_id}] {error_msg}")
-                    cover_attrs[const.COVER_ATTR_MESSAGE] = error_msg
-            else:
-                # No movement - just add the current position to the history
-                self._cover_pos_history_mgr.add(entity_id, current_pos, cover_moved=False)
-
-            # Include position history in cover attributes
-            position_entries = self._cover_pos_history_mgr.get_entries(entity_id)
-            cover_attrs[const.COVER_ATTR_POS_HISTORY] = [entry.position for entry in position_entries]
-
-            # Store per-cover attributes
-            result[ConfKeys.COVERS.value][entity_id] = cover_attrs
-
-            # Log per-cover attributes
-            const.LOGGER.debug(f"[{entity_id}] Cover result: {message}. Cover data: {str(cover_attrs)}")
-
-        return result
 
     #
     # _set_cover_position
@@ -537,97 +306,6 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             error_msg = f"Unexpected error during cover control: {err}"
             const.LOGGER.error(f"[{entity_id}] {error_msg}")
             raise ServiceCallError(service, entity_id, str(err)) from err
-
-    #
-    # _get_cover_closure_limit
-    #
-    def _get_cover_closure_limit(self, entity_id: str, config: dict[str, Any], get_max: bool) -> int:
-        """Get the min or max closure limit for a cover.
-
-        Checks for per-cover override first, then falls back to global setting.
-
-        Args:
-            entity_id: The cover entity ID
-            config: Raw configuration dictionary containing per-cover settings
-            get_max: True to get max_closure limit, False to get min_closure limit
-
-        Returns:
-            The closure limit (0-100, where 0=closed, 100=open)
-        """
-        resolved = self._resolved_settings()
-
-        if get_max:
-            cover_suffix = const.COVER_SFX_MAX_CLOSURE
-            limit_type = "max_closure"
-        else:
-            cover_suffix = const.COVER_SFX_MIN_CLOSURE
-            limit_type = "min_closure"
-
-        # Check for per-cover override
-        per_cover_value = to_int_or_none(config.get(f"{entity_id}_{cover_suffix}"))
-        if per_cover_value is not None:
-            const.LOGGER.debug(f"[{entity_id}] Per-cover {limit_type} limit: {per_cover_value}%")
-            return per_cover_value
-
-        # Fall back to global setting
-        if get_max:
-            global_value = resolved.covers_max_closure
-        else:
-            global_value = resolved.covers_min_closure
-
-        return global_value
-
-    #
-    # _get_cover_position
-    #
-    def _get_cover_position(self, entity_id: str, state: State, features: int) -> int:
-        """Get the current position of a cover.
-
-        For covers that support SET_POSITION, uses the current_position attribute.
-        For binary covers (open/close only), determines position from the state.
-
-        Args:
-            entity_id: The cover entity ID for logging
-            state: The cover's state object
-            features: Cover's supported features bitmask
-
-        Returns:
-            Current position (0-100, where 0=closed, 100=open) or fully open if no position can be determined
-        """
-        # Default return value
-        default_pos = const.COVER_POS_FULLY_OPEN
-
-        # Check if cover supports position control
-        if int(features) & CoverEntityFeature.SET_POSITION:
-            # Cover supports positioning - use current_position attribute
-            current_pos = state.attributes.get(ATTR_CURRENT_POSITION)
-            if current_pos is None:
-                const.LOGGER.warning(
-                    f"[{entity_id}] Cover supports positioning but has no current_position attribute; defaulting to {default_pos}%"
-                )
-                return default_pos
-            else:
-                const.LOGGER.debug(f"[{entity_id}] Position-supporting cover at {current_pos}%")
-                return int(current_pos)
-        else:
-            # Binary cover - determine position from state or fallback to current_position
-            if state.state:
-                cover_state = state.state.lower()
-            else:
-                cover_state = None
-
-            if cover_state == STATE_CLOSED:
-                const.LOGGER.debug(f"[{entity_id}] Binary cover is closed (0%)")
-                return const.COVER_POS_FULLY_CLOSED
-            elif cover_state == STATE_OPEN:
-                const.LOGGER.debug(f"[{entity_id}] Binary cover is open (100%)")
-                return const.COVER_POS_FULLY_OPEN
-            else:
-                const.LOGGER.warning(
-                    f"[{entity_id}] Binary cover in state '{state.state}', cannot determine position; defaulting to {default_pos}%"
-                )
-
-        return default_pos
 
     # _get_weather_condition
     #
@@ -745,13 +423,6 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             const.LOGGER.warning(f"Unexpected error getting weather forecast from {entity_id}: {err}")
 
         return None
-
-    #
-    # _calculate_angle_difference
-    #
-    def _calculate_angle_difference(self, sun_azimuth: float, cover_azimuth: float) -> float:
-        """Calculate minimal absolute angle difference between two azimuths."""
-        return abs(((sun_azimuth - cover_azimuth + 180) % 360) - 180)
 
     #
     # _find_day_forecast

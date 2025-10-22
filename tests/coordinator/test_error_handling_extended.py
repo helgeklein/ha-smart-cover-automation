@@ -17,7 +17,6 @@ from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MockConfigEntry,
-    create_mock_weather_service,
     create_temperature_config,
     create_weather_service_with_cover_error,
     set_weather_forecast_temp,
@@ -49,41 +48,6 @@ class TestCoordinatorErrorHandling:
         # Data should be None due to configuration error
         result = coordinator.data
         assert result is None
-
-    async def test_unexpected_error_during_automation(self) -> None:
-        """Test handling of unexpected errors during automation update."""
-        hass = MagicMock()
-        hass.services = MagicMock()
-        hass.states = MagicMock()
-
-        config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Mock weather and cover states to trigger automation
-        weather_state = MagicMock()
-        weather_state.state = "sunny"
-
-        hass.states.get.side_effect = lambda entity_id: {
-            "weather.forecast": weather_state,
-            "sun.sun": MagicMock(state="above_horizon", attributes={"elevation": 45, "azimuth": 180}),
-            MOCK_COVER_ENTITY_ID: MagicMock(attributes={"current_position": 100, "supported_features": 15}),
-        }.get(entity_id)
-
-        # Mock weather forecast service
-        set_weather_forecast_temp(30.0)  # Hot temperature
-        hass.services.async_call.side_effect = create_mock_weather_service()
-
-        # Mock _handle_automation to raise unexpected error
-        async def mock_handle_automation(*args, **kwargs):
-            raise RuntimeError("Unexpected system error")
-
-        coordinator._handle_automation = mock_handle_automation
-
-        # Should handle unexpected error gracefully
-        await coordinator.async_refresh()
-        # Should return empty covers due to unexpected error
-        result = coordinator.data
-        assert result == {"covers": {}}
 
     @pytest.mark.parametrize(
         "exception_class, exception_message",
@@ -139,9 +103,11 @@ class TestCoordinatorErrorHandling:
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Should complete with empty covers result since the error prevents proper execution
+        # Should complete with cover in result showing the error
         assert "covers" in result
-        assert result["covers"] == {}
+        assert MOCK_COVER_ENTITY_ID in result["covers"]
+        # The cover should have processed and recorded the error
+        assert "cover_message" in result["covers"][MOCK_COVER_ENTITY_ID]
 
     @pytest.mark.parametrize(
         "error_type,exception_class,service_name,test_description",
