@@ -79,22 +79,24 @@ class TestEdgeCases(TestDataUpdateCoordinatorBase):
         - Reverse wraparound: 350° vs 0° = 10°
         - Maximum difference: 0° vs 180° = 180°
         """
+        from custom_components.smart_cover_automation.automation_engine import CoverAutomation
+
         # Test direct alignment (no difference)
-        diff = sun_coordinator._calculate_angle_difference(TEST_DIRECT_AZIMUTH, TEST_DIRECT_AZIMUTH)
+        diff = CoverAutomation._calculate_angle_difference(TEST_DIRECT_AZIMUTH, TEST_DIRECT_AZIMUTH)
         assert diff == 0.0
 
         # Test standard 45-degree difference
-        diff = sun_coordinator._calculate_angle_difference(TEST_DIRECT_AZIMUTH, 135.0)
+        diff = CoverAutomation._calculate_angle_difference(TEST_DIRECT_AZIMUTH, 135.0)
         assert diff == 45.0
 
         # Test wraparound (0° and 350° should be 10° apart, not 350°)
-        diff = sun_coordinator._calculate_angle_difference(0.0, 350.0)
+        diff = CoverAutomation._calculate_angle_difference(0.0, 350.0)
         assert diff == 10.0
 
         # Test reverse wraparound
-        diff = sun_coordinator._calculate_angle_difference(350.0, 0.0)
+        diff = CoverAutomation._calculate_angle_difference(350.0, 0.0)
         assert diff == 10.0
 
         # Test maximum difference (180° apart)
-        diff = sun_coordinator._calculate_angle_difference(0.0, 180.0)
+        diff = CoverAutomation._calculate_angle_difference(0.0, 180.0)
         assert diff == 180.0
