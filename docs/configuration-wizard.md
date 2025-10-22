@@ -1,16 +1,12 @@
 ---
 layout: default
-title: Configuration
+title: Configuration Wizard
 nav_order: 4
-description: "Configuration guide for Smart Cover Automation for Home Assistant."
-permalink: /configuration/
+description: "Configuration guide part 1 for Smart Cover Automation for Home Assistant."
+permalink: /configuration-wizard/
 ---
 
-# Configuration Guide
-
-This guide covers how to configure the Smart Cover Automation integration after installation.
-
-## Configuration Wizard
+# Configuration Guide 1: Wizard
 
 The integration's settings are managed via a multi-step wizard. To invoke the configuration wizard:
 
@@ -23,9 +19,9 @@ The integration's settings are managed via a multi-step wizard. To invoke the co
 - The configuration wizard can be canceled at any time. When you do that, no changes are made to the configuration.
 - The configuration wizard can be invoked as often as needed to inspect the configuration or make changes to it.
 
-### Step 1: Weather Forecast Sensor and Covers to Automate
+## Step 1: Weather Forecast Sensor and Covers to Automate
 
-#### Weather Forecast Sensor
+### Weather Forecast Sensor
 
 The integration needs to determine:
 
@@ -48,17 +44,17 @@ The integration considers the following current weather conditions as the **sun 
 - `sunny`
 - `partlycloudy`
 
-#### Covers
+### Covers
 
 Select the covers the integration should automate.
 
-### Step 2: Cover Azimuth
+## Step 2: Cover Azimuth
 
 In the second step of the configuration wizard, specify each cover's azimuth, aka the direction, as an angle from north. This is necessary so that the integration can calculate when the sun is shining on a window.
 
 There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). [This website](https://doc.forecast.solar/find_your_azimuth) has instructions for both.
 
-### Step 3: Additional Settings (Optional)
+## Step 3: Additional Settings (Optional)
 
 In the third step of the configuration wizard, the following settings can be configured. They don't have to, though, as the defaults should work well enough to get you started.
 
@@ -69,13 +65,13 @@ In the third step of the configuration wizard, the following settings can be con
 - **Minimal sun elevation:** The automation starts operating when the sun's elevation is above this threshold (degrees above the horizon).
 - **Temperature threshold:** Temperature at which the automation starts closing covers to protect from heat (degrees Celsius).
 
-### Step 4: Per-Cover Max/Min Positions (Optional)
+## Step 4: Per-Cover Max/Min Positions (Optional)
 
 In the fourth step of the configuration wizard, you can specify maximum and minimum positions per cover. If configured, these per-cover settings override the global max/min positions which can be configured in the previous step.
 
-### Step 5: Time Exceptions (Optional)
+## Step 5: Time Exceptions (Optional)
 
-In the fourth step of the configuration wizard, you can configure exceptions for time periods when the automation should not be active.
+In the fifth step of the configuration wizard, you can configure exceptions for time periods when the automation should not be active.
 
 - **Disable cover opening at night:** The automation opens the covers when they needn't be closed for heat protection. By default, this auto-opening doesn't happen at night (when the sun is below the horizon). You can change that behavior by flipping this setting to disabled.
 - **Time range:**
@@ -83,14 +79,6 @@ In the fourth step of the configuration wizard, you can configure exceptions for
   - **Disable from:** Start time of the time period in which the automation should be inactive.
   - **Disable until:** End time of the time period in which the automation should be inactive.
 
-## Switches on the Integration Card
-
-In addition to the above-mentioned rather static configuration settings, the integration's behavior can be controlled via switches on the integration card:
-
-- **Enabled:** Enables or disables the automation.
-- **Simulation mode:** If enabled, the automation runs through all calculations without actually moving the covers.
-- **Verbose logging:** Enables or disables detailed logging.
-
 ## Next Steps
 
-After configuration, see the [Troubleshooting Guide]({{ '/troubleshooting/' | relative_url }}) for common issues and solutions.
+After the configuration wizard, take a look at the [switches]({{ '/configuration-switches/' | relative_url }}).

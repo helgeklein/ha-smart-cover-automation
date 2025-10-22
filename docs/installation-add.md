@@ -23,4 +23,4 @@ Alternatively, if the button above doesn't work for you, add the integration man
 
 ## Next Steps
 
-Once installed, proceed to the [Configuration Guide]({{ '/configuration/' | relative_url }}) to configure the automation.
+Once installed, proceed to the [Configuration Guide]({{ '/configuration-wizard/' | relative_url }}) to configure the automation.

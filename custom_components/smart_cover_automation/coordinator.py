@@ -257,8 +257,8 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             return result
 
         # Nighttime?
-        if self._nighttime_and_let_light_in_disabled(resolved, sun_entity):
-            message = "It's night and 'let light in' is disabled. Skipping actions"
+        if self._nighttime_and_night_privacy(resolved, sun_entity):
+            message = "It's nighttime and 'night privacy' is enabled. Skipping actions"
             self._log_automation_result(message, const.LogSeverity.DEBUG, result)
             return result
 
@@ -982,10 +982,10 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             const.LOGGER.debug(f"[{entity_id}] Failed to add logbook entry: {err}")
 
     #
-    # _nighttime_and_let_light_in_disabled
+    # _nighttime_and_night_privacy
     #
-    def _nighttime_and_let_light_in_disabled(self, resolved: ResolvedConfig, sun_entity: State) -> bool:
-        """Check if we're currently in a time period where "let light in" should be disabled.
+    def _nighttime_and_night_privacy(self, resolved: ResolvedConfig, sun_entity: State) -> bool:
+        """Check if we're currently in a time period where "night privacy" should be enabled.
 
         Args:
             resolved: Resolved configuration settings
@@ -994,7 +994,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             True if we're in a disabled period, False otherwise
         """
         # Check if to be disabled during night time (sun below horizon)
-        if resolved.let_light_in_disabled_night:
+        if resolved.night_privacy:
             if sun_entity and sun_entity.state == const.HA_SUN_STATE_BELOW_HORIZON:
                 return True
 

@@ -67,10 +67,10 @@
                 "title": "Smart Cover Automation - Schritt 5 von 5",
                 "description": "Konfigurieren Sie **Zeitausnahmen** für die Automatisierung (optional).",
                 "data": {
-                    "let_light_in_disabled_night": "Öffnen der Rollläden nachts deaktivieren:"
+                    "night_privacy": "Öffnen der Rollläden nachts deaktivieren:"
                 },
                 "data_description": {
-                    "let_light_in_disabled_night": "Wenn aktiviert, öffnen die Rollläden nachts nicht zum Hereinlassen von Licht (wenn die Sonne unter dem Horizont steht)."
+                    "night_privacy": "Wenn aktiviert, öffnen die Rollläden nachts nicht zum Hereinlassen von Licht (wenn die Sonne unter dem Horizont steht)."
                 },
                 "sections": {
                     "section_time_range": {

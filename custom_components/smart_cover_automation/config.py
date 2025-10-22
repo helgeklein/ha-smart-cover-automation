@@ -41,16 +41,16 @@ class ConfKeys(StrEnum):
     Each key corresponds to a setting that can be configured via options.
     """
 
+    AUTOMATION_DISABLED_TIME_RANGE = "automation_disabled_time_range"  # Disable the automation in a time range.
+    AUTOMATION_DISABLED_TIME_RANGE_START = "automation_disabled_time_range_start"  # Start time for disabling the automation.
+    AUTOMATION_DISABLED_TIME_RANGE_END = "automation_disabled_time_range_end"  # End time for disabling the automation.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_CLOSURE = "covers_min_closure"  # Minimum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_POSITION_DELTA = "covers_min_position_delta"  # Ignore smaller position changes (%).
     ENABLED = "enabled"  # Global on/off for all automation.
-    LET_LIGHT_IN_DISABLED_NIGHT = "let_light_in_disabled_night"  # Disable "let light in" automation during night hours.
-    AUTOMATION_DISABLED_TIME_RANGE = "automation_disabled_time_range"  # Disable "let light in" automation in a time range.
-    AUTOMATION_DISABLED_TIME_RANGE_START = "automation_disabled_time_range_start"  # Start time for disabling "let light in".
-    AUTOMATION_DISABLED_TIME_RANGE_END = "automation_disabled_time_range_end"  # End time for disabling "let light in".
     MANUAL_OVERRIDE_DURATION = "manual_override_duration"  # Duration (seconds) to skip a cover's automation after manual cover move.
+    NIGHT_PRIVACY = "night_privacy"  # Night privacy: disable cover open automation at night.
     SIMULATION_MODE = "simulation_mode"  # Simulation mode: if enabled, no actual cover commands are sent.
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
@@ -170,16 +170,16 @@ if TYPE_CHECKING:  # pragma: no cover - type checking only
 # Central registry of settings with defaults and coercion (type conversion).
 # This is the single source of truth for all settings keys and their types.
 CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(6, 0, 0), converter=_Converters.to_time),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int),
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
-    ConfKeys.LET_LIGHT_IN_DISABLED_NIGHT: _ConfSpec(default=True, converter=_Converters.to_bool),
-    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE: _ConfSpec(default=False, converter=_Converters.to_bool),
-    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
-    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(6, 0, 0), converter=_Converters.to_time),
     ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds),
+    ConfKeys.NIGHT_PRIVACY: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=20.0, converter=_Converters.to_float),
@@ -202,16 +202,16 @@ __all__ = [
 # Simple, explicit settings structure resolved from options → defaults.
 @dataclass(frozen=True, slots=True)
 class ResolvedConfig:
+    automation_disabled_time_range: bool
+    automation_disabled_time_range_start: time
+    automation_disabled_time_range_end: time
     covers: tuple[str, ...]
     covers_max_closure: int
     covers_min_closure: int
     covers_min_position_delta: int
     enabled: bool
-    let_light_in_disabled_night: bool
-    automation_disabled_time_range: bool
-    automation_disabled_time_range_start: time
-    automation_disabled_time_range_end: time
     manual_override_duration: int
+    night_privacy: bool
     simulation_mode: bool
     sun_azimuth_tolerance: int
     sun_elevation_threshold: float

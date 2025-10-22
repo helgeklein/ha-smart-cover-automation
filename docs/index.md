@@ -27,14 +27,15 @@ A Home Assistant integration to automate the control of your smart home's window
         - Is the sun shining or is it cloudy?
         - Is it a hot day?
         - Is the sun in a position to shine on a given window?
-- **Lockout protection:** (TODO)
-	- Pause automations for a cover if the door/window is open.
 - **Manual override detection:**
 	- Detect manual adjustments and pause automation to avoid conflicts.
-- **Night silence**:
+- **Night silence** & **night privacy**:
 	- Don't move the covers when people are sleeping.
+    - Don't open the covers when the sun is below the horizon.
 - **Pre-positioning before silent phases:** (TODO)
 	- Move the covers to the position they need to be in ahead of time so that there's silence at night but the covers are closed when the sun starts shining in the morning.
+- **Lockout protection:** (TODO)
+	- Pause automations for a cover if the door/window is open.
 - **Plant light:**
 	- Define min/max positions for the covers so that plants on the windowsill receive enough light.
 - **Comfort:**

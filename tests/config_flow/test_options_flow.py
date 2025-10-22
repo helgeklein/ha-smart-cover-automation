@@ -386,7 +386,7 @@ class TestOptionsFlowIntegration:
         assert result4_dict["type"] == FlowResultType.FORM
         assert result4_dict["step_id"] == "5"
 
-        # Step 5: Submit let light in settings (creates entry)
+        # Step 5: Submit night settings (creates entry)
         result5 = await flow.async_step_5({})
         result5_dict = _as_dict(result5)
         assert result5_dict["type"] == FlowResultType.CREATE_ENTRY

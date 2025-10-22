@@ -302,7 +302,7 @@ class FlowHelper:
     #
     @staticmethod
     def build_schema_step_5(resolved_settings: ResolvedConfig) -> vol.Schema:
-        """Build schema for step 5: let light in settings.
+        """Build schema for step 5  settings.
 
         Args:
             resolved_settings: Resolved configuration with defaults
@@ -312,11 +312,11 @@ class FlowHelper:
         """
         schema_dict: dict[vol.Marker, object] = {}
 
-        # Toggle to disable "let light in" at night (outside the section)
+        # Toggle to disable "night privacy" (above the section)
         schema_dict[
             vol.Required(
-                ConfKeys.LET_LIGHT_IN_DISABLED_NIGHT.value,
-                default=resolved_settings.let_light_in_disabled_night,
+                ConfKeys.NIGHT_PRIVACY.value,
+                default=resolved_settings.night_privacy,
             )
         ] = selector.BooleanSelector()
 
@@ -737,7 +737,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     # async_step_5
     #
     async def async_step_5(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 5: Configure let light in settings."""
+        """Step 5: Configure night privacy and night silence settings."""
         if user_input is None:
             # Get currently valid settings
             current_settings = self._current_settings()

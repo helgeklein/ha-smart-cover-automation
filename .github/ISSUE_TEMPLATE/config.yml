@@ -1,2 +1,8 @@
-# Allow issue creation only via issue templates.
 blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://ha-smart-cover-automation.helgeklein.com/
+    about: Read the integration's documentation for setup guides and configuration help
+  - name: Discussions
+    url: https://github.com/helgeklein/ha-smart-cover-automation/discussions
+    about: Ask questions and discuss ideas with the community

@@ -1,0 +1,41 @@
+---
+name: "Feature request"
+description: "Suggest an idea or enhancement for the integration"
+labels: ["enhancement"]
+body:
+- type: markdown
+  attributes:
+    value: Before you open a new feature request, search through the existing issues to see if others have suggested something similar.
+- type: checkboxes
+  attributes:
+    label: Checklist
+    options:
+      - label: This feature request is not a duplicate of any [previous feature requests](https://github.com/helgeklein/ha-smart-cover-automation/issues?q=is%3Aissue+label%3Aenhancement).
+        required: true
+      - label: I have searched the documentation and this feature is not already available.
+        required: true
+- type: textarea
+  attributes:
+    label: Is your feature request related to a problem?
+    description: "A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]"
+    placeholder: "I'm always frustrated when..."
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Describe the solution you'd like
+    description: "A clear and concise description of what you want to happen."
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Describe alternatives you've considered
+    description: "A clear and concise description of any alternative solutions or features you've considered."
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Additional context
+    description: "Add any other context, screenshots, or examples about the feature request here."
+  validations:
+    required: false

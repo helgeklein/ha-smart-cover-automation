@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Troubleshooting
-nav_order: 5
+nav_order: 6
 description: "Common issues and solutions for Smart Cover Automation for Home Assistant."
 permalink: /troubleshooting/
 ---
@@ -35,7 +35,7 @@ The integration comes with the following sensors that help you understand the in
 
 ### Enable Verbose Logging
 
-Make sure to enable verbose (debug) logging when analyzing a problem. This can be done via the UI (see the [Configuration Guide]({{ '/configuration/' | relative_url }}))
+Make sure to enable verbose (debug) logging when analyzing a problem. This can be done via the UI (see the [Configuration Guide]({{ '/configuration-wizard/' | relative_url }}))
 
 ### Log File Location
 
