@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 from custom_components.smart_cover_automation.sensor import (
+    AutomationDisabledTimeRangeSensor,
     SunAzimuthSensor,
     SunElevationSensor,
     TempCurrentMaxSensor,
@@ -27,6 +28,7 @@ async def test_async_setup_entry_creates_all_sensors(mock_coordinator_basic: Dat
     """Test that async_setup_entry creates all sensor entities.
 
     Verifies that the setup function creates instances of:
+    - AutomationDisabledTimeRangeSensor
     - SunAzimuthSensor
     - SunElevationSensor
     - TempCurrentMaxSensor
@@ -55,11 +57,12 @@ async def test_async_setup_entry_creates_all_sensors(mock_coordinator_basic: Dat
     # Get the list of entities that were passed to async_add_entities
     entities_list = mock_add_entities.call_args[0][0]
 
-    # Verify we have exactly 4 entities
-    assert len(entities_list) == 4
+    # Verify we have exactly 5 entities
+    assert len(entities_list) == 5
 
     # Verify each entity type is present
     entity_types = [type(entity) for entity in entities_list]
+    assert AutomationDisabledTimeRangeSensor in entity_types
     assert SunAzimuthSensor in entity_types
     assert SunElevationSensor in entity_types
     assert TempCurrentMaxSensor in entity_types
@@ -133,10 +136,11 @@ async def test_async_setup_entry_with_real_hass_instance() -> None:
         async_add_entities=capture_entities,
     )
 
-    # Verify we captured 4 entities
-    assert len(added_entities) == 4
+    # Verify we captured 5 entities
+    assert len(added_entities) == 5
 
     # Verify entities are the correct types
+    assert any(isinstance(e, AutomationDisabledTimeRangeSensor) for e in added_entities)
     assert any(isinstance(e, SunAzimuthSensor) for e in added_entities)
     assert any(isinstance(e, SunElevationSensor) for e in added_entities)
     assert any(isinstance(e, TempCurrentMaxSensor) for e in added_entities)

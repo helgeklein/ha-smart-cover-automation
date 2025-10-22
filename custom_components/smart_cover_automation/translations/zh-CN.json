@@ -92,6 +92,12 @@
     },
     "entity": {
         "sensor": {
+            "automation_disabled_time_range": {
+                "name": "自动化：禁用时段",
+                "state": {
+                    "off": "关闭"
+                }
+            },
             "sun_azimuth": {
                 "name": "太阳方位角"
             },
@@ -108,6 +114,13 @@
         "binary_sensor": {
             "status": {
                 "name": "状态"
+            },
+            "nighttime_block_opening": {
+                "name": "夜间：阻止开启？",
+                "state": {
+                    "on": "是",
+                    "off": "否"
+                }
             },
             "temp_hot": {
                 "name": "天气：炎热？",

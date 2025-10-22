@@ -17,7 +17,7 @@ The persistence implementation uses a dual-update pattern:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, cast
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
 import pytest
 
@@ -61,7 +61,8 @@ async def test_switch_persistence_across_simulated_restart(mock_coordinator_basi
     mock_coordinator_basic.async_update_listeners = Mock()
     entry.runtime_data.coordinator = mock_coordinator_basic
     # Mock the hass.config_entries.async_update_entry method (this is what persistence actually calls)
-    mock_coordinator_basic.hass.config_entries.async_update_entry = AsyncMock()
+    # Note: Using Mock() instead of AsyncMock() because the code doesn't await this call (fire-and-forget pattern)
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()
 
     # Capture entities created by the switch platform
     captured: list[Entity] = []
@@ -154,7 +155,8 @@ async def test_simulation_mode_persistence_across_simulated_restart(mock_coordin
     mock_coordinator_basic.async_update_listeners = Mock()
     entry.runtime_data.coordinator = mock_coordinator_basic
     # Mock the correct persistence method
-    mock_coordinator_basic.hass.config_entries.async_update_entry = AsyncMock()
+    # Note: Using Mock() instead of AsyncMock() because the code doesn't await this call (fire-and-forget pattern)
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()
 
     # Setup switch platform
     captured: list[Entity] = []

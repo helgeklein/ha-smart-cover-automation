@@ -17,6 +17,7 @@ from homeassistant.const import EntityCategory, UnitOfTemperature
 
 from .const import (
     DOMAIN,
+    SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
@@ -51,6 +52,7 @@ async def async_setup_entry(
 
     # Create all sensor entities
     entities = [
+        AutomationDisabledTimeRangeSensor(coordinator),
         SunAzimuthSensor(coordinator),
         SunElevationSensor(coordinator),
         TempCurrentMaxSensor(coordinator),
@@ -106,6 +108,54 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):  # pyright: ignore[rep
     # Both base classes define it differently, but they're compatible at runtime.
     # The CoordinatorEntity's implementation provides the correct coordinator-based
     # availability logic we want, so no override is needed.
+
+
+#
+# AutomationDisabledTimeRangeSensor
+#
+class AutomationDisabledTimeRangeSensor(IntegrationSensor):
+    """Sensor that reports the configured automation disabled time range.
+
+    The sensor displays:
+    - "off" when the time range feature is disabled
+    - "start-end" (e.g., "22:00-06:00") when the time range feature is enabled
+    """
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+        entity_description = SensorEntityDescription(
+            key=SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
+            translation_key=SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            icon="mdi:clock-time-eight",
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def native_value(self) -> str:  # pyright: ignore
+        """Return the automation disabled time range as a formatted string.
+
+        Returns:
+            Translation key "off" if the feature is disabled, or "HH:MM-HH:MM" format if enabled.
+        """
+        resolved = self.coordinator._resolved_settings()
+
+        if not resolved.automation_disabled_time_range:
+            # Return translation key that will be translated to "Off" in UI
+            return "off"
+
+        # Format times as HH:MM
+        start_time = resolved.automation_disabled_time_range_start
+        end_time = resolved.automation_disabled_time_range_end
+
+        start_str = f"{start_time.hour:02d}:{start_time.minute:02d}"
+        end_str = f"{end_time.hour:02d}:{end_time.minute:02d}"
+
+        return f"{start_str}-{end_str}"
 
 
 #

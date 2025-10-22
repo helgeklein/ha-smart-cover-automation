@@ -21,6 +21,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.const import EntityCategory
 
 from .const import (
+    BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
     BINARY_SENSOR_KEY_STATUS,
     BINARY_SENSOR_KEY_TEMP_HOT,
     BINARY_SENSOR_KEY_WEATHER_SUNNY,
@@ -57,6 +58,7 @@ async def async_setup_entry(
     entities = [
         # Status binary sensor - indicates system problems
         StatusBinarySensor(coordinator),
+        NighttimeBlockOpeningBinarySensor(coordinator),
         TempHotBinarySensor(coordinator),
         WeatherSunnyBinarySensor(coordinator),
     ]
@@ -138,6 +140,39 @@ class StatusBinarySensor(IntegrationBinarySensor):
     def is_on(self) -> bool:  # pyright: ignore
         """Return True if the integration has problems."""
         return not self.coordinator.last_update_success
+
+
+#
+# NighttimeBlockOpeningBinarySensor
+#
+class NighttimeBlockOpeningBinarySensor(IntegrationBinarySensor):
+    """Binary sensor that reports whether nighttime block opening is enabled.
+
+    State meanings:
+    - on: Nighttime block opening is enabled (covers won't open at night)
+    - off: Nighttime block opening is disabled (covers can open at night)
+    """
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+        entity_description = BinarySensorEntityDescription(
+            key=BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
+            translation_key=BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            # No device class - allows custom state translations (Yes/No)
+            icon="mdi:weather-night",
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
+        """Return True if nighttime block opening is enabled."""
+        resolved = self.coordinator._resolved_settings()
+        return resolved.nighttime_block_opening
 
 
 #
