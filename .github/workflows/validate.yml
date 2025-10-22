@@ -26,9 +26,10 @@ jobs:
     name: HACS validation
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v5
+
       - name: Run HACS validation
         uses: hacs/action@main
         with:
           category: integration
-          # Remove this 'ignore' key when you have added brand images for your integration to https://github.com/home-assistant/brands
-          ignore: brands
