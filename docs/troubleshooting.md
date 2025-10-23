@@ -22,6 +22,8 @@ Filter the logbook for this integration's entries by selecting `Smart Cover Auto
 
 The integration comes with the following sensors that help you understand the integration's inner workings:
 
+- **Automation: disabled time range:** Start and end of a configured time interval during which the automation is disabled. "Off" it this is not configured.
+- **Nighttime: block opening?:** Whether to block automatic cover opening during nighttime (when the sun is below the horizon).
 - **Status:** Overall status returned by the last automation update.
 - **Sun azimuth:** Current sun azimuth (angle from north).
 - **Sun elevation:** Current sun elevation (angle above the horizon).
