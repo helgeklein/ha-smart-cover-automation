@@ -39,6 +39,7 @@ INTEGRATION_NAME: Final[str] = "Smart Cover Automation"
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
 COVER_SFX_MAX_CLOSURE: Final[str] = "cover_max_closure"  # Cover maximum closure position (%)
 COVER_SFX_MIN_CLOSURE: Final[str] = "cover_min_closure"  # Cover minimum closure position (%)
+COVER_SFX_WINDOW_SENSORS: Final[str] = "cover_window_sensors"  # Window sensor entity IDs
 
 # Per-cover position history configuration
 COVER_POSITION_HISTORY_SIZE: Final[int] = 3  # Number of positions to store in history
@@ -63,7 +64,7 @@ SENSOR_KEY_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Key for the temperat
 
 # Cover attribute keys (exposed on each cover entity)
 COVER_ATTR_COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
-COVER_ATTR_MESSAGE: Final[str] = "cover_message"  # Info or error message for this cover
+COVER_ATTR_LOCKOUT_PROTECTION: Final[str] = "cover_lockout_protection"  # Lockout protection status
 COVER_ATTR_POS_CURRENT: Final[str] = "cover_pos_current"  # Current cover position
 COVER_ATTR_POS_HISTORY: Final[str] = "cover_pos_history"  # Position history
 COVER_ATTR_POS_TARGET_DESIRED: Final[str] = "cover_pos_target_desired"  # Desired cover target cover position
@@ -80,7 +81,8 @@ ERROR_NO_COVERS: Final[str] = "no_covers"
 ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"
 STEP_4_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
 STEP_4_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
-STEP_5_SECTION_TIME_RANGE: Final[str] = "section_time_range"
+STEP_5_SECTION_WINDOW_SENSORS: Final[str] = "section_window_sensors"
+STEP_6_SECTION_TIME_RANGE: Final[str] = "section_time_range"
 
 # Home Assistant string literals
 HA_OPTIONS: Final[str] = "options"

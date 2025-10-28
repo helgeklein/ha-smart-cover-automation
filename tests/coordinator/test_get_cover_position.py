@@ -25,6 +25,7 @@ def cover_automation() -> CoverAutomation:
     resolved_config.covers_min_closure = 0
 
     config = {}
+    hass = MagicMock()
     cover_pos_history_mgr = MagicMock()
     log_cover_result_callback = MagicMock()
     set_cover_position_callback = MagicMock()
@@ -32,6 +33,7 @@ def cover_automation() -> CoverAutomation:
 
     return CoverAutomation(
         entity_id="cover.test",
+        hass=hass,
         resolved=resolved_config,
         config=config,
         cover_pos_history_mgr=cover_pos_history_mgr,

@@ -124,6 +124,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
     #
     def _resolved_settings(self) -> ResolvedConfig:
         """Return resolved settings from the config entry options."""
+
         from .config import resolve
 
         # Get configuration from options (all user settings are stored there)
@@ -154,6 +155,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         Raises:
         UpdateFailed: For critical errors that should make entities unavailable
         """
+
         # Prepare minimal valid state to keep integration entities available
         error_result: CoordinatorData = {ConfKeys.COVERS.value: {}}
 
@@ -556,14 +558,10 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         self,
         entity_id: str,
         error_description: str,
-        cover_attrs: dict[str, Any],
-        result: CoordinatorData,
     ) -> None:
         """Log and store the the result for one cover."""
         message = f"[{entity_id}] {error_description}"
         const.LOGGER.info(message)
-        cover_attrs[const.COVER_ATTR_MESSAGE] = message
-        result[ConfKeys.COVERS.value][entity_id] = cover_attrs
 
     #
     # _add_logbook_entry_cover_movement

@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import MagicMock
 
-from custom_components.smart_cover_automation.const import COVER_ATTR_MESSAGE, COVER_ATTR_POS_TARGET_DESIRED
+from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
@@ -18,7 +18,6 @@ from ..conftest import (
     MockConfigEntry,
     create_mock_weather_service,
     create_temperature_config,
-    create_weather_service_with_cover_error,
     set_weather_forecast_temp,
 )
 
@@ -88,74 +87,6 @@ class TestCoverControlEdgeCases:
         # Should not make any cover service calls since no movement needed
         cover_calls = [call for call in hass.services.async_call.call_args_list if call[0][0] == "cover"]
         assert len(cover_calls) == 0
-
-    async def test_cover_service_call_parameter_validation_during_automation(self) -> None:
-        """Test parameter validation errors during cover service calls in automation."""
-        hass = MagicMock()
-        hass.services = MagicMock()
-        hass.states = MagicMock()
-
-        # Mock weather forecast service
-        set_weather_forecast_temp(30.0)  # Hot temperature
-        hass.services.async_call.side_effect = create_weather_service_with_cover_error(ValueError, "Entity ID format is invalid")
-
-        config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Mock weather and sun entities to trigger cover movement
-        weather_state = MagicMock()
-        weather_state.state = "sunny"
-
-        hass.states.get.side_effect = lambda entity_id: {
-            "weather.forecast": weather_state,
-            "sun.sun": MagicMock(state="above_horizon", attributes={"elevation": 45, "azimuth": 180}),
-            "cover.test_cover": MagicMock(attributes={"current_position": 100, "supported_features": 15}),
-        }.get(entity_id)
-
-        # Should complete automation update despite service call error
-        await coordinator.async_refresh()
-        result = coordinator.data
-
-        # Should have cover data with error attribute
-        assert "covers" in result
-        assert "cover.test_cover" in result["covers"]
-        cover_data = result["covers"]["cover.test_cover"]
-        assert COVER_ATTR_MESSAGE in cover_data
-        assert "Failed to call set_cover_position for cover.test_cover" in cover_data[COVER_ATTR_MESSAGE]
-
-    async def test_cover_service_call_type_error_during_automation(self) -> None:
-        """Test TypeError handling during cover service calls in automation."""
-        hass = MagicMock()
-        hass.services = MagicMock()
-        hass.states = MagicMock()
-
-        # Mock weather forecast service
-        set_weather_forecast_temp(30.0)  # Hot temperature
-        hass.services.async_call.side_effect = create_weather_service_with_cover_error(TypeError, "Expected int, got str")
-
-        config_entry = MockConfigEntry(create_temperature_config())
-        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Mock weather and sun entities to trigger cover movement
-        weather_state = MagicMock()
-        weather_state.state = "sunny"
-
-        hass.states.get.side_effect = lambda entity_id: {
-            "weather.forecast": weather_state,
-            "sun.sun": MagicMock(state="above_horizon", attributes={"elevation": 45, "azimuth": 180}),
-            "cover.test_cover": MagicMock(attributes={"current_position": 100, "supported_features": 15}),
-        }.get(entity_id)
-
-        # Should complete automation update despite service call error
-        await coordinator.async_refresh()
-        result = coordinator.data
-
-        # Should have cover data with error attribute
-        assert "covers" in result
-        assert "cover.test_cover" in result["covers"]
-        cover_data = result["covers"]["cover.test_cover"]
-        assert COVER_ATTR_MESSAGE in cover_data
-        assert "Failed to call set_cover_position for cover.test_cover" in cover_data[COVER_ATTR_MESSAGE]
 
     def test_calculate_angle_difference_edge_cases(self) -> None:
         """Test angle difference calculation with edge cases."""
