@@ -94,7 +94,7 @@ class TestServiceHandler:
         ):
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-            mock_coordinator._add_logbook_entry_cover_movement = AsyncMock()
+            mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
             mock_coordinator.data = {"covers": {MOCK_COVER_ENTITY_ID: {}}}
             mock_coordinator_class.return_value = mock_coordinator
 
@@ -107,7 +107,7 @@ class TestServiceHandler:
             await service_handler(mock_service_call)
 
             # Verify logbook entry was created
-            mock_coordinator._add_logbook_entry_cover_movement.assert_called_once_with(
+            mock_coordinator._ha_interface.add_logbook_entry.assert_called_once_with(
                 verb_key="verb_opening",
                 entity_id=MOCK_COVER_ENTITY_ID,
                 reason_key="reason_heat_protection",
@@ -224,7 +224,7 @@ class TestServiceHandler:
         ):
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-            mock_coordinator._add_logbook_entry_cover_movement = AsyncMock()
+            mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
             mock_coordinator_class.return_value = mock_coordinator
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
@@ -236,7 +236,7 @@ class TestServiceHandler:
 
             await service_handler(mock_service_call)
 
-            mock_coordinator._add_logbook_entry_cover_movement.assert_called_once()
+            mock_coordinator._ha_interface.add_logbook_entry.assert_called_once()
 
     async def test_service_handler_routes_by_cover_entity(self, mock_hass_with_spec, mock_service_call) -> None:
         """Test service handler finds coordinator by cover entity ID."""
@@ -248,7 +248,7 @@ class TestServiceHandler:
         ):
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-            mock_coordinator._add_logbook_entry_cover_movement = AsyncMock()
+            mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
             mock_coordinator.data = {"covers": {MOCK_COVER_ENTITY_ID: {}}}
             mock_coordinator_class.return_value = mock_coordinator
 
@@ -258,7 +258,7 @@ class TestServiceHandler:
 
             await service_handler(mock_service_call)
 
-            mock_coordinator._add_logbook_entry_cover_movement.assert_called_once()
+            mock_coordinator._ha_interface.add_logbook_entry.assert_called_once()
 
     async def test_service_handler_fallback_to_first_coordinator(self, mock_hass_with_spec) -> None:
         """Test service handler falls back to first available coordinator."""
@@ -270,7 +270,7 @@ class TestServiceHandler:
         ):
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-            mock_coordinator._add_logbook_entry_cover_movement = AsyncMock()
+            mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
             mock_coordinator.data = {"covers": {}}  # No matching cover
             mock_coordinator_class.return_value = mock_coordinator
 
@@ -287,7 +287,7 @@ class TestServiceHandler:
             await service_handler(call)
 
             # Should use the only available coordinator
-            mock_coordinator._add_logbook_entry_cover_movement.assert_called_once()
+            mock_coordinator._ha_interface.add_logbook_entry.assert_called_once()
 
     async def test_service_handler_no_coordinator_found(self, mock_hass_with_spec, mock_service_call, caplog) -> None:
         """Test service handler when no coordinator can be located."""
@@ -323,7 +323,7 @@ class TestServiceHandler:
         ):
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-            mock_coordinator._add_logbook_entry_cover_movement = AsyncMock()
+            mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
             mock_coordinator.data = {"covers": {}}
             mock_coordinator_class.return_value = mock_coordinator
 
@@ -341,6 +341,6 @@ class TestServiceHandler:
             await service_handler(call)
 
             # Verify defaults were used
-            call_kwargs = mock_coordinator._add_logbook_entry_cover_movement.call_args.kwargs
+            call_kwargs = mock_coordinator._ha_interface.add_logbook_entry.call_args.kwargs
             assert call_kwargs["verb_key"] == "verb_opening"
             assert call_kwargs["reason_key"] == "reason_heat_protection"

@@ -23,42 +23,42 @@ class TestPositionHistory:
     async def test_position_history_initialization(self, coordinator: DataUpdateCoordinator):
         """Test that position history starts empty."""
         # Initially empty position history - check via the getter method
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.non_existent")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.non_existent")]
         assert history == []
 
         # Test getting history for non-existent cover
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.non_existent")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.non_existent")]
         assert history == []
 
     @pytest.mark.asyncio
     async def test_position_history_single_update(self, coordinator: DataUpdateCoordinator):
         """Test position history with a single position update."""
         # Update position once
-        coordinator._cover_pos_history_mgr.add("cover.test", 50, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 50, cover_moved=True)
 
         # Check history - first update should be current, no previous
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
         assert history == [50]
 
         # Verify internal storage uses deque - check that it was initialized
-        assert hasattr(coordinator._cover_pos_history_mgr, "_cover_position_history")
-        assert "cover.test" in coordinator._cover_pos_history_mgr._cover_position_history
-        assert list(coordinator._cover_pos_history_mgr._cover_position_history["cover.test"]) == [50]
+        assert hasattr(coordinator._automation_engine._cover_pos_history_mgr, "_cover_position_history")
+        assert "cover.test" in coordinator._automation_engine._cover_pos_history_mgr._cover_position_history
+        assert list(coordinator._automation_engine._cover_pos_history_mgr._cover_position_history["cover.test"]) == [50]
 
     @pytest.mark.asyncio
     async def test_position_history_two_updates(self, coordinator: DataUpdateCoordinator):
         """Test position history with two position updates."""
         # Update position twice
-        coordinator._cover_pos_history_mgr.add("cover.test", 30, cover_moved=True)
-        coordinator._cover_pos_history_mgr.add("cover.test", 70, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 30, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 70, cover_moved=True)
 
         # Check history - should have current and previous
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
         assert history == [70, 30]
 
         # Verify internal storage maintains newest first order - ensure it was initialized
-        assert hasattr(coordinator._cover_pos_history_mgr, "_cover_position_history")
-        assert list(coordinator._cover_pos_history_mgr._cover_position_history["cover.test"]) == [70, 30]
+        assert hasattr(coordinator._automation_engine._cover_pos_history_mgr, "_cover_position_history")
+        assert list(coordinator._automation_engine._cover_pos_history_mgr._cover_position_history["cover.test"]) == [70, 30]
 
     @pytest.mark.asyncio
     async def test_position_history_multiple_updates(self, coordinator: DataUpdateCoordinator):
@@ -66,22 +66,22 @@ class TestPositionHistory:
         # Update position multiple times - add more than the limit to test maxlen behavior
         positions = [10, 40, 80, 100, 60]
         for pos in positions:
-            coordinator._cover_pos_history_mgr.add("cover.test", pos, cover_moved=True)
+            coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", pos, cover_moved=True)
 
         # Check history - should keep last COVER_POSITION_HISTORY_SIZE positions in newest-first order
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
         # Take last 3 positions: [80, 100, 60] and put in newest-first order: [60, 100, 80]
         expected_positions = [60, 100, 80]  # newest first order
 
         assert history == expected_positions
 
         # Verify internal storage - ensure it was initialized
-        assert hasattr(coordinator._cover_pos_history_mgr, "_cover_position_history")
-        assert list(coordinator._cover_pos_history_mgr._cover_position_history["cover.test"]) == expected_positions
+        assert hasattr(coordinator._automation_engine._cover_pos_history_mgr, "_cover_position_history")
+        assert list(coordinator._automation_engine._cover_pos_history_mgr._cover_position_history["cover.test"]) == expected_positions
 
         # Add one more to test maxlen behavior
-        coordinator._cover_pos_history_mgr.add("cover.test", 20, cover_moved=True)
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 20, cover_moved=True)
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
 
         # Now we should have: [20, 60, 100] (newest first, 80 dropped)
         assert history == [20, 60, 100]
@@ -90,46 +90,46 @@ class TestPositionHistory:
     async def test_position_history_multiple_covers(self, coordinator: DataUpdateCoordinator):
         """Test position history with multiple covers."""
         # Update positions for different covers
-        coordinator._cover_pos_history_mgr.add("cover.test1", 25, cover_moved=True)
-        coordinator._cover_pos_history_mgr.add("cover.test2", 75, cover_moved=True)
-        coordinator._cover_pos_history_mgr.add("cover.test1", 50, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test1", 25, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test2", 75, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test1", 50, cover_moved=True)
 
         # Check history for first cover
-        history1 = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test1")]
+        history1 = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test1")]
         assert history1 == [50, 25]
 
         # Check history for second cover
-        history2 = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test2")]
+        history2 = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test2")]
         assert history2 == [75]
 
         # Verify internal storage for each cover is independent
-        assert list(coordinator._cover_pos_history_mgr._cover_position_history["cover.test1"]) == [50, 25]
-        assert list(coordinator._cover_pos_history_mgr._cover_position_history["cover.test2"]) == [75]
+        assert list(coordinator._automation_engine._cover_pos_history_mgr._cover_position_history["cover.test1"]) == [50, 25]
+        assert list(coordinator._automation_engine._cover_pos_history_mgr._cover_position_history["cover.test2"]) == [75]
 
     @pytest.mark.asyncio
     async def test_position_history_same_position_updates(self, coordinator: DataUpdateCoordinator):
         """Test position history when same position is set multiple times."""
         # Update with same position multiple times
-        coordinator._cover_pos_history_mgr.add("cover.test", 60, cover_moved=False)
-        coordinator._cover_pos_history_mgr.add("cover.test", 60, cover_moved=False)
-        coordinator._cover_pos_history_mgr.add("cover.test", 60, cover_moved=False)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 60, cover_moved=False)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 60, cover_moved=False)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 60, cover_moved=False)
 
         # Should still track each update even if position is same
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
         assert history == [60, 60, 60]
 
         # Verify internal storage
-        assert list(coordinator._cover_pos_history_mgr._cover_position_history["cover.test"]) == [60, 60, 60]
+        assert list(coordinator._automation_engine._cover_pos_history_mgr._cover_position_history["cover.test"]) == [60, 60, 60]
 
     @pytest.mark.asyncio
     async def test_position_history_edge_case_positions(self, coordinator: DataUpdateCoordinator):
         """Test position history with edge case position values."""
         # Update with edge case positions
-        coordinator._cover_pos_history_mgr.add("cover.test", 0, cover_moved=True)
-        coordinator._cover_pos_history_mgr.add("cover.test", 100, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 0, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 100, cover_moved=True)
 
         # Check history
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
         assert history == [100, 0]
 
     @pytest.mark.asyncio
@@ -145,21 +145,21 @@ class TestPositionHistory:
         coordinator.hass.states.get.return_value = mock_cover_state
 
         # Set cover position and manually update history (simulating what _async_update_data does)
-        actual_pos = await coordinator._set_cover_position("cover.test", 35, 4)
+        actual_pos = await coordinator._ha_interface.set_cover_position("cover.test", 35, 4)
         if actual_pos is not None:
-            coordinator._cover_pos_history_mgr.add("cover.test", actual_pos, cover_moved=True)
+            coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", actual_pos, cover_moved=True)
 
         # Verify position history was updated
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
         assert history == [35]
 
         # Set another position and update history
-        actual_pos = await coordinator._set_cover_position("cover.test", 85, 4)
+        actual_pos = await coordinator._ha_interface.set_cover_position("cover.test", 85, 4)
         if actual_pos is not None:
-            coordinator._cover_pos_history_mgr.add("cover.test", actual_pos, cover_moved=True)
+            coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", actual_pos, cover_moved=True)
 
         # Verify history tracks both positions
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
         assert history == [85, 35]
 
     @pytest.mark.asyncio
@@ -183,12 +183,12 @@ class TestPositionHistory:
         mock_hass.states.get.return_value = mock_cover_state
 
         # Set cover position in simulation mode and manually update history
-        actual_pos = await coordinator._set_cover_position("cover.test", 65, 4)
+        actual_pos = await coordinator._ha_interface.set_cover_position("cover.test", 65, 4)
         if actual_pos is not None:
-            coordinator._cover_pos_history_mgr.add("cover.test", actual_pos, cover_moved=True)
+            coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", actual_pos, cover_moved=True)
 
         # Verify position history is still updated even in simulation mode
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
         assert history == [65]
 
     @pytest.mark.asyncio
@@ -197,17 +197,17 @@ class TestPositionHistory:
         # Add exactly COVER_POSITION_HISTORY_SIZE positions
         positions = list(range(10, 10 + COVER_POSITION_HISTORY_SIZE * 10, 10))  # [10, 20, 30, ...] up to the limit
         for pos in positions:
-            coordinator._cover_pos_history_mgr.add("cover.test", pos, cover_moved=True)
+            coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", pos, cover_moved=True)
 
         # Verify all positions are stored in newest-first order
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
         expected_all = list(reversed(positions))  # Newest first
         assert history == expected_all
 
         # Add one more position - should drop the oldest
         new_position = positions[-1] + 10
-        coordinator._cover_pos_history_mgr.add("cover.test", new_position, cover_moved=True)
-        history = [entry.position for entry in coordinator._cover_pos_history_mgr.get_entries("cover.test")]
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", new_position, cover_moved=True)
+        history = [entry.position for entry in coordinator._automation_engine._cover_pos_history_mgr.get_entries("cover.test")]
 
         expected_all_after = [new_position] + list(reversed(positions[1:]))  # Drop oldest, add newest
         assert history == expected_all_after
@@ -216,7 +216,7 @@ class TestPositionHistory:
     async def test_get_newest_position_empty_history(self, coordinator: DataUpdateCoordinator):
         """Test getting newest position when no history exists."""
         # Should return None for cover that has no history
-        newest_entry = coordinator._cover_pos_history_mgr.get_latest_entry("cover.nonexistent")
+        newest_entry = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry("cover.nonexistent")
         newest = newest_entry.position if newest_entry else None
         assert newest is None
 
@@ -224,10 +224,10 @@ class TestPositionHistory:
     async def test_get_newest_position_single_entry(self, coordinator: DataUpdateCoordinator):
         """Test getting newest position with single history entry."""
         # Add one position
-        coordinator._cover_pos_history_mgr.add("cover.test", 75, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 75, cover_moved=True)
 
         # Should return that position
-        newest_entry = coordinator._cover_pos_history_mgr.get_latest_entry("cover.test")
+        newest_entry = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry("cover.test")
         newest = newest_entry.position if newest_entry else None
         assert newest == 75
 
@@ -235,12 +235,12 @@ class TestPositionHistory:
     async def test_get_newest_position_multiple_entries(self, coordinator: DataUpdateCoordinator):
         """Test getting newest position with multiple history entries."""
         # Add multiple positions
-        coordinator._cover_pos_history_mgr.add("cover.test", 25, cover_moved=True)
-        coordinator._cover_pos_history_mgr.add("cover.test", 50, cover_moved=True)
-        coordinator._cover_pos_history_mgr.add("cover.test", 90, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 25, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 50, cover_moved=True)
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 90, cover_moved=True)
 
         # Should return the most recent one (90)
-        newest_entry = coordinator._cover_pos_history_mgr.get_latest_entry("cover.test")
+        newest_entry = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry("cover.test")
         newest = newest_entry.position if newest_entry else None
         assert newest == 90
 

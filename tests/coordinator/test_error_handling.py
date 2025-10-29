@@ -20,11 +20,9 @@ from custom_components.smart_cover_automation.const import (
     COVER_ATTR_SUN_HITTING,
     COVER_SFX_AZIMUTH,
 )
-from custom_components.smart_cover_automation.coordinator import (
-    DataUpdateCoordinator,
-    ServiceCallError,
-)
+from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.ha_interface import ServiceCallError
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_COVER_ENTITY_ID_2,
@@ -83,15 +81,16 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
             # No covers in state mapping - they will be unavailable
         }
 
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
         await coordinator.async_refresh()
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {
-            ConfKeys.COVERS.value: {},
-            "message": "All covers unavailable; skipping actions",
-        }  # Minimal valid state returned
+        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert "All covers unavailable; skipping actions" in caplog.text
 
     async def test_service_call_failure(
         self,
@@ -208,18 +207,16 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         config[ConfKeys.COVERS.value] = []
         config_entry = MockConfigEntry(config)
 
-        # Set caplog to capture warning level messages
-        caplog.set_level(logging.WARNING, logger="custom_components.smart_cover_automation")
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
 
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
         await coordinator.async_refresh()
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {
-            ConfKeys.COVERS.value: {},
-            "message": "No covers configured; skipping actions",
-        }  # Minimal valid state returned
+        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert "No covers configured; skipping actions" in caplog.text
 
     async def test_service_call_error_class_init(self) -> None:
         """Test ServiceCallError exception class initialization.
@@ -298,13 +295,17 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         mock_sun_state.attributes = {"elevation": "invalid", "azimuth": TEST_DIRECT_AZIMUTH}
         mock_hass.states.get.return_value = mock_sun_state
         await coordinator.async_refresh()
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {"covers": {}, "message": "Sun elevation unavailable; skipping actions"}  # Minimal valid state returned
+        assert coordinator.data == {"covers": {}}  # Minimal valid state returned
+        assert "Sun elevation unavailable" in caplog.text
 
     async def test_cover_missing_azimuth_configuration(
         self,
@@ -457,12 +458,13 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         sun_mock.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": None}
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         # Execute
         await coordinator.async_refresh()
         result = coordinator.data
 
         # Verify - should skip actions due to invalid sun azimuth
-        assert result == {
-            ConfKeys.COVERS.value: {},
-            "message": "Sun azimuth unavailable; skipping actions",
-        }
+        assert result == {ConfKeys.COVERS.value: {}}
+        assert "Sun azimuth unavailable" in caplog.text

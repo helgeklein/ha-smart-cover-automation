@@ -24,7 +24,7 @@ from .cover_position_history import CoverPositionHistoryManager
 from .util import to_float_or_none, to_int_or_none
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant, State
+    from homeassistant.core import State
 
 
 @dataclass
@@ -48,35 +48,26 @@ class CoverAutomation:
     def __init__(
         self,
         entity_id: str,
-        hass: HomeAssistant,
         resolved: ResolvedConfig,
         config: dict[str, Any],
         cover_pos_history_mgr: CoverPositionHistoryManager,
-        log_cover_result_callback: Any,
-        set_cover_position_callback: Any,
-        add_logbook_entry_callback: Any,
+        ha_interface: Any,
     ) -> None:
         """Initialize cover automation.
 
         Args:
             entity_id: Cover entity ID
-            hass: Home Assistant instance
             resolved: Resolved configuration settings
             config: Raw configuration dictionary
             cover_pos_history_mgr: Cover position history manager
-            log_cover_result_callback: Callback to log cover results (entity_id, message, cover_attrs)
-            set_cover_position_callback: Callback to set cover position (entity_id, desired_pos, features) -> actual_pos
-            add_logbook_entry_callback: Callback to add logbook entry (verb_key, entity_id, reason_key, target_pos)
+            ha_interface: Home Assistant interface for API interactions
         """
 
         self.entity_id = entity_id
-        self.hass = hass
         self.resolved = resolved
         self.config = config
         self._cover_pos_history_mgr = cover_pos_history_mgr
-        self._log_cover_result = log_cover_result_callback
-        self._set_cover_position = set_cover_position_callback
-        self._add_logbook_entry = add_logbook_entry_callback
+        self._ha_interface = ha_interface
 
     #
     # process
@@ -235,8 +226,8 @@ class CoverAutomation:
         # Check if any window sensor indicates an open window
         open_sensors = []
         for sensor_id in window_sensors:
-            sensor_state = self.hass.states.get(sensor_id)
-            if sensor_state and sensor_state.state == STATE_ON:
+            sensor_state = self._ha_interface.get_entity_state(sensor_id)
+            if sensor_state == STATE_ON:
                 open_sensors.append(sensor_id)
 
         # If any window is open, activate lockout protection
@@ -448,7 +439,7 @@ class CoverAutomation:
         # Movement needed
         try:
             # Move the cover
-            actual_pos = await self._set_cover_position(self.entity_id, desired_pos, features)
+            actual_pos = await self._ha_interface.set_cover_position(self.entity_id, desired_pos, features)
             const.LOGGER.debug(f"[{self.entity_id}] Actual position: {actual_pos}%")
             if actual_pos is not None:
                 # Store the position after movement
@@ -456,7 +447,7 @@ class CoverAutomation:
                 # Add the new position to the history
                 self._cover_pos_history_mgr.add(self.entity_id, actual_pos, cover_moved=True)
                 # Add detailed logbook entry
-                await self._add_logbook_entry(
+                await self._ha_interface.add_logbook_entry(
                     verb_key=verb_key,
                     entity_id=self.entity_id,
                     reason_key=reason_key,
@@ -467,3 +458,16 @@ class CoverAutomation:
             # Log the error but continue with other covers
             const.LOGGER.error(f"[{self.entity_id}] Failed to control cover: {err}")
             return False, f"Error: {err}"
+
+    #
+    # _log_cover_result
+    #
+    def _log_cover_result(self, entity_id: str, error_description: str) -> None:
+        """Log the result for one cover.
+
+        Args:
+            entity_id: Cover entity ID
+            error_description: Description of the result/error
+        """
+        message = f"[{entity_id}] {error_description}"
+        const.LOGGER.info(message)

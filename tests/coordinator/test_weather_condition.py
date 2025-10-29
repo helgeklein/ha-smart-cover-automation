@@ -7,18 +7,19 @@ to ensure covers only close when weather conditions are sunny.
 
 from __future__ import annotations
 
+import logging
 from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
 
 from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
-from custom_components.smart_cover_automation.coordinator import (
-    DataUpdateCoordinator,
+from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
+from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.ha_interface import (
     InvalidSensorReadingError,
     WeatherEntityNotFoundError,
 )
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
 from ..conftest import MockConfigEntry, create_mock_weather_service, create_temperature_config, set_weather_forecast_temp
 
@@ -35,7 +36,7 @@ class TestWeatherCondition:
             (None, "weather entity with None state"),
         ],
     )
-    async def test_weather_entity_invalid_states(self, weather_state_value: str | None, description: str) -> None:
+    async def test_weather_entity_invalid_states(self, weather_state_value: str | None, description: str, caplog) -> None:
         """Test handling of various invalid weather entity states.
 
         This parametrized test verifies that the coordinator gracefully handles
@@ -58,11 +59,15 @@ class TestWeatherCondition:
                 "cover.test_cover": MagicMock(attributes={"current_position": 100, "supported_features": 15}),
             }.get(entity_id)
             # Missing weather entity should be handled gracefully with warning
+            # Set caplog to capture INFO level messages
+            caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
             await coordinator.async_refresh()
             assert coordinator.last_exception is None  # No critical error should be raised
             # Verify that coordinator data contains the weather unavailable message
             assert coordinator.data is not None
-            assert "Weather data unavailable, skipping actions" in coordinator.data.get("message", "")
+            assert coordinator.data == {"covers": {}}
+            assert "Weather data unavailable, skipping actions" in caplog.text
         else:
             # Mock weather entity with the specified state
             weather_state = MagicMock()
@@ -75,10 +80,14 @@ class TestWeatherCondition:
             }.get(entity_id)
 
             # Should handle invalid weather entity gracefully (not raise)
+            # Set caplog to capture INFO level messages
+            caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
             await coordinator.async_refresh()
             # Should return early with weather unavailable message
             result = coordinator.data
-            assert result == {"covers": {}, "message": "Weather data unavailable, skipping actions"}
+            assert result == {"covers": {}}
+            assert "Weather data unavailable, skipping actions" in caplog.text
 
     def test_get_weather_condition_direct_call(self) -> None:
         """Test _get_weather_condition method directly."""
@@ -91,19 +100,19 @@ class TestWeatherCondition:
         weather_state.state = "sunny"
         hass.states.get.return_value = weather_state
 
-        result = coordinator._get_weather_condition("weather.test")
+        result = coordinator._ha_interface.get_weather_condition("weather.test")
         assert result == "sunny"
 
         # Test weather entity not found
         hass.states.get.return_value = None
         with pytest.raises(WeatherEntityNotFoundError, match="weather.test"):
-            coordinator._get_weather_condition("weather.test")
+            coordinator._ha_interface.get_weather_condition("weather.test")
 
         # Test unavailable state
         weather_state.state = "unavailable"
         hass.states.get.return_value = weather_state
         with pytest.raises(InvalidSensorReadingError, match="Weather entity weather.test: state is unavailable"):
-            coordinator._get_weather_condition("weather.test")
+            coordinator._ha_interface.get_weather_condition("weather.test")
 
     @pytest.mark.parametrize(
         "weather_condition,expected_position,test_description",
@@ -116,7 +125,7 @@ class TestWeatherCondition:
         ],
     )
     async def test_non_sunny_weather_conditions_parametrized(
-        self, weather_condition: str, expected_position: int, test_description: str
+        self, weather_condition: str, expected_position: int, test_description: str, caplog
     ) -> None:
         """Test that various non-sunny weather conditions prevent cover closing.
 
@@ -145,6 +154,9 @@ class TestWeatherCondition:
             "cover.test_cover": MagicMock(attributes={"current_position": 100, "supported_features": 15}),
         }.get(entity_id)
 
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
         result = coordinator.data
 
@@ -159,7 +171,9 @@ class TestWeatherCondition:
             ("partlycloudy", 0, "partly cloudy weather should allow cover closing"),
         ],
     )
-    async def test_sunny_weather_conditions_parametrized(self, sunny_condition: str, expected_position: int, test_description: str) -> None:
+    async def test_sunny_weather_conditions_parametrized(
+        self, sunny_condition: str, expected_position: int, test_description: str, caplog
+    ) -> None:
         """Test that various sunny weather conditions allow cover closing.
 
         This parametrized test verifies that different sunny weather conditions
@@ -185,6 +199,9 @@ class TestWeatherCondition:
             "sun.sun": MagicMock(state="above_horizon", attributes={"elevation": 45, "azimuth": 180}),
             "cover.test_cover": MagicMock(attributes={"current_position": 100, "supported_features": 15}),
         }.get(entity_id)
+
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
 
         await coordinator.async_refresh()
         result = coordinator.data

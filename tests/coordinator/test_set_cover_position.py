@@ -21,8 +21,9 @@ from homeassistant.const import (
 )
 from homeassistant.exceptions import HomeAssistantError
 
-from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator, ServiceCallError
+from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.ha_interface import ServiceCallError
 
 from ..conftest import MockConfigEntry, create_temperature_config
 
@@ -36,7 +37,7 @@ class TestSetCoverPosition:
         desired_pos = 75
         features = CoverEntityFeature.SET_POSITION
 
-        await coordinator._set_cover_position(entity_id, desired_pos, features)
+        await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
 
         # Should call set_cover_position service
         mock_hass.services.async_call.assert_called_once_with(
@@ -49,7 +50,7 @@ class TestSetCoverPosition:
         features = CoverEntityFeature.SET_POSITION
 
         # Test fully closed (0)
-        await coordinator._set_cover_position(entity_id, 0, features)
+        await coordinator._ha_interface.set_cover_position(entity_id, 0, features)
         mock_hass.services.async_call.assert_called_with(
             Platform.COVER, SERVICE_SET_COVER_POSITION, {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: 0}
         )
@@ -58,7 +59,7 @@ class TestSetCoverPosition:
         mock_hass.services.async_call.reset_mock()
 
         # Test fully open (100)
-        await coordinator._set_cover_position(entity_id, 100, features)
+        await coordinator._ha_interface.set_cover_position(entity_id, 100, features)
         mock_hass.services.async_call.assert_called_with(
             Platform.COVER, SERVICE_SET_COVER_POSITION, {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: 100}
         )
@@ -74,7 +75,7 @@ class TestSetCoverPosition:
         for desired_pos in test_positions:
             mock_hass.services.async_call.reset_mock()
 
-            await coordinator._set_cover_position(entity_id, desired_pos, features)
+            await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
 
             # Should call open_cover service
             mock_hass.services.async_call.assert_called_once_with(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
@@ -92,7 +93,7 @@ class TestSetCoverPosition:
         for desired_pos in test_positions:
             mock_hass.services.async_call.reset_mock()
 
-            await coordinator._set_cover_position(entity_id, desired_pos, features)
+            await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
 
             # Should call close_cover service
             mock_hass.services.async_call.assert_called_once_with(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
@@ -103,14 +104,14 @@ class TestSetCoverPosition:
         features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
 
         # Test position 50 (exactly at threshold) - should close
-        await coordinator._set_cover_position(entity_id, 50, features)
+        await coordinator._ha_interface.set_cover_position(entity_id, 50, features)
         mock_hass.services.async_call.assert_called_with(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
 
         # Reset mock
         mock_hass.services.async_call.reset_mock()
 
         # Test position 51 (just above threshold) - should open
-        await coordinator._set_cover_position(entity_id, 51, features)
+        await coordinator._ha_interface.set_cover_position(entity_id, 51, features)
         mock_hass.services.async_call.assert_called_with(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
 
     async def test_mixed_features_cover_uses_set_position(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
@@ -119,7 +120,7 @@ class TestSetCoverPosition:
         desired_pos = 65
         features = CoverEntityFeature.SET_POSITION | CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
 
-        await coordinator._set_cover_position(entity_id, desired_pos, features)
+        await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
 
         # Should call set_cover_position service (not binary open/close)
         mock_hass.services.async_call.assert_called_once_with(
@@ -132,14 +133,14 @@ class TestSetCoverPosition:
         features = 0  # No features
 
         # Test above threshold - should open
-        await coordinator._set_cover_position(entity_id, 80, features)
+        await coordinator._ha_interface.set_cover_position(entity_id, 80, features)
         mock_hass.services.async_call.assert_called_with(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
 
         # Reset mock
         mock_hass.services.async_call.reset_mock()
 
         # Test below threshold - should close
-        await coordinator._set_cover_position(entity_id, 20, features)
+        await coordinator._ha_interface.set_cover_position(entity_id, 20, features)
         mock_hass.services.async_call.assert_called_with(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
 
     async def test_simulation_mode_skips_service_call(self, mock_hass: MagicMock) -> None:
@@ -154,7 +155,7 @@ class TestSetCoverPosition:
         desired_pos = 75
         features = CoverEntityFeature.SET_POSITION
 
-        await coordinator._set_cover_position(entity_id, desired_pos, features)
+        await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
 
         # Should not call any service in simulation mode
         mock_hass.services.async_call.assert_not_called()
@@ -178,7 +179,7 @@ class TestSetCoverPosition:
         features = CoverEntityFeature.SET_POSITION
 
         with pytest.raises(ValueError, match=expected_error_message):
-            await coordinator._set_cover_position(entity_id, invalid_position, features)
+            await coordinator._ha_interface.set_cover_position(entity_id, invalid_position, features)
 
     @pytest.mark.parametrize(
         "exception_class, exception_message, expected_service_match",
@@ -212,7 +213,7 @@ class TestSetCoverPosition:
         mock_hass.services.async_call.side_effect = exception_class(exception_message)
 
         with pytest.raises(ServiceCallError, match=expected_service_match):
-            await coordinator._set_cover_position(entity_id, desired_pos, features)
+            await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
 
     async def test_service_call_error_preserves_service_name_for_binary_covers(
         self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock
@@ -225,14 +226,14 @@ class TestSetCoverPosition:
         mock_hass.services.async_call.side_effect = HomeAssistantError("Service failed")
 
         with pytest.raises(ServiceCallError, match="Failed to call open_cover"):
-            await coordinator._set_cover_position(entity_id, 80, features)  # Above threshold
+            await coordinator._ha_interface.set_cover_position(entity_id, 80, features)  # Above threshold
 
         # Reset mock for close service test
         mock_hass.services.async_call.reset_mock()
         mock_hass.services.async_call.side_effect = HomeAssistantError("Service failed")
 
         with pytest.raises(ServiceCallError, match="Failed to call close_cover"):
-            await coordinator._set_cover_position(entity_id, 20, features)  # Below threshold
+            await coordinator._ha_interface.set_cover_position(entity_id, 20, features)  # Below threshold
 
     async def test_various_entity_ids_and_positions(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
         """Test method works with various entity IDs and position combinations."""
@@ -246,7 +247,7 @@ class TestSetCoverPosition:
         for entity_id, desired_pos, features in test_cases:
             mock_hass.services.async_call.reset_mock()
 
-            await coordinator._set_cover_position(entity_id, desired_pos, features)
+            await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
 
             # Verify service was called (exact service depends on features and position)
             mock_hass.services.async_call.assert_called_once()
@@ -267,7 +268,7 @@ class TestSetCoverPosition:
         test_positions = [0, 25, 50, 75, 100]
 
         for desired_pos in test_positions:
-            actual_pos = await coordinator._set_cover_position(entity_id, desired_pos, features)
+            actual_pos = await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
 
             # For position-supporting covers, actual should equal desired
             assert actual_pos == desired_pos
@@ -293,7 +294,7 @@ class TestSetCoverPosition:
         entity_id = "cover.test"
         features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
 
-        actual_pos = await coordinator._set_cover_position(entity_id, test_position, features)
+        actual_pos = await coordinator._ha_interface.set_cover_position(entity_id, test_position, features)
 
         # Binary covers above threshold should return fully open (100)
         assert actual_pos == expected_return
@@ -319,7 +320,7 @@ class TestSetCoverPosition:
         entity_id = "cover.test"
         features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
 
-        actual_pos = await coordinator._set_cover_position(entity_id, test_position, features)
+        actual_pos = await coordinator._ha_interface.set_cover_position(entity_id, test_position, features)
 
         # Binary covers at/below threshold should return fully closed (0)
         assert actual_pos == expected_return
@@ -333,15 +334,19 @@ class TestSetCoverPosition:
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
         # Test position-supporting cover in simulation mode
-        actual_pos = await coordinator._set_cover_position("cover.test", 75, CoverEntityFeature.SET_POSITION)
+        actual_pos = await coordinator._ha_interface.set_cover_position("cover.test", 75, CoverEntityFeature.SET_POSITION)
         assert actual_pos == 75
 
         # Test binary cover above threshold in simulation mode
-        actual_pos = await coordinator._set_cover_position("cover.test", 80, CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE)
+        actual_pos = await coordinator._ha_interface.set_cover_position(
+            "cover.test", 80, CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
+        )
         assert actual_pos == 100
 
         # Test binary cover below threshold in simulation mode
-        actual_pos = await coordinator._set_cover_position("cover.test", 20, CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE)
+        actual_pos = await coordinator._ha_interface.set_cover_position(
+            "cover.test", 20, CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
+        )
         assert actual_pos == 0
 
         # Should not call any service in simulation mode
@@ -353,14 +358,14 @@ class TestSetCoverPosition:
 
         # Test position-supporting cover at boundaries
         features = CoverEntityFeature.SET_POSITION
-        assert await coordinator._set_cover_position(entity_id, 0, features) == 0
-        assert await coordinator._set_cover_position(entity_id, 100, features) == 100
+        assert await coordinator._ha_interface.set_cover_position(entity_id, 0, features) == 0
+        assert await coordinator._ha_interface.set_cover_position(entity_id, 100, features) == 100
 
         # Test binary cover at exact threshold boundary
         features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
 
         # Position 50 (at threshold) should return 0 (close)
-        assert await coordinator._set_cover_position(entity_id, 50, features) == 0
+        assert await coordinator._ha_interface.set_cover_position(entity_id, 50, features) == 0
 
         # Position 51 (above threshold) should return 100 (open)
-        assert await coordinator._set_cover_position(entity_id, 51, features) == 100
+        assert await coordinator._ha_interface.set_cover_position(entity_id, 51, features) == 100

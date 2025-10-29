@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
@@ -9,11 +10,9 @@ import pytest
 from homeassistant.const import Platform
 from homeassistant.exceptions import HomeAssistantError, ServiceNotFound
 
-from custom_components.smart_cover_automation.coordinator import (
-    DataUpdateCoordinator,
-    ServiceCallError,
-)
+from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.ha_interface import ServiceCallError
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MockConfigEntry,
@@ -26,7 +25,7 @@ from tests.conftest import (
 class TestCoordinatorErrorHandling:
     """Test comprehensive error handling scenarios in coordinator operations."""
 
-    async def test_configuration_resolution_exception(self) -> None:
+    async def test_configuration_resolution_exception(self, caplog) -> None:
         """Test handling of configuration resolution exceptions."""
         hass = MagicMock()
         hass.services = MagicMock()
@@ -44,6 +43,9 @@ class TestCoordinatorErrorHandling:
         coordinator._resolved_settings = mock_resolved_settings
 
         # Should handle configuration error gracefully
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
         # Data should be None due to configuration error
         result = coordinator.data
@@ -74,9 +76,9 @@ class TestCoordinatorErrorHandling:
 
         # Should raise ServiceCallError
         with pytest.raises(ServiceCallError, match="Failed to call set_cover_position"):
-            await coordinator._set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
+            await coordinator._ha_interface.set_cover_position(MOCK_COVER_ENTITY_ID, 50, 15)
 
-    async def test_service_call_error_during_automation_update(self) -> None:
+    async def test_service_call_error_during_automation_update(self, caplog) -> None:
         """Test service call error handling during full automation update."""
         hass = MagicMock()
         hass.services = MagicMock()
@@ -100,6 +102,9 @@ class TestCoordinatorErrorHandling:
         }.get(entity_id)
 
         # Should complete automation update despite service call error
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
         result = coordinator.data
 
@@ -116,7 +121,7 @@ class TestCoordinatorErrorHandling:
         ],
     )
     async def test_weather_forecast_service_errors_parametrized(
-        self, error_type: str, exception_class: type, service_name: str, test_description: str
+        self, error_type: str, exception_class: type, service_name: str, test_description: str, caplog
     ) -> None:
         """Test handling of various weather forecast service errors.
 
@@ -148,6 +153,9 @@ class TestCoordinatorErrorHandling:
         }.get(entity_id)
 
         # Should still complete update despite weather service error
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
         result = coordinator.data
 
@@ -155,7 +163,7 @@ class TestCoordinatorErrorHandling:
         # The key is that it doesn't crash the entire automation
         assert result is None or "covers" in result, f"Failed for {test_description}"
 
-    async def test_weather_forecast_temperature_unavailable(self) -> None:
+    async def test_weather_forecast_temperature_unavailable(self, caplog) -> None:
         """Test graceful degradation when weather forecast temperature is unavailable.
 
         Validates that the coordinator handles unavailable weather forecast gracefully by
@@ -194,6 +202,9 @@ class TestCoordinatorErrorHandling:
         hass.services.async_call = AsyncMock(side_effect=mock_weather_service_error)
 
         # Execute automation and verify graceful degradation
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
 
         # Verify graceful degradation handling
@@ -202,4 +213,5 @@ class TestCoordinatorErrorHandling:
 
         # Verify that automation was skipped due to weather data unavailability
         assert coordinator.data is not None
-        assert coordinator.data == {"covers": {}, "message": "Weather data unavailable, skipping actions"}
+        assert coordinator.data == {"covers": {}}
+        assert "Weather data unavailable, skipping actions" in caplog.text

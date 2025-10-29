@@ -29,12 +29,11 @@ class TestNighttimeAndLetLightInDisabled:
         }
         resolved = resolve(config)
 
-        # Create mock sun entity with state below horizon
-        sun_entity = MagicMock()
-        sun_entity.state = const.HA_SUN_STATE_BELOW_HORIZON
+        # Sun state is below horizon
+        sun_state = const.HA_SUN_STATE_BELOW_HORIZON
 
         # Test the method
-        result = coordinator._nighttime_and_block_opening(resolved, sun_entity)
+        result = coordinator._automation_engine._nighttime_and_block_opening(resolved, sun_state)
 
         assert result is True
 
@@ -48,12 +47,11 @@ class TestNighttimeAndLetLightInDisabled:
         }
         resolved = resolve(config)
 
-        # Create mock sun entity with state below horizon
-        sun_entity = MagicMock()
-        sun_entity.state = const.HA_SUN_STATE_BELOW_HORIZON
+        # Sun state is below horizon
+        sun_state = const.HA_SUN_STATE_BELOW_HORIZON
 
         # Test the method
-        result = coordinator._nighttime_and_block_opening(resolved, sun_entity)
+        result = coordinator._automation_engine._nighttime_and_block_opening(resolved, sun_state)
 
         assert result is False
 
@@ -67,12 +65,11 @@ class TestNighttimeAndLetLightInDisabled:
         }
         resolved = resolve(config)
 
-        # Create mock sun entity with state above horizon
-        sun_entity = MagicMock()
-        sun_entity.state = "above_horizon"
+        # Sun state is above horizon
+        sun_state = "above_horizon"
 
         # Test the method
-        result = coordinator._nighttime_and_block_opening(resolved, sun_entity)
+        result = coordinator._automation_engine._nighttime_and_block_opening(resolved, sun_state)
 
         assert result is False
 
@@ -87,7 +84,7 @@ class TestNighttimeAndLetLightInDisabled:
         resolved = resolve(config)
 
         # Test with None sun entity
-        result = coordinator._nighttime_and_block_opening(resolved, None)  # type: ignore[arg-type]
+        result = coordinator._automation_engine._nighttime_and_block_opening(resolved, None)  # type: ignore[arg-type]
 
         assert result is False
 
@@ -106,7 +103,7 @@ class TestInTimePeriodAutomationDisabled:
         resolved = resolve(config)
 
         # Test the method
-        is_disabled, period_string = coordinator._in_time_period_automation_disabled(resolved)
+        is_disabled, period_string = coordinator._automation_engine._in_time_period_automation_disabled(resolved)
 
         assert is_disabled is False
         assert period_string == ""
@@ -163,7 +160,7 @@ class TestInTimePeriodAutomationDisabled:
             mock_now.return_value = mock_datetime
 
             # Test the method
-            is_disabled, period_string = coordinator._in_time_period_automation_disabled(resolved)
+            is_disabled, period_string = coordinator._automation_engine._in_time_period_automation_disabled(resolved)
 
             assert is_disabled is expected_disabled, f"Failed: {description}"
 
@@ -192,7 +189,7 @@ class TestInTimePeriodAutomationDisabled:
             mock_now.return_value = mock_datetime
 
             # Test the method
-            is_disabled, period_string = coordinator._in_time_period_automation_disabled(resolved)
+            is_disabled, period_string = coordinator._automation_engine._in_time_period_automation_disabled(resolved)
 
             assert is_disabled is True
             assert period_string == "22:30:15 - 06:45:30"
@@ -216,7 +213,7 @@ class TestInTimePeriodAutomationDisabled:
             mock_now.return_value = mock_datetime
 
             # Test the method - when start == end, it's treated as overnight (wrapping around)
-            is_disabled, period_string = coordinator._in_time_period_automation_disabled(resolved)
+            is_disabled, period_string = coordinator._automation_engine._in_time_period_automation_disabled(resolved)
 
             # At exactly 12:00 with start=12:00 and end=12:00, it should be disabled
             # because the check is: now_local >= period_start (12:00 >= 12:00 is True)
@@ -236,12 +233,11 @@ class TestTimeBasedDisableIntegration:
         }
         resolved = resolve(config)
 
-        # Mock sun entity to be below horizon
-        sun_state = MagicMock()
-        sun_state.state = const.HA_SUN_STATE_BELOW_HORIZON
+        # Sun state is below horizon
+        sun_state = const.HA_SUN_STATE_BELOW_HORIZON
 
         # Test the method directly
-        is_disabled = coordinator._nighttime_and_block_opening(resolved, sun_state)
+        is_disabled = coordinator._automation_engine._nighttime_and_block_opening(resolved, sun_state)
 
         # Verify that automation is correctly detected as disabled
         assert is_disabled is True
@@ -265,7 +261,7 @@ class TestTimeBasedDisableIntegration:
             mock_now.return_value = mock_datetime
 
             # Test the method directly
-            is_disabled, period_string = coordinator._in_time_period_automation_disabled(resolved)
+            is_disabled, period_string = coordinator._automation_engine._in_time_period_automation_disabled(resolved)
 
             # Verify that automation is correctly detected as disabled
             assert is_disabled is True
