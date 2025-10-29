@@ -318,12 +318,18 @@ class TestOptionsFlowStep3:
         assert result4_dict["type"] == FlowResultType.FORM
         assert result4_dict["step_id"] == "5"
 
-        # Now complete step 5 to create entry
+        # Now complete step 5 to proceed to step 6
         result5 = await flow.async_step_5({})
         result5_dict = _as_dict(result5)
-        assert result5_dict["type"] == FlowResultType.CREATE_ENTRY
+        assert result5_dict["type"] == FlowResultType.FORM
+        assert result5_dict["step_id"] == "6"
 
-        data = result5_dict["data"]
+        # Now complete step 6 to create entry
+        result6 = await flow.async_step_6({})
+        result6_dict = _as_dict(result6)
+        assert result6_dict["type"] == FlowResultType.CREATE_ENTRY
+
+        data = result6_dict["data"]
         # First cover's azimuth should remain
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in data
         # Second cover's azimuth should be removed
@@ -386,13 +392,19 @@ class TestOptionsFlowIntegration:
         assert result4_dict["type"] == FlowResultType.FORM
         assert result4_dict["step_id"] == "5"
 
-        # Step 5: Submit night settings (creates entry)
+        # Step 5: Submit window sensors (now proceeds to step 6)
         result5 = await flow.async_step_5({})
         result5_dict = _as_dict(result5)
-        assert result5_dict["type"] == FlowResultType.CREATE_ENTRY
+        assert result5_dict["type"] == FlowResultType.FORM
+        assert result5_dict["step_id"] == "6"
+
+        # Step 6: Submit night settings (creates entry)
+        result6 = await flow.async_step_6({})
+        result6_dict = _as_dict(result6)
+        assert result6_dict["type"] == FlowResultType.CREATE_ENTRY
 
         # Verify updated configuration
-        data = result5_dict["data"]
+        data = result6_dict["data"]
         assert len(data[ConfKeys.COVERS.value]) == 2
         assert data[ConfKeys.SUN_ELEVATION_THRESHOLD.value] == 25
         assert data[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}"] == 270.0
@@ -438,8 +450,11 @@ class TestOptionsFlowIntegration:
         # Step 4: Continue (proceeds to step 5)
         await flow.async_step_4({})
 
-        # Step 5: Complete (creates entry)
-        result = await flow.async_step_5({})
+        # Step 5: Continue (proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete (creates entry)
+        result = await flow.async_step_6({})
 
         data = _as_dict(result)["data"]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in data
@@ -496,8 +511,11 @@ class TestOptionsFlowIntegration:
         # Step 4: Continue (proceeds to step 5)
         await flow.async_step_4({})
 
-        # Step 5: Complete flow
-        result = await flow.async_step_5({})
+        # Step 5: Continue (proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete flow
+        result = await flow.async_step_6({})
 
         data = _as_dict(result)["data"]
 
@@ -558,8 +576,11 @@ class TestOptionsFlowIntegration:
         # Step 4: Continue (proceeds to step 5)
         await flow.async_step_4({})
 
-        # Step 5: Complete flow
-        result = await flow.async_step_5({})
+        # Step 5: Continue (proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete flow
+        result = await flow.async_step_6({})
 
         data = _as_dict(result)["data"]
 
@@ -618,8 +639,11 @@ class TestOptionsFlowIntegration:
         # Step 4: Continue (proceeds to step 5)
         await flow.async_step_4({})
 
-        # Step 5: Complete flow
-        result = await flow.async_step_5({})
+        # Step 5: Continue (proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete flow
+        result = await flow.async_step_6({})
 
         data = _as_dict(result)["data"]
 
@@ -672,8 +696,11 @@ class TestOptionsFlowIntegration:
         # Step 4: Continue with cleared section (proceeds to step 5)
         await flow.async_step_4({"section_min_closure": {}})
 
-        # Step 5: Complete flow
-        result = await flow.async_step_5({})
+        # Step 5: Continue (proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete flow
+        result = await flow.async_step_6({})
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
@@ -723,8 +750,11 @@ class TestOptionsFlowIntegration:
         # Step 4: Continue with None section (proceeds to step 5)
         await flow.async_step_4({"section_min_closure": None})
 
-        # Step 5: Complete flow
-        result = await flow.async_step_5({})
+        # Step 5: Continue (proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete flow
+        result = await flow.async_step_6({})
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
@@ -846,7 +876,11 @@ class TestOptionsFlowHelperMethods:
 
             await flow.async_step_4({})
 
-            result = await flow.async_step_5({})
+            # Step 5: Continue (proceeds to step 6)
+            await flow.async_step_5({})
+
+            # Step 6: Complete flow
+            result = await flow.async_step_6({})
 
             # Check that debug message was logged
             assert "Options flow changed settings: none" in caplog.text

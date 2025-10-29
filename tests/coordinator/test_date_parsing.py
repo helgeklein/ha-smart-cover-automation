@@ -7,6 +7,7 @@ to improve test coverage for edge cases.
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
@@ -39,14 +40,14 @@ class TestDateParsingEdgeCases:
             },
         ]
 
-        result = mock_coordinator_basic._find_day_forecast(forecast_list)
+        result = mock_coordinator_basic._ha_interface._find_day_forecast(forecast_list)
         assert result is not None
         applicable_day, forecast = result
         # Should match whichever day is applicable based on current time
         assert applicable_day in ("today", "tomorrow")
         assert forecast["native_temperature"] == forecast_temp
 
-    @patch("custom_components.smart_cover_automation.coordinator.dt_util")
+    @patch("custom_components.smart_cover_automation.ha_interface.dt_util")
     def test_find_day_forecast_with_invalid_datetime_field(self, mock_dt_util: MagicMock, mock_coordinator_basic) -> None:
         """Test forecast parsing with invalid datetime fields."""
         # Set current time to use today's forecast
@@ -71,11 +72,11 @@ class TestDateParsingEdgeCases:
             },
         ]
 
-        result = mock_coordinator_basic._find_day_forecast(forecast_list)
+        result = mock_coordinator_basic._ha_interface._find_day_forecast(forecast_list)
         # When all date parsing fails, returns None (no more fallback)
         assert result is None
 
-    @patch("custom_components.smart_cover_automation.coordinator.dt_util")
+    @patch("custom_components.smart_cover_automation.ha_interface.dt_util")
     def test_find_day_forecast_no_datetime_field(self, mock_dt_util: MagicMock, mock_coordinator_basic) -> None:
         """Test forecast parsing when datetime field is missing."""
         # Set current time to use today's forecast
@@ -93,7 +94,7 @@ class TestDateParsingEdgeCases:
             },
         ]
 
-        result = mock_coordinator_basic._find_day_forecast(forecast_list)
+        result = mock_coordinator_basic._ha_interface._find_day_forecast(forecast_list)
         # When no datetime/date field is present, returns None
         assert result is None
 
@@ -113,13 +114,13 @@ class TestDateParsingEdgeCases:
             }
         ]
 
-        result = mock_coordinator_basic._find_day_forecast(forecast_list)
+        result = mock_coordinator_basic._ha_interface._find_day_forecast(forecast_list)
         assert result is not None
         applicable_day, forecast = result
         assert applicable_day in ("today", "tomorrow")  # Accept either depending on actual time
         assert forecast["native_temperature"] == forecast_temp
 
-    @patch("custom_components.smart_cover_automation.coordinator.dt_util")
+    @patch("custom_components.smart_cover_automation.ha_interface.dt_util")
     def test_find_day_forecast_with_mixed_date_formats(self, mock_dt_util: MagicMock, mock_coordinator_basic) -> None:
         """Test forecast parsing with mixed date formats."""
         # Set current time to use today's forecast
@@ -140,7 +141,7 @@ class TestDateParsingEdgeCases:
             },
         ]
 
-        result = mock_coordinator_basic._find_day_forecast(forecast_list)
+        result = mock_coordinator_basic._ha_interface._find_day_forecast(forecast_list)
         # When all date parsing fails, returns None
         assert result is None
 
@@ -148,35 +149,35 @@ class TestDateParsingEdgeCases:
         """Test temperature extraction with various edge cases."""
         # Test with invalid string temperatures that should return None
         forecast = {"native_temperature": "invalid"}
-        result = mock_coordinator_basic._extract_max_temperature(forecast)
+        result = mock_coordinator_basic._ha_interface._extract_max_temperature(forecast)
         assert result is None
 
         # Test with valid integer temperature
         forecast = {"native_temperature": 25}
-        result = mock_coordinator_basic._extract_max_temperature(forecast)
+        result = mock_coordinator_basic._ha_interface._extract_max_temperature(forecast)
         assert result == 25.0
 
         # Test with integer temperature
         forecast = {"temp_max": 26}
-        result = mock_coordinator_basic._extract_max_temperature(forecast)
+        result = mock_coordinator_basic._ha_interface._extract_max_temperature(forecast)
         assert result == 26.0
 
         # Test with non-numeric string
         forecast = {"native_temperature": "not_a_number"}
-        result = mock_coordinator_basic._extract_max_temperature(forecast)
+        result = mock_coordinator_basic._ha_interface._extract_max_temperature(forecast)
         assert result is None
 
         # Test with None values
         forecast = {"native_temperature": None}
-        result = mock_coordinator_basic._extract_max_temperature(forecast)
+        result = mock_coordinator_basic._ha_interface._extract_max_temperature(forecast)
         assert result is None
 
         # Test with list (invalid type)
         forecast = {"native_temperature": [25.0]}
-        result = mock_coordinator_basic._extract_max_temperature(forecast)
+        result = mock_coordinator_basic._ha_interface._extract_max_temperature(forecast)
         assert result is None
 
-    async def test_weather_forecast_missing_fields(self, mock_coordinator_basic) -> None:
+    async def test_weather_forecast_missing_fields(self, mock_coordinator_basic, caplog) -> None:
         """Test weather forecast handling with missing or invalid fields."""
         hass = MagicMock()
         hass.services = MagicMock()
@@ -208,9 +209,13 @@ class TestDateParsingEdgeCases:
             "cover.test": MagicMock(attributes={"current_position": 100, "supported_features": 15}),
         }.get(entity_id)
 
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         # Should complete update but with no valid temperature data
         await mock_coordinator_basic.async_refresh()
         result = mock_coordinator_basic.data
 
         # Should return empty result due to missing valid temperature
-        assert result == {"covers": {}, "message": "All covers unavailable; skipping actions"}
+        assert result == {"covers": {}}
+        assert "All covers unavailable; skipping actions" in caplog.text

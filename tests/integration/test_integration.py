@@ -21,6 +21,7 @@ Home Assistant environments.
 
 from __future__ import annotations
 
+import logging
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -97,7 +98,7 @@ class TestIntegrationScenarios:
         ],
     )
     async def test_temperature_automation_complete_cycle_parametrized(
-        self, temp: float, sun_elevation: float, sun_azimuth: float, current_pos: int, expected_pos: int, test_description: str
+        self, temp: float, sun_elevation: float, sun_azimuth: float, current_pos: int, expected_pos: int, test_description: str, caplog
     ) -> None:
         """
         Test complete temperature automation cycle with combined AND logic.
@@ -150,6 +151,9 @@ class TestIntegrationScenarios:
         hass.services.async_call.side_effect = original_side_effect
 
         # Execute automation and validate results
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
         result = coordinator.data
 
@@ -203,7 +207,7 @@ class TestIntegrationScenarios:
         ],
     )
     async def test_sun_automation_daily_cycle_parametrized(
-        self, elevation: float, azimuth: float, temp: float, expected_pos: int, test_description: str
+        self, elevation: float, azimuth: float, temp: float, expected_pos: int, test_description: str, caplog
     ) -> None:
         """
         Test sun automation through daily cycle with combined AND logic.
@@ -250,6 +254,9 @@ class TestIntegrationScenarios:
         }.get(entity_id)
 
         # Execute automation for current sun/temperature conditions
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
         result = coordinator.data
 
@@ -263,7 +270,7 @@ class TestIntegrationScenarios:
             f"{test_description}: Expected {expected_pos}, got {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}"
         )
 
-    async def test_error_recovery_scenarios(self) -> None:
+    async def test_error_recovery_scenarios(self, caplog) -> None:
         """
         Test critical error handling scenarios.
 
@@ -307,13 +314,17 @@ class TestIntegrationScenarios:
         }.get(entity_id)
 
         # Should handle missing sensor gracefully with warning message
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
         assert coordinator.last_exception is None  # No critical error should be raised
         # Verify that coordinator data contains the weather unavailable message
         assert coordinator.data is not None
-        assert "Weather data unavailable, skipping actions" in coordinator.data.get("message", "")
+        assert coordinator.data == {"covers": {}}
+        assert "Weather data unavailable, skipping actions" in caplog.text
 
-    async def test_configuration_validation(self) -> None:
+    async def test_configuration_validation(self, caplog) -> None:
         """
         Test configuration validation scenarios.
 
@@ -335,16 +346,17 @@ class TestIntegrationScenarios:
         coordinator = create_integration_coordinator(covers=[])
 
         # Should handle invalid configuration gracefully
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {
-            ConfKeys.COVERS.value: {},
-            "message": "No covers configured; skipping actions",
-        }  # Minimal valid state returned
+        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert "No covers configured; skipping actions" in caplog.text
 
     # Configuration validation complete
 
-    async def test_concurrent_cover_control(self) -> None:
+    async def test_concurrent_cover_control(self, caplog) -> None:
         """
         Test controlling multiple covers simultaneously.
 
@@ -405,6 +417,9 @@ class TestIntegrationScenarios:
         hass.services.async_call.reset_mock()
 
         # Execute automation for all covers simultaneously
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
         result = coordinator.data
 
@@ -423,7 +438,7 @@ class TestIntegrationScenarios:
         call_count = hass.services.async_call.call_count
         assert call_count > 0, "No service calls made for cover control"
 
-    async def test_mixed_cover_capabilities(self) -> None:
+    async def test_mixed_cover_capabilities(self, caplog) -> None:
         """
         Test handling covers with different capabilities.
 
@@ -490,6 +505,9 @@ class TestIntegrationScenarios:
         }.get(entity_id)
 
         # Execute automation and analyze service calls
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         await coordinator.async_refresh()
 
         # Analyze the service calls made for each cover type

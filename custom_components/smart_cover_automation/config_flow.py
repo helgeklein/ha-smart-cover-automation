@@ -237,6 +237,7 @@ class FlowHelper:
         Returns:
             Schema for step 4 form
         """
+
         schema_dict: dict[vol.Marker, object] = {}
 
         # Build schema dict for min closure positions and group inside collapsible section
@@ -269,6 +270,7 @@ class FlowHelper:
             suffix: Suffix to append to each cover entity ID for the key
             defaults: Dictionary to look up default values
         """
+
         schema_dict: dict[vol.Marker, object] = {}
 
         for cover in sorted(covers):
@@ -301,15 +303,81 @@ class FlowHelper:
     # build_schema_step_5
     #
     @staticmethod
-    def build_schema_step_5(resolved_settings: ResolvedConfig) -> vol.Schema:
-        """Build schema for step 5  settings.
+    def build_schema_step_5(covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
+        """Build schema for step 5: window sensors per cover.
+
+        Args:
+            covers: List of cover entity IDs
+            defaults: Dictionary to look up default values
+
+        Returns:
+            Schema for step 5 form
+        """
+
+        schema_dict: dict[vol.Marker, object] = {}
+
+        # Build schema dict for window sensors and group inside collapsible section
+        window_sensors_schema_dict = FlowHelper._build_schema_cover_entities(covers, const.COVER_SFX_WINDOW_SENSORS, defaults)
+        if window_sensors_schema_dict:
+            schema_dict[vol.Optional(const.STEP_5_SECTION_WINDOW_SENSORS)] = section(
+                vol.Schema(window_sensors_schema_dict),
+                {"collapsed": True},
+            )
+
+        return vol.Schema(schema_dict)
+
+    #
+    # _build_schema_cover_entities
+    #
+    @staticmethod
+    def _build_schema_cover_entities(covers: list[str], suffix: str, defaults: Mapping[str, Any]) -> dict[vol.Marker, object]:
+        """Helper to build schema for per-cover entity selection (e.g., associated window sensors).
+
+        Args:
+            covers: List of cover entity IDs
+            suffix: Suffix to append to each cover entity ID for the key
+            defaults: Dictionary to look up default values
+        """
+
+        schema_dict: dict[vol.Marker, object] = {}
+
+        for cover in sorted(covers):
+            # Build a key for storage
+            key = f"{cover}_{suffix}"
+
+            # Get the default value
+            raw = defaults.get(key)
+            default_value = raw if isinstance(raw, list) else []
+
+            # Entity selector for multiple binary sensors
+            value_selector = selector.EntitySelector(
+                selector.EntitySelectorConfig(
+                    domain=Platform.BINARY_SENSOR,
+                    multiple=True,
+                )
+            )
+
+            # Use default value for entity selector
+            key_marker = vol.Optional(key, default=default_value)
+
+            schema_dict[key_marker] = value_selector
+
+        return schema_dict
+
+    #
+    # build_schema_step_6
+    #
+    @staticmethod
+    def build_schema_step_6(resolved_settings: ResolvedConfig) -> vol.Schema:
+        """Build schema for step 6 settings.
 
         Args:
             resolved_settings: Resolved configuration with defaults
 
         Returns:
-            Schema for step 5 form
+            Schema for step 6 form
         """
+
         schema_dict: dict[vol.Marker, object] = {}
 
         # "Disable cover opening at night" (above the section)
@@ -348,7 +416,7 @@ class FlowHelper:
         ] = selector.TimeSelector()
 
         # Group time range settings in non-collapsed section
-        schema_dict[vol.Optional(const.STEP_5_SECTION_TIME_RANGE)] = section(
+        schema_dict[vol.Optional(const.STEP_6_SECTION_TIME_RANGE)] = section(
             vol.Schema(time_range_schema_dict),
             {"collapsed": False},
         )
@@ -562,6 +630,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         Returns:
             ConfigFlowResult to complete the options flow
         """
+
         # Get the selected covers
         covers_in_input = self._get_covers()
 
@@ -618,6 +687,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     #
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 1: Cover and weather entity selection."""
+
         # Get currently valid settings
         current_settings = self._current_settings()
         # Fill in defaults where there's no existing value
@@ -653,6 +723,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     #
     async def async_step_2(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 2: Configure azimuth for each cover."""
+
         if user_input is None:
             # Get currently valid settings
             current_settings = self._current_settings()
@@ -677,6 +748,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     #
     async def async_step_3(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 3: Configure sun position, cover behavior, and manual override duration."""
+
         if user_input is None:
             # Get currently valid settings
             current_settings = self._current_settings()
@@ -700,6 +772,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     #
     async def async_step_4(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 4: Configure max/min position for each cover."""
+
         if user_input is None:
             # Get currently valid settings
             current_settings = self._current_settings()
@@ -737,7 +810,43 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     # async_step_5
     #
     async def async_step_5(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 5: Configure night privacy and night silence settings."""
+        """Step 5: Configure window sensors for each cover."""
+
+        if user_input is None:
+            # Get currently valid settings
+            current_settings = self._current_settings()
+
+            # Get the selected covers
+            selected_covers = self._get_covers()
+
+            # Show the form
+            return self.async_show_form(
+                step_id="5",
+                data_schema=FlowHelper.build_schema_step_5(covers=selected_covers, defaults=current_settings),
+            )
+
+        const.LOGGER.debug(f"Options flow step 5 user input: {user_input}")
+
+        # Get the selected covers
+        covers_in_input = self._get_covers()
+
+        # Build complete lists of window sensor settings for all covers
+        window_sensor_data = self._build_section_cover_settings(
+            user_input, const.STEP_5_SECTION_WINDOW_SENSORS, const.COVER_SFX_WINDOW_SENSORS, covers_in_input
+        )
+
+        # Store the complete min and max per-cover settings
+        self._config_data.update(window_sensor_data)
+
+        # Proceed to step 5
+        return await self.async_step_6()
+
+    #
+    # async_step_6
+    #
+    async def async_step_6(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Step 6: Configure night privacy and night silence settings."""
+
         if user_input is None:
             # Get currently valid settings
             current_settings = self._current_settings()
@@ -746,17 +855,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             # Show the form
             return self.async_show_form(
-                step_id="5",
-                data_schema=FlowHelper.build_schema_step_5(resolved_settings),
+                step_id="6",
+                data_schema=FlowHelper.build_schema_step_6(resolved_settings),
             )
         else:
-            const.LOGGER.debug(f"Options flow step 5 user input: {user_input}")
+            const.LOGGER.debug(f"Options flow step 6 user input: {user_input}")
 
             # Extract section data if present
-            section_names = {const.STEP_5_SECTION_TIME_RANGE}
+            section_names = {const.STEP_6_SECTION_TIME_RANGE}
             user_input_extracted, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
 
-            # Store step 5 data (use extracted data to handle sections properly)
+            # Store step 6 data (use extracted data to handle sections properly)
             self._config_data.update(user_input_extracted)
 
             # Finalize and save configuration

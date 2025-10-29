@@ -14,7 +14,7 @@ from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFea
 from homeassistant.const import STATE_CLOSED, STATE_CLOSING, STATE_OPEN, STATE_OPENING
 
 from custom_components.smart_cover_automation import const
-from custom_components.smart_cover_automation.automation_engine import CoverAutomation
+from custom_components.smart_cover_automation.cover_automation import CoverAutomation
 
 
 @pytest.fixture
@@ -26,18 +26,14 @@ def cover_automation() -> CoverAutomation:
 
     config = {}
     cover_pos_history_mgr = MagicMock()
-    log_cover_result_callback = MagicMock()
-    set_cover_position_callback = MagicMock()
-    add_logbook_entry_callback = MagicMock()
+    ha_interface = MagicMock()
 
     return CoverAutomation(
         entity_id="cover.test",
         resolved=resolved_config,
         config=config,
         cover_pos_history_mgr=cover_pos_history_mgr,
-        log_cover_result_callback=log_cover_result_callback,
-        set_cover_position_callback=set_cover_position_callback,
-        add_logbook_entry_callback=add_logbook_entry_callback,
+        ha_interface=ha_interface,
     )
 
 

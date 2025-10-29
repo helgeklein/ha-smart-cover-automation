@@ -76,14 +76,14 @@ class TestLogbookEntries:
         with (
             patch.object(ha_entity_registry, "async_get", return_value=mock_registry),
             patch(
-                "custom_components.smart_cover_automation.coordinator.translation.async_get_translations", new_callable=AsyncMock
+                "custom_components.smart_cover_automation.ha_interface.translation.async_get_translations", new_callable=AsyncMock
             ) as mock_get_translations,
-            patch("custom_components.smart_cover_automation.coordinator.async_log_entry") as mock_log_entry,
+            patch("custom_components.smart_cover_automation.ha_interface.async_log_entry") as mock_log_entry,
         ):
             mock_get_translations.return_value = mock_translations
 
             # Execute
-            await mock_coordinator._add_logbook_entry_cover_movement(
+            await mock_coordinator._ha_interface.add_logbook_entry(
                 verb_key="verb_opening",
                 entity_id=MOCK_COVER_ENTITY_ID,
                 reason_key="reason_heat_protection",
@@ -116,15 +116,15 @@ class TestLogbookEntries:
         with (
             patch.object(ha_entity_registry, "async_get", return_value=mock_registry),
             patch(
-                "custom_components.smart_cover_automation.coordinator.translation.async_get_translations", new_callable=AsyncMock
+                "custom_components.smart_cover_automation.ha_interface.translation.async_get_translations", new_callable=AsyncMock
             ) as mock_get_translations,
-            patch("custom_components.smart_cover_automation.coordinator.async_log_entry") as mock_log_entry,
+            patch("custom_components.smart_cover_automation.ha_interface.async_log_entry") as mock_log_entry,
             patch.object(const.LOGGER, "warning") as mock_warning,
         ):
             mock_get_translations.return_value = mock_translations
 
             # Execute
-            await mock_coordinator._add_logbook_entry_cover_movement(
+            await mock_coordinator._ha_interface.add_logbook_entry(
                 verb_key="verb_opening",
                 entity_id=MOCK_COVER_ENTITY_ID,
                 reason_key="reason_heat_protection",
@@ -160,15 +160,15 @@ class TestLogbookEntries:
         with (
             patch.object(ha_entity_registry, "async_get", return_value=mock_registry),
             patch(
-                "custom_components.smart_cover_automation.coordinator.translation.async_get_translations", new_callable=AsyncMock
+                "custom_components.smart_cover_automation.ha_interface.translation.async_get_translations", new_callable=AsyncMock
             ) as mock_get_translations,
-            patch("custom_components.smart_cover_automation.coordinator.async_log_entry") as mock_log_entry,
+            patch("custom_components.smart_cover_automation.ha_interface.async_log_entry") as mock_log_entry,
             patch.object(const.LOGGER, "warning") as mock_warning,
         ):
             mock_get_translations.return_value = empty_translations
 
             # Execute
-            await mock_coordinator._add_logbook_entry_cover_movement(
+            await mock_coordinator._ha_interface.add_logbook_entry(
                 verb_key="verb_opening",
                 entity_id=MOCK_COVER_ENTITY_ID,
                 reason_key="reason_heat_protection",
@@ -201,14 +201,14 @@ class TestLogbookEntries:
         with (
             patch.object(ha_entity_registry, "async_get", return_value=mock_registry),
             patch(
-                "custom_components.smart_cover_automation.coordinator.translation.async_get_translations", new_callable=AsyncMock
+                "custom_components.smart_cover_automation.ha_interface.translation.async_get_translations", new_callable=AsyncMock
             ) as mock_get_translations,
-            patch("custom_components.smart_cover_automation.coordinator.async_log_entry") as mock_log_entry,
+            patch("custom_components.smart_cover_automation.ha_interface.async_log_entry") as mock_log_entry,
         ):
             mock_get_translations.return_value = mock_translations
 
             # Test opening
-            await mock_coordinator._add_logbook_entry_cover_movement(
+            await mock_coordinator._ha_interface.add_logbook_entry(
                 verb_key="verb_opening",
                 entity_id=MOCK_COVER_ENTITY_ID,
                 reason_key="reason_let_light_in",
@@ -224,7 +224,7 @@ class TestLogbookEntries:
             mock_log_entry.reset_mock()
 
             # Test closing
-            await mock_coordinator._add_logbook_entry_cover_movement(
+            await mock_coordinator._ha_interface.add_logbook_entry(
                 verb_key="verb_closing",
                 entity_id=MOCK_COVER_ENTITY_ID,
                 reason_key="reason_heat_protection",
@@ -252,7 +252,7 @@ class TestLogbookEntries:
             patch.object(const.LOGGER, "debug") as mock_debug,
         ):
             # Execute - should not raise exception
-            await mock_coordinator._add_logbook_entry_cover_movement(
+            await mock_coordinator._ha_interface.add_logbook_entry(
                 verb_key="verb_opening",
                 entity_id=MOCK_COVER_ENTITY_ID,
                 reason_key="reason_heat_protection",
@@ -286,16 +286,16 @@ class TestLogbookEntries:
         with (
             patch.object(ha_entity_registry, "async_get", return_value=mock_registry),
             patch(
-                "custom_components.smart_cover_automation.coordinator.translation.async_get_translations", new_callable=AsyncMock
+                "custom_components.smart_cover_automation.ha_interface.translation.async_get_translations", new_callable=AsyncMock
             ) as mock_get_translations,
-            patch("custom_components.smart_cover_automation.coordinator.async_log_entry") as mock_log_entry,
+            patch("custom_components.smart_cover_automation.ha_interface.async_log_entry") as mock_log_entry,
         ):
             mock_get_translations.return_value = mock_translations
 
             for position in positions:
                 mock_log_entry.reset_mock()
 
-                await mock_coordinator._add_logbook_entry_cover_movement(
+                await mock_coordinator._ha_interface.add_logbook_entry(
                     verb_key="verb_opening",
                     entity_id=MOCK_COVER_ENTITY_ID,
                     reason_key="reason_let_light_in",
@@ -336,14 +336,14 @@ class TestLogbookEntries:
         with (
             patch.object(ha_entity_registry, "async_get", return_value=mock_registry),
             patch(
-                "custom_components.smart_cover_automation.coordinator.translation.async_get_translations", new_callable=AsyncMock
+                "custom_components.smart_cover_automation.ha_interface.translation.async_get_translations", new_callable=AsyncMock
             ) as mock_get_translations,
-            patch("custom_components.smart_cover_automation.coordinator.async_log_entry") as mock_log_entry,
+            patch("custom_components.smart_cover_automation.ha_interface.async_log_entry") as mock_log_entry,
         ):
             mock_get_translations.return_value = german_translations
 
             # Execute
-            await mock_coordinator._add_logbook_entry_cover_movement(
+            await mock_coordinator._ha_interface.add_logbook_entry(
                 verb_key="verb_opening",
                 entity_id=MOCK_COVER_ENTITY_ID,
                 reason_key="reason_heat_protection",

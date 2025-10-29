@@ -16,7 +16,6 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
-    COVER_ATTR_MESSAGE,
     COVER_ATTR_POS_TARGET_DESIRED,
     COVER_SFX_AZIMUTH,
     HA_WEATHER_COND_PARTCLOUDY,
@@ -265,54 +264,3 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
             f"Max closure: {max_closure}%, Min closure: {min_closure}%\n"
             f"Expected position: {expected_position}%, Got: {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}%"
         )
-
-    async def test_combined_missing_direction_uses_temp_only(
-        self,
-        mock_hass: MagicMock,
-        mock_sun_state: MagicMock,
-        mock_cover_state: MagicMock,
-        mock_temperature_state: MagicMock,
-    ) -> None:
-        """Test behavior when sun direction configuration is missing.
-
-        Validates that covers without sun direction configuration are excluded
-        from combined automation processing, even when temperature conditions
-        would normally trigger actions. This ensures proper configuration
-        validation and error handling.
-
-        Test scenario:
-        - Temperature: Hot (would normally trigger closure)
-        - Sun: Direct conditions available
-        - Cover configuration: Missing direction/azimuth setting
-        - Expected: Cover skipped from automation (missing config)
-        """
-        # Set weather forecast temperature to hot for this test
-        set_weather_forecast_temp(float(mock_temperature_state.state))
-
-        config = {
-            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
-            ConfKeys.TEMP_THRESHOLD.value: 24.0,
-            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
-            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
-            # Intentionally omit direction key
-        }
-        config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
-
-        mock_temperature_state.state = TEST_HOT_TEMP
-        mock_sun_state.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
-        mock_cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_OPEN
-
-        state_mapping = create_combined_state_mock(
-            cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
-        )
-        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
-
-        await coordinator.async_refresh()
-        result = coordinator.data
-
-        # Cover should be present with error due to missing direction
-        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert COVER_ATTR_MESSAGE in cover_data
-        assert "invalid or missing azimuth" in cover_data[COVER_ATTR_MESSAGE]

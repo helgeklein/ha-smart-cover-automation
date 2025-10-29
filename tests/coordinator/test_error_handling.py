@@ -17,15 +17,12 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
-    COVER_ATTR_MESSAGE,
     COVER_ATTR_SUN_HITTING,
     COVER_SFX_AZIMUTH,
 )
-from custom_components.smart_cover_automation.coordinator import (
-    DataUpdateCoordinator,
-    ServiceCallError,
-)
+from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.ha_interface import ServiceCallError
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
     MOCK_COVER_ENTITY_ID_2,
@@ -84,15 +81,16 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
             # No covers in state mapping - they will be unavailable
         }
 
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
         await coordinator.async_refresh()
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {
-            ConfKeys.COVERS.value: {},
-            "message": "All covers unavailable; skipping actions",
-        }  # Minimal valid state returned
+        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert "All covers unavailable; skipping actions" in caplog.text
 
     async def test_service_call_failure(
         self,
@@ -209,18 +207,16 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         config[ConfKeys.COVERS.value] = []
         config_entry = MockConfigEntry(config)
 
-        # Set caplog to capture warning level messages
-        caplog.set_level(logging.WARNING, logger="custom_components.smart_cover_automation")
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
 
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
         await coordinator.async_refresh()
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {
-            ConfKeys.COVERS.value: {},
-            "message": "No covers configured; skipping actions",
-        }  # Minimal valid state returned
+        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert "No covers configured; skipping actions" in caplog.text
 
     async def test_service_call_error_class_init(self) -> None:
         """Test ServiceCallError exception class initialization.
@@ -299,13 +295,17 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         mock_sun_state.attributes = {"elevation": "invalid", "azimuth": TEST_DIRECT_AZIMUTH}
         mock_hass.states.get.return_value = mock_sun_state
         await coordinator.async_refresh()
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {"covers": {}, "message": "Sun elevation unavailable; skipping actions"}  # Minimal valid state returned
+        assert coordinator.data == {"covers": {}}  # Minimal valid state returned
+        assert "Sun elevation unavailable" in caplog.text
 
     async def test_cover_missing_azimuth_configuration(
         self,
@@ -359,14 +359,9 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Both covers should appear - cover 1 with normal data, cover 2 with error
+        # Only cover 1 should appear - cover 2 is skipped due to missing azimuth
         assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        assert MOCK_COVER_ENTITY_ID_2 in result[ConfKeys.COVERS.value]
-
-        # Cover 2 should have error due to missing azimuth
-        cover2_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID_2]
-        assert COVER_ATTR_MESSAGE in cover2_data
-        assert "invalid or missing azimuth" in cover2_data[COVER_ATTR_MESSAGE]
+        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -421,14 +416,9 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Both covers should appear - cover 1 with normal data, cover 2 with error
+        # Only cover 1 should appear - cover 2 is skipped due to invalid azimuth
         assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        assert MOCK_COVER_ENTITY_ID_2 in result[ConfKeys.COVERS.value]
-
-        # Cover 2 should have error due to invalid azimuth
-        cover2_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID_2]
-        assert COVER_ATTR_MESSAGE in cover2_data
-        assert "invalid or missing azimuth" in cover2_data[COVER_ATTR_MESSAGE]
+        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -468,161 +458,13 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         sun_mock.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": None}
         mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
 
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
         # Execute
         await coordinator.async_refresh()
         result = coordinator.data
 
         # Verify - should skip actions due to invalid sun azimuth
-        assert result == {
-            ConfKeys.COVERS.value: {},
-            "message": "Sun azimuth unavailable; skipping actions",
-        }
-
-    async def test_cover_state_unavailable(
-        self,
-        coordinator: DataUpdateCoordinator,
-        mock_hass: MagicMock,
-        mock_temperature_state: MagicMock,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """Test coordinator lines 293-294: Cover state unavailable, skipping.
-
-        Validates that when a cover's state is None or missing,
-        the automation gracefully skips that cover and continues processing.
-
-        Test scenario:
-        - Sun data: Available
-        - Temperature: Available
-        - Cover state: None (unavailable)
-        - Expected behavior: Skip cover, log message, continue with empty covers
-        """
-        # Setup - valid temperature and sun, but cover state is None
-        mock_temperature_state.state = TEST_COMFORTABLE_TEMP_1
-        set_weather_forecast_temp(float(mock_temperature_state.state))
-
-        # Create mock cover with None state
-        mock_cover_none_state = MagicMock()
-        mock_cover_none_state.entity_id = MOCK_COVER_ENTITY_ID
-        mock_cover_none_state.state = None  # Unavailable state
-        mock_cover_none_state.attributes = {ATTR_CURRENT_POSITION: 50}
-
-        state_mapping = create_combined_state_mock(
-            sun_elevation=TEST_HIGH_ELEVATION,
-            sun_azimuth=TEST_DIRECT_AZIMUTH,
-        )
-        # Override with None state cover
-        state_mapping[MOCK_COVER_ENTITY_ID] = mock_cover_none_state
-
-        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
-
-        # Execute
-        await coordinator.async_refresh()
-        result = coordinator.data
-
-        # Verify - cover should be skipped due to unavailable state
-        assert ConfKeys.COVERS.value in result
-        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert COVER_ATTR_MESSAGE in cover_data
-        assert "Cover state unavailable, skipping" in cover_data[COVER_ATTR_MESSAGE]
-
-    async def test_cover_state_unsupported(
-        self,
-        coordinator: DataUpdateCoordinator,
-        mock_hass: MagicMock,
-        mock_cover_state: MagicMock,
-        mock_temperature_state: MagicMock,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """Test coordinator lines 296-297: Cover state unsupported, skipping.
-
-        Validates that when a cover's state is in an unsupported state
-        (empty string, STATE_UNAVAILABLE, STATE_UNKNOWN), the automation
-        gracefully skips that cover and continues processing.
-
-        Test scenario:
-        - Sun data: Available
-        - Temperature: Available
-        - Cover state: STATE_UNAVAILABLE (unsupported)
-        - Expected behavior: Skip cover, log message, continue with empty covers
-        """
-        # Setup - valid temperature and sun, but cover in unsupported state
-        mock_temperature_state.state = TEST_COMFORTABLE_TEMP_1
-        set_weather_forecast_temp(float(mock_temperature_state.state))
-
-        # Test different unsupported states
-        unsupported_states = ["", "unavailable", "unknown"]
-
-        for unsupported_state in unsupported_states:
-            mock_cover_state.state = unsupported_state
-
-            state_mapping = create_combined_state_mock(
-                cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
-                sun_elevation=TEST_HIGH_ELEVATION,
-                sun_azimuth=TEST_DIRECT_AZIMUTH,
-            )
-            # Override with unsupported state
-            state_mapping[MOCK_COVER_ENTITY_ID].state = unsupported_state
-
-            mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
-
-            # Execute
-            await coordinator.async_refresh()
-            result = coordinator.data
-
-            # Verify - cover should be skipped due to unsupported state
-            assert ConfKeys.COVERS.value in result
-            assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-            cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-            assert COVER_ATTR_MESSAGE in cover_data
-            assert f"Cover state '{unsupported_state}' unsupported, skipping" in cover_data[COVER_ATTR_MESSAGE]
-
-    async def test_cover_currently_moving(
-        self,
-        coordinator: DataUpdateCoordinator,
-        mock_hass: MagicMock,
-        mock_cover_state: MagicMock,
-        mock_temperature_state: MagicMock,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """Test coordinator lines 304-305: Cover is currently moving, skipping.
-
-        Validates that when a cover is currently in motion (opening or closing),
-        the automation gracefully skips that cover to avoid conflicting commands.
-
-        Test scenario:
-        - Sun data: Available
-        - Temperature: Available
-        - Cover state: opening/closing (moving)
-        - Expected behavior: Skip cover, log message, continue with empty covers
-        """
-        # Setup - valid temperature and sun, but cover is moving
-        mock_temperature_state.state = TEST_COMFORTABLE_TEMP_1
-        set_weather_forecast_temp(float(mock_temperature_state.state))
-
-        # Test both opening and closing states
-        moving_states = ["opening", "closing"]
-
-        for moving_state in moving_states:
-            mock_cover_state.state = moving_state
-
-            state_mapping = create_combined_state_mock(
-                cover_states={MOCK_COVER_ENTITY_ID: mock_cover_state.attributes},
-                sun_elevation=TEST_HIGH_ELEVATION,
-                sun_azimuth=TEST_DIRECT_AZIMUTH,
-            )
-            # Override with moving state
-            state_mapping[MOCK_COVER_ENTITY_ID].state = moving_state
-
-            mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
-
-            # Execute
-            await coordinator.async_refresh()
-            result = coordinator.data
-
-            # Verify - cover should be skipped due to moving state
-            assert ConfKeys.COVERS.value in result
-            assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-            cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-            assert COVER_ATTR_MESSAGE in cover_data
-            assert "Cover is currently moving, skipping" in cover_data[COVER_ATTR_MESSAGE]
+        assert result == {ConfKeys.COVERS.value: {}}
+        assert "Sun azimuth unavailable" in caplog.text

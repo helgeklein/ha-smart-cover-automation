@@ -48,8 +48,8 @@ class TestEdgeCases(TestDataUpdateCoordinatorBase):
         config: dict[str, Any] = {}
         config_entry = MockConfigEntry(config)
 
-        # Set caplog to capture warning level messages
-        caplog.set_level(logging.WARNING, logger="custom_components.smart_cover_automation")
+        # Set caplog to capture INFO level messages
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
 
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
 
@@ -57,10 +57,8 @@ class TestEdgeCases(TestDataUpdateCoordinatorBase):
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {
-            ConfKeys.COVERS.value: {},
-            "message": "No covers configured; skipping actions",
-        }  # Minimal valid state returned
+        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert "No covers configured; skipping actions" in caplog.text
 
     async def test_angle_calculation_utility(
         self,

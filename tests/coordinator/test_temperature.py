@@ -32,8 +32,8 @@ class TestGetMaxTemperature:
 
     async def test_get_temp_from_weather_forecast(self, mock_hass: MagicMock, coordinator: DataUpdateCoordinator):
         """Test getting temperature from a weather entity's forecast."""
-        with patch.object(coordinator, "_get_forecast_max_temp", new_callable=AsyncMock, return_value=30.0) as mock_forecast:
-            temp = await coordinator._get_max_temperature(WEATHER_ENTITY_ID)
+        with patch.object(coordinator._ha_interface, "_get_forecast_max_temp", new_callable=AsyncMock, return_value=30.0) as mock_forecast:
+            temp = await coordinator._ha_interface.get_max_temperature(WEATHER_ENTITY_ID)
             assert temp == 30.0
             mock_forecast.assert_awaited_once_with(WEATHER_ENTITY_ID)
 
@@ -41,7 +41,7 @@ class TestGetMaxTemperature:
         """Test that WeatherEntityNotFoundError is raised for a missing entity."""
         mock_hass.states.get.return_value = None
         with pytest.raises(WeatherEntityNotFoundError):
-            await coordinator._get_max_temperature("sensor.non_existent")
+            await coordinator._ha_interface.get_max_temperature("sensor.non_existent")
 
     async def test_invalid_sensor_state(self, mock_hass: MagicMock, coordinator: DataUpdateCoordinator):
         """Test that InvalidSensorReadingError is raised for a non-numeric state."""
@@ -65,7 +65,7 @@ class TestGetMaxTemperature:
         # The method should now find the weather entity and try to get forecast
         # Since the weather service mock returns forecast data, it should succeed
         # Let's check that it doesn't raise the old InvalidSensorReadingError
-        result = await coordinator._get_max_temperature(SENSOR_ENTITY_ID)
+        result = await coordinator._ha_interface.get_max_temperature(SENSOR_ENTITY_ID)
         assert isinstance(result, float)
 
 
@@ -78,7 +78,7 @@ class TestGetForecastMaxTemp:
 
         forecast_response = {WEATHER_ENTITY_ID: {"forecast": [create_forecast_with_applicable_date(28.0)]}}
         mock_hass.services.async_call = AsyncMock(return_value=forecast_response)
-        temp = await coordinator._get_forecast_max_temp(WEATHER_ENTITY_ID)
+        temp = await coordinator._ha_interface._get_forecast_max_temp(WEATHER_ENTITY_ID)
         assert temp == 28.0
         mock_hass.services.async_call.assert_awaited_once_with(
             Platform.WEATHER, SERVICE_GET_FORECASTS, {"entity_id": WEATHER_ENTITY_ID, "type": "daily"}, blocking=True, return_response=True
@@ -87,7 +87,7 @@ class TestGetForecastMaxTemp:
     async def test_service_call_error(self, mock_hass: MagicMock, coordinator: DataUpdateCoordinator):
         """Test handling of HomeAssistantError during service call."""
         mock_hass.services.async_call = AsyncMock(side_effect=HomeAssistantError("Service not found"))
-        temp = await coordinator._get_forecast_max_temp(WEATHER_ENTITY_ID)
+        temp = await coordinator._ha_interface._get_forecast_max_temp(WEATHER_ENTITY_ID)
         assert temp is None
 
     @pytest.mark.parametrize(
@@ -103,11 +103,11 @@ class TestGetForecastMaxTemp:
     async def test_invalid_forecast_response(self, mock_hass: MagicMock, coordinator: DataUpdateCoordinator, response: Any):
         """Test handling of various invalid forecast responses."""
         mock_hass.services.async_call = AsyncMock(return_value=response)
-        temp = await coordinator._get_forecast_max_temp(WEATHER_ENTITY_ID)
+        temp = await coordinator._ha_interface._get_forecast_max_temp(WEATHER_ENTITY_ID)
         assert temp is None
 
 
-@patch("custom_components.smart_cover_automation.coordinator.dt_util")
+@patch("custom_components.smart_cover_automation.ha_interface.dt_util")
 class TestFindTodayForecast:
     """Tests for the _find_day_forecast method."""
 
@@ -121,7 +121,7 @@ class TestFindTodayForecast:
         tomorrow_forecast = {"datetime": (today + timedelta(days=1)).isoformat(), "native_temperature": 20}
 
         forecast_list = [yesterday_forecast, today_forecast, tomorrow_forecast]
-        result = coordinator._find_day_forecast(forecast_list)
+        result = coordinator._ha_interface._find_day_forecast(forecast_list)
         assert result is not None
         applicable_day, forecast = result
         assert applicable_day == "today"
@@ -133,7 +133,7 @@ class TestFindTodayForecast:
         mock_dt_util.now.return_value = today
 
         forecast_list = [{"date": today.isoformat(), "native_temperature": 15}]
-        result = coordinator._find_day_forecast(forecast_list)
+        result = coordinator._ha_interface._find_day_forecast(forecast_list)
         assert result is not None
         applicable_day, forecast = result
         assert applicable_day == "today"
@@ -148,7 +148,7 @@ class TestFindTodayForecast:
         day_before_forecast = {"datetime": (today - timedelta(days=2)).isoformat(), "native_temperature": 5}
 
         forecast_list = [yesterday_forecast, day_before_forecast]
-        result = coordinator._find_day_forecast(forecast_list)
+        result = coordinator._ha_interface._find_day_forecast(forecast_list)
         # No fallback - returns None when no matching date is found
         assert result is None
 
@@ -164,7 +164,7 @@ class TestFindTodayForecast:
     def test_edge_cases(self, mock_dt_util: MagicMock, coordinator: DataUpdateCoordinator, forecast_list: Any, expected: Any):
         """Test edge cases like empty lists or invalid data."""
         mock_dt_util.now.return_value = datetime(2023, 1, 1, tzinfo=timezone.utc)
-        result = coordinator._find_day_forecast(forecast_list)
+        result = coordinator._ha_interface._find_day_forecast(forecast_list)
         assert result == expected
 
 
@@ -182,13 +182,13 @@ class TestExtractMaxTemperature:
     def test_extract_from_valid_fields(self, coordinator: DataUpdateCoordinator, field_name: str, temp_value: float):
         """Test extraction from various valid temperature fields."""
         forecast = {field_name: temp_value, "other_field": 99}
-        result = coordinator._extract_max_temperature(forecast)
+        result = coordinator._ha_interface._extract_max_temperature(forecast)
         assert result == temp_value
 
     def test_no_valid_field_found(self, coordinator: DataUpdateCoordinator):
         """Test that it returns None if no valid temperature field is found."""
         forecast = {"temperature_other": 25, "condition": HA_WEATHER_COND_SUNNY}
-        result = coordinator._extract_max_temperature(forecast)
+        result = coordinator._ha_interface._extract_max_temperature(forecast)
         assert result is None
 
     @pytest.mark.parametrize(
@@ -201,5 +201,5 @@ class TestExtractMaxTemperature:
     )
     def test_invalid_input(self, coordinator: DataUpdateCoordinator, forecast: Any):
         """Test with invalid input types."""
-        result = coordinator._extract_max_temperature(forecast)
+        result = coordinator._ha_interface._extract_max_temperature(forecast)
         assert result is None

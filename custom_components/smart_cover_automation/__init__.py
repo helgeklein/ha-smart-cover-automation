@@ -102,7 +102,7 @@ async def _handle_logbook_entry_service(hass: HomeAssistant, call: ServiceCall) 
         LOGGER.warning("Logbook service could not locate an active coordinator")
         return
 
-    await coordinator_for_call._add_logbook_entry_cover_movement(
+    await coordinator_for_call._ha_interface.add_logbook_entry(
         verb_key=verb_key,
         entity_id=entity_id,
         reason_key=reason_key,
