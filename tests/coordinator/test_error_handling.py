@@ -358,9 +358,9 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Both covers should appear - cover 1 with normal data, cover 2 with error
+        # Only cover 1 should appear - cover 2 is skipped due to missing azimuth
         assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        assert MOCK_COVER_ENTITY_ID_2 in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
@@ -415,9 +415,9 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Both covers should appear - cover 1 with normal data, cover 2 with error
+        # Only cover 1 should appear - cover 2 is skipped due to invalid azimuth
         assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        assert MOCK_COVER_ENTITY_ID_2 in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID_2 not in result[ConfKeys.COVERS.value]
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]

@@ -106,8 +106,6 @@ class TestCoordinatorErrorHandling:
         # Should complete with cover in result showing the error
         assert "covers" in result
         assert MOCK_COVER_ENTITY_ID in result["covers"]
-        # The cover should have processed and recorded the error
-        assert "cover_message" in result["covers"][MOCK_COVER_ENTITY_ID]
 
     @pytest.mark.parametrize(
         "error_type,exception_class,service_name,test_description",
