@@ -1,5 +1,13 @@
 # This workflow runs tests and integration checks for the project.
 # The name configured here shows up on the badge in the README.
+#
+# Note: To enable automatic coverage badge updates on protected branches:
+# 1) create a fine-grained Personal Access Token (PAT) with the permission
+#   'contents: read and write'
+# 2) add your role (e.g., admin) as a bypass in the branch protection rule
+# 3) add the PAT as a repository secret named 'PAT_TOKEN'.
+# Without this, the badge will only update manually or the branch protection
+# rules must allow GitHub Actions to bypass status checks for commits with [skip ci].
 name: Tests
 
 on:
@@ -20,7 +28,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -55,7 +63,7 @@ jobs:
             git commit -m "Update coverage badge [skip ci]"
             git push
           fi
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.PAT_TOKEN != ''
 
   integration-test:
     name: Integration Test
