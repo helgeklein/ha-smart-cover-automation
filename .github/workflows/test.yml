@@ -63,7 +63,7 @@ jobs:
             git commit -m "Update coverage badge [skip ci]"
             git push
           fi
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.PAT_TOKEN != ''
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
   integration-test:
     name: Integration Test
