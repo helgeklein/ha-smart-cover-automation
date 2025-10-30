@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Passo 1 di 5",
+                "title": "Smart Cover Automation - Passo 1 di 6",
                 "description": "Seleziona un sensore di previsione meteo e le tapparelle da automatizzare (obbligatorio).",
                 "data": {
                     "covers": "Tapparelle da automatizzare:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Passo 2 di 5",
+                "title": "Smart Cover Automation - Passo 2 di 6",
                 "description": "Configura l'**azimut** (direzione) per ciascuna tapparella (obbligatorio).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)"
             },
             "3": {
-                "title": "Smart Cover Automation - Passo 3 di 5",
+                "title": "Smart Cover Automation - Passo 3 di 6",
                 "description": "Configura impostazioni aggiuntive (opzionale).\n\nQuesto passaggio è contrassegnato come opzionale perché i valori predefiniti dovrebbero andare bene per la maggior parte degli utenti.",
                 "data": {
                     "covers_max_closure": "Posizione massima della tapparella:",
@@ -52,8 +52,8 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Passo 4 di 5",
-                "description": "Configura le posizioni **min/max** per ciascuna tapparella (opzionale).\n\nSe non vengono impostati valori, verranno utilizzati quelli globali configurati nel passaggio precedente.",
+                "title": "Smart Cover Automation - Passo 4 di 6",
+                "description": "Configura le posizioni **min/max** per ciascuna tapparella (opzionale). Se non vengono impostati valori, verranno utilizzati quelli globali configurati nel passaggio precedente.\n\n(0 = completamente chiusa, 100 = completamente aperta)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Posizioni massime della tapparella"
@@ -64,7 +64,16 @@
                 }
             },
             "5": {
-                "title": "Smart Cover Automation - Passo 5 di 5",
+                "title": "Smart Cover Automation - Passo 5 di 6",
+                "description": "Attiva la protezione anti-blocco configurando **sensori finestra** per ciascuna tapparella (opzionale). Se un sensore finestra associato a una tapparella segnala che la finestra è aperta, la tapparella non verrà chiusa.",
+                "sections": {
+                    "section_window_sensors": {
+                        "name": "Sensori finestra"
+                    }
+                }
+            },
+            "6": {
+                "title": "Smart Cover Automation - Passo 6 di 6",
                 "description": "Configura **eccezioni di orario** per l'automazione (opzionale).",
                 "data": {
                     "nighttime_block_opening": "Disattiva l'apertura delle tapparelle di notte:"

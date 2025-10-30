@@ -31,7 +31,7 @@ async def test_automation_disabled_time_range_sensor_disabled(mock_hass_with_spe
     """
     # Create coordinator
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Disable automation_disabled_time_range in config
     mock_config_entry_basic.runtime_data.coordinator = coordinator
@@ -71,7 +71,7 @@ async def test_automation_disabled_time_range_sensor_enabled_default_times(mock_
     """
     # Create coordinator
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Enable automation_disabled_time_range with default times (22:00-06:00)
     mock_config_entry_basic.runtime_data.coordinator = coordinator
@@ -112,7 +112,7 @@ async def test_automation_disabled_time_range_sensor_enabled_custom_times(mock_h
     """
     # Create coordinator
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Enable automation_disabled_time_range with custom times
     mock_config_entry_basic.runtime_data.coordinator = coordinator
@@ -153,7 +153,7 @@ async def test_automation_disabled_time_range_sensor_enabled_edge_times(mock_has
     """
     # Create coordinator
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Enable automation_disabled_time_range with edge case times (00:05-09:09)
     mock_config_entry_basic.runtime_data.coordinator = coordinator

@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Paso 1 de 5",
+                "title": "Smart Cover Automation - Paso 1 de 6",
                 "description": "Seleccione un sensor de previsión meteorológica y las persianas a automatizar (obligatorio).",
                 "data": {
                     "covers": "Persianas a automatizar:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Paso 2 de 5",
+                "title": "Smart Cover Automation - Paso 2 de 6",
                 "description": "Configure el **azimut** (dirección) de cada persiana (obligatorio).\n\n(0°=Norte, 90°=Este, 180°=Sur, 270°=Oeste)"
             },
             "3": {
-                "title": "Smart Cover Automation - Paso 3 de 5",
+                "title": "Smart Cover Automation - Paso 3 de 6",
                 "description": "Configure ajustes adicionales (opcional).\n\nEste paso se marca como opcional porque los valores predeterminados deberían funcionar bien para la mayoría de los usuarios.",
                 "data": {
                     "covers_max_closure": "Posición máxima de la persiana:",
@@ -52,8 +52,8 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Paso 4 de 5",
-                "description": "Configura las posiciones **mín./máx.** para cada persiana (opcional).\n\nSi no se definen, se usarán los valores globales configurados en el paso anterior.",
+                "title": "Smart Cover Automation - Paso 4 de 6",
+                "description": "Configura las posiciones **mín./máx.** para cada persiana (opcional). Si no se definen, se usarán los valores globales configurados en el paso anterior.\n\n(0 = totalmente cerrada, 100 = totalmente abierta)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Posiciones máximas de la persiana"
@@ -64,7 +64,16 @@
                 }
             },
             "5": {
-                "title": "Smart Cover Automation - Paso 5 de 5",
+                "title": "Smart Cover Automation - Paso 5 de 6",
+                "description": "Activa la protección contra bloqueo configurando **sensores de ventana** para cada persiana (opcional). Si algún sensor de ventana asociado a una persiana indica que la ventana está abierta, la persiana no se cerrará.",
+                "sections": {
+                    "section_window_sensors": {
+                        "name": "Sensores de ventana"
+                    }
+                }
+            },
+            "6": {
+                "title": "Smart Cover Automation - Paso 6 de 6",
                 "description": "Configure **excepciones de tiempo** para la automatización (opcional).",
                 "data": {
                     "nighttime_block_opening": "Desactivar la apertura de persianas por la noche:"
@@ -95,7 +104,7 @@
             "automation_disabled_time_range": {
                 "name": "Automatización: intervalo desactivado",
                 "state": {
-                    "off": "Apagado"
+                    "off": "Desactivado"
                 }
             },
             "sun_azimuth": {

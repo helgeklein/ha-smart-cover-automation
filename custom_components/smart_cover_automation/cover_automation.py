@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from enum import Enum
+from typing import TYPE_CHECKING, Any, assert_never
 
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
 from homeassistant.const import (
@@ -25,6 +26,13 @@ from .util import to_float_or_none, to_int_or_none
 
 if TYPE_CHECKING:
     from homeassistant.core import State
+
+
+class CoverMovementReason(Enum):
+    """Encapsulates cover movement and reason."""
+
+    CLOSING_HEAT_PROTECTION = "closing_heat_protection"
+    OPENING_LET_LIGHT_IN = "opening_let_light_in"
 
 
 @dataclass
@@ -72,7 +80,7 @@ class CoverAutomation:
     #
     # process
     #
-    async def process(self, state: State | None, sensor_data: SensorData) -> dict[str, Any] | None:
+    async def process(self, state: State | None, sensor_data: SensorData) -> dict[str, Any]:
         """Process automation for this cover.
 
         Args:
@@ -80,30 +88,40 @@ class CoverAutomation:
             sensor_data: Gathered sensor data
 
         Returns:
-            Dictionary of cover attributes or None if cover should be skipped
+            Dictionary of cover attributes
         """
 
         cover_attrs: dict[str, Any] = {}
 
-        # Validate cover azimuth
-        cover_azimuth = self._get_cover_azimuth(cover_attrs)
+        # Get cover azimuth
+        cover_azimuth = self._get_cover_azimuth()
         if cover_azimuth is None:
-            return None
+            return cover_attrs
+        else:
+            cover_attrs[const.COVER_ATTR_COVER_AZIMUTH] = cover_azimuth
 
         # Validate cover state
-        if not self._validate_cover_state(state, cover_attrs):
-            return None
+        if not self._validate_cover_state(state):
+            return cover_attrs
+        else:
+            # At this point, we know state is not None due to validation (type narrowing for type checkers)
+            assert state is not None
+            cover_attrs[const.COVER_ATTR_STATE] = state.state
 
         # Check if cover is moving
-        if self._is_cover_moving(state):  # type: ignore[arg-type]
-            return None
+        if self._is_cover_moving(state):
+            return cover_attrs
 
-        # Get cover features and position
-        features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)  # type: ignore[union-attr]
+        # Get cover features
+        features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
         cover_attrs[const.COVER_ATTR_SUPPORTED_FEATURES] = features
 
-        current_pos = self._get_cover_position(state, features)  # type: ignore[arg-type]
-        cover_attrs[const.COVER_ATTR_POS_CURRENT] = current_pos
+        # Get cover position
+        success, current_pos = self._get_cover_position(state, features)
+        if not success:
+            return cover_attrs
+        else:
+            cover_attrs[const.COVER_ATTR_POS_CURRENT] = current_pos
 
         # Check for manual override
         if self._check_manual_override(current_pos):
@@ -115,17 +133,23 @@ class CoverAutomation:
         cover_attrs[const.COVER_ATTR_SUN_AZIMUTH_DIFF] = sun_azimuth_difference
 
         # Calculate desired position
-        desired_pos, desired_pos_friendly_name, verb_key, reason_key = self._calculate_desired_position(sensor_data, sun_hitting)
-
+        desired_pos, movement_reason = self._calculate_desired_position(sensor_data, sun_hitting)
         cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = desired_pos
-        const.LOGGER.debug(f"[{self.entity_id}] Desired position: {desired_pos}%, {desired_pos_friendly_name}")
+
+        # Check for lockout protection (window sensors)
+        lockout_protection = self._check_lockout_protection(movement_reason)
+        cover_attrs[const.COVER_ATTR_LOCKOUT_PROTECTION] = lockout_protection
+        if lockout_protection:
+            return cover_attrs
 
         # Move cover if needed
-        movement_needed, message = await self._move_cover_if_needed(current_pos, desired_pos, features, verb_key, reason_key, cover_attrs)
-
+        movement_needed, actual_pos, message = await self._move_cover_if_needed(current_pos, desired_pos, features, movement_reason)
         if not movement_needed:
             # No movement - just add the current position to the history
             self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
+        else:
+            # Movement occurred
+            cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
 
         # Include position history in cover attributes
         position_entries = self._cover_pos_history_mgr.get_entries(self.entity_id)
@@ -139,7 +163,7 @@ class CoverAutomation:
     #
     # _get_cover_azimuth
     #
-    def _get_cover_azimuth(self, cover_attrs: dict[str, Any]) -> float | None:
+    def _get_cover_azimuth(self) -> float | None:
         """Get and validate cover azimuth from configuration.
 
         Args:
@@ -151,15 +175,14 @@ class CoverAutomation:
         cover_azimuth_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_AZIMUTH}")
         cover_azimuth = to_float_or_none(cover_azimuth_raw)
         if cover_azimuth is None:
-            self._log_cover_result(self.entity_id, "Cover has invalid or missing azimuth (direction), skipping")
+            self._log_cover_msg("Cover has invalid or missing azimuth (direction), skipping", const.LogSeverity.INFO)
             return None
-        cover_attrs[const.COVER_ATTR_COVER_AZIMUTH] = cover_azimuth
         return cover_azimuth
 
     #
     # _validate_cover_state
     #
-    def _validate_cover_state(self, state: State | None, cover_attrs: dict[str, Any]) -> bool:
+    def _validate_cover_state(self, state: State | None) -> bool:
         """Validate cover state is usable for automation.
 
         Args:
@@ -171,12 +194,11 @@ class CoverAutomation:
         """
 
         if state is None or state.state is None:
-            self._log_cover_result(self.entity_id, "Cover state unavailable, skipping")
+            self._log_cover_msg("Cover state unavailable, skipping", const.LogSeverity.INFO)
             return False
         if state.state in ("", STATE_UNAVAILABLE, STATE_UNKNOWN):
-            self._log_cover_result(self.entity_id, f"Cover state '{state.state}' unsupported, skipping")
+            self._log_cover_msg(f"Cover state '{state.state}' unsupported, skipping", const.LogSeverity.INFO)
             return False
-        cover_attrs[const.COVER_ATTR_STATE] = state.state
         return True
 
     #
@@ -195,20 +217,17 @@ class CoverAutomation:
 
         is_moving = state.state.lower() in (STATE_OPENING, STATE_CLOSING)
         if is_moving:
-            self._log_cover_result(self.entity_id, "Cover is currently moving, skipping")
+            self._log_cover_msg("Cover is currently moving, skipping", const.LogSeverity.INFO)
         return is_moving
 
     #
     # _check_lockout_protection
     #
-    def _check_lockout_protection(self, cover_attrs: dict[str, Any]) -> bool:
+    def _check_lockout_protection(self, movement_reason: CoverMovementReason) -> bool:
         """Check if lockout protection should be enforced for this cover.
 
         Lockout protection prevents cover closing when associated window sensors indicate
         that a window is open.
-
-        Args:
-            cover_attrs: Dictionary to store cover attributes
 
         Returns:
             True if lockout is active (should skip), False otherwise
@@ -220,7 +239,6 @@ class CoverAutomation:
 
         # If no window sensors configured, no lockout protection needed
         if not window_sensors or not isinstance(window_sensors, list):
-            cover_attrs[const.COVER_ATTR_LOCKOUT_PROTECTION] = False
             return False
 
         # Check if any window sensor indicates an open window
@@ -231,17 +249,16 @@ class CoverAutomation:
                 open_sensors.append(sensor_id)
 
         # If any window is open, activate lockout protection
-        if open_sensors:
-            cover_attrs[const.COVER_ATTR_LOCKOUT_PROTECTION] = True
+        if open_sensors and movement_reason == CoverMovementReason.CLOSING_HEAT_PROTECTION:
+            self._log_cover_msg("Lockout protection active, skipping closing", const.LogSeverity.INFO)
             return True
 
-        cover_attrs[const.COVER_ATTR_LOCKOUT_PROTECTION] = False
         return False
 
     #
     # _get_cover_position
     #
-    def _get_cover_position(self, state: State, features: int) -> int:
+    def _get_cover_position(self, state: State, features: int) -> tuple[bool, int]:
         """Get current cover position.
 
         Args:
@@ -256,19 +273,20 @@ class CoverAutomation:
             # Cover supports position control
             pos = to_int_or_none(state.attributes.get(ATTR_CURRENT_POSITION))
             if pos is not None:
-                return pos
-            # If position attribute is missing, fall through to state-based logic
+                return True, pos
+            else:
+                self._log_cover_msg("Cover supports position but position attribute is missing or invalid", const.LogSeverity.INFO)
+                return False, const.COVER_POS_FULLY_OPEN
 
-        # Cover does not support position or position unavailable - infer from state
-        # Normalize state to lowercase for case-insensitive comparison
+        # Cover does not support position - infer from state
         cover_state = state.state.lower() if state.state else None
-
         if cover_state == STATE_CLOSED:
-            return const.COVER_POS_FULLY_CLOSED
-        if cover_state == STATE_OPEN:
-            return const.COVER_POS_FULLY_OPEN
-        # Unknown state - assume open
-        return const.COVER_POS_FULLY_OPEN
+            return True, const.COVER_POS_FULLY_CLOSED
+        elif cover_state == STATE_OPEN:
+            return True, const.COVER_POS_FULLY_OPEN
+        else:
+            # Unknown state
+            return False, const.COVER_POS_FULLY_OPEN
 
     #
     # _check_manual_override
@@ -283,21 +301,27 @@ class CoverAutomation:
         Returns:
             True if override is active (should skip), False otherwise
         """
+
+        # Check if we're still at the last known position
         last_history_entry = self._cover_pos_history_mgr.get_latest_entry(self.entity_id)
-        if last_history_entry is not None and current_pos != last_history_entry.position:
-            # Position has changed since our last recorded desired position
-            # Beware of system time changes
-            time_now = datetime.now(timezone.utc)
-            if time_now > last_history_entry.timestamp:
-                time_delta = (time_now - last_history_entry.timestamp).total_seconds()
-                if time_delta < self.resolved.manual_override_duration:
-                    time_remaining = self.resolved.manual_override_duration - time_delta
-                    message = (
-                        f"Manual override detected (position changed externally), skipping this cover for another {time_remaining:.0f} s"
-                    )
-                    self._log_cover_result(self.entity_id, message)
-                    return True
-        return False
+        if last_history_entry is None or current_pos == last_history_entry.position:
+            return False
+
+        # Beware of system time changes
+        time_now = datetime.now(timezone.utc)
+        if time_now <= last_history_entry.timestamp:
+            return False
+
+        # Are we past the override duration?
+        time_delta = (time_now - last_history_entry.timestamp).total_seconds()
+        if time_delta >= self.resolved.manual_override_duration:
+            return False
+
+        # Manual override still active
+        time_remaining = self.resolved.manual_override_duration - time_delta
+        message = f"Manual override detected (position changed externally), skipping this cover for another {time_remaining:.0f} s"
+        self._log_cover_msg(message, const.LogSeverity.INFO)
+        return True
 
     #
     # _calculate_sun_hitting
@@ -319,6 +343,7 @@ class CoverAutomation:
             sun_hitting = sun_azimuth_difference < self.resolved.sun_azimuth_tolerance
         else:
             sun_hitting = False
+
         return sun_hitting, sun_azimuth_difference
 
     #
@@ -344,7 +369,7 @@ class CoverAutomation:
     #
     # _calculate_desired_position
     #
-    def _calculate_desired_position(self, sensor_data: SensorData, sun_hitting: bool) -> tuple[int, str, str, str]:
+    def _calculate_desired_position(self, sensor_data: SensorData, sun_hitting: bool) -> tuple[int, CoverMovementReason]:
         """Calculate desired cover position based on conditions.
 
         Args:
@@ -352,7 +377,7 @@ class CoverAutomation:
             sun_hitting: Whether sun is hitting the window
 
         Returns:
-            Tuple of (desired_position, friendly_name, verb_translation_key, reason_translation_key)
+            Tuple of (desired_position, verb_translation_key, reason_translation_key)
         """
 
         if sensor_data.temp_hot and sensor_data.weather_sunny and sun_hitting:
@@ -360,17 +385,17 @@ class CoverAutomation:
             max_closure_limit = self._get_cover_closure_limit(get_max=True)
             desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
             desired_pos_friendly_name = "heat protection state (closed)"
-            verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
-            reason_key = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+            movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
         else:
             # "Let light in" mode - open the cover
             min_closure_limit = self._get_cover_closure_limit(get_max=False)
             desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
             desired_pos_friendly_name = "normal state (open)"
-            verb_key = const.TRANSL_LOGBOOK_VERB_OPENING
-            reason_key = const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN
+            movement_reason = CoverMovementReason.OPENING_LET_LIGHT_IN
 
-        return desired_pos, desired_pos_friendly_name, verb_key, reason_key
+        self._log_cover_msg(f"Desired position: {desired_pos}%, {desired_pos_friendly_name}", const.LogSeverity.INFO)
+
+        return desired_pos, movement_reason
 
     #
     # _get_cover_closure_limit
@@ -402,14 +427,8 @@ class CoverAutomation:
     # _move_cover_if_needed
     #
     async def _move_cover_if_needed(
-        self,
-        current_pos: int,
-        desired_pos: int,
-        features: int,
-        verb_key: str,
-        reason_key: str,
-        cover_attrs: dict[str, Any],
-    ) -> tuple[bool, str]:
+        self, current_pos: int, desired_pos: int, features: int, movement_reason: CoverMovementReason
+    ) -> tuple[bool, int | None, str]:
         """Move cover if position change is significant enough.
 
         Args:
@@ -421,53 +440,68 @@ class CoverAutomation:
             cover_attrs: Dictionary to store cover attributes
 
         Returns:
-            Tuple of (movement_needed, message)
+            Tuple of (movement_needed, actual_pos, message)
         """
 
         # Determine if cover movement is necessary
         if desired_pos == current_pos:
-            return False, "No movement needed"
+            return False, None, "No movement needed"
 
         if abs(desired_pos - current_pos) < self.resolved.covers_min_position_delta:
-            return False, "Skipped minor adjustment"
-
-        # Check for lockout protection (window sensors)
-        lockout_protection = self._check_lockout_protection(cover_attrs)
-        if lockout_protection and verb_key == const.TRANSL_LOGBOOK_VERB_CLOSING:
-            return False, "Lockout protection active, skipping closing"
+            return False, None, "Skipped minor adjustment"
 
         # Movement needed
         try:
             # Move the cover
             actual_pos = await self._ha_interface.set_cover_position(self.entity_id, desired_pos, features)
             const.LOGGER.debug(f"[{self.entity_id}] Actual position: {actual_pos}%")
-            if actual_pos is not None:
-                # Store the position after movement
-                cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
-                # Add the new position to the history
-                self._cover_pos_history_mgr.add(self.entity_id, actual_pos, cover_moved=True)
-                # Add detailed logbook entry
-                await self._ha_interface.add_logbook_entry(
-                    verb_key=verb_key,
-                    entity_id=self.entity_id,
-                    reason_key=reason_key,
-                    target_pos=actual_pos,
-                )
-            return True, "Moved cover"
+
+            # Add the new position to the history
+            self._cover_pos_history_mgr.add(self.entity_id, actual_pos, cover_moved=True)
+
+            if movement_reason == CoverMovementReason.CLOSING_HEAT_PROTECTION:
+                verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
+                reason_key = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+            elif movement_reason == CoverMovementReason.OPENING_LET_LIGHT_IN:
+                verb_key = const.TRANSL_LOGBOOK_VERB_OPENING
+                reason_key = const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN
+            else:
+                # Type checker will fail if a new enum value is added but not handled
+                assert_never(movement_reason)
+
+            # Add detailed logbook entry
+            await self._ha_interface.add_logbook_entry(
+                verb_key=verb_key, entity_id=self.entity_id, reason_key=reason_key, target_pos=actual_pos
+            )
+
+            return True, actual_pos, "Moved cover"
+
         except Exception as err:
             # Log the error but continue with other covers
             const.LOGGER.error(f"[{self.entity_id}] Failed to control cover: {err}")
-            return False, f"Error: {err}"
+            return False, None, f"Error: {err}"
 
     #
-    # _log_cover_result
+    # _log_cover_msg
     #
-    def _log_cover_result(self, entity_id: str, error_description: str) -> None:
-        """Log the result for one cover.
+    def _log_cover_msg(self, message: str, severity: const.LogSeverity) -> None:
+        """Log a message for one cover.
 
         Args:
             entity_id: Cover entity ID
-            error_description: Description of the result/error
+            message: String to log
+            severity: Log severity level
         """
-        message = f"[{entity_id}] {error_description}"
-        const.LOGGER.info(message)
+
+        # Prefix message with entity ID
+        message = f"[{self.entity_id}] {message}"
+
+        # Log the message
+        if severity == const.LogSeverity.DEBUG:
+            const.LOGGER.debug(message)
+        elif severity == const.LogSeverity.INFO:
+            const.LOGGER.info(message)
+        elif severity == const.LogSeverity.WARNING:
+            const.LOGGER.warning(message)
+        else:
+            const.LOGGER.error(message)

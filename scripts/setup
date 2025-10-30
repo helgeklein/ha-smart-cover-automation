@@ -11,16 +11,4 @@ python3 -m pip install --requirement requirements.txt
 echo "Installing test dependencies..."
 python3 -m pip install --requirement requirements-test.txt
 
-# Remove core.filemode setting from the repo's config if it exists
-if git config --get core.filemode >/dev/null 2>&1; then
-    git config --unset core.filemode
-    echo "Removed existing core.filemode setting"
-fi
-
-# Add core.filemode=true to the user's global git config
-if ! git config --global --get core.filemode >/dev/null 2>&1; then
-    git config --global core.filemode true
-    echo "Set core.filemode to true in user's global git config"
-fi
-
 echo "Setup completed!"

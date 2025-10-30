@@ -638,17 +638,34 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         current = self._current_settings()
         merged = {**current, **self._config_data}
 
-        # Log only changed settings
+        # Log changed, new, and removed settings
         changed_settings = {}
+        new_settings = {}
         for key, new_value in merged.items():
             old_value = current.get(key)
-            if old_value != new_value:
+            if key not in current:
+                new_settings[key] = new_value
+            elif old_value != new_value:
                 changed_settings[key] = {"old": old_value, "new": new_value}
 
+        removed_settings = {}
+        for key, old_value in current.items():
+            # Check if key had a value before but is now None
+            if key in merged and merged[key] is None and old_value is not None:
+                removed_settings[key] = old_value
+
         if changed_settings:
-            const.LOGGER.info(f"Options flow changed settings: {changed_settings}")
+            const.LOGGER.info(f"Options flow: {len(changed_settings)} changed settings: {changed_settings}")
         else:
-            const.LOGGER.debug("Options flow changed settings: none")
+            const.LOGGER.info("Options flow: No changed settings")
+        if new_settings:
+            const.LOGGER.info(f"Options flow: {len(new_settings)} new settings: {new_settings}")
+        else:
+            const.LOGGER.info("Options flow: No new settings")
+        if removed_settings:
+            const.LOGGER.info(f"Options flow: {len(removed_settings)} removed settings: {removed_settings}")
+        else:
+            const.LOGGER.info("Options flow: No removed settings")
 
         # Clean up orphaned cover settings and empty values from the merged data
         keys_to_remove = []

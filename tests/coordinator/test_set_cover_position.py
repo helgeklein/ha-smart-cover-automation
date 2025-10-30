@@ -1,8 +1,13 @@
-"""
-Test the _set_cover_position method in the coordinator.
+"""Integration tests for coordinator's use of ha_interface.set_cover_position.
 
-This module tests the cover position setting logic that handles both
-position-supporting covers and binary covers (open/close only).
+This module contains integration tests that verify the coordinator properly
+initializes and uses the HA interface layer. Detailed unit tests for
+set_cover_position functionality are in tests/ha_interface/test_ha_interface.py.
+
+These integration tests focus on verifying that:
+1. The coordinator correctly initializes the HA interface
+2. The coordinator can successfully call set_cover_position through the interface
+3. Configuration options (like simulation mode) are properly passed through
 """
 
 from __future__ import annotations
@@ -10,7 +15,6 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import MagicMock
 
-import pytest
 from homeassistant.components.cover import ATTR_POSITION, CoverEntityFeature
 from homeassistant.const import (
     ATTR_ENTITY_ID,
@@ -19,133 +23,67 @@ from homeassistant.const import (
     SERVICE_SET_COVER_POSITION,
     Platform,
 )
-from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-from custom_components.smart_cover_automation.ha_interface import ServiceCallError
 
 from ..conftest import MockConfigEntry, create_temperature_config
 
 
-class TestSetCoverPosition:
-    """Test the _set_cover_position method logic."""
+#
+# TestSetCoverPositionIntegration
+#
+class TestSetCoverPositionIntegration:
+    """Integration tests for coordinator using HA interface to set cover positions."""
 
-    async def test_position_supporting_cover_valid_position(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
-        """Test position-supporting cover with valid position value."""
+    #
+    # test_coordinator_with_position_supporting_cover
+    #
+    async def test_coordinator_with_position_supporting_cover(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
+        """Test that coordinator can control position-supporting covers through HA interface."""
+
         entity_id = "cover.test"
         desired_pos = 75
         features = CoverEntityFeature.SET_POSITION
 
-        await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
+        result = await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
 
-        # Should call set_cover_position service
+        # Verify service was called correctly
         mock_hass.services.async_call.assert_called_once_with(
             Platform.COVER, SERVICE_SET_COVER_POSITION, {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos}
         )
 
-    async def test_position_supporting_cover_boundary_positions(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
-        """Test position-supporting cover with boundary position values."""
-        entity_id = "cover.test"
-        features = CoverEntityFeature.SET_POSITION
+        # Verify return value
+        assert result == desired_pos
 
-        # Test fully closed (0)
-        await coordinator._ha_interface.set_cover_position(entity_id, 0, features)
-        mock_hass.services.async_call.assert_called_with(
-            Platform.COVER, SERVICE_SET_COVER_POSITION, {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: 0}
-        )
+    #
+    # test_coordinator_with_binary_cover
+    #
+    async def test_coordinator_with_binary_cover(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
+        """Test that coordinator can control binary covers (open/close only) through HA interface."""
 
-        # Reset mock
-        mock_hass.services.async_call.reset_mock()
-
-        # Test fully open (100)
-        await coordinator._ha_interface.set_cover_position(entity_id, 100, features)
-        mock_hass.services.async_call.assert_called_with(
-            Platform.COVER, SERVICE_SET_COVER_POSITION, {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: 100}
-        )
-
-    async def test_binary_cover_open_positions_above_threshold(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
-        """Test binary cover with desired positions above 50% (should use open_cover service)."""
         entity_id = "cover.test"
         features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
 
-        # Test positions above 50 (const.COVER_POS_FULLY_OPEN / 2)
-        test_positions = [51, 60, 75, 90, 100]
-
-        for desired_pos in test_positions:
-            mock_hass.services.async_call.reset_mock()
-
-            await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
-
-            # Should call open_cover service
-            mock_hass.services.async_call.assert_called_once_with(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
-
-    async def test_binary_cover_close_positions_at_or_below_threshold(
-        self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock
-    ) -> None:
-        """Test binary cover with desired positions at or below 50% (should use close_cover service)."""
-        entity_id = "cover.test"
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        # Test positions at or below 50 (const.COVER_POS_FULLY_OPEN / 2)
-        test_positions = [0, 10, 25, 40, 50]
-
-        for desired_pos in test_positions:
-            mock_hass.services.async_call.reset_mock()
-
-            await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
-
-            # Should call close_cover service
-            mock_hass.services.async_call.assert_called_once_with(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
-
-    async def test_binary_cover_threshold_boundary(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
-        """Test binary cover at exact threshold boundary (50% should close, 51% should open)."""
-        entity_id = "cover.test"
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        # Test position 50 (exactly at threshold) - should close
-        await coordinator._ha_interface.set_cover_position(entity_id, 50, features)
-        mock_hass.services.async_call.assert_called_with(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
-
-        # Reset mock
-        mock_hass.services.async_call.reset_mock()
-
-        # Test position 51 (just above threshold) - should open
-        await coordinator._ha_interface.set_cover_position(entity_id, 51, features)
+        # Test open (above 50% threshold)
+        result = await coordinator._ha_interface.set_cover_position(entity_id, 75, features)
         mock_hass.services.async_call.assert_called_with(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
+        assert result == 100
 
-    async def test_mixed_features_cover_uses_set_position(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
-        """Test cover with mixed features (SET_POSITION + others) uses SET_POSITION service."""
-        entity_id = "cover.test"
-        desired_pos = 65
-        features = CoverEntityFeature.SET_POSITION | CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
-
-        await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
-
-        # Should call set_cover_position service (not binary open/close)
-        mock_hass.services.async_call.assert_called_once_with(
-            Platform.COVER, SERVICE_SET_COVER_POSITION, {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos}
-        )
-
-    async def test_no_features_cover_uses_binary_logic(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
-        """Test cover with no features still uses binary open/close logic."""
-        entity_id = "cover.test"
-        features = 0  # No features
-
-        # Test above threshold - should open
-        await coordinator._ha_interface.set_cover_position(entity_id, 80, features)
-        mock_hass.services.async_call.assert_called_with(Platform.COVER, SERVICE_OPEN_COVER, {ATTR_ENTITY_ID: entity_id})
-
-        # Reset mock
         mock_hass.services.async_call.reset_mock()
 
-        # Test below threshold - should close
-        await coordinator._ha_interface.set_cover_position(entity_id, 20, features)
+        # Test close (at or below 50% threshold)
+        result = await coordinator._ha_interface.set_cover_position(entity_id, 25, features)
         mock_hass.services.async_call.assert_called_with(Platform.COVER, SERVICE_CLOSE_COVER, {ATTR_ENTITY_ID: entity_id})
+        assert result == 0
 
-    async def test_simulation_mode_skips_service_call(self, mock_hass: MagicMock) -> None:
-        """Test that simulation mode skips actual service calls."""
-        # Create config with simulation enabled
+    #
+    # test_coordinator_with_simulation_mode
+    #
+    async def test_coordinator_with_simulation_mode(self, mock_hass: MagicMock) -> None:
+        """Test that coordinator respects simulation mode configuration."""
+
+        # Create coordinator with simulation mode enabled
         config = create_temperature_config()
         config["simulation_mode"] = True
         config_entry = MockConfigEntry(config)
@@ -155,217 +93,11 @@ class TestSetCoverPosition:
         desired_pos = 75
         features = CoverEntityFeature.SET_POSITION
 
-        await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
+        # Execute
+        result = await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
 
-        # Should not call any service in simulation mode
+        # Verify no service call was made in simulation mode
         mock_hass.services.async_call.assert_not_called()
 
-    @pytest.mark.parametrize(
-        "invalid_position, expected_error_message",
-        [
-            (-10, "desired_pos must be between 0 and 100, got -10"),
-            (150, "desired_pos must be between 0 and 100, got 150"),
-        ],
-    )
-    async def test_position_validation_out_of_range(
-        self, coordinator: DataUpdateCoordinator, invalid_position: int, expected_error_message: str
-    ) -> None:
-        """Test position validation with values outside valid range.
-
-        This parametrized test verifies that the coordinator properly validates
-        position values and raises appropriate errors for out-of-range values.
-        """
-        entity_id = "cover.test"
-        features = CoverEntityFeature.SET_POSITION
-
-        with pytest.raises(ValueError, match=expected_error_message):
-            await coordinator._ha_interface.set_cover_position(entity_id, invalid_position, features)
-
-    @pytest.mark.parametrize(
-        "exception_class, exception_message, expected_service_match",
-        [
-            (HomeAssistantError, "Service not found", "Failed to call set_cover_position"),
-            (ConnectionError, "Connection lost", "Failed to call set_cover_position"),
-            (ValueError, "Invalid entity ID format", "Failed to call set_cover_position"),
-            (TypeError, "'NoneType' object is not callable", "Failed to call set_cover_position"),
-            (RuntimeError, "Unexpected runtime error", "Failed to call set_cover_position"),
-        ],
-    )
-    async def test_service_call_error_handling_various_exceptions(
-        self,
-        coordinator: DataUpdateCoordinator,
-        mock_hass: MagicMock,
-        exception_class: type,
-        exception_message: str,
-        expected_service_match: str,
-    ) -> None:
-        """Test error handling for various exception types during service calls.
-
-        This parametrized test verifies that the coordinator properly handles different types
-        of exceptions that can occur during Home Assistant service calls, ensuring all
-        errors are caught and wrapped in ServiceCallError with appropriate messages.
-        """
-        entity_id = "cover.test"
-        desired_pos = 50
-        features = CoverEntityFeature.SET_POSITION
-
-        # Mock service call to raise the specified exception
-        mock_hass.services.async_call.side_effect = exception_class(exception_message)
-
-        with pytest.raises(ServiceCallError, match=expected_service_match):
-            await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
-
-    async def test_service_call_error_preserves_service_name_for_binary_covers(
-        self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock
-    ) -> None:
-        """Test that error messages correctly identify the service for binary covers."""
-        entity_id = "cover.test"
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        # Test open service error
-        mock_hass.services.async_call.side_effect = HomeAssistantError("Service failed")
-
-        with pytest.raises(ServiceCallError, match="Failed to call open_cover"):
-            await coordinator._ha_interface.set_cover_position(entity_id, 80, features)  # Above threshold
-
-        # Reset mock for close service test
-        mock_hass.services.async_call.reset_mock()
-        mock_hass.services.async_call.side_effect = HomeAssistantError("Service failed")
-
-        with pytest.raises(ServiceCallError, match="Failed to call close_cover"):
-            await coordinator._ha_interface.set_cover_position(entity_id, 20, features)  # Below threshold
-
-    async def test_various_entity_ids_and_positions(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
-        """Test method works with various entity IDs and position combinations."""
-        test_cases = [
-            ("cover.living_room", 25, CoverEntityFeature.SET_POSITION),
-            ("cover.bedroom_window", 75, CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE),
-            ("cover.kitchen", 0, CoverEntityFeature.SET_POSITION),
-            ("cover.office", 100, CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE),
-        ]
-
-        for entity_id, desired_pos, features in test_cases:
-            mock_hass.services.async_call.reset_mock()
-
-            await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
-
-            # Verify service was called (exact service depends on features and position)
-            mock_hass.services.async_call.assert_called_once()
-            call_args = mock_hass.services.async_call.call_args
-
-            # All calls should be to cover platform
-            assert call_args[0][0] == Platform.COVER
-
-            # Service data should include the entity_id
-            service_data = call_args[0][2]
-            assert service_data[ATTR_ENTITY_ID] == entity_id
-
-    async def test_return_value_position_supporting_covers(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
-        """Test that position-supporting covers return the exact desired position."""
-        entity_id = "cover.test"
-        features = CoverEntityFeature.SET_POSITION
-
-        test_positions = [0, 25, 50, 75, 100]
-
-        for desired_pos in test_positions:
-            actual_pos = await coordinator._ha_interface.set_cover_position(entity_id, desired_pos, features)
-
-            # For position-supporting covers, actual should equal desired
-            assert actual_pos == desired_pos
-
-    @pytest.mark.parametrize(
-        "test_position, expected_return",
-        [
-            (51, 100),  # Above threshold
-            (60, 100),  # Above threshold
-            (75, 100),  # Above threshold
-            (90, 100),  # Above threshold
-            (100, 100),  # At maximum
-        ],
-    )
-    async def test_return_value_binary_covers_above_threshold(
-        self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock, test_position: int, expected_return: int
-    ) -> None:
-        """Test that binary covers return 100 for positions above threshold.
-
-        This parametrized test verifies that binary covers correctly return the fully
-        open position (100) when requested positions are above the 50% threshold.
-        """
-        entity_id = "cover.test"
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        actual_pos = await coordinator._ha_interface.set_cover_position(entity_id, test_position, features)
-
-        # Binary covers above threshold should return fully open (100)
-        assert actual_pos == expected_return
-
-    @pytest.mark.parametrize(
-        "test_position, expected_return",
-        [
-            (0, 0),  # At minimum
-            (10, 0),  # Below threshold
-            (25, 0),  # Below threshold
-            (40, 0),  # Below threshold
-            (50, 0),  # At threshold
-        ],
-    )
-    async def test_return_value_binary_covers_at_or_below_threshold(
-        self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock, test_position: int, expected_return: int
-    ) -> None:
-        """Test that binary covers return 0 for positions at or below threshold.
-
-        This parametrized test verifies that binary covers correctly return the fully
-        closed position (0) when requested positions are at or below the 50% threshold.
-        """
-        entity_id = "cover.test"
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE  # No SET_POSITION
-
-        actual_pos = await coordinator._ha_interface.set_cover_position(entity_id, test_position, features)
-
-        # Binary covers at/below threshold should return fully closed (0)
-        assert actual_pos == expected_return
-
-    async def test_return_value_simulation_mode(self, mock_hass: MagicMock) -> None:
-        """Test that simulation mode still returns correct actual position values."""
-        # Create config with simulation enabled
-        config = create_temperature_config()
-        config["simulation_mode"] = True
-        config_entry = MockConfigEntry(config)
-        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
-
-        # Test position-supporting cover in simulation mode
-        actual_pos = await coordinator._ha_interface.set_cover_position("cover.test", 75, CoverEntityFeature.SET_POSITION)
-        assert actual_pos == 75
-
-        # Test binary cover above threshold in simulation mode
-        actual_pos = await coordinator._ha_interface.set_cover_position(
-            "cover.test", 80, CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
-        )
-        assert actual_pos == 100
-
-        # Test binary cover below threshold in simulation mode
-        actual_pos = await coordinator._ha_interface.set_cover_position(
-            "cover.test", 20, CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
-        )
-        assert actual_pos == 0
-
-        # Should not call any service in simulation mode
-        mock_hass.services.async_call.assert_not_called()
-
-    async def test_return_value_boundary_cases(self, coordinator: DataUpdateCoordinator, mock_hass: MagicMock) -> None:
-        """Test return values for boundary cases."""
-        entity_id = "cover.test"
-
-        # Test position-supporting cover at boundaries
-        features = CoverEntityFeature.SET_POSITION
-        assert await coordinator._ha_interface.set_cover_position(entity_id, 0, features) == 0
-        assert await coordinator._ha_interface.set_cover_position(entity_id, 100, features) == 100
-
-        # Test binary cover at exact threshold boundary
-        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
-
-        # Position 50 (at threshold) should return 0 (close)
-        assert await coordinator._ha_interface.set_cover_position(entity_id, 50, features) == 0
-
-        # Position 51 (above threshold) should return 100 (open)
-        assert await coordinator._ha_interface.set_cover_position(entity_id, 51, features) == 100
+        # But return value should still be correct
+        assert result == desired_pos

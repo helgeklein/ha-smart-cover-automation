@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Steg 1 av 5",
+                "title": "Smart Cover Automation - Steg 1 av 6",
                 "description": "Välj en väderprognossensor och persiennerna som ska automatiseras (obligatoriskt).",
                 "data": {
                     "covers": "Persienner att automatisera:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Steg 2 av 5",
+                "title": "Smart Cover Automation - Steg 2 av 6",
                 "description": "Konfigurera **azimut** (riktning) för varje persienn (obligatoriskt).\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)"
             },
             "3": {
-                "title": "Smart Cover Automation - Steg 3 av 5",
+                "title": "Smart Cover Automation - Steg 3 av 6",
                 "description": "Konfigurera ytterligare inställningar (valfritt).\n\nDetta steg är markerat som valfritt eftersom standardvärdena bör fungera bra för de flesta användare.",
                 "data": {
                     "covers_max_closure": "Högsta läge för persienn:",
@@ -52,8 +52,8 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Steg 4 av 5",
-                "description": "Konfigurera **min/max**-lägena för varje persienn (valfritt).\n\nOm inget anges används de globala värdena från föregående steg.",
+                "title": "Smart Cover Automation - Steg 4 av 6",
+                "description": "Konfigurera **min/max**-lägena för varje persienn (valfritt). Om inget anges används de globala värdena från föregående steg.\n\n(0 = helt stängd, 100 = helt öppen)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Högsta persiennlägen"
@@ -64,7 +64,16 @@
                 }
             },
             "5": {
-                "title": "Smart Cover Automation - Steg 5 av 5",
+                "title": "Smart Cover Automation - Steg 5 av 6",
+                "description": "Aktivera klämskydd genom att konfigurera **fönstersensorer** för varje persienn (valfritt). Om någon fönstersensor som är kopplad till en persienn rapporterar att fönstret är öppet stängs persiennen inte.",
+                "sections": {
+                    "section_window_sensors": {
+                        "name": "Fönstersensorer"
+                    }
+                }
+            },
+            "6": {
+                "title": "Smart Cover Automation - Steg 6 av 6",
                 "description": "Konfigurera **tidsundantag** för automationen (valfritt).",
                 "data": {
                     "nighttime_block_opening": "Inaktivera öppning av persienner på natten:"

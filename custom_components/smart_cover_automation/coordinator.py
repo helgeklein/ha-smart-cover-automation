@@ -62,13 +62,16 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         resolved = resolve_entry(config_entry)
         const.LOGGER.info(f"Initializing coordinator: update_interval={const.UPDATE_INTERVAL.total_seconds()} s")
 
+        # Get configuration from options (all user settings are stored there)
+        config = dict(getattr(config_entry, const.HA_OPTIONS, {}) or {})
+
         # Create the HA interface layer
         self._ha_interface = HomeAssistantInterface(hass, self._resolved_settings)
 
         # Initialize the automation engine (persists across runs)
         self._automation_engine = AutomationEngine(
             resolved=resolved,
-            config=config_entry.runtime_data.config,
+            config=config,
             ha_interface=self._ha_interface,
         )
 

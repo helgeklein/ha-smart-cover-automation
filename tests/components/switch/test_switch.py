@@ -67,12 +67,12 @@ async def test_switch_turn_on_persists_option_and_refresh(mock_coordinator_basic
     entry.runtime_data.config[ConfKeys.ENABLED.value] = False
 
     # Setup mock Home Assistant environment
-    mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
-    mock_coordinator_basic.async_update_listeners = Mock()  # type: ignore[assignment]
+    mock_coordinator_basic.last_update_success = True
+    mock_coordinator_basic.async_update_listeners = Mock()
     entry.runtime_data.coordinator = mock_coordinator_basic
-    entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
+    entry.async_set_options = AsyncMock()
     # Mock the hass.config_entries.async_update_entry method
-    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()  # type: ignore[attr-defined]
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()
 
     # Capture entities created by the switch platform
     captured: list[Entity] = []
@@ -124,12 +124,12 @@ async def test_switch_turn_off_persists_option_and_refresh(mock_coordinator_basi
     entry.runtime_data.config[ConfKeys.ENABLED.value] = True  # Start enabled to observe disable
 
     # Setup mock Home Assistant environment
-    mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
-    mock_coordinator_basic.async_update_listeners = Mock()  # type: ignore[assignment]
+    mock_coordinator_basic.last_update_success = True
+    mock_coordinator_basic.async_update_listeners = Mock()
     entry.runtime_data.coordinator = mock_coordinator_basic
-    entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
+    entry.async_set_options = AsyncMock()
     # Mock the hass.config_entries.async_update_entry method
-    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()  # type: ignore[attr-defined]
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()
 
     # Capture entities created by the switch platform
     captured: list[Entity] = []
@@ -175,12 +175,12 @@ async def test_simulation_mode_switch_turn_on_persists_option_and_refresh(mock_c
     entry.runtime_data.config[ConfKeys.SIMULATION_MODE.value] = False
 
     # Setup mock Home Assistant environment
-    mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
-    mock_coordinator_basic.async_update_listeners = Mock()  # type: ignore[assignment]
+    mock_coordinator_basic.last_update_success = True
+    mock_coordinator_basic.async_update_listeners = Mock()
     entry.runtime_data.coordinator = mock_coordinator_basic
-    entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
+    entry.async_set_options = AsyncMock()
     # Mock the hass.config_entries.async_update_entry method
-    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()  # type: ignore[attr-defined]
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()
 
     # Capture entities created by the switch platform
     captured: list[Entity] = []
@@ -226,12 +226,12 @@ async def test_simulation_mode_switch_turn_off_persists_option_and_refresh(mock_
     entry.runtime_data.config[ConfKeys.SIMULATION_MODE.value] = True
 
     # Setup mock Home Assistant environment
-    mock_coordinator_basic.last_update_success = True  # type: ignore[attr-defined]
-    mock_coordinator_basic.async_update_listeners = Mock()  # type: ignore[assignment]
+    mock_coordinator_basic.last_update_success = True
+    mock_coordinator_basic.async_update_listeners = Mock()
     entry.runtime_data.coordinator = mock_coordinator_basic
-    entry.async_set_options = AsyncMock()  # type: ignore[attr-defined]
+    entry.async_set_options = AsyncMock()
     # Mock the hass.config_entries.async_update_entry method
-    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()  # type: ignore[attr-defined]
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()
 
     # Capture entities created by the switch platform
     captured: list[Entity] = []

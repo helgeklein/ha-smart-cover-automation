@@ -33,7 +33,7 @@ async def test_temp_hot_binary_sensor_with_hot_temperature(mock_hass_with_spec, 
     """
     # Setup coordinator with hot temperature data
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Mock coordinator data with temp_hot = True
     coordinator.data = {"temp_hot": True}  # type: ignore[attr-defined]
@@ -73,7 +73,7 @@ async def test_temp_hot_binary_sensor_with_cool_temperature(mock_hass_with_spec,
     """
     # Setup coordinator with cool temperature data
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Mock coordinator data with temp_hot = False
     coordinator.data = {"temp_hot": False}  # type: ignore[attr-defined]
@@ -113,7 +113,7 @@ async def test_temp_hot_binary_sensor_with_no_data(mock_hass_with_spec, mock_con
     """
     # Setup coordinator with no data
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Mock coordinator with None data (initial state before first update)
     coordinator.data = None  # type: ignore[attr-defined]
@@ -154,7 +154,7 @@ async def test_temp_hot_binary_sensor_with_missing_key(mock_hass_with_spec, mock
     """
     # Setup coordinator with data that doesn't contain temp_hot key
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Mock coordinator data without temp_hot key
     coordinator.data = {"covers": {}}  # type: ignore[attr-defined]
@@ -195,7 +195,7 @@ async def test_weather_sunny_binary_sensor_with_sunny_weather(mock_hass_with_spe
     """
     # Setup coordinator with sunny weather data
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Mock coordinator data with weather_sunny = True
     coordinator.data = {"weather_sunny": True}  # type: ignore[attr-defined]
@@ -235,7 +235,7 @@ async def test_weather_sunny_binary_sensor_with_cloudy_weather(mock_hass_with_sp
     """
     # Setup coordinator with cloudy weather data
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Mock coordinator data with weather_sunny = False
     coordinator.data = {"weather_sunny": False}  # type: ignore[attr-defined]
@@ -275,7 +275,7 @@ async def test_weather_sunny_binary_sensor_with_no_data(mock_hass_with_spec, moc
     """
     # Setup coordinator with no data
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Mock coordinator with None data (initial state before first update)
     coordinator.data = None  # type: ignore[attr-defined]
@@ -316,7 +316,7 @@ async def test_weather_sunny_binary_sensor_with_missing_key(mock_hass_with_spec,
     """
     # Setup coordinator with data that doesn't contain weather_sunny key
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Mock coordinator data without weather_sunny key
     coordinator.data = {"covers": {}}  # type: ignore[attr-defined]

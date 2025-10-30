@@ -35,7 +35,7 @@ async def test_binary_sensor_entity_properties(mock_hass_with_spec, mock_config_
     """
     # Coordinator with predefined data and success state
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Wire coordinator into runtime_data as HA would do during integration setup
     mock_config_entry_basic.runtime_data.coordinator = coordinator
@@ -66,7 +66,7 @@ async def test_binary_sensor_is_on_state_with_failed_coordinator(mock_hass_with_
     """
     # Coordinator with failed state
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = False  # type: ignore[attr-defined]
+    coordinator.last_update_success = False
 
     # Wire coordinator into runtime_data as HA would do during integration setup
     mock_config_entry_basic.runtime_data.coordinator = coordinator
@@ -100,7 +100,7 @@ async def test_binary_sensor_translation_keys_set(mock_hass_with_spec, mock_conf
     """
     # Coordinator with predefined data and success state
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Wire coordinator into runtime_data
     mock_config_entry_basic.runtime_data.coordinator = coordinator

@@ -59,27 +59,27 @@ class AutomationEngine:
         covers = tuple(self.resolved.covers)
         if not covers:
             message = "No covers configured; skipping actions"
-            self._log_automation_result(message, const.LogSeverity.INFO, result)
+            self._log_automation_result(message, const.LogSeverity.INFO)
             return result
 
         # Check if automation is enabled
         if not self.resolved.enabled:
             message = "Automation disabled via configuration; skipping actions"
-            self._log_automation_result(message, const.LogSeverity.INFO, result)
+            self._log_automation_result(message, const.LogSeverity.INFO)
             return result
 
         # Check if any covers are available
         cover_count_available = sum(1 for s in cover_states.values() if s is not None)
         if cover_count_available == 0:
             message = "All covers unavailable; skipping actions"
-            self._log_automation_result(message, const.LogSeverity.INFO, result)
+            self._log_automation_result(message, const.LogSeverity.INFO)
             return result
 
         # Gather sensor data
         sensor_data, message = await self._gather_sensor_data()
         if sensor_data is None:
             # Critical data unavailable, automation canceled
-            self._log_automation_result(message, const.LogSeverity.WARNING, result)
+            self._log_automation_result(message, const.LogSeverity.WARNING)
             return result
 
         # Store sensor data in result
@@ -106,7 +106,7 @@ class AutomationEngine:
         # Check global blocking conditions
         success, message, severity = self._check_global_conditions()
         if not success:
-            self._log_automation_result(message, severity, result)
+            self._log_automation_result(message, severity)
             return result
 
         # Process each cover
@@ -194,12 +194,12 @@ class AutomationEngine:
         sun_state = self._ha_interface.get_sun_state()
 
         # Check nighttime block
-        if self._nighttime_and_block_opening(self.resolved, sun_state):
+        if self._nighttime_and_block_opening(sun_state):
             message = "It's nighttime and 'Disable cover opening at night' is enabled. Skipping actions"
             return (False, message, const.LogSeverity.DEBUG)
 
         # Check time period disable
-        in_disabled_period, period_string = self._in_time_period_automation_disabled(self.resolved)
+        in_disabled_period, period_string = self._in_time_period_automation_disabled()
         if in_disabled_period:
             message = f"Automation is disabled for the current time period ({period_string}). Skipping actions"
             return (False, message, const.LogSeverity.DEBUG)
@@ -209,7 +209,7 @@ class AutomationEngine:
     #
     # _nighttime_and_block_opening
     #
-    def _nighttime_and_block_opening(self, resolved: ResolvedConfig, sun_state: str | None) -> bool:
+    def _nighttime_and_block_opening(self, sun_state: str | None) -> bool:
         """Check if we're currently in a time period where "Disable cover opening at night" should be applied.
 
         Args:
@@ -221,7 +221,7 @@ class AutomationEngine:
         """
 
         # Check if to be disabled during night time (sun below horizon)
-        if resolved.nighttime_block_opening:
+        if self.resolved.nighttime_block_opening:
             if sun_state == const.HA_SUN_STATE_BELOW_HORIZON:
                 return True
 
@@ -230,7 +230,7 @@ class AutomationEngine:
     #
     # _in_time_period_automation_disabled
     #
-    def _in_time_period_automation_disabled(self, resolved: ResolvedConfig) -> tuple[bool, str]:
+    def _in_time_period_automation_disabled(self) -> tuple[bool, str]:
         """Check if current time is within a period where the automation should be disabled.
 
         Args:
@@ -248,12 +248,12 @@ class AutomationEngine:
         now_local = dt_util.now().time()
 
         # Check if disabled the automation during custom time range is configured
-        if not resolved.automation_disabled_time_range:
+        if not self.resolved.automation_disabled_time_range:
             return (False, "")
 
         # Get the start and end times
-        period_start = resolved.automation_disabled_time_range_start
-        period_end = resolved.automation_disabled_time_range_end
+        period_start = self.resolved.automation_disabled_time_range_start
+        period_end = self.resolved.automation_disabled_time_range_end
 
         # Are we in a disabled period?
         in_disabled_period = False
@@ -275,13 +275,12 @@ class AutomationEngine:
     #
     # _log_automation_result
     #
-    def _log_automation_result(self, message: str, severity: const.LogSeverity, result: CoordinatorData) -> None:
+    def _log_automation_result(self, message: str, severity: const.LogSeverity) -> None:
         """Log the result of an automation run.
 
         Args:
             message: Message to log
             severity: Log severity level
-            result: CoordinatorData (currently unused but kept for consistency)
         """
         # Log the message
         if severity == const.LogSeverity.DEBUG:

@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Étape 1 sur 5",
+                "title": "Smart Cover Automation - Étape 1 sur 6",
                 "description": "Sélectionnez un capteur de prévisions météo et les volets à automatiser (obligatoire).",
                 "data": {
                     "covers": "Volets à automatiser :",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Étape 2 sur 5",
+                "title": "Smart Cover Automation - Étape 2 sur 6",
                 "description": "Configurez l'**azimut** (direction) pour chaque volet (obligatoire).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest)"
             },
             "3": {
-                "title": "Smart Cover Automation - Étape 3 sur 5",
+                "title": "Smart Cover Automation - Étape 3 sur 6",
                 "description": "Configurez des paramètres supplémentaires (facultatif).\n\nCette étape est marquée comme facultative car les valeurs par défaut conviennent à la plupart des utilisateurs.",
                 "data": {
                     "covers_max_closure": "Position maximale du volet :",
@@ -52,8 +52,8 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Étape 4 sur 5",
-                "description": "Configurez les positions **min/max** pour chaque volet (facultatif).\n\nSi aucune valeur n'est définie, les valeurs globales configurées à l'étape précédente seront utilisées.",
+                "title": "Smart Cover Automation - Étape 4 sur 6",
+                "description": "Configurez les positions **min/max** pour chaque volet (facultatif). Si aucune valeur n'est définie, les valeurs globales configurées à l'étape précédente seront utilisées.\n\n(0 = totalement fermé, 100 = totalement ouvert)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Positions maximales du volet"
@@ -64,7 +64,16 @@
                 }
             },
             "5": {
-                "title": "Smart Cover Automation - Étape 5 sur 5",
+                "title": "Smart Cover Automation - Étape 5 sur 6",
+                "description": "Activez la protection anti-blocage en configurant des **capteurs de fenêtre** pour chaque volet (facultatif). Si un capteur de fenêtre associé à un volet indique que la fenêtre est ouverte, le volet ne se fermera pas.",
+                "sections": {
+                    "section_window_sensors": {
+                        "name": "Capteurs de fenêtre"
+                    }
+                }
+            },
+            "6": {
+                "title": "Smart Cover Automation - Étape 6 sur 6",
                 "description": "Configurez des **exceptions temporelles** pour l'automatisation (facultatif).",
                 "data": {
                     "nighttime_block_opening": "Désactiver l'ouverture des volets la nuit :"

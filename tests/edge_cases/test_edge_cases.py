@@ -260,25 +260,25 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting(
 @pytest.mark.parametrize(
     "position_value,temp_condition,expected_calls",
     [
-        (None, 30.0, 1),  # missing position attribute when hot - still processes
-        ("unavailable", 30.0, 1),  # unavailable position when hot - still processes (with error handling)
-        ("unknown", 15.0, 1),  # unknown position when cold - still processes (with error handling)
-        (None, 15.0, 1),  # missing position when cold - still processes
+        (None, 30.0, 0),  # missing position attribute when hot - skips processing
+        ("unavailable", 30.0, 0),  # unavailable position when hot - skips processing
+        ("unknown", 15.0, 0),  # unknown position when cold - skips processing
+        (None, 15.0, 0),  # missing position when cold - skips processing
     ],
 )
 async def test_missing_current_position_behaves_safely(position_value: Any, temp_condition: float, expected_calls: int) -> None:
     """Test automation behavior when cover position is missing or invalid.
 
     Validates handling of edge cases where the cover's current position
-    is missing, unavailable, or in an unknown state. The automation still
-    attempts to process these covers but may encounter errors during execution.
+    is missing, unavailable, or in an unknown state. The automation safely
+    skips these covers to avoid operating on devices with unknown state.
 
     Test scenarios:
     - Position attribute missing/invalid in various temperature conditions
-    - Expected behavior: Automation attempts processing but may fail gracefully
+    - Expected behavior: Automation skips cover (no service calls)
 
-    This ensures the system attempts to work with problematic devices
-    while handling any errors that occur during processing.
+    This ensures the system safely handles problematic devices by not
+    attempting to control them when their state is unknown.
     """
     # Setup mock Home Assistant instance
     hass = create_mock_hass_with_weather_service()

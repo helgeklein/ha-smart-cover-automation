@@ -966,7 +966,7 @@ async def capture_platform_entities(hass: HomeAssistant, config: dict[str, Any],
     # Setup coordinator with basic successful state
     coordinator = DataUpdateCoordinator(hass_mock, cast(IntegrationConfigEntry, entry))
     coordinator.data = {"covers": {}}
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Store coordinator in runtime data
     entry.runtime_data = MagicMock()

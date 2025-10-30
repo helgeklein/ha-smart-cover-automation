@@ -30,7 +30,7 @@ async def test_nighttime_block_opening_sensor_enabled(mock_hass_with_spec, mock_
     """
     # Create coordinator
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Enable nighttime_block_opening in config
     mock_config_entry_basic.runtime_data.coordinator = coordinator
@@ -70,7 +70,7 @@ async def test_nighttime_block_opening_sensor_disabled(mock_hass_with_spec, mock
     """
     # Create coordinator
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-    coordinator.last_update_success = True  # type: ignore[attr-defined]
+    coordinator.last_update_success = True
 
     # Disable nighttime_block_opening in config
     mock_config_entry_basic.runtime_data.coordinator = coordinator

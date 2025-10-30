@@ -96,7 +96,7 @@ class HomeAssistantInterface:
     #
     # set_cover_position
     #
-    async def set_cover_position(self, entity_id: str, desired_pos: int, features: int) -> int | None:
+    async def set_cover_position(self, entity_id: str, desired_pos: int, features: int) -> int:
         """Set cover position using the most appropriate service call.
 
         Args:

@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Stap 1 van 5",
+                "title": "Smart Cover Automation - Stap 1 van 6",
                 "description": "Selecteer een weersvoorspellingssensor en de rolluiken die moeten worden geautomatiseerd (verplicht).",
                 "data": {
                     "covers": "Te automatiseren rolluiken:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Stap 2 van 5",
+                "title": "Smart Cover Automation - Stap 2 van 6",
                 "description": "Configureer de **azimut** (richting) voor elk rolluik (verplicht).\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)"
             },
             "3": {
-                "title": "Smart Cover Automation - Stap 3 van 5",
+                "title": "Smart Cover Automation - Stap 3 van 6",
                 "description": "Configureer aanvullende instellingen (optioneel).\n\nDeze stap is als optioneel gemarkeerd omdat de standaardwaarden voor de meeste gebruikers goed zouden moeten werken.",
                 "data": {
                     "covers_max_closure": "Maximale positie van het rolluik:",
@@ -52,8 +52,8 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Stap 4 van 5",
-                "description": "Configureer de **min/max**-posities voor elk rolluik (optioneel).\n\nAls er niets is ingesteld, worden de globale waarden uit de vorige stap gebruikt.",
+                "title": "Smart Cover Automation - Stap 4 van 6",
+                "description": "Configureer de **min/max**-posities voor elk rolluik (optioneel). Als er niets is ingesteld, worden de globale waarden uit de vorige stap gebruikt.\n\n(0 = volledig gesloten, 100 = volledig open)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Maximale posities van het rolluik"
@@ -64,7 +64,16 @@
                 }
             },
             "5": {
-                "title": "Smart Cover Automation - Stap 5 van 5",
+                "title": "Smart Cover Automation - Stap 5 van 6",
+                "description": "Schakel de blokkeerbeveiliging in door **raamsensoren** voor elk rolluik te configureren (optioneel). Als een raamsensor die aan een rolluik is gekoppeld meldt dat het raam openstaat, wordt het rolluik niet gesloten.",
+                "sections": {
+                    "section_window_sensors": {
+                        "name": "Raamsensoren"
+                    }
+                }
+            },
+            "6": {
+                "title": "Smart Cover Automation - Stap 6 van 6",
                 "description": "Configureer **tijdsuitzonderingen** voor de automatisering (optioneel).",
                 "data": {
                     "nighttime_block_opening": "Openen van rolluiken 's nachts uitschakelen:"
