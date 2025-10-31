@@ -69,9 +69,13 @@ In the third step of the configuration wizard, the following settings can be con
 
 In the fourth step of the configuration wizard, you can specify maximum and minimum positions per cover. If configured, these per-cover settings override the global max/min positions which can be configured in the previous step.
 
-## Step 5: Time Exceptions (Optional)
+## Step 5: Window Sensors for Lockout Protection (Optional)
 
-In the fifth step of the configuration wizard, you can configure exceptions for time periods when the automation should not be active.
+In the fifth step of the configuration wizard, you can enable lockout protection by configuring window sensors for each cover. If any window sensor associated with a cover reports that the window is open, the cover won't be closed. This is especially useful for patio or terrace doors with a cover that would block you from re-entering the building if closed.
+
+## Step 6: Time Exceptions (Optional)
+
+In the sixth step of the configuration wizard, you can configure exceptions for time periods when the automation should not be active.
 
 - **Disable cover opening at night:** The automation opens the covers when they needn't be closed for heat protection. By default, this auto-opening doesn't happen at night (when the sun is below the horizon). You can change that behavior by flipping this setting to disabled.
 - **Time range:**
