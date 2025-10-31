@@ -14,5 +14,5 @@
     "iot_class": "calculated",
     "issue_tracker": "https://github.com/helgeklein/ha-smart-cover-automation/issues",
     "single_config_entry": true,
-    "version": "0.8.9"
+    "version": "0.9.0"
 }

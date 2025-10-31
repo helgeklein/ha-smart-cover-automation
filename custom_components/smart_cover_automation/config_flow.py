@@ -560,36 +560,74 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         section_name: str,
         suffix: str,
         covers: list[str],
+        current_settings: dict[str, Any],
     ) -> dict[str, Any]:
-        """Build a dict with all possible per-cover settings for a section.
+        """Build a dict with per-cover settings for a section.
 
         If a section is not present in the input, returns an empty dict.
-        If a section is present, returns the "suffix" settings for all covers.
-        Each value is either the user input converted to int, or None if the field is empty.
+        If a section is present, includes settings for ALL covers, with values being:
+        - The user-entered value (or None if cleared), OR
+        - The existing value if the field wasn't in the form
 
         Args:
             user_input: Raw user input from the form (may contain sections)
             section_name: Name of the section to extract
             suffix: Suffix for the per-cover keys
             covers: List of cover entity IDs
+            current_settings: Current configuration settings
 
         Returns:
             Dictionary with normalized per-cover settings for this section
         """
+        # Determine which section names are possible based on the suffix
+        if suffix in (const.COVER_SFX_MIN_CLOSURE, const.COVER_SFX_MAX_CLOSURE):
+            section_names = {const.STEP_4_SECTION_MIN_CLOSURE, const.STEP_4_SECTION_MAX_CLOSURE}
+        elif suffix == const.COVER_SFX_WINDOW_SENSORS:
+            section_names = {const.STEP_5_SECTION_WINDOW_SENSORS}
+        else:
+            section_names = set()
+
         # Extract cover data and determine which sections are present
-        section_names = {const.STEP_4_SECTION_MIN_CLOSURE, const.STEP_4_SECTION_MAX_CLOSURE}
         user_input_extracted, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
 
         result: dict[str, Any] = {}
         if section_name not in sections_present:
             return result
+
+        # When a section is present, we need to distinguish between:
+        # 1. Fields that were actually modified by the user
+        # 2. Fields that have default/empty values (should be ignored)
+        # 3. Fields that were explicitly cleared (had value, now cleared)
+
         for cover in covers:
             key = f"{cover}_{suffix}"
+            current_value = current_settings.get(key)
+
             if key in user_input_extracted:
-                # We have the field in the input, but it may be empty.
-                result[key] = OptionsFlowHandler._to_int(user_input_extracted[key])
+                # We have the field in the input, convert it based on suffix type
+                if suffix == const.COVER_SFX_WINDOW_SENSORS:
+                    # Window sensors are lists - keep as-is
+                    new_value = user_input_extracted[key]
+                else:
+                    # Min/max closures are integers (or None if cleared)
+                    new_value = OptionsFlowHandler._to_int(user_input_extracted[key])
+
+                # Only include if the value actually changed or is being explicitly cleared
+                # For window sensors, empty list [] is a default/no-op if there was no previous value
+                if suffix == const.COVER_SFX_WINDOW_SENSORS:
+                    # Include if: value changed, OR user is clearing an existing config
+                    if new_value != current_value and not (new_value == [] and current_value is None):
+                        result[key] = new_value
+                else:
+                    # For min/max closure, include if value changed
+                    if new_value != current_value:
+                        result[key] = new_value
             else:
-                result[key] = None
+                # Field not in form submission
+                # If the extracted dict is empty, the user cleared all fields → set to None
+                if not user_input_extracted and current_value is not None:
+                    # Only record explicit clearing if there was a previous value
+                    result[key] = None
         return result
 
     #
@@ -673,6 +711,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             f"_{const.COVER_SFX_AZIMUTH}",
             f"_{const.COVER_SFX_MAX_CLOSURE}",
             f"_{const.COVER_SFX_MIN_CLOSURE}",
+            f"_{const.COVER_SFX_WINDOW_SENSORS}",
         )
         for key, value in list(merged.items()):
             # Remove keys with empty values
@@ -808,12 +847,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Get the selected covers
         covers_in_input = self._get_covers()
 
+        # Get currently valid settings
+        current_settings = self._current_settings()
+
         # Build complete lists of min and max closure settings for all covers
         min_closure_data = self._build_section_cover_settings(
-            user_input, const.STEP_4_SECTION_MIN_CLOSURE, const.COVER_SFX_MIN_CLOSURE, covers_in_input
+            user_input, const.STEP_4_SECTION_MIN_CLOSURE, const.COVER_SFX_MIN_CLOSURE, covers_in_input, current_settings
         )
         max_closure_data = self._build_section_cover_settings(
-            user_input, const.STEP_4_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers_in_input
+            user_input, const.STEP_4_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers_in_input, current_settings
         )
 
         # Store the complete min and max per-cover settings
@@ -847,9 +889,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Get the selected covers
         covers_in_input = self._get_covers()
 
+        # Get currently valid settings
+        current_settings = self._current_settings()
+
         # Build complete lists of window sensor settings for all covers
         window_sensor_data = self._build_section_cover_settings(
-            user_input, const.STEP_5_SECTION_WINDOW_SENSORS, const.COVER_SFX_WINDOW_SENSORS, covers_in_input
+            user_input, const.STEP_5_SECTION_WINDOW_SENSORS, const.COVER_SFX_WINDOW_SENSORS, covers_in_input, current_settings
         )
 
         # Store the complete min and max per-cover settings

@@ -18,28 +18,28 @@ A Home Assistant integration to automate the control of your smart home's window
 ## Functionality
 
 - **Easy to use**:
-	- Simple to configure, transparent and reliable operation.
+    - Simple to configure, transparent and reliable operation.
     - All settings are available from the UI, no need to edit YAML.
 - **Sun heat protection:**
-	- Close covers while the sun shines on a window to prevent the house from heating up.
-	- Open covers when there's no direct sunlight to minimize dark cave feeling.
-	- The automation takes into account:
+    - Close covers while the sun shines on a window to prevent the house from heating up.
+    - Open covers when there's no direct sunlight to minimize dark cave feeling.
+    - The automation takes into account:
         - Is the sun shining or is it cloudy?
         - Is it a hot day?
         - Is the sun in a position to shine on a given window?
 - **Manual override detection:**
-	- Detect manual adjustments and pause automation to avoid conflicts.
+    - Detect manual adjustments and pause automation to avoid conflicts.
+- **Lockout protection:**
+    - Pause automations for a cover if the door/window is open.
 - **Night silence** & **night privacy**:
-	- Don't move the covers when people are sleeping.
+    - Don't move the covers when people are sleeping.
     - Don't open the covers when the sun is below the horizon.
 - **Pre-positioning before silent phases:** (TODO)
-	- Move the covers to the position they need to be in ahead of time so that there's silence at night but the covers are closed when the sun starts shining in the morning.
-- **Lockout protection:** (TODO)
-	- Pause automations for a cover if the door/window is open.
+    - Move the covers to the position they need to be in ahead of time so that there's silence at night but the covers are closed when the sun starts shining in the morning.
 - **Plant light:**
-	- Define min/max positions for the covers so that plants on the windowsill receive enough light.
+    - Define min/max positions for the covers so that plants on the windowsill receive enough light.
 - **Comfort:**
-	- Micro-adjustments are avoided.
+    - Micro-adjustments are avoided.
 - **Supported covers:** Works with any cover entity that supports open/close or position control.
 - **Rich language support:** UI translations available for Chinese, Dutch, English, French, German, Italian, Polish, Portuguese, Spanish, Swedish.
 

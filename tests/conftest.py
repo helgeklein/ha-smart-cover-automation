@@ -37,6 +37,10 @@ from custom_components.smart_cover_automation.const import (
     HA_WEATHER_COND_SUNNY,
 )
 
+# Enable pytest-homeassistant-custom-component plugin
+# This allows tests to use the real Home Assistant instance fixture
+pytest_plugins = "pytest_homeassistant_custom_component"
+
 # Test data constants - these provide consistent entity IDs across all tests
 # Used for temperature-based and sun-based automation testing
 MOCK_COVER_ENTITY_ID = "cover.test_cover"

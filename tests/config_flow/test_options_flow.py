@@ -830,14 +830,17 @@ class TestOptionsFlowHelperMethods:
         # Request settings for two covers, but only one is in input
         covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
 
+        # Empty current settings
+        current_settings: dict[str, Any] = {}
+
         result = OptionsFlowHandler._build_section_cover_settings(
-            user_input, const.STEP_4_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers
+            user_input, const.STEP_4_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers, current_settings
         )
 
         # First cover should have the value
         assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}"] == 90
-        # Second cover should be None (missing key)
-        assert result[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_MAX_CLOSURE}"] is None
+        # Second cover should NOT be in result (was not modified)
+        assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_MAX_CLOSURE}" not in result
 
     async def test_options_flow_no_changes_logs_debug(self, mock_hass_with_covers: MagicMock, caplog: Any) -> None:
         """Test that completing flow with no changes logs at debug level."""
