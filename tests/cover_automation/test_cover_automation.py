@@ -102,6 +102,7 @@ def sensor_data():
         temp_hot=True,
         weather_condition="sunny",
         weather_sunny=True,
+        should_close_for_sunset=False,
     )
 
 
@@ -610,6 +611,7 @@ class TestCalculateDesiredPosition:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
+            should_close_for_sunset=False,
         )
 
         position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True)
@@ -627,6 +629,7 @@ class TestCalculateDesiredPosition:
             temp_hot=False,
             weather_condition="cloudy",
             weather_sunny=False,
+            should_close_for_sunset=False,
         )
 
         position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False)
@@ -645,6 +648,7 @@ class TestCalculateDesiredPosition:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
+            should_close_for_sunset=False,
         )
 
         position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True)
@@ -663,6 +667,7 @@ class TestCalculateDesiredPosition:
             temp_hot=False,
             weather_condition="cloudy",
             weather_sunny=False,
+            should_close_for_sunset=False,
         )
 
         position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False)

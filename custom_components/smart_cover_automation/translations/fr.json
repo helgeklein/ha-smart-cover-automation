@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Heure de début de la période pendant laquelle l'automatisation doit être désactivée.",
                             "automation_disabled_time_range_end": "Heure de fin de la période pendant laquelle l'automatisation doit être désactivée."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Fermer les volets après le coucher du soleil",
+                        "data": {
+                            "close_covers_after_sunset": "Fermer les volets après le coucher du soleil :",
+                            "close_covers_after_sunset_delay": "Délai :",
+                            "close_covers_after_sunset_cover_list": "Volets :"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "Lorsqu'elle est activée, les volets se fermeront un certain temps après le coucher du soleil.",
+                            "close_covers_after_sunset_delay": "Durée d'attente après le coucher du soleil avant de fermer les volets.",
+                            "close_covers_after_sunset_cover_list": "Sélectionnez les volets qui doivent se fermer après le coucher du soleil."
+                        }
                     }
                 }
             }
@@ -202,6 +215,10 @@
                 "reason_let_light_in": {
                     "name": "laisser entrer la lumière",
                     "description": "Motif utilisé lorsque le volet se déplace pour laisser entrer davantage de lumière."
+                },
+                "reason_close_after_sunset": {
+                    "name": "protéger l'intimité la nuit",
+                    "description": "Motif utilisé lorsque le volet se ferme automatiquement après le coucher du soleil."
                 }
             }
         }

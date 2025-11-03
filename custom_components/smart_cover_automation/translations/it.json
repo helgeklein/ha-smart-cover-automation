@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Ora di inizio del periodo in cui l'automazione deve essere disattivata.",
                             "automation_disabled_time_range_end": "Ora di fine del periodo in cui l'automazione deve essere disattivata."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Chiudi le tapparelle dopo il tramonto",
+                        "data": {
+                            "close_covers_after_sunset": "Chiudere le tapparelle dopo il tramonto:",
+                            "close_covers_after_sunset_delay": "Ritardo temporale:",
+                            "close_covers_after_sunset_cover_list": "Tapparelle:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "Quando è attivata, le tapparelle si chiuderanno dopo un certo tempo dal tramonto.",
+                            "close_covers_after_sunset_delay": "Tempo di attesa dopo il tramonto prima di chiudere le tapparelle.",
+                            "close_covers_after_sunset_cover_list": "Seleziona le tapparelle da chiudere dopo il tramonto."
+                        }
                     }
                 }
             }
@@ -202,6 +215,10 @@
                 "reason_let_light_in": {
                     "name": "far entrare la luce",
                     "description": "Motivo usato quando la tapparella si muove per far entrare più luce."
+                },
+                "reason_close_after_sunset": {
+                    "name": "proteggere la privacy di notte",
+                    "description": "Motivo usato quando la tapparella si chiude automaticamente dopo il tramonto."
                 }
             }
         }

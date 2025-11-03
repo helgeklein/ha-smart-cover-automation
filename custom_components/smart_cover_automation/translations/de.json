@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Startzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll.",
                             "automation_disabled_time_range_end": "Endzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Rollläden nach Sonnenuntergang schließen",
+                        "data": {
+                            "close_covers_after_sunset": "Rollläden nach Sonnenuntergang schließen:",
+                            "close_covers_after_sunset_delay": "Zeitverzögerung:",
+                            "close_covers_after_sunset_cover_list": "Rollläden:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "Wenn aktiviert, werden die Rollläden eine bestimmte Zeit nach Sonnenuntergang geschlossen.",
+                            "close_covers_after_sunset_delay": "Wartezeit nach Sonnenuntergang, bevor die Rollläden geschlossen werden.",
+                            "close_covers_after_sunset_cover_list": "Wählen Sie die Rollläden aus, die nach Sonnenuntergang geschlossen werden sollen."
+                        }
                     }
                 }
             }
@@ -202,6 +215,10 @@
                 "reason_let_light_in": {
                     "name": "Licht hereinzulassen",
                     "description": "Grund, wenn der Rollladen bewegt wird, um mehr Licht hereinzulassen."
+                },
+                "reason_close_after_sunset": {
+                    "name": "die Privatsphäre nachts zu schützen",
+                    "description": "Grund, wenn der Rollladen automatisch nach Sonnenuntergang geschlossen wird."
                 }
             }
         }

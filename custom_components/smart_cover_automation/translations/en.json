@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Start time of the period when the automation should be disabled.",
                             "automation_disabled_time_range_end": "End time of the period when the automation should be disabled."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Close covers after sunset",
+                        "data": {
+                            "close_covers_after_sunset": "Close covers after sunset:",
+                            "close_covers_after_sunset_delay": "Time delay:",
+                            "close_covers_after_sunset_cover_list": "Covers:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "When enabled, covers will be closed a certain time after sunset.",
+                            "close_covers_after_sunset_delay": "Time to wait after sunset before closing the covers.",
+                            "close_covers_after_sunset_cover_list": "Select the covers that should be closed after sunset."
+                        }
                     }
                 }
             }
@@ -202,6 +215,10 @@
                 "reason_let_light_in": {
                     "name": "let light in",
                     "description": "Reason used when the cover moves to let more light inside."
+                },
+                "reason_close_after_sunset": {
+                    "name": "protect privacy at night",
+                    "description": "Reason used when the cover closes automatically after sunset."
                 }
             }
         }

@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "自动化应被禁用时段的开始时间。",
                             "automation_disabled_time_range_end": "自动化应被禁用时段的结束时间。"
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "在日落后关闭遮阳设备",
+                        "data": {
+                            "close_covers_after_sunset": "在日落后关闭遮阳设备：",
+                            "close_covers_after_sunset_delay": "延迟时间：",
+                            "close_covers_after_sunset_cover_list": "遮阳设备："
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "启用后，遮阳设备会在日落后经过一段时间关闭。",
+                            "close_covers_after_sunset_delay": "日落后等待多长时间再关闭遮阳设备。",
+                            "close_covers_after_sunset_cover_list": "选择需要在日落后关闭的遮阳设备。"
+                        }
                     }
                 }
             }
@@ -202,6 +215,10 @@
                 "reason_let_light_in": {
                     "name": "引入光线",
                     "description": "当遮阳设备为了让更多光线进入而移动时使用的原因。"
+                },
+                "reason_close_after_sunset": {
+                    "name": "在夜间保护隐私",
+                    "description": "当遮阳设备在日落后自动关闭时使用的原因。"
                 }
             }
         }

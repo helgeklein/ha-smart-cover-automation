@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Starttid för perioden då automationen ska vara inaktiverad.",
                             "automation_disabled_time_range_end": "Sluttid för perioden då automationen ska vara inaktiverad."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Stäng persienner efter solnedgång",
+                        "data": {
+                            "close_covers_after_sunset": "Stäng persienner efter solnedgång:",
+                            "close_covers_after_sunset_delay": "Tidsfördröjning:",
+                            "close_covers_after_sunset_cover_list": "Persienner:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "När den är aktiverad stängs persiennerna en viss tid efter solnedgången.",
+                            "close_covers_after_sunset_delay": "Väntetid efter solnedgången innan persiennerna stängs.",
+                            "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas efter solnedgången."
+                        }
                     }
                 }
             }
@@ -202,6 +215,10 @@
                 "reason_let_light_in": {
                     "name": "släppa in ljus",
                     "description": "Orsak som används när persiennen rör sig för att släppa in mer ljus."
+                },
+                "reason_close_after_sunset": {
+                    "name": "skydda integriteten nattetid",
+                    "description": "Orsak som används när persiennen stängs automatiskt efter solnedgången."
                 }
             }
         }

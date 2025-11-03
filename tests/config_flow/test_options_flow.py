@@ -957,3 +957,434 @@ class TestOptionsFlowHelperMethods:
 
         result_dict = _as_dict(result)
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+
+
+class TestOptionsFlowStep6CloseAfterSunset:
+    """Test step 6 close_after_sunset section functionality."""
+
+    #
+    # test_step_6_schema_includes_close_after_sunset_section
+    #
+    async def test_step_6_schema_includes_close_after_sunset_section(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test that step 6 schema includes all three close_after_sunset fields."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+            ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Navigate to step 6
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            }
+        )
+        await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            }
+        )
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        # Get step 6 form
+        result = await flow.async_step_6()
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "6"
+
+        # Verify schema contains the section
+        schema = result_dict["data_schema"]
+        schema_keys = [str(key) for key in schema.schema.keys()]
+
+        # The section itself should be in schema
+        assert any(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET in key for key in schema_keys)
+
+    #
+    # test_step_6_saves_close_after_sunset_settings
+    #
+    async def test_step_6_saves_close_after_sunset_settings(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test that all three close_after_sunset settings are saved correctly."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}": 90.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+            ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Navigate to step 6
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+            }
+        )
+        await flow.async_step_2(
+            {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+                f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}": 90.0,
+            }
+        )
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            }
+        )
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        # Submit step 6 with close_after_sunset settings
+        user_input = {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 1, "minutes": 30, "seconds": 0},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
+            }
+        }
+
+        result = await flow.async_step_6(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        # Verify all three settings are saved correctly
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value] is True
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value] == {"hours": 1, "minutes": 30, "seconds": 0}
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value] == [MOCK_COVER_ENTITY_ID]
+
+    #
+    # test_step_6_close_after_sunset_disabled
+    #
+    async def test_step_6_close_after_sunset_disabled(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test disabling close_after_sunset feature."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+            ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,  # Previously enabled
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Navigate to step 6
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            }
+        )
+        await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            }
+        )
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        # Submit step 6 with close_after_sunset disabled
+        user_input = {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: False,
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [],
+            }
+        }
+
+        result = await flow.async_step_6(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        # Verify disabled state is saved
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value] is False
+
+    #
+    # test_step_6_close_after_sunset_empty_cover_list
+    #
+    async def test_step_6_close_after_sunset_empty_cover_list(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test saving close_after_sunset with empty cover list."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+            ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Navigate to step 6
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            }
+        )
+        await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            }
+        )
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        # Submit step 6 with empty cover list
+        user_input = {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [],  # Empty list
+            }
+        }
+
+        result = await flow.async_step_6(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        # Verify empty cover list is saved as empty list
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value] == []
+
+    #
+    # test_step_6_close_after_sunset_zero_delay
+    #
+    async def test_step_6_close_after_sunset_zero_delay(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test saving close_after_sunset with zero delay (immediate closure)."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+            ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Navigate to step 6
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            }
+        )
+        await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            }
+        )
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        # Submit step 6 with zero delay
+        user_input = {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 0, "seconds": 0},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
+            }
+        }
+
+        result = await flow.async_step_6(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        # Verify zero delay is saved correctly as a dict
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value] == {"hours": 0, "minutes": 0, "seconds": 0}
+
+    #
+    # test_step_6_close_after_sunset_multiple_covers
+    #
+    async def test_step_6_close_after_sunset_multiple_covers(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test saving close_after_sunset with multiple covers selected."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}": 90.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+            ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Navigate to step 6
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+            }
+        )
+        await flow.async_step_2(
+            {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+                f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}": 90.0,
+            }
+        )
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            }
+        )
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        # Submit step 6 with multiple covers
+        user_input = {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 2, "minutes": 0, "seconds": 30},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+            }
+        }
+
+        result = await flow.async_step_6(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        # Verify both covers are in the list
+        assert set(saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value]) == {
+            MOCK_COVER_ENTITY_ID,
+            MOCK_COVER_ENTITY_ID_2,
+        }
+        # Verify delay is saved as dict: 2 hours + 30 seconds
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value] == {"hours": 2, "minutes": 0, "seconds": 30}
+
+    #
+    # test_step_6_section_extraction_flattens_correctly
+    #
+    async def test_step_6_section_extraction_flattens_correctly(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test that section extraction correctly flattens nested close_after_sunset data."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+            ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        # Navigate to step 6
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            }
+        )
+        await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
+        await flow.async_step_3(
+            {
+                ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
+                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            }
+        )
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        # Submit step 6 with nested section data
+        user_input = {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 1, "minutes": 15, "seconds": 30},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
+            }
+        }
+
+        result = await flow.async_step_6(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        # Verify section key is NOT in saved data (should be flattened)
+        assert const.STEP_6_SECTION_CLOSE_AFTER_SUNSET not in saved_data
+
+        # Verify all three settings are at top level
+        assert ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value in saved_data
+        assert ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value in saved_data
+        assert ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value in saved_data

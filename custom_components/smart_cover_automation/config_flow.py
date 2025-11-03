@@ -219,7 +219,7 @@ class FlowHelper:
                 vol.Required(
                     ConfKeys.MANUAL_OVERRIDE_DURATION.value,
                     default=duration_default,
-                ): selector.DurationSelector(selector.DurationSelectorConfig()),
+                ): selector.DurationSelector(),
             }
         )
 
@@ -368,10 +368,11 @@ class FlowHelper:
     # build_schema_step_6
     #
     @staticmethod
-    def build_schema_step_6(resolved_settings: ResolvedConfig) -> vol.Schema:
+    def build_schema_step_6(covers: list[str], resolved_settings: ResolvedConfig) -> vol.Schema:
         """Build schema for step 6 settings.
 
         Args:
+            covers: List of cover entity IDs
             resolved_settings: Resolved configuration with defaults
 
         Returns:
@@ -388,10 +389,12 @@ class FlowHelper:
             )
         ] = selector.BooleanSelector()
 
-        # Build schema dict for time range section
+        #
+        # Section: Disable automation in time range
+        #
         time_range_schema_dict: dict[vol.Marker, object] = {}
 
-        # Enable time range
+        # Setting to enable/disable
         time_range_schema_dict[
             vol.Required(
                 ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value,
@@ -415,10 +418,57 @@ class FlowHelper:
             )
         ] = selector.TimeSelector()
 
-        # Group time range settings in non-collapsed section
+        # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_TIME_RANGE)] = section(
             vol.Schema(time_range_schema_dict),
-            {"collapsed": False},
+            {"collapsed": True},
+        )
+
+        #
+        # Section: Close covers after sunset
+        #
+        covers_sunset_schema_dict: dict[vol.Marker, object] = {}
+
+        # Setting to enable/disable
+        covers_sunset_schema_dict[
+            vol.Required(
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value,
+                default=resolved_settings.close_covers_after_sunset,
+            )
+        ] = selector.BooleanSelector()
+
+        delay_default = {
+            "hours": resolved_settings.close_covers_after_sunset_delay // 3600,
+            "minutes": (resolved_settings.close_covers_after_sunset_delay % 3600) // 60,
+            "seconds": resolved_settings.close_covers_after_sunset_delay % 60,
+        }
+
+        # Close covers after sunset: delay
+        covers_sunset_schema_dict[
+            vol.Required(
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value,
+                default=delay_default,
+            )
+        ] = selector.DurationSelector()
+
+        # Close covers after sunset: cover list
+        covers_sunset_schema_dict[
+            vol.Required(
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value,
+                default=list(resolved_settings.close_covers_after_sunset_cover_list),
+            )
+        ] = selector.EntitySelector(
+            selector.EntitySelectorConfig(
+                domain=Platform.COVER,
+                multiple=True,
+                include_entities=covers,
+            )
+        )
+
+        # Group settings in collapsed section
+        schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
+            vol.Schema(covers_sunset_schema_dict),
+            {"collapsed": True},
         )
 
         return vol.Schema(schema_dict)
@@ -585,7 +635,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         elif suffix == const.COVER_SFX_WINDOW_SENSORS:
             section_names = {const.STEP_5_SECTION_WINDOW_SENSORS}
         else:
-            section_names = set()
+            # If you add a new per-cover section, update this method
+            raise AssertionError(f"Unknown suffix '{suffix}' in _build_section_cover_settings")
 
         # Extract cover data and determine which sections are present
         user_input_extracted, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
@@ -897,7 +948,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             user_input, const.STEP_5_SECTION_WINDOW_SENSORS, const.COVER_SFX_WINDOW_SENSORS, covers_in_input, current_settings
         )
 
-        # Store the complete min and max per-cover settings
+        # Store the complete per-cover settings
         self._config_data.update(window_sensor_data)
 
         # Proceed to step 5
@@ -915,20 +966,23 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Fill in defaults where there's no existing value
             resolved_settings = resolve(current_settings)
 
+            # Get the selected covers
+            selected_covers = self._get_covers()
+
             # Show the form
             return self.async_show_form(
                 step_id="6",
-                data_schema=FlowHelper.build_schema_step_6(resolved_settings),
+                data_schema=FlowHelper.build_schema_step_6(covers=selected_covers, resolved_settings=resolved_settings),
             )
-        else:
-            const.LOGGER.debug(f"Options flow step 6 user input: {user_input}")
 
-            # Extract section data if present
-            section_names = {const.STEP_6_SECTION_TIME_RANGE}
-            user_input_extracted, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
+        const.LOGGER.debug(f"Options flow step 6 user input: {user_input}")
 
-            # Store step 6 data (use extracted data to handle sections properly)
-            self._config_data.update(user_input_extracted)
+        # Extract section data if present
+        section_names = {const.STEP_6_SECTION_TIME_RANGE, const.STEP_6_SECTION_CLOSE_AFTER_SUNSET}
+        user_input_extracted, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
 
-            # Finalize and save configuration
-            return self._finalize_and_save()
+        # Store step 6 data (use extracted data to handle sections properly)
+        self._config_data.update(user_input_extracted)
+
+        # Finalize and save configuration
+        return self._finalize_and_save()

@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Hora de início do período em que a automação deve ser desativada.",
                             "automation_disabled_time_range_end": "Hora de fim do período em que a automação deve ser desativada."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Fechar persianas após o pôr do sol",
+                        "data": {
+                            "close_covers_after_sunset": "Fechar persianas após o pôr do sol:",
+                            "close_covers_after_sunset_delay": "Atraso de tempo:",
+                            "close_covers_after_sunset_cover_list": "Persianas:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "Quando ativada, as persianas serão fechadas após algum tempo do pôr do sol.",
+                            "close_covers_after_sunset_delay": "Tempo de espera após o pôr do sol antes de fechar as persianas.",
+                            "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas após o pôr do sol."
+                        }
                     }
                 }
             }
@@ -202,6 +215,10 @@
                 "reason_let_light_in": {
                     "name": "deixar entrar luz",
                     "description": "Motivo usado quando a persiana se move para deixar entrar mais luz."
+                },
+                "reason_close_after_sunset": {
+                    "name": "proteger a privacidade à noite",
+                    "description": "Motivo usado quando a persiana fecha automaticamente após o pôr do sol."
                 }
             }
         }

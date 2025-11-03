@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Czas rozpoczęcia okresu, w którym automatyzacja ma być wyłączona.",
                             "automation_disabled_time_range_end": "Czas zakończenia okresu, w którym automatyzacja ma być wyłączona."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Zamykanie rolet po zachodzie słońca",
+                        "data": {
+                            "close_covers_after_sunset": "Zamykanie rolet po zachodzie słońca:",
+                            "close_covers_after_sunset_delay": "Opóźnienie czasowe:",
+                            "close_covers_after_sunset_cover_list": "Rolety:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "Po włączeniu rolety zostaną zamknięte po określonym czasie od zachodu słońca.",
+                            "close_covers_after_sunset_delay": "Czas oczekiwania po zachodzie słońca przed zamknięciem rolet.",
+                            "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte po zachodzie słońca."
+                        }
                     }
                 }
             }
@@ -202,6 +215,10 @@
                 "reason_let_light_in": {
                     "name": "wpuścić światło",
                     "description": "Powód używany, gdy roleta porusza się, aby wpuścić więcej światła."
+                },
+                "reason_close_after_sunset": {
+                    "name": "chronić prywatność nocą",
+                    "description": "Powód używany, gdy roleta zamyka się automatycznie po zachodzie słońca."
                 }
             }
         }

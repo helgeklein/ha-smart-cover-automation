@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Starttijd van de periode waarin de automatisering moet zijn uitgeschakeld.",
                             "automation_disabled_time_range_end": "Eindtijd van de periode waarin de automatisering moet zijn uitgeschakeld."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Rolluiken na zonsondergang sluiten",
+                        "data": {
+                            "close_covers_after_sunset": "Rolluiken na zonsondergang sluiten:",
+                            "close_covers_after_sunset_delay": "Tijdvertraging:",
+                            "close_covers_after_sunset_cover_list": "Rolluiken:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "Wanneer ingeschakeld worden de rolluiken een bepaalde tijd na zonsondergang gesloten.",
+                            "close_covers_after_sunset_delay": "Wachttijd na zonsondergang voordat de rolluiken worden gesloten.",
+                            "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die na zonsondergang moeten worden gesloten."
+                        }
                     }
                 }
             }
@@ -202,6 +215,10 @@
                 "reason_let_light_in": {
                     "name": "licht binnen te laten",
                     "description": "Reden die wordt gebruikt wanneer het rolluik beweegt om meer licht binnen te laten."
+                },
+                "reason_close_after_sunset": {
+                    "name": "de privacy 's nachts te beschermen",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik automatisch sluit na zonsondergang."
                 }
             }
         }
