@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Krok 1 z 6",
-                "description": "Wybierz czujnik prognozy pogody oraz rolety do automatyzacji (wymagane).",
+                "description": "Wybierz **czujnik prognozy pogody** oraz **rolety** do automatyzacji (wymagane).",
                 "data": {
                     "covers": "Rolety do automatyzacji:",
                     "weather_entity_id": "Czujnik prognozy pogody:"
@@ -33,7 +33,7 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Krok 3 z 6",
-                "description": "Skonfiguruj dodatkowe ustawienia (opcjonalne).\n\nTen krok jest oznaczony jako opcjonalny, ponieważ wartości domyślne powinny dobrze działać dla większości użytkowników.",
+                "description": "Skonfiguruj **dodatkowe ustawienia** (opcjonalne).",
                 "data": {
                     "covers_max_closure": "Maksymalna pozycja rolety:",
                     "covers_min_closure": "Minimalna pozycja rolety:",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Przedział czasowy",
+                        "name": "Wyłącz automatyzację w przedziale czasowym",
                         "data": {
                             "automation_disabled_time_range": "Wyłącz automatyzację w przedziale czasowym:",
                             "automation_disabled_time_range_start": "Wyłącz od:",

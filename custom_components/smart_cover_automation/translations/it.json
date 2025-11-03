@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Passo 1 di 6",
-                "description": "Seleziona un sensore di previsione meteo e le tapparelle da automatizzare (obbligatorio).",
+                "description": "Seleziona un **sensore di previsione meteo** e le **tapparelle** da automatizzare (obbligatorio).",
                 "data": {
                     "covers": "Tapparelle da automatizzare:",
                     "weather_entity_id": "Sensore previsioni meteo:"
@@ -33,7 +33,7 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Passo 3 di 6",
-                "description": "Configura impostazioni aggiuntive (opzionale).\n\nQuesto passaggio è contrassegnato come opzionale perché i valori predefiniti dovrebbero andare bene per la maggior parte degli utenti.",
+                "description": "Configura **impostazioni aggiuntive** (opzionale).",
                 "data": {
                     "covers_max_closure": "Posizione massima della tapparella:",
                     "covers_min_closure": "Posizione minima della tapparella:",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Intervallo orario",
+                        "name": "Disattiva l'automazione in un intervallo orario",
                         "data": {
                             "automation_disabled_time_range": "Disattiva l'automazione in un intervallo orario:",
                             "automation_disabled_time_range_start": "Disattiva da:",

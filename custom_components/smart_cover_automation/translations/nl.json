@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Stap 1 van 6",
-                "description": "Selecteer een weersvoorspellingssensor en de rolluiken die moeten worden geautomatiseerd (verplicht).",
+                "description": "Selecteer een **weersvoorspellingssensor** en de **rolluiken** die moeten worden geautomatiseerd (verplicht).",
                 "data": {
                     "covers": "Te automatiseren rolluiken:",
                     "weather_entity_id": "Weersverwachting sensor:"
@@ -33,7 +33,7 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Stap 3 van 6",
-                "description": "Configureer aanvullende instellingen (optioneel).\n\nDeze stap is als optioneel gemarkeerd omdat de standaardwaarden voor de meeste gebruikers goed zouden moeten werken.",
+                "description": "Configureer **aanvullende instellingen** (optioneel).",
                 "data": {
                     "covers_max_closure": "Maximale positie van het rolluik:",
                     "covers_min_closure": "Minimale positie van het rolluik:",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Tijdvenster",
+                        "name": "Automatisering in tijdvenster uitschakelen",
                         "data": {
                             "automation_disabled_time_range": "Automatisering uitschakelen binnen tijdvenster:",
                             "automation_disabled_time_range_start": "Uitschakelen vanaf:",

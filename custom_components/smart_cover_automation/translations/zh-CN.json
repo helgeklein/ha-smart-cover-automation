@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "智能遮阳自动化 - 第 1 步，共 6 步",
-                "description": "选择一个天气预报传感器以及要自动化的遮阳设备（必需）。",
+                "description": "选择一个**天气预报传感器**以及要自动化的**遮阳设备**（必需）。",
                 "data": {
                     "covers": "要自动化的遮阳设备：",
                     "weather_entity_id": "天气预报传感器："
@@ -33,7 +33,7 @@
             },
             "3": {
                 "title": "智能遮阳自动化 - 第 3 步，共 6 步",
-                "description": "配置其他设置（可选）。\n\n此步骤被标记为可选，因为默认值通常适用于大多数用户。",
+                "description": "配置**其他设置**（可选）。",
                 "data": {
                     "covers_max_closure": "遮阳设备最大位置：",
                     "covers_min_closure": "遮阳设备最小位置：",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "时间范围",
+                        "name": "在时间范围内禁用自动化",
                         "data": {
                             "automation_disabled_time_range": "在时间范围内禁用自动化：",
                             "automation_disabled_time_range_start": "禁用开始时间：",

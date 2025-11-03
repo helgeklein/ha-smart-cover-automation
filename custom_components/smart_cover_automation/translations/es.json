@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Paso 1 de 6",
-                "description": "Seleccione un sensor de previsión meteorológica y las persianas a automatizar (obligatorio).",
+                "description": "Seleccione un **sensor de previsión meteorológica** y las **persianas** a automatizar (obligatorio).",
                 "data": {
                     "covers": "Persianas a automatizar:",
                     "weather_entity_id": "Sensor de previsión meteorológica:"
@@ -33,7 +33,7 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Paso 3 de 6",
-                "description": "Configure ajustes adicionales (opcional).\n\nEste paso se marca como opcional porque los valores predeterminados deberían funcionar bien para la mayoría de los usuarios.",
+                "description": "Configure **ajustes adicionales** (opcional).",
                 "data": {
                     "covers_max_closure": "Posición máxima de la persiana:",
                     "covers_min_closure": "Posición mínima de la persiana:",
@@ -53,7 +53,7 @@
             },
             "4": {
                 "title": "Smart Cover Automation - Paso 4 de 6",
-                "description": "Configura las posiciones **mín./máx.** para cada persiana (opcional). Si no se definen, se usarán los valores globales configurados en el paso anterior.\n\n(0 = totalmente cerrada, 100 = totalmente abierta)",
+                "description": "Configure las posiciones **mín/máx** para cada persiana (opcional). Si no se definen, se usarán los valores globales configurados en el paso anterior.\n\n(0 = totalmente cerrada, 100 = totalmente abierta)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Posiciones máximas de la persiana"
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Intervalo de tiempo",
+                        "name": "Desactivar la automatización en un intervalo de tiempo",
                         "data": {
                             "automation_disabled_time_range": "Desactivar la automatización en un intervalo de tiempo:",
                             "automation_disabled_time_range_start": "Desactivar desde:",

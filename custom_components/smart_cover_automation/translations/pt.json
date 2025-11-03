@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Passo 1 de 6",
-                "description": "Selecione um sensor de previsão do tempo e as persianas para automatizar (obrigatório).",
+                "description": "Selecione um **sensor de previsão do tempo** e as **persianas** para automatizar (obrigatório).",
                 "data": {
                     "covers": "Persianas para automatizar:",
                     "weather_entity_id": "Sensor de previsão do tempo:"
@@ -33,7 +33,7 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Passo 3 de 6",
-                "description": "Configure definições adicionais (opcional).\n\nEste passo é marcado como opcional porque os valores predefinidos devem funcionar bem para a maioria dos utilizadores.",
+                "description": "Configure **definições adicionais** (opcional).",
                 "data": {
                     "covers_max_closure": "Posição máxima da persiana:",
                     "covers_min_closure": "Posição mínima da persiana:",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Intervalo de tempo",
+                        "name": "Desativar a automação num intervalo de tempo",
                         "data": {
                             "automation_disabled_time_range": "Desativar a automação num intervalo de tempo:",
                             "automation_disabled_time_range_start": "Desativar de:",

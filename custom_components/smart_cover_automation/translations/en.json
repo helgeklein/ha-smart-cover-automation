@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Step 1 of 6",
-                "description": "Select a weather forecast sensor and the covers to automate (required).",
+                "description": "Select a **weather forecast sensor** and the **covers** to automate (required).",
                 "data": {
                     "covers": "Covers to automate:",
                     "weather_entity_id": "Weather forecast sensor:"
@@ -33,7 +33,7 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Step 3 of 6",
-                "description": "Configure additional settings (optional).\n\nThis step is marked as optional because the default values should work well for most users.",
+                "description": "Configure **additional settings** (optional).",
                 "data": {
                     "covers_max_closure": "Maximum cover position:",
                     "covers_min_closure": "Minimum cover position:",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Time range",
+                        "name": "Disable automation in time range",
                         "data": {
                             "automation_disabled_time_range": "Disable automation in time range:",
                             "automation_disabled_time_range_start": "Disable from:",
