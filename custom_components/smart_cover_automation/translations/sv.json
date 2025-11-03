@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Steg 1 av 6",
-                "description": "Välj en väderprognossensor och persiennerna som ska automatiseras (obligatoriskt).",
+                "description": "Välj en **väderprognossensor** och de **persienner** som ska automatiseras (obligatoriskt).",
                 "data": {
                     "covers": "Persienner att automatisera:",
                     "weather_entity_id": "Väderprognosensor:"
@@ -33,7 +33,7 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Steg 3 av 6",
-                "description": "Konfigurera ytterligare inställningar (valfritt).\n\nDetta steg är markerat som valfritt eftersom standardvärdena bör fungera bra för de flesta användare.",
+                "description": "Konfigurera **ytterligare inställningar** (valfritt).",
                 "data": {
                     "covers_max_closure": "Högsta läge för persienn:",
                     "covers_min_closure": "Lägsta läge för persienn:",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Tidsintervall",
+                        "name": "Inaktivera automation i tidsintervall",
                         "data": {
                             "automation_disabled_time_range": "Inaktivera automation i tidsintervall:",
                             "automation_disabled_time_range_start": "Inaktivera från:",

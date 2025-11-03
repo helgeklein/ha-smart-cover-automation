@@ -17,7 +17,7 @@
         "step": {
             "init": {
                 "title": "Smart Cover Automation - Schritt 1 von 6",
-                "description": "Wählen Sie einen Wettervorhersage-Sensor und die zu automatisierenden Rollläden aus (erforderlich).",
+                "description": "Wählen Sie einen **Wettervorhersage-Sensor** und die zu automatisierenden **Rollläden** aus (erforderlich).",
                 "data": {
                     "covers": "Zu automatisierende Rollläden:",
                     "weather_entity_id": "Wettervorhersage-Sensor:"
@@ -33,7 +33,7 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Schritt 3 von 6",
-                "description": "Konfigurieren Sie zusätzliche Einstellungen (optional).\n\nDieser Schritt ist als optional markiert, da die Standardwerte für die meisten Nutzer gut funktionieren sollten.",
+                "description": "Konfigurieren Sie **zusätzliche Einstellungen** (optional).",
                 "data": {
                     "covers_max_closure": "Maximale Rollladenposition:",
                     "covers_min_closure": "Minimale Rollladenposition:",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Zeitbereich",
+                        "name": "Automatisierung im Zeitraum deaktivieren",
                         "data": {
                             "automation_disabled_time_range": "Automatisierung im Zeitraum deaktivieren:",
                             "automation_disabled_time_range_start": "Deaktivieren ab:",

@@ -138,8 +138,8 @@ async def test_temp_threshold_sensor_uses_default_when_not_configured(mock_confi
     # Verify sensor returns a value (the default from config registry)
     assert native_value is not None
     assert isinstance(native_value, float)
-    # Default value should be 23.0 based on config.py
-    assert native_value == 23.0
+    # Default value should be 24.0 based on config.py
+    assert native_value == 24.0
 
 
 async def test_temp_current_max_sensor_entity_properties(mock_coordinator_basic) -> None:
