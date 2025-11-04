@@ -40,7 +40,7 @@
                     "manual_override_duration": "Manual override duration:",
                     "sun_azimuth_tolerance": "Sun azimuth tolerance:",
                     "sun_elevation_threshold": "Minimal sun elevation:",
-                    "temp_threshold": "Temperature threshold:"
+                    "temp_threshold": "Heat threshold:"
                 },
                 "data_description": {
                     "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Disable automation in time range",
+                        "name": "Blocked time range",
                         "data": {
                             "automation_disabled_time_range": "Disable automation in time range:",
                             "automation_disabled_time_range_start": "Disable from:",
@@ -96,7 +96,7 @@
                         }
                     },
                     "section_close_after_sunset": {
-                        "name": "Close covers after sunset",
+                        "name": "Evening closure",
                         "data": {
                             "close_covers_after_sunset": "Close covers after sunset:",
                             "close_covers_after_sunset_delay": "Time delay:",
@@ -115,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automation: disabled time range",
+                "name": "Time range: disabled",
                 "state": {
                     "off": "Off"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Evening closure: delay"
             },
             "sun_azimuth": {
                 "name": "Sun azimuth"
@@ -130,12 +133,19 @@
                 "name": "Temperature: today's maximum"
             },
             "temp_threshold": {
-                "name": "Temperature: threshold"
+                "name": "Temperature: heat threshold"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "close_covers_after_sunset": {
+                "name": "Evening closure: enabled?",
+                "state": {
+                    "on": "Yes",
+                    "off": "No"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Nighttime: block opening?",

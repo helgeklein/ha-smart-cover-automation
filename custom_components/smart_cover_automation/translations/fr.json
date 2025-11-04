@@ -40,7 +40,7 @@
                     "manual_override_duration": "Durée de l'override manuel :",
                     "sun_azimuth_tolerance": "Tolérance de l'azimut solaire :",
                     "sun_elevation_threshold": "Élévation solaire minimale :",
-                    "temp_threshold": "Seuil de température :"
+                    "temp_threshold": "Seuil de chaleur :"
                 },
                 "data_description": {
                     "covers_max_closure": "Ne jamais fermer au-delà de cette valeur afin de laisser passer un peu de lumière (0 = totalement fermé, 100 = totalement ouvert).",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Désactiver l'automatisation sur une plage horaire",
+                        "name": "Plage horaire bloquée",
                         "data": {
                             "automation_disabled_time_range": "Désactiver l'automatisation sur une plage horaire :",
                             "automation_disabled_time_range_start": "Désactiver à partir de :",
@@ -96,7 +96,7 @@
                         }
                     },
                     "section_close_after_sunset": {
-                        "name": "Fermer les volets après le coucher du soleil",
+                        "name": "Fermeture du soir",
                         "data": {
                             "close_covers_after_sunset": "Fermer les volets après le coucher du soleil :",
                             "close_covers_after_sunset_delay": "Délai :",
@@ -115,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automatisation : plage désactivée",
+                "name": "Plage horaire : désactivée",
                 "state": {
                     "off": "Désactivé"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Fermeture du soir : délai"
             },
             "sun_azimuth": {
                 "name": "Azimut solaire"
@@ -130,12 +133,19 @@
                 "name": "Température : maximum du jour"
             },
             "temp_threshold": {
-                "name": "Température : seuil"
+                "name": "Température : seuil de chaleur"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Statut"
+            },
+            "close_covers_after_sunset": {
+                "name": "Fermeture du soir : activée ?",
+                "state": {
+                    "on": "Oui",
+                    "off": "Non"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Nuit : bloquer l'ouverture ?",

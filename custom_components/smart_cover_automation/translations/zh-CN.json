@@ -40,7 +40,7 @@
                     "manual_override_duration": "手动覆盖持续时间：",
                     "sun_azimuth_tolerance": "太阳方位角容差：",
                     "sun_elevation_threshold": "最低太阳高度角：",
-                    "temp_threshold": "温度阈值："
+                    "temp_threshold": "高温阈值："
                 },
                 "data_description": {
                     "covers_max_closure": "不要超过此值关闭，以便始终留下一点光线（0 = 完全关闭，100 = 完全打开）。",
@@ -48,7 +48,7 @@
                     "manual_override_duration": "手动移动遮阳后忽略该遮阳的时间长度（0 = 不忽略）。",
                     "sun_azimuth_tolerance": "认为阳光直射窗户时允许的最大水平角度（度）。",
                     "sun_elevation_threshold": "当太阳高度超过此阈值时，自动化开始运行（度，参照地平线）。",
-                    "temp_threshold": "达到该温度时，自动化会关闭遮阳以防止高温（摄氏度）。"
+                    "temp_threshold": "达到该高温阈值时，自动化会关闭遮阳以防止高温（摄氏度）。"
                 }
             },
             "4": {
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "在时间范围内禁用自动化",
+                        "name": "已阻止的时间范围",
                         "data": {
                             "automation_disabled_time_range": "在时间范围内禁用自动化：",
                             "automation_disabled_time_range_start": "禁用开始时间：",
@@ -96,7 +96,7 @@
                         }
                     },
                     "section_close_after_sunset": {
-                        "name": "在日落后关闭遮阳设备",
+                        "name": "夜间关闭",
                         "data": {
                             "close_covers_after_sunset": "在日落后关闭遮阳设备：",
                             "close_covers_after_sunset_delay": "延迟时间：",
@@ -115,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "自动化：禁用时段",
+                "name": "时间范围：已禁用",
                 "state": {
                     "off": "关闭"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "夜间关闭：延迟"
             },
             "sun_azimuth": {
                 "name": "太阳方位角"
@@ -130,12 +133,19 @@
                 "name": "温度：今日最高值"
             },
             "temp_threshold": {
-                "name": "温度：阈值"
+                "name": "温度：高温阈值"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "状态"
+            },
+            "close_covers_after_sunset": {
+                "name": "夜间关闭：已启用？",
+                "state": {
+                    "on": "是",
+                    "off": "否"
+                }
             },
             "nighttime_block_opening": {
                 "name": "夜间：阻止开启？",

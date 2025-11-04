@@ -40,7 +40,7 @@
                     "manual_override_duration": "Czas trwania ręcznego pominięcia:",
                     "sun_azimuth_tolerance": "Tolerancja azymutu słońca:",
                     "sun_elevation_threshold": "Minimalna wysokość słońca:",
-                    "temp_threshold": "Próg temperatury:"
+                    "temp_threshold": "Próg upału:"
                 },
                 "data_description": {
                     "covers_max_closure": "Nigdy nie zamykaj dalej niż do tej wartości, aby zawsze wpuszczać odrobinę światła (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Wyłącz automatyzację w przedziale czasowym",
+                        "name": "Zablokowany przedział czasu",
                         "data": {
                             "automation_disabled_time_range": "Wyłącz automatyzację w przedziale czasowym:",
                             "automation_disabled_time_range_start": "Wyłącz od:",
@@ -96,7 +96,7 @@
                         }
                     },
                     "section_close_after_sunset": {
-                        "name": "Zamykanie rolet po zachodzie słońca",
+                        "name": "Zamykanie wieczorne",
                         "data": {
                             "close_covers_after_sunset": "Zamykanie rolet po zachodzie słońca:",
                             "close_covers_after_sunset_delay": "Opóźnienie czasowe:",
@@ -115,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automatyzacja: wyłączony przedział czasu",
+                "name": "Przedział czasu: wyłączony",
                 "state": {
                     "off": "Wyłączone"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Zamykanie wieczorne: opóźnienie"
             },
             "sun_azimuth": {
                 "name": "Azymut słońca"
@@ -130,12 +133,19 @@
                 "name": "Temperatura: dzisiejsze maksimum"
             },
             "temp_threshold": {
-                "name": "Temperatura: próg"
+                "name": "Temperatura: próg upału"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "close_covers_after_sunset": {
+                "name": "Zamykanie wieczorne: włączone?",
+                "state": {
+                    "on": "Tak",
+                    "off": "Nie"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Noc: blokować otwieranie?",

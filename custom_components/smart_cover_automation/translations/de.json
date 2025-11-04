@@ -40,7 +40,7 @@
                     "manual_override_duration": "Dauer der manuellen Übersteuerung:",
                     "sun_azimuth_tolerance": "Sonnen-Azimut-Toleranz:",
                     "sun_elevation_threshold": "Minimale Sonnenhöhe:",
-                    "temp_threshold": "Temperaturschwelle:"
+                    "temp_threshold": "Hitzeschwelle:"
                 },
                 "data_description": {
                     "covers_max_closure": "Nie weiter schließen als diesen Wert, damit stets etwas Licht bleibt (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Automatisierung im Zeitraum deaktivieren",
+                        "name": "Blockierter Zeitraum",
                         "data": {
                             "automation_disabled_time_range": "Automatisierung im Zeitraum deaktivieren:",
                             "automation_disabled_time_range_start": "Deaktivieren ab:",
@@ -96,7 +96,7 @@
                         }
                     },
                     "section_close_after_sunset": {
-                        "name": "Rollläden nach Sonnenuntergang schließen",
+                        "name": "Nachtschließen",
                         "data": {
                             "close_covers_after_sunset": "Rollläden nach Sonnenuntergang schließen:",
                             "close_covers_after_sunset_delay": "Zeitverzögerung:",
@@ -115,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automatisierung: deaktivierter Zeitraum",
+                "name": "Zeitraum: deaktiviert",
                 "state": {
                     "off": "Aus"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Nachtschließen: Verzögerung"
             },
             "sun_azimuth": {
                 "name": "Sonnenazimut"
@@ -130,12 +133,19 @@
                 "name": "Temperatur: Tagesmaximum"
             },
             "temp_threshold": {
-                "name": "Temperatur: Grenzwert"
+                "name": "Temperatur: Hitzeschwelle"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "close_covers_after_sunset": {
+                "name": "Nachtschließen: aktiviert?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nein"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Nacht: Öffnen blockieren?",

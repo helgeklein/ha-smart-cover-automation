@@ -40,7 +40,7 @@
                     "manual_override_duration": "Duración de anulación manual:",
                     "sun_azimuth_tolerance": "Tolerancia de azimut solar:",
                     "sun_elevation_threshold": "Elevación mínima del sol:",
-                    "temp_threshold": "Umbral de temperatura:"
+                    "temp_threshold": "Umbral de calor:"
                 },
                 "data_description": {
                     "covers_max_closure": "Nunca cerrar más allá de este valor para dejar pasar algo de luz (0 = totalmente cerrado, 100 = totalmente abierto).",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Desactivar la automatización en un intervalo de tiempo",
+                        "name": "Intervalo de tiempo bloqueado",
                         "data": {
                             "automation_disabled_time_range": "Desactivar la automatización en un intervalo de tiempo:",
                             "automation_disabled_time_range_start": "Desactivar desde:",
@@ -96,7 +96,7 @@
                         }
                     },
                     "section_close_after_sunset": {
-                        "name": "Cerrar persianas tras la puesta de sol",
+                        "name": "Cierre al anochecer",
                         "data": {
                             "close_covers_after_sunset": "Cerrar persianas tras la puesta de sol:",
                             "close_covers_after_sunset_delay": "Retraso temporal:",
@@ -115,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automatización: intervalo desactivado",
+                "name": "Intervalo de tiempo: desactivado",
                 "state": {
                     "off": "Desactivado"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Cierre al anochecer: demora"
             },
             "sun_azimuth": {
                 "name": "Acimut solar"
@@ -130,12 +133,19 @@
                 "name": "Temperatura: máximo de hoy"
             },
             "temp_threshold": {
-                "name": "Temperatura: umbral"
+                "name": "Temperatura: umbral de calor"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Estado"
+            },
+            "close_covers_after_sunset": {
+                "name": "Cierre al anochecer: ¿activado?",
+                "state": {
+                    "on": "Sí",
+                    "off": "No"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Noche: ¿bloquear apertura?",

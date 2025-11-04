@@ -40,7 +40,7 @@
                     "manual_override_duration": "Varaktighet för manuell överstyrning:",
                     "sun_azimuth_tolerance": "Tolerans för solens azimut:",
                     "sun_elevation_threshold": "Minimal solhöjd:",
-                    "temp_threshold": "Temperaturtröskel:"
+                    "temp_threshold": "Värmetröskel:"
                 },
                 "data_description": {
                     "covers_max_closure": "Stäng aldrig mer än detta värde så att lite ljus alltid släpps in (0 = helt stängd, 100 = helt öppen).",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Inaktivera automation i tidsintervall",
+                        "name": "Blockerat tidsintervall",
                         "data": {
                             "automation_disabled_time_range": "Inaktivera automation i tidsintervall:",
                             "automation_disabled_time_range_start": "Inaktivera från:",
@@ -96,7 +96,7 @@
                         }
                     },
                     "section_close_after_sunset": {
-                        "name": "Stäng persienner efter solnedgång",
+                        "name": "Kvällsstängning",
                         "data": {
                             "close_covers_after_sunset": "Stäng persienner efter solnedgång:",
                             "close_covers_after_sunset_delay": "Tidsfördröjning:",
@@ -115,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automation: inaktiverat tidsintervall",
+                "name": "Tidsintervall: inaktiverat",
                 "state": {
                     "off": "Av"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Kvällsstängning: fördröjning"
             },
             "sun_azimuth": {
                 "name": "Solazimut"
@@ -130,12 +133,19 @@
                 "name": "Temperatur: dagens högsta"
             },
             "temp_threshold": {
-                "name": "Temperatur: tröskelvärde"
+                "name": "Temperatur: värmetröskel"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "close_covers_after_sunset": {
+                "name": "Kvällsstängning: aktiverad?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nej"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Natt: blockera öppning?",

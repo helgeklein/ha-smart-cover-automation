@@ -40,7 +40,7 @@
                     "manual_override_duration": "Duur van de handmatige override:",
                     "sun_azimuth_tolerance": "Tolerantie voor zonazimut:",
                     "sun_elevation_threshold": "Minimale zonhoogte:",
-                    "temp_threshold": "Temperatuurdrempel:"
+                    "temp_threshold": "Hittedrempel:"
                 },
                 "data_description": {
                     "covers_max_closure": "Sluit nooit verder dan deze waarde zodat er altijd wat licht binnenkomt (0 = volledig gesloten, 100 = volledig open).",
@@ -83,7 +83,7 @@
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Automatisering in tijdvenster uitschakelen",
+                        "name": "Geblokkeerd tijdvenster",
                         "data": {
                             "automation_disabled_time_range": "Automatisering uitschakelen binnen tijdvenster:",
                             "automation_disabled_time_range_start": "Uitschakelen vanaf:",
@@ -96,7 +96,7 @@
                         }
                     },
                     "section_close_after_sunset": {
-                        "name": "Rolluiken na zonsondergang sluiten",
+                        "name": "Avondsluiting",
                         "data": {
                             "close_covers_after_sunset": "Rolluiken na zonsondergang sluiten:",
                             "close_covers_after_sunset_delay": "Tijdvertraging:",
@@ -115,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automatisering: uitgeschakeld tijdvenster",
+                "name": "Tijdvenster: uitgeschakeld",
                 "state": {
                     "off": "Uit"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Avondsluiting: vertraging"
             },
             "sun_azimuth": {
                 "name": "Zonazimut"
@@ -130,12 +133,19 @@
                 "name": "Temperatuur: maximum van vandaag"
             },
             "temp_threshold": {
-                "name": "Temperatuur: drempel"
+                "name": "Temperatuur: hittedrempel"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "close_covers_after_sunset": {
+                "name": "Avondsluiting: ingeschakeld?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nee"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Nacht: openen blokkeren?",
