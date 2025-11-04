@@ -74,12 +74,12 @@
             },
             "6": {
                 "title": "Smart Cover Automation - Steg 6 av 6",
-                "description": "Konfigurera **tidsundantag** för automationen (valfritt).",
+                "description": "Konfigurera **tidsinställningar** för automationen (valfritt).",
                 "data": {
                     "nighttime_block_opening": "Inaktivera öppning av persienner på natten:"
                 },
                 "data_description": {
-                    "nighttime_block_opening": "När det är aktiverat öppnas persiennerna inte för att släppa in ljus under natten (när solen är under horisonten)."
+                    "nighttime_block_opening": "När den är aktiverad öppnas persiennerna inte under natten (när solen är under horisonten)."
                 },
                 "sections": {
                     "section_time_range": {

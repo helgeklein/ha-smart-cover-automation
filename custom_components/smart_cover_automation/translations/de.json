@@ -74,12 +74,12 @@
             },
             "6": {
                 "title": "Smart Cover Automation - Schritt 6 von 6",
-                "description": "Konfigurieren Sie **Zeitausnahmen** für die Automatisierung (optional).",
+                "description": "Konfigurieren Sie **Zeiteinstellungen** für die Automatisierung (optional).",
                 "data": {
                     "nighttime_block_opening": "Öffnen der Rollläden nachts deaktivieren:"
                 },
                 "data_description": {
-                    "nighttime_block_opening": "Wenn aktiviert, öffnen die Rollläden nachts nicht zum Hereinlassen von Licht (wenn die Sonne unter dem Horizont steht)."
+                    "nighttime_block_opening": "Wenn aktiviert, werden die Rollläden nachts nicht geöffnet (wenn die Sonne unter dem Horizont steht)."
                 },
                 "sections": {
                     "section_time_range": {

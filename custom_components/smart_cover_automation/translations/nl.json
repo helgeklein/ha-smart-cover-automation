@@ -74,12 +74,12 @@
             },
             "6": {
                 "title": "Smart Cover Automation - Stap 6 van 6",
-                "description": "Configureer **tijdsuitzonderingen** voor de automatisering (optioneel).",
+                "description": "Configureer **tijdinstellingen** voor de automatisering (optioneel).",
                 "data": {
                     "nighttime_block_opening": "Openen van rolluiken 's nachts uitschakelen:"
                 },
                 "data_description": {
-                    "nighttime_block_opening": "Wanneer ingeschakeld, openen de rolluiken 's nachts niet om licht binnen te laten (wanneer de zon onder de horizon staat)."
+                    "nighttime_block_opening": "Wanneer ingeschakeld, openen de rolluiken 's nachts niet (wanneer de zon onder de horizon staat)."
                 },
                 "sections": {
                     "section_time_range": {

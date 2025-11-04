@@ -74,12 +74,12 @@
             },
             "6": {
                 "title": "Smart Cover Automation - Step 6 of 6",
-                "description": "Configure **time exceptions** for the automation (optional).",
+                "description": "Configure **time settings** for the automation (optional).",
                 "data": {
                     "nighttime_block_opening": "Disable cover opening at night:"
                 },
                 "data_description": {
-                    "nighttime_block_opening": "When enabled, covers will not open to let light in during night hours (when the sun is below the horizon)."
+                    "nighttime_block_opening": "When enabled, covers will not open during night hours (when the sun is below the horizon)."
                 },
                 "sections": {
                     "section_time_range": {
