@@ -40,7 +40,7 @@
                     "manual_override_duration": "Duração da override manual:",
                     "sun_azimuth_tolerance": "Tolerância do azimute solar:",
                     "sun_elevation_threshold": "Elevação solar mínima:",
-                    "temp_threshold": "Limiar de temperatura:"
+                    "temp_threshold": "Limiar de calor:"
                 },
                 "data_description": {
                     "covers_max_closure": "Nunca feche além deste valor para deixar sempre entrar alguma luz (0 = totalmente fechado, 100 = totalmente aberto).",
@@ -74,16 +74,16 @@
             },
             "6": {
                 "title": "Smart Cover Automation - Passo 6 de 6",
-                "description": "Configure **exceções de horário** para a automação (opcional).",
+                "description": "Configure **definições de tempo** para a automação (opcional).",
                 "data": {
                     "nighttime_block_opening": "Desativar abertura das persianas à noite:"
                 },
                 "data_description": {
-                    "nighttime_block_opening": "Quando ativada, as persianas não se abrirão para deixar entrar luz durante a noite (quando o sol está abaixo do horizonte)."
+                    "nighttime_block_opening": "Quando ativada, as persianas não se abrirão durante a noite (quando o sol está abaixo do horizonte)."
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Desativar a automação num intervalo de tempo",
+                        "name": "Intervalo de tempo bloqueado",
                         "data": {
                             "automation_disabled_time_range": "Desativar a automação num intervalo de tempo:",
                             "automation_disabled_time_range_start": "Desativar de:",
@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Hora de início do período em que a automação deve ser desativada.",
                             "automation_disabled_time_range_end": "Hora de fim do período em que a automação deve ser desativada."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Fecho ao entardecer",
+                        "data": {
+                            "close_covers_after_sunset": "Fechar persianas após o pôr do sol:",
+                            "close_covers_after_sunset_delay": "Atraso de tempo:",
+                            "close_covers_after_sunset_cover_list": "Persianas:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "Quando ativada, as persianas serão fechadas após algum tempo do pôr do sol.",
+                            "close_covers_after_sunset_delay": "Tempo de espera após o pôr do sol antes de fechar as persianas.",
+                            "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas após o pôr do sol."
+                        }
                     }
                 }
             }
@@ -102,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automação: intervalo desativado",
+                "name": "Intervalo de tempo: desativado",
                 "state": {
                     "off": "Desativado"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Fecho ao entardecer: atraso"
             },
             "sun_azimuth": {
                 "name": "Azimute solar"
@@ -117,12 +133,19 @@
                 "name": "Temperatura: máximo de hoje"
             },
             "temp_threshold": {
-                "name": "Temperatura: limite"
+                "name": "Temperatura: limiar de calor"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Estado"
+            },
+            "close_covers_after_sunset": {
+                "name": "Fecho ao entardecer: ativado?",
+                "state": {
+                    "on": "Sim",
+                    "off": "Não"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Noite: bloquear abertura?",
@@ -202,6 +225,10 @@
                 "reason_let_light_in": {
                     "name": "deixar entrar luz",
                     "description": "Motivo usado quando a persiana se move para deixar entrar mais luz."
+                },
+                "reason_close_after_sunset": {
+                    "name": "proteger a privacidade à noite",
+                    "description": "Motivo usado quando a persiana fecha automaticamente após o pôr do sol."
                 }
             }
         }

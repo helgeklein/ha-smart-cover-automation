@@ -3,8 +3,6 @@
 [![Test status](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml/badge.svg)](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml)
 [![Test coverage](https://raw.githubusercontent.com/helgeklein/ha-smart-cover-automation/main/.github/badges/coverage.svg)](https://github.com/helgeklein/ha-smart-cover-automation/actions/workflows/test.yml)
 
-**Current development status:** *beta, use with caution*
-
 A Home Assistant integration to automate the control of your smart home's window covers with a focus on quality, reliability, and flexibility.
 
 ## Functionality
@@ -23,7 +21,8 @@ A Home Assistant integration to automate the control of your smart home's window
     - Detect manual adjustments and pause automation to avoid conflicts.
 - **Lockout protection:**
     - Pause automations for a cover if the door/window is open.
-- **Night silence** & **night privacy**:
+- **Night privacy** & **night silence**:
+    - Close a subset of covers after sunset for privacy.
     - Don't move the covers when people are sleeping.
     - Don't open the covers when the sun is below the horizon.
 - **Pre-positioning before silent phases:** (TODO)

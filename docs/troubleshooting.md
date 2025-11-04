@@ -22,13 +22,15 @@ Filter the logbook for this integration's entries by selecting `Smart Cover Auto
 
 The integration comes with the following sensors that help you understand the integration's inner workings:
 
-- **Automation: disabled time range:** Start and end of a configured time interval during which the automation is disabled. `Off` it this is not configured.
+- **Evening closure: enabled?** When enabled, covers will be closed a certain time after sunset.
+- **Evening closure: delay** Time to wait after sunset before closing the covers.
 - **Nighttime: block opening?** Whether to block automatic cover opening during nighttime (when the sun is below the horizon).
 - **Status:** Overall status returned by the last automation update.
 - **Sun azimuth:** Current sun azimuth (angle from north).
 - **Sun elevation:** Current sun elevation (angle above the horizon).
 - **Temperature: today's maximum:** Maximum (expected) temperature of the current day. Derived from the configured weather forecast sensor.
-- **Temperature: threshold:** The configured temperature at which the automation starts closing covers to protect from heat.
+- **Temperature: heat threshold:** The configured temperature at which the automation starts closing covers to protect from heat.
+- **Time range: disabled:** Start and end of a configured time interval during which the automation is disabled. `Off` it this is not configured.
 - **Weather: hot?** Is today's forecast maximum temperature expected to rise above the configured threshold temperature?
   - After 16:00, tomorrow's forecast maximum temperature is used instead of today's.
 - **Weather: sunny?** Is the day expected to be at least partly sunny? Derived from the configured weather forecast sensor.

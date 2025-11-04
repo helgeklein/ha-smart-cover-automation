@@ -33,6 +33,7 @@ class CoverMovementReason(Enum):
 
     CLOSING_HEAT_PROTECTION = "closing_heat_protection"
     OPENING_LET_LIGHT_IN = "opening_let_light_in"
+    CLOSING_AFTER_SUNSET = "closing_after_sunset"
 
 
 @dataclass
@@ -45,6 +46,7 @@ class SensorData:
     temp_hot: bool
     weather_condition: str
     weather_sunny: bool
+    should_close_for_sunset: bool  # True only in the ONE update cycle when covers should close after sunset
 
 
 class CoverAutomation:
@@ -100,7 +102,7 @@ class CoverAutomation:
         else:
             cover_attrs[const.COVER_ATTR_COVER_AZIMUTH] = cover_azimuth
 
-        # Validate cover state
+        # Validate current cover state
         if not self._validate_cover_state(state):
             return cover_attrs
         else:
@@ -380,14 +382,20 @@ class CoverAutomation:
             Tuple of (desired_position, verb_translation_key, reason_translation_key)
         """
 
-        if sensor_data.temp_hot and sensor_data.weather_sunny and sun_hitting:
+        if sensor_data.should_close_for_sunset and self.entity_id in self.resolved.close_covers_after_sunset_cover_list:
+            # Night privacy mode - close the cover
+            max_closure_limit = self._get_cover_closure_limit(get_max=True)
+            desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
+            desired_pos_friendly_name = "night privacy state (closed)"
+            movement_reason = CoverMovementReason.CLOSING_AFTER_SUNSET
+        elif sensor_data.temp_hot and sensor_data.weather_sunny and sun_hitting:
             # Heat protection mode - close the cover
             max_closure_limit = self._get_cover_closure_limit(get_max=True)
             desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
             desired_pos_friendly_name = "heat protection state (closed)"
             movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
         else:
-            # "Let light in" mode - open the cover
+            # Let light in mode - open the cover
             min_closure_limit = self._get_cover_closure_limit(get_max=False)
             desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
             desired_pos_friendly_name = "normal state (open)"
@@ -465,6 +473,9 @@ class CoverAutomation:
             elif movement_reason == CoverMovementReason.OPENING_LET_LIGHT_IN:
                 verb_key = const.TRANSL_LOGBOOK_VERB_OPENING
                 reason_key = const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN
+            elif movement_reason == CoverMovementReason.CLOSING_AFTER_SUNSET:
+                verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
+                reason_key = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
             else:
                 # Type checker will fail if a new enum value is added but not handled
                 assert_never(movement_reason)

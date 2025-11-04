@@ -40,7 +40,7 @@
                     "manual_override_duration": "Varaktighet för manuell överstyrning:",
                     "sun_azimuth_tolerance": "Tolerans för solens azimut:",
                     "sun_elevation_threshold": "Minimal solhöjd:",
-                    "temp_threshold": "Temperaturtröskel:"
+                    "temp_threshold": "Värmetröskel:"
                 },
                 "data_description": {
                     "covers_max_closure": "Stäng aldrig mer än detta värde så att lite ljus alltid släpps in (0 = helt stängd, 100 = helt öppen).",
@@ -74,16 +74,16 @@
             },
             "6": {
                 "title": "Smart Cover Automation - Steg 6 av 6",
-                "description": "Konfigurera **tidsundantag** för automationen (valfritt).",
+                "description": "Konfigurera **tidsinställningar** för automationen (valfritt).",
                 "data": {
                     "nighttime_block_opening": "Inaktivera öppning av persienner på natten:"
                 },
                 "data_description": {
-                    "nighttime_block_opening": "När det är aktiverat öppnas persiennerna inte för att släppa in ljus under natten (när solen är under horisonten)."
+                    "nighttime_block_opening": "När den är aktiverad öppnas persiennerna inte under natten (när solen är under horisonten)."
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Inaktivera automation i tidsintervall",
+                        "name": "Blockerat tidsintervall",
                         "data": {
                             "automation_disabled_time_range": "Inaktivera automation i tidsintervall:",
                             "automation_disabled_time_range_start": "Inaktivera från:",
@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Starttid för perioden då automationen ska vara inaktiverad.",
                             "automation_disabled_time_range_end": "Sluttid för perioden då automationen ska vara inaktiverad."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Kvällsstängning",
+                        "data": {
+                            "close_covers_after_sunset": "Stäng persienner efter solnedgång:",
+                            "close_covers_after_sunset_delay": "Tidsfördröjning:",
+                            "close_covers_after_sunset_cover_list": "Persienner:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "När den är aktiverad stängs persiennerna en viss tid efter solnedgången.",
+                            "close_covers_after_sunset_delay": "Väntetid efter solnedgången innan persiennerna stängs.",
+                            "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas efter solnedgången."
+                        }
                     }
                 }
             }
@@ -102,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automation: inaktiverat tidsintervall",
+                "name": "Tidsintervall: inaktiverat",
                 "state": {
                     "off": "Av"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Kvällsstängning: fördröjning"
             },
             "sun_azimuth": {
                 "name": "Solazimut"
@@ -117,12 +133,19 @@
                 "name": "Temperatur: dagens högsta"
             },
             "temp_threshold": {
-                "name": "Temperatur: tröskelvärde"
+                "name": "Temperatur: värmetröskel"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "close_covers_after_sunset": {
+                "name": "Kvällsstängning: aktiverad?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nej"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Natt: blockera öppning?",
@@ -202,6 +225,10 @@
                 "reason_let_light_in": {
                     "name": "släppa in ljus",
                     "description": "Orsak som används när persiennen rör sig för att släppa in mer ljus."
+                },
+                "reason_close_after_sunset": {
+                    "name": "skydda integriteten nattetid",
+                    "description": "Orsak som används när persiennen stängs automatiskt efter solnedgången."
                 }
             }
         }

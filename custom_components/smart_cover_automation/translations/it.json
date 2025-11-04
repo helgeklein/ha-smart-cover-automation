@@ -40,7 +40,7 @@
                     "manual_override_duration": "Durata dell'override manuale:",
                     "sun_azimuth_tolerance": "Tolleranza dell'azimut solare:",
                     "sun_elevation_threshold": "Elevazione solare minima:",
-                    "temp_threshold": "Soglia di temperatura:"
+                    "temp_threshold": "Soglia di calore:"
                 },
                 "data_description": {
                     "covers_max_closure": "Non chiudere mai oltre questo valore per lasciare sempre entrare un po' di luce (0 = completamente chiuso, 100 = completamente aperto).",
@@ -74,16 +74,16 @@
             },
             "6": {
                 "title": "Smart Cover Automation - Passo 6 di 6",
-                "description": "Configura **eccezioni di orario** per l'automazione (opzionale).",
+                "description": "Configura le **impostazioni temporali** dell'automazione (opzionale).",
                 "data": {
                     "nighttime_block_opening": "Disattiva l'apertura delle tapparelle di notte:"
                 },
                 "data_description": {
-                    "nighttime_block_opening": "Quando è attivata, le tapparelle non si apriranno per far entrare la luce durante la notte (quando il sole è sotto l'orizzonte)."
+                    "nighttime_block_opening": "Quando è attivata, le tapparelle non si apriranno durante la notte (quando il sole è sotto l'orizzonte)."
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Disattiva l'automazione in un intervallo orario",
+                        "name": "Intervallo orario bloccato",
                         "data": {
                             "automation_disabled_time_range": "Disattiva l'automazione in un intervallo orario:",
                             "automation_disabled_time_range_start": "Disattiva da:",
@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Ora di inizio del periodo in cui l'automazione deve essere disattivata.",
                             "automation_disabled_time_range_end": "Ora di fine del periodo in cui l'automazione deve essere disattivata."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Chiusura serale",
+                        "data": {
+                            "close_covers_after_sunset": "Chiudere le tapparelle dopo il tramonto:",
+                            "close_covers_after_sunset_delay": "Ritardo temporale:",
+                            "close_covers_after_sunset_cover_list": "Tapparelle:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "Quando è attivata, le tapparelle si chiuderanno dopo un certo tempo dal tramonto.",
+                            "close_covers_after_sunset_delay": "Tempo di attesa dopo il tramonto prima di chiudere le tapparelle.",
+                            "close_covers_after_sunset_cover_list": "Seleziona le tapparelle da chiudere dopo il tramonto."
+                        }
                     }
                 }
             }
@@ -102,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automazione: intervallo disattivato",
+                "name": "Intervallo orario: disattivato",
                 "state": {
                     "off": "Disattivato"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Chiusura serale: ritardo"
             },
             "sun_azimuth": {
                 "name": "Azimut solare"
@@ -117,12 +133,19 @@
                 "name": "Temperatura: massimo di oggi"
             },
             "temp_threshold": {
-                "name": "Temperatura: soglia"
+                "name": "Temperatura: soglia di calore"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Stato"
+            },
+            "close_covers_after_sunset": {
+                "name": "Chiusura serale: attivata?",
+                "state": {
+                    "on": "Sì",
+                    "off": "No"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Notte: bloccare l'apertura?",
@@ -202,6 +225,10 @@
                 "reason_let_light_in": {
                     "name": "far entrare la luce",
                     "description": "Motivo usato quando la tapparella si muove per far entrare più luce."
+                },
+                "reason_close_after_sunset": {
+                    "name": "proteggere la privacy di notte",
+                    "description": "Motivo usato quando la tapparella si chiude automaticamente dopo il tramonto."
                 }
             }
         }

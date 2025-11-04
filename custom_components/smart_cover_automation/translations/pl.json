@@ -40,7 +40,7 @@
                     "manual_override_duration": "Czas trwania ręcznego pominięcia:",
                     "sun_azimuth_tolerance": "Tolerancja azymutu słońca:",
                     "sun_elevation_threshold": "Minimalna wysokość słońca:",
-                    "temp_threshold": "Próg temperatury:"
+                    "temp_threshold": "Próg upału:"
                 },
                 "data_description": {
                     "covers_max_closure": "Nigdy nie zamykaj dalej niż do tej wartości, aby zawsze wpuszczać odrobinę światła (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
@@ -74,16 +74,16 @@
             },
             "6": {
                 "title": "Smart Cover Automation - Krok 6 z 6",
-                "description": "Skonfiguruj **wyjątki czasowe** dla automatyzacji (opcjonalne).",
+                "description": "Skonfiguruj **ustawienia czasowe** automatyzacji (opcjonalne).",
                 "data": {
                     "nighttime_block_opening": "Wyłącz otwieranie rolet w nocy:"
                 },
                 "data_description": {
-                    "nighttime_block_opening": "Po włączeniu rolety nie będą się otwierały, aby wpuścić światło w nocy (gdy słońce jest poniżej horyzontu)."
+                    "nighttime_block_opening": "Po włączeniu rolety nie będą się otwierały w nocy (gdy słońce znajduje się poniżej horyzontu)."
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Wyłącz automatyzację w przedziale czasowym",
+                        "name": "Zablokowany przedział czasu",
                         "data": {
                             "automation_disabled_time_range": "Wyłącz automatyzację w przedziale czasowym:",
                             "automation_disabled_time_range_start": "Wyłącz od:",
@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Czas rozpoczęcia okresu, w którym automatyzacja ma być wyłączona.",
                             "automation_disabled_time_range_end": "Czas zakończenia okresu, w którym automatyzacja ma być wyłączona."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Zamykanie wieczorne",
+                        "data": {
+                            "close_covers_after_sunset": "Zamykanie rolet po zachodzie słońca:",
+                            "close_covers_after_sunset_delay": "Opóźnienie czasowe:",
+                            "close_covers_after_sunset_cover_list": "Rolety:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "Po włączeniu rolety zostaną zamknięte po określonym czasie od zachodu słońca.",
+                            "close_covers_after_sunset_delay": "Czas oczekiwania po zachodzie słońca przed zamknięciem rolet.",
+                            "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte po zachodzie słońca."
+                        }
                     }
                 }
             }
@@ -102,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automatyzacja: wyłączony przedział czasu",
+                "name": "Przedział czasu: wyłączony",
                 "state": {
                     "off": "Wyłączone"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Zamykanie wieczorne: opóźnienie"
             },
             "sun_azimuth": {
                 "name": "Azymut słońca"
@@ -117,12 +133,19 @@
                 "name": "Temperatura: dzisiejsze maksimum"
             },
             "temp_threshold": {
-                "name": "Temperatura: próg"
+                "name": "Temperatura: próg upału"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "close_covers_after_sunset": {
+                "name": "Zamykanie wieczorne: włączone?",
+                "state": {
+                    "on": "Tak",
+                    "off": "Nie"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Noc: blokować otwieranie?",
@@ -202,6 +225,10 @@
                 "reason_let_light_in": {
                     "name": "wpuścić światło",
                     "description": "Powód używany, gdy roleta porusza się, aby wpuścić więcej światła."
+                },
+                "reason_close_after_sunset": {
+                    "name": "chronić prywatność nocą",
+                    "description": "Powód używany, gdy roleta zamyka się automatycznie po zachodzie słońca."
                 }
             }
         }

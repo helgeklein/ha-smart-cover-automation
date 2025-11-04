@@ -49,6 +49,9 @@ COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Translation key for cover/window 
 
 # Entity keys
 BINARY_SENSOR_KEY_STATUS: Final[str] = "status"  # Key for the status binary sensor entity
+BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET: Final[str] = (
+    "close_covers_after_sunset"  # Key for the close covers after sunset binary sensor entity
+)
 BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING: Final[str] = (
     "nighttime_block_opening"  # Key for the nighttime block opening binary sensor entity
 )
@@ -56,6 +59,9 @@ BINARY_SENSOR_KEY_TEMP_HOT: Final[str] = "temp_hot"  # Key for the temp_hot bina
 BINARY_SENSOR_KEY_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Key for the weather_sunny binary sensor entity
 SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE: Final[str] = (
     "automation_disabled_time_range"  # Key for the automation disabled time range sensor entity
+)
+SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY: Final[str] = (
+    "close_covers_after_sunset_delay"  # Key for the close covers after sunset delay sensor entity
 )
 SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity
@@ -83,6 +89,7 @@ STEP_4_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
 STEP_4_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
 STEP_5_SECTION_WINDOW_SENSORS: Final[str] = "section_window_sensors"
 STEP_6_SECTION_TIME_RANGE: Final[str] = "section_time_range"
+STEP_6_SECTION_CLOSE_AFTER_SUNSET: Final[str] = "section_close_after_sunset"
 
 # Home Assistant string literals
 HA_OPTIONS: Final[str] = "options"
@@ -113,6 +120,7 @@ TRANSL_LOGBOOK_VERB_OPENING: Final[str] = "verb_opening"
 TRANSL_LOGBOOK_VERB_CLOSING: Final[str] = "verb_closing"
 TRANSL_LOGBOOK_REASON_HEAT_PROTECTION: Final[str] = "reason_heat_protection"
 TRANSL_LOGBOOK_REASON_LET_LIGHT_IN: Final[str] = "reason_let_light_in"
+TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET: Final[str] = "reason_close_after_sunset"
 TRANSL_ATTR_NAME: Final[str] = "name"
 TRANSL_KEY_SERVICES: Final[str] = "services"
 TRANSL_KEY_FIELDS: Final[str] = "fields"

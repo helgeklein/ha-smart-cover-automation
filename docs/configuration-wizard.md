@@ -37,7 +37,7 @@ I've **tested** the following weather integrations successfully:
 
 To determine if the **weather is hot enough** to require sun protection, the integration needs today's maximum temperature. Unfortunately, some weather forecast services only provide the maximum temperature for the remaining hours of the day. To compensate, this integration switches to the next day's temperature reading starting at 16:00 (afternoon).
 
-The maximum temperature received from the weather forecast service is compared with the temperature threshold (see below). If the forecast temperature is above the threshold, the integration considers the weather to be hot.
+The maximum temperature received from the weather forecast service is compared with the heat threshold (see below). If the forecast temperature is above the threshold, the integration considers the weather to be hot.
 
 The integration considers the following current weather conditions as the **sun is shining** (as reported by the weather forecast service):
 
@@ -56,14 +56,14 @@ There are several online tools available to measure azimuth. [OpenStreetMap Comp
 
 ## Step 3: Additional Settings (Optional)
 
-In the third step of the configuration wizard, the following settings can be configured. They don't have to, though, as the defaults should work well enough to get you started.
+In the third step of the configuration wizard, the following settings can be configured:
 
 - **Maximum cover position:** Never close more than this to always let some light in (0 = fully closed, 100 = fully open).
 - **Minimum cover position:** Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).
 - **Manual override duration:** How long to skip a cover after it has been moved manually (0 = no skipping).
 - **Sun azimuth tolerance:** Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).
 - **Minimal sun elevation:** The automation starts operating when the sun's elevation is above this threshold (degrees above the horizon).
-- **Temperature threshold:** Temperature at which the automation starts closing covers to protect from heat (degrees Celsius).
+- **Heat threshold:** Temperature at which the automation starts closing covers to protect from heat (degrees Celsius).
 
 ## Step 4: Per-Cover Max/Min Positions (Optional)
 
@@ -73,15 +73,19 @@ In the fourth step of the configuration wizard, you can specify maximum and mini
 
 In the fifth step of the configuration wizard, you can enable lockout protection by configuring window sensors for each cover. If any window sensor associated with a cover reports that the window is open, the cover won't be closed. This is especially useful for patio or terrace doors with a cover that would block you from re-entering the building if closed.
 
-## Step 6: Time Exceptions (Optional)
+## Step 6: Time Settings (Optional)
 
-In the sixth step of the configuration wizard, you can configure exceptions for time periods when the automation should not be active.
+In the sixth step of the configuration wizard, the following settings can be configured:
 
 - **Disable cover opening at night:** The automation opens the covers when they needn't be closed for heat protection. By default, this auto-opening doesn't happen at night (when the sun is below the horizon). You can change that behavior by flipping this setting to disabled.
-- **Time range:**
+- **Blocked time range:**
   - **Disable automation in time range:** Enable this if you want the automation to be inactive in a certain time range, e.g., when you sleep. Don't forget to also specify the start and end times.
   - **Disable from:** Start time of the time period in which the automation should be inactive.
   - **Disable until:** End time of the time period in which the automation should be inactive.
+- **Evening closure:**
+  - **Close covers after sunset:** Enable this if you want a subset of the previously selected covers to close with a certain delay after sunset.
+  - **Time delay:** Specifies how long after sunset the selected subset of covers are closed.
+  - **Covers:** Subset of covers to close after sunset.
 
 ## Next Steps
 

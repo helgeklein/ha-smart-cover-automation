@@ -40,7 +40,7 @@
                     "manual_override_duration": "Dauer der manuellen Übersteuerung:",
                     "sun_azimuth_tolerance": "Sonnen-Azimut-Toleranz:",
                     "sun_elevation_threshold": "Minimale Sonnenhöhe:",
-                    "temp_threshold": "Temperaturschwelle:"
+                    "temp_threshold": "Hitzeschwelle:"
                 },
                 "data_description": {
                     "covers_max_closure": "Nie weiter schließen als diesen Wert, damit stets etwas Licht bleibt (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
@@ -74,16 +74,16 @@
             },
             "6": {
                 "title": "Smart Cover Automation - Schritt 6 von 6",
-                "description": "Konfigurieren Sie **Zeitausnahmen** für die Automatisierung (optional).",
+                "description": "Konfigurieren Sie **Zeiteinstellungen** für die Automatisierung (optional).",
                 "data": {
                     "nighttime_block_opening": "Öffnen der Rollläden nachts deaktivieren:"
                 },
                 "data_description": {
-                    "nighttime_block_opening": "Wenn aktiviert, öffnen die Rollläden nachts nicht zum Hereinlassen von Licht (wenn die Sonne unter dem Horizont steht)."
+                    "nighttime_block_opening": "Wenn aktiviert, werden die Rollläden nachts nicht geöffnet (wenn die Sonne unter dem Horizont steht)."
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Automatisierung im Zeitraum deaktivieren",
+                        "name": "Blockierter Zeitraum",
                         "data": {
                             "automation_disabled_time_range": "Automatisierung im Zeitraum deaktivieren:",
                             "automation_disabled_time_range_start": "Deaktivieren ab:",
@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Startzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll.",
                             "automation_disabled_time_range_end": "Endzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Nachtschließen",
+                        "data": {
+                            "close_covers_after_sunset": "Rollläden nach Sonnenuntergang schließen:",
+                            "close_covers_after_sunset_delay": "Zeitverzögerung:",
+                            "close_covers_after_sunset_cover_list": "Rollläden:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "Wenn aktiviert, werden die Rollläden eine bestimmte Zeit nach Sonnenuntergang geschlossen.",
+                            "close_covers_after_sunset_delay": "Wartezeit nach Sonnenuntergang, bevor die Rollläden geschlossen werden.",
+                            "close_covers_after_sunset_cover_list": "Wählen Sie die Rollläden aus, die nach Sonnenuntergang geschlossen werden sollen."
+                        }
                     }
                 }
             }
@@ -102,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automatisierung: deaktivierter Zeitraum",
+                "name": "Zeitraum: deaktiviert",
                 "state": {
                     "off": "Aus"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Nachtschließen: Verzögerung"
             },
             "sun_azimuth": {
                 "name": "Sonnenazimut"
@@ -117,12 +133,19 @@
                 "name": "Temperatur: Tagesmaximum"
             },
             "temp_threshold": {
-                "name": "Temperatur: Grenzwert"
+                "name": "Temperatur: Hitzeschwelle"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "close_covers_after_sunset": {
+                "name": "Nachtschließen: aktiviert?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nein"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Nacht: Öffnen blockieren?",
@@ -202,6 +225,10 @@
                 "reason_let_light_in": {
                     "name": "Licht hereinzulassen",
                     "description": "Grund, wenn der Rollladen bewegt wird, um mehr Licht hereinzulassen."
+                },
+                "reason_close_after_sunset": {
+                    "name": "die Privatsphäre nachts zu schützen",
+                    "description": "Grund, wenn der Rollladen automatisch nach Sonnenuntergang geschlossen wird."
                 }
             }
         }

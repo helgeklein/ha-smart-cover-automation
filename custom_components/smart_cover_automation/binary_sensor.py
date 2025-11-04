@@ -21,6 +21,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.const import EntityCategory
 
 from .const import (
+    BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET,
     BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
     BINARY_SENSOR_KEY_STATUS,
     BINARY_SENSOR_KEY_TEMP_HOT,
@@ -58,6 +59,7 @@ async def async_setup_entry(
     entities = [
         # Status binary sensor - indicates system problems
         StatusBinarySensor(coordinator),
+        CloseCoversAfterSunsetBinarySensor(coordinator),
         NighttimeBlockOpeningBinarySensor(coordinator),
         TempHotBinarySensor(coordinator),
         WeatherSunnyBinarySensor(coordinator),
@@ -140,6 +142,39 @@ class StatusBinarySensor(IntegrationBinarySensor):
     def is_on(self) -> bool:  # pyright: ignore
         """Return True if the integration has problems."""
         return not self.coordinator.last_update_success
+
+
+#
+# CloseCoversAfterSunsetBinarySensor
+#
+class CloseCoversAfterSunsetBinarySensor(IntegrationBinarySensor):
+    """Binary sensor that reports whether the night privacy feature is enabled.
+
+    State meanings:
+    - on: Night privacy is enabled (covers will close after sunset)
+    - off: Night privacy is disabled
+    """
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+        entity_description = BinarySensorEntityDescription(
+            key=BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET,
+            translation_key=BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            # No device class - allows custom state translations (Yes/No)
+            icon="mdi:weather-sunset",
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
+        """Return True if night privacy is enabled."""
+        resolved = self.coordinator._resolved_settings()
+        return resolved.close_covers_after_sunset
 
 
 #

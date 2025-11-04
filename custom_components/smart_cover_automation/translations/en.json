@@ -40,7 +40,7 @@
                     "manual_override_duration": "Manual override duration:",
                     "sun_azimuth_tolerance": "Sun azimuth tolerance:",
                     "sun_elevation_threshold": "Minimal sun elevation:",
-                    "temp_threshold": "Temperature threshold:"
+                    "temp_threshold": "Heat threshold:"
                 },
                 "data_description": {
                     "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
@@ -74,16 +74,16 @@
             },
             "6": {
                 "title": "Smart Cover Automation - Step 6 of 6",
-                "description": "Configure **time exceptions** for the automation (optional).",
+                "description": "Configure **time settings** for the automation (optional).",
                 "data": {
                     "nighttime_block_opening": "Disable cover opening at night:"
                 },
                 "data_description": {
-                    "nighttime_block_opening": "When enabled, covers will not open to let light in during night hours (when the sun is below the horizon)."
+                    "nighttime_block_opening": "When enabled, covers will not open during night hours (when the sun is below the horizon)."
                 },
                 "sections": {
                     "section_time_range": {
-                        "name": "Disable automation in time range",
+                        "name": "Blocked time range",
                         "data": {
                             "automation_disabled_time_range": "Disable automation in time range:",
                             "automation_disabled_time_range_start": "Disable from:",
@@ -94,6 +94,19 @@
                             "automation_disabled_time_range_start": "Start time of the period when the automation should be disabled.",
                             "automation_disabled_time_range_end": "End time of the period when the automation should be disabled."
                         }
+                    },
+                    "section_close_after_sunset": {
+                        "name": "Evening closure",
+                        "data": {
+                            "close_covers_after_sunset": "Close covers after sunset:",
+                            "close_covers_after_sunset_delay": "Time delay:",
+                            "close_covers_after_sunset_cover_list": "Covers:"
+                        },
+                        "data_description": {
+                            "close_covers_after_sunset": "When enabled, covers will be closed a certain time after sunset.",
+                            "close_covers_after_sunset_delay": "Time to wait after sunset before closing the covers.",
+                            "close_covers_after_sunset_cover_list": "Select the covers that should be closed after sunset."
+                        }
                     }
                 }
             }
@@ -102,10 +115,13 @@
     "entity": {
         "sensor": {
             "automation_disabled_time_range": {
-                "name": "Automation: disabled time range",
+                "name": "Time range: disabled",
                 "state": {
                     "off": "Off"
                 }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Evening closure: delay"
             },
             "sun_azimuth": {
                 "name": "Sun azimuth"
@@ -117,12 +133,19 @@
                 "name": "Temperature: today's maximum"
             },
             "temp_threshold": {
-                "name": "Temperature: threshold"
+                "name": "Temperature: heat threshold"
             }
         },
         "binary_sensor": {
             "status": {
                 "name": "Status"
+            },
+            "close_covers_after_sunset": {
+                "name": "Evening closure: enabled?",
+                "state": {
+                    "on": "Yes",
+                    "off": "No"
+                }
             },
             "nighttime_block_opening": {
                 "name": "Nighttime: block opening?",
@@ -202,6 +225,10 @@
                 "reason_let_light_in": {
                     "name": "let light in",
                     "description": "Reason used when the cover moves to let more light inside."
+                },
+                "reason_close_after_sunset": {
+                    "name": "protect privacy at night",
+                    "description": "Reason used when the cover closes automatically after sunset."
                 }
             }
         }

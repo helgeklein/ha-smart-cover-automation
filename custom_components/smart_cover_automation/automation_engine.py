@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
 from . import const
@@ -38,6 +39,10 @@ class AutomationEngine:
         self.config = config
         self._cover_pos_history_mgr = CoverPositionHistoryManager()
         self._ha_interface = ha_interface
+
+        # Sunset closing state tracking
+        self._sunset_close_scheduled_at: datetime | None = None  # When to trigger cover closing
+        self._sunset_covers_closed: bool = False  # Prevent multiple closings per sunset
 
     #
     # run
@@ -165,6 +170,9 @@ class AutomationEngine:
         temp_hot = temp_max > self.resolved.temp_threshold
         weather_sunny = weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS
 
+        # Check for sunset and handle delayed cover closing
+        should_close_for_sunset = self._check_sunset_closing()
+
         return (
             SensorData(
                 sun_azimuth=sun_azimuth,
@@ -173,9 +181,55 @@ class AutomationEngine:
                 temp_hot=temp_hot,
                 weather_condition=weather_condition,
                 weather_sunny=weather_sunny,
+                should_close_for_sunset=should_close_for_sunset,
             ),
             "",
         )
+
+    #
+    # _check_sunset_closing
+    #
+    def _check_sunset_closing(self) -> bool:
+        """Check if covers should close after sunset.
+
+        Returns:
+            True if this is the ONE update cycle when covers should close, False otherwise
+        """
+        from homeassistant.util import dt as dt_util
+
+        # Check if feature is enabled
+        if not self.resolved.close_covers_after_sunset:
+            return False
+
+        # Get current time
+        now = datetime.now(timezone.utc)
+
+        # Check if sunset just occurred
+        if self._ha_interface.is_sunset():
+            # Sunset detected! Schedule cover closing after delay
+            delay_seconds = self.resolved.close_covers_after_sunset_delay
+            self._sunset_close_scheduled_at = now + timedelta(seconds=delay_seconds)
+            self._sunset_covers_closed = False
+            # Convert to local time for user-friendly logging
+            scheduled_time_local = dt_util.as_local(self._sunset_close_scheduled_at).strftime("%H:%M:%S")
+            const.LOGGER.info(f"Sunset detected. Covers will close after {delay_seconds}s delay at {scheduled_time_local}")
+
+        # Check if it's time to close covers
+        if self._sunset_close_scheduled_at is not None and not self._sunset_covers_closed and now >= self._sunset_close_scheduled_at:
+            # Time to close! Set flag and mark as closed
+            self._sunset_covers_closed = True
+            const.LOGGER.info("Sunset closing time reached. Closing configured covers")
+            return True
+
+        # Reset state when sun goes above horizon (new day)
+        sun_state = self._ha_interface.get_sun_state()
+        if sun_state and sun_state != const.HA_SUN_STATE_BELOW_HORIZON:
+            if self._sunset_covers_closed or self._sunset_close_scheduled_at is not None:
+                const.LOGGER.debug("Sun above horizon. Resetting sunset closing state")
+                self._sunset_close_scheduled_at = None
+                self._sunset_covers_closed = False
+
+        return False
 
     #
     # _check_global_conditions

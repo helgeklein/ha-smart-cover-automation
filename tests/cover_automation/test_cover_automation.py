@@ -102,6 +102,7 @@ def sensor_data():
         temp_hot=True,
         weather_condition="sunny",
         weather_sunny=True,
+        should_close_for_sunset=False,
     )
 
 
@@ -610,6 +611,7 @@ class TestCalculateDesiredPosition:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
+            should_close_for_sunset=False,
         )
 
         position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True)
@@ -627,6 +629,7 @@ class TestCalculateDesiredPosition:
             temp_hot=False,
             weather_condition="cloudy",
             weather_sunny=False,
+            should_close_for_sunset=False,
         )
 
         position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False)
@@ -645,6 +648,7 @@ class TestCalculateDesiredPosition:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
+            should_close_for_sunset=False,
         )
 
         position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True)
@@ -663,11 +667,179 @@ class TestCalculateDesiredPosition:
             temp_hot=False,
             weather_condition="cloudy",
             weather_sunny=False,
+            should_close_for_sunset=False,
         )
 
         position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False)
         assert position == 90  # Per-cover override
         assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+
+    #
+    # test_calculate_desired_position_sunset_closing_in_list
+    #
+    def test_calculate_desired_position_sunset_closing_in_list(self, cover_automation, mock_resolved_config):
+        """Test sunset closing takes priority when cover is in list and respects max closure limit."""
+
+        mock_resolved_config.covers_max_closure = 0
+        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+
+        # Sensor data with both sunset flag and heat protection conditions
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            should_close_for_sunset=True,  # Sunset flag is set
+        )
+
+        position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True)
+        assert position == 0  # Fully closed (max closure is 0, so no limit applied)
+        assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET  # Sunset takes priority
+
+    #
+    # test_calculate_desired_position_sunset_closing_not_in_list
+    #
+    def test_calculate_desired_position_sunset_closing_not_in_list(self, cover_automation, mock_resolved_config):
+        """Test sunset flag ignored when cover not in list."""
+
+        mock_resolved_config.covers_max_closure = 0
+        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.other",)
+
+        # Sensor data with sunset flag but cover not in list
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            should_close_for_sunset=True,  # Sunset flag is set
+        )
+
+        position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True)
+        assert position == 0  # Still closed
+        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION  # Falls back to heat protection
+
+    #
+    # test_calculate_desired_position_sunset_closing_no_list_configured
+    #
+    def test_calculate_desired_position_sunset_closing_no_list_configured(self, cover_automation, mock_resolved_config):
+        """Test sunset flag ignored when no cover list configured."""
+
+        mock_resolved_config.covers_max_closure = 0
+        mock_resolved_config.close_covers_after_sunset_cover_list = ()  # Empty list
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            should_close_for_sunset=True,  # Sunset flag is set
+        )
+
+        position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True)
+        assert position == 0  # Still closed
+        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION  # Falls back to heat protection
+
+    #
+    # test_calculate_desired_position_sunset_priority_over_opening
+    #
+    def test_calculate_desired_position_sunset_priority_over_opening(self, cover_automation, mock_resolved_config):
+        """Test sunset closing prevents opening for light and respects max closure limit."""
+
+        mock_resolved_config.covers_max_closure = 15  # Set max closure limit
+        mock_resolved_config.covers_min_closure = 100
+        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+
+        # Conditions would normally open covers (not hot, not sunny)
+        sensor_data = SensorData(
+            sun_azimuth=90.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            should_close_for_sunset=True,  # But sunset flag is set
+        )
+
+        position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False)
+        assert position == 15  # Respects max closure limit
+        assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET  # Sunset takes priority
+
+    #
+    # test_calculate_desired_position_sunset_false_no_effect
+    #
+    def test_calculate_desired_position_sunset_false_no_effect(self, cover_automation, mock_resolved_config):
+        """Test that sunset flag False doesn't affect normal operation."""
+
+        mock_resolved_config.covers_min_closure = 100
+        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+
+        # Conditions for opening
+        sensor_data = SensorData(
+            sun_azimuth=90.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            should_close_for_sunset=False,  # Sunset flag is False
+        )
+
+        position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False)
+        assert position == 100  # Open for light
+        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN  # Normal behavior
+
+    #
+    # test_calculate_desired_position_sunset_closes_fully
+    #
+    def test_calculate_desired_position_sunset_closes_fully(self, cover_automation, mock_resolved_config):
+        """Test sunset closing respects max closure limit (global config)."""
+
+        mock_resolved_config.covers_max_closure = 30
+        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            should_close_for_sunset=True,
+        )
+
+        position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True)
+        assert position == 30  # Respects max closure limit
+        assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET
+
+    #
+    # test_calculate_desired_position_sunset_with_per_cover_closure_limit
+    #
+    def test_calculate_desired_position_sunset_with_per_cover_closure_limit(self, cover_automation, mock_resolved_config, basic_config):
+        """Test sunset closing respects per-cover max closure limit override."""
+
+        mock_resolved_config.covers_max_closure = 30  # Global limit
+        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+        basic_config["cover.test_cover_max_closure"] = 20  # Per-cover override
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=25.0,
+            temp_hot=False,
+            weather_condition="clear",
+            weather_sunny=False,
+            should_close_for_sunset=True,
+        )
+
+        position, reason = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False)
+        assert position == 20  # Respects per-cover override
+        assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET
 
 
 class TestGetCoverClosureLimit:

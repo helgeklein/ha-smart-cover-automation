@@ -1067,3 +1067,171 @@ class TestGetForecastMaxTemp:
         result = await ha_interface._get_forecast_max_temp(MOCK_WEATHER_ENTITY_ID)
 
         assert result is None
+
+
+class TestIsSunset:
+    """Test is_sunset method for detecting sunset transitions."""
+
+    #
+    # test_is_sunset_transition_from_above_to_below
+    #
+    def test_is_sunset_transition_from_above_to_below(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test sunset detection when sun transitions from above to below horizon."""
+
+        # First call: sun is above horizon
+        sun_state_above = MagicMock()
+        sun_state_above.state = "above_horizon"
+        mock_hass.states.get.return_value = sun_state_above
+
+        result = ha_interface.is_sunset()
+        assert result is False  # No transition on first call
+
+        # Second call: sun is now below horizon (sunset!)
+        sun_state_below = MagicMock()
+        sun_state_below.state = const.HA_SUN_STATE_BELOW_HORIZON
+        mock_hass.states.get.return_value = sun_state_below
+
+        result = ha_interface.is_sunset()
+        assert result is True  # Sunset transition detected!
+
+    #
+    # test_is_sunset_no_transition_stays_above
+    #
+    def test_is_sunset_no_transition_stays_above(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test no sunset when sun stays above horizon."""
+
+        sun_state = MagicMock()
+        sun_state.state = "above_horizon"
+        mock_hass.states.get.return_value = sun_state
+
+        # First call
+        result = ha_interface.is_sunset()
+        assert result is False
+
+        # Second call - still above
+        result = ha_interface.is_sunset()
+        assert result is False
+
+    #
+    # test_is_sunset_no_transition_stays_below
+    #
+    def test_is_sunset_no_transition_stays_below(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test no sunset when sun stays below horizon."""
+
+        sun_state = MagicMock()
+        sun_state.state = const.HA_SUN_STATE_BELOW_HORIZON
+        mock_hass.states.get.return_value = sun_state
+
+        # Initialize with below horizon
+        result = ha_interface.is_sunset()
+        assert result is False
+
+        # Second call - still below
+        result = ha_interface.is_sunset()
+        assert result is False
+
+    #
+    # test_is_sunset_sun_state_unavailable
+    #
+    def test_is_sunset_sun_state_unavailable(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test sunset detection when sun state is unavailable."""
+
+        mock_hass.states.get.return_value = None
+
+        result = ha_interface.is_sunset()
+        assert result is False
+
+    #
+    # test_is_sunset_previous_state_none
+    #
+    def test_is_sunset_previous_state_none(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test sunset detection when previous state is None (first check)."""
+
+        # First call with below horizon shouldn't trigger sunset
+        # (we don't know if it transitioned or started there)
+        sun_state = MagicMock()
+        sun_state.state = const.HA_SUN_STATE_BELOW_HORIZON
+        mock_hass.states.get.return_value = sun_state
+
+        result = ha_interface.is_sunset()
+        assert result is False
+
+    #
+    # test_is_sunset_transition_from_below_to_above
+    #
+    def test_is_sunset_transition_from_below_to_above(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test sunrise (below to above) doesn't trigger sunset."""
+
+        # First call: sun is below horizon
+        sun_state_below = MagicMock()
+        sun_state_below.state = const.HA_SUN_STATE_BELOW_HORIZON
+        mock_hass.states.get.return_value = sun_state_below
+
+        result = ha_interface.is_sunset()
+        assert result is False
+
+        # Second call: sun is now above horizon (sunrise)
+        sun_state_above = MagicMock()
+        sun_state_above.state = "above_horizon"
+        mock_hass.states.get.return_value = sun_state_above
+
+        result = ha_interface.is_sunset()
+        assert result is False  # This is sunrise, not sunset
+
+    #
+    # test_is_sunset_multiple_calls_after_transition
+    #
+    def test_is_sunset_multiple_calls_after_transition(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test sunset is only detected once per transition."""
+
+        # Setup: sun above horizon
+        sun_state_above = MagicMock()
+        sun_state_above.state = "above_horizon"
+        mock_hass.states.get.return_value = sun_state_above
+        ha_interface.is_sunset()
+
+        # Transition: sun goes below horizon
+        sun_state_below = MagicMock()
+        sun_state_below.state = const.HA_SUN_STATE_BELOW_HORIZON
+        mock_hass.states.get.return_value = sun_state_below
+
+        # First check after transition: should detect sunset
+        result = ha_interface.is_sunset()
+        assert result is True
+
+        # Second check: still below, but no new transition
+        result = ha_interface.is_sunset()
+        assert result is False
+
+        # Third check: still no transition
+        result = ha_interface.is_sunset()
+        assert result is False
+
+    #
+    # test_is_sunset_state_persistence
+    #
+    def test_is_sunset_state_persistence(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test that previous state is correctly maintained across calls."""
+
+        # Call 1: Above horizon
+        sun_state_above = MagicMock()
+        sun_state_above.state = "above_horizon"
+        mock_hass.states.get.return_value = sun_state_above
+        ha_interface.is_sunset()
+
+        # Call 2: Below horizon (sunset)
+        sun_state_below = MagicMock()
+        sun_state_below.state = const.HA_SUN_STATE_BELOW_HORIZON
+        mock_hass.states.get.return_value = sun_state_below
+        result = ha_interface.is_sunset()
+        assert result is True
+
+        # Call 3: Back above (sunrise)
+        mock_hass.states.get.return_value = sun_state_above
+        result = ha_interface.is_sunset()
+        assert result is False
+
+        # Call 4: Below again (another sunset!)
+        mock_hass.states.get.return_value = sun_state_below
+        result = ha_interface.is_sunset()
+        assert result is True  # New sunset detected
