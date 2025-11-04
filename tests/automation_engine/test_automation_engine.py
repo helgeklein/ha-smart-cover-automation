@@ -593,3 +593,292 @@ class TestLogAutomationResult:
     def test_log_error_message(self, automation_engine):
         """Test logging an error message."""
         automation_engine._log_automation_result("Test error message", const.LogSeverity.ERROR)
+
+
+class TestCheckSunsetClosing:
+    """Test _check_sunset_closing method for night privacy feature."""
+
+    #
+    # test_check_sunset_closing_feature_disabled
+    #
+    def test_check_sunset_closing_feature_disabled(self, mock_ha_interface):
+        """Test that method returns False when feature is disabled."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: False,
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+
+        result = engine._check_sunset_closing()
+
+        assert result is False
+        # is_sunset should not be called when feature is disabled
+        mock_ha_interface.is_sunset.assert_not_called()
+
+    #
+    # test_check_sunset_closing_sunset_detected_schedules_closing
+    #
+    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
+    def test_check_sunset_closing_sunset_detected_schedules_closing(self, mock_datetime, mock_ha_interface):
+        """Test that sunset detection schedules cover closing after delay."""
+        from datetime import datetime as real_datetime
+        from datetime import timedelta, timezone
+
+        # Setup: feature enabled with 15 minute delay
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+
+        # Mock current time
+        fake_now = real_datetime(2025, 11, 4, 18, 30, 0, tzinfo=timezone.utc)
+        mock_datetime.now.return_value = fake_now
+        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
+
+        # Mock sunset detection
+        mock_ha_interface.is_sunset.return_value = True
+        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+
+        # Call method
+        result = engine._check_sunset_closing()
+
+        # Should not return True yet (just scheduled)
+        assert result is False
+
+        # Verify scheduled time was set (15 minutes = 900 seconds later)
+        expected_time = fake_now + timedelta(seconds=900)
+        assert engine._sunset_close_scheduled_at == expected_time
+        assert engine._sunset_covers_closed is False
+
+    #
+    # test_check_sunset_closing_time_reached_returns_true_once
+    #
+    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
+    def test_check_sunset_closing_time_reached_returns_true_once(self, mock_datetime, mock_ha_interface):
+        """Test that method returns True once when scheduled time is reached."""
+        from datetime import datetime as real_datetime
+        from datetime import timedelta, timezone
+
+        # Setup
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+
+        # Pre-schedule a closing time in the past
+        fake_now = real_datetime(2025, 11, 4, 18, 45, 0, tzinfo=timezone.utc)
+        scheduled_time = fake_now - timedelta(minutes=5)  # 5 minutes ago
+        engine._sunset_close_scheduled_at = scheduled_time
+        engine._sunset_covers_closed = False
+
+        mock_datetime.now.return_value = fake_now
+        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
+        mock_ha_interface.is_sunset.return_value = False
+        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+
+        # First call: should return True
+        result = engine._check_sunset_closing()
+        assert result is True
+        assert engine._sunset_covers_closed is True
+
+        # Second call: should return False (already closed)
+        result = engine._check_sunset_closing()
+        assert result is False
+
+        # Third call: should still return False
+        result = engine._check_sunset_closing()
+        assert result is False
+
+    #
+    # test_check_sunset_closing_not_yet_time
+    #
+    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
+    def test_check_sunset_closing_not_yet_time(self, mock_datetime, mock_ha_interface):
+        """Test that method returns False when scheduled time hasn't arrived yet."""
+        from datetime import datetime as real_datetime
+        from datetime import timedelta, timezone
+
+        # Setup
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+
+        # Schedule closing time in the future
+        fake_now = real_datetime(2025, 11, 4, 18, 30, 0, tzinfo=timezone.utc)
+        scheduled_time = fake_now + timedelta(minutes=10)  # 10 minutes from now
+        engine._sunset_close_scheduled_at = scheduled_time
+        engine._sunset_covers_closed = False
+
+        mock_datetime.now.return_value = fake_now
+        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
+        mock_ha_interface.is_sunset.return_value = False
+        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+
+        # Should return False (not time yet)
+        result = engine._check_sunset_closing()
+        assert result is False
+        assert engine._sunset_covers_closed is False
+
+    #
+    # test_check_sunset_closing_resets_at_sunrise
+    #
+    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
+    def test_check_sunset_closing_resets_at_sunrise(self, mock_datetime, mock_ha_interface):
+        """Test that state resets when sun goes above horizon."""
+        from datetime import datetime as real_datetime
+        from datetime import timezone
+
+        # Setup with already closed state
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+
+        # Set state to "already closed after sunset"
+        fake_now = real_datetime(2025, 11, 4, 19, 0, 0, tzinfo=timezone.utc)
+        engine._sunset_close_scheduled_at = fake_now
+        engine._sunset_covers_closed = True
+
+        mock_datetime.now.return_value = fake_now
+        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
+        mock_ha_interface.is_sunset.return_value = False
+
+        # Sun goes above horizon (sunrise)
+        mock_ha_interface.get_sun_state.return_value = "above_horizon"
+
+        # Call method
+        result = engine._check_sunset_closing()
+
+        # Should reset state
+        assert result is False
+        assert engine._sunset_close_scheduled_at is None
+        assert engine._sunset_covers_closed is False
+
+    #
+    # test_check_sunset_closing_multiple_sunset_cycles
+    #
+    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
+    def test_check_sunset_closing_multiple_sunset_cycles(self, mock_datetime, mock_ha_interface):
+        """Test that feature works correctly across multiple day/night cycles."""
+        from datetime import datetime as real_datetime
+        from datetime import timedelta, timezone
+
+        # Setup
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+
+        # Day 1: Sunset detected
+        day1_sunset = real_datetime(2025, 11, 4, 18, 30, 0, tzinfo=timezone.utc)
+        mock_datetime.now.return_value = day1_sunset
+        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
+        mock_ha_interface.is_sunset.return_value = True
+        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+
+        result = engine._check_sunset_closing()
+        assert result is False  # Just scheduled
+
+        # Day 1: Time reached
+        day1_close_time = day1_sunset + timedelta(minutes=15)
+        mock_datetime.now.return_value = day1_close_time
+        mock_ha_interface.is_sunset.return_value = False
+
+        result = engine._check_sunset_closing()
+        assert result is True  # First closing
+        assert engine._sunset_covers_closed is True
+
+        # Day 2: Sunrise resets
+        day2_sunrise = day1_close_time + timedelta(hours=12)
+        mock_datetime.now.return_value = day2_sunrise
+        mock_ha_interface.get_sun_state.return_value = "above_horizon"
+
+        result = engine._check_sunset_closing()
+        assert result is False
+        assert engine._sunset_close_scheduled_at is None
+        assert engine._sunset_covers_closed is False
+
+        # Day 2: Another sunset
+        day2_sunset = day2_sunrise + timedelta(hours=8)
+        mock_datetime.now.return_value = day2_sunset
+        mock_ha_interface.is_sunset.return_value = True
+        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+
+        result = engine._check_sunset_closing()
+        assert result is False  # Scheduled again
+
+        # Day 2: Time reached again
+        day2_close_time = day2_sunset + timedelta(minutes=15)
+        mock_datetime.now.return_value = day2_close_time
+        mock_ha_interface.is_sunset.return_value = False
+
+        result = engine._check_sunset_closing()
+        assert result is True  # Second closing works!
+
+    #
+    # test_check_sunset_closing_zero_delay
+    #
+    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
+    def test_check_sunset_closing_zero_delay(self, mock_datetime, mock_ha_interface):
+        """Test that zero delay triggers immediately on sunset."""
+        from datetime import datetime as real_datetime
+        from datetime import timezone
+
+        # Setup with zero delay
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 0, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+
+        # Mock time
+        fake_now = real_datetime(2025, 11, 4, 18, 30, 0, tzinfo=timezone.utc)
+        mock_datetime.now.return_value = fake_now
+        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
+
+        # Sunset detected
+        mock_ha_interface.is_sunset.return_value = True
+        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+
+        # With zero delay, should trigger immediately when sunset detected
+        result = engine._check_sunset_closing()
+        assert result is True  # Triggers immediately with zero delay
+
+        # Second call should return False (already closed)
+        mock_ha_interface.is_sunset.return_value = False
+
+        result = engine._check_sunset_closing()
+        assert result is False

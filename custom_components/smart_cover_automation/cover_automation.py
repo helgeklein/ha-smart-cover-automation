@@ -382,9 +382,10 @@ class CoverAutomation:
             Tuple of (desired_position, verb_translation_key, reason_translation_key)
         """
 
-        # Check if cover should close after sunset (takes priority over normal automation)
         if sensor_data.should_close_for_sunset and self.entity_id in self.resolved.close_covers_after_sunset_cover_list:
-            desired_pos = const.COVER_POS_FULLY_CLOSED
+            # Night privacy mode - close the cover
+            max_closure_limit = self._get_cover_closure_limit(get_max=True)
+            desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
             desired_pos_friendly_name = "night privacy state (closed)"
             movement_reason = CoverMovementReason.CLOSING_AFTER_SUNSET
         elif sensor_data.temp_hot and sensor_data.weather_sunny and sun_hitting:
@@ -394,7 +395,7 @@ class CoverAutomation:
             desired_pos_friendly_name = "heat protection state (closed)"
             movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
         else:
-            # "Let light in" mode - open the cover
+            # Let light in mode - open the cover
             min_closure_limit = self._get_cover_closure_limit(get_max=False)
             desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
             desired_pos_friendly_name = "normal state (open)"
