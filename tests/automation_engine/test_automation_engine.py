@@ -209,32 +209,6 @@ class TestCheckGlobalConditions:
         assert should_proceed is True
         assert message == ""
 
-    def test_check_global_conditions_nighttime_block(self, mock_ha_interface):
-        """Test global conditions check when nighttime blocking is active."""
-        # Configure to block at night
-        config = {
-            ConfKeys.COVERS.value: ["cover.test"],
-            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
-        }
-        resolved = resolve(config)
-        engine = AutomationEngine(
-            resolved=resolved,
-            config=config,
-            ha_interface=mock_ha_interface,
-        )
-
-        # Configure mocks - sun is below horizon
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
-
-        # Call method
-        should_proceed, message, severity = engine._check_global_conditions()
-
-        # Verify results
-        assert should_proceed is False
-        assert "nighttime" in message.lower()
-        assert severity == const.LogSeverity.DEBUG
-
     def test_check_global_conditions_time_period_disabled(self, mock_ha_interface):
         """Test global conditions check when in disabled time period."""
         # Configure with disabled time range
@@ -266,90 +240,6 @@ class TestCheckGlobalConditions:
             assert "disabled for the current time period" in message
             assert "22:00:00 - 06:00:00" in message
             assert severity == const.LogSeverity.DEBUG
-
-
-class TestNighttimeAndBlockOpening:
-    """Test _nighttime_and_block_opening method."""
-
-    def test_nighttime_blocking_enabled_sun_below_horizon(self, mock_ha_interface):
-        """Test nighttime blocking when sun is below horizon."""
-        # Configure to block at night
-        config = {
-            ConfKeys.COVERS.value: ["cover.test"],
-            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
-        }
-        resolved = resolve(config)
-        engine = AutomationEngine(
-            resolved=resolved,
-            config=config,
-            ha_interface=mock_ha_interface,
-        )
-
-        # Test with sun below horizon
-        result = engine._nighttime_and_block_opening(const.HA_SUN_STATE_BELOW_HORIZON)
-
-        assert result is True
-
-    def test_nighttime_blocking_enabled_sun_above_horizon(self, mock_ha_interface):
-        """Test nighttime blocking when sun is above horizon."""
-        # Configure to block at night
-        config = {
-            ConfKeys.COVERS.value: ["cover.test"],
-            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
-        }
-        resolved = resolve(config)
-        engine = AutomationEngine(
-            resolved=resolved,
-            config=config,
-            ha_interface=mock_ha_interface,
-        )
-
-        # Test with sun above horizon
-        result = engine._nighttime_and_block_opening("above_horizon")
-
-        assert result is False
-
-    def test_nighttime_blocking_disabled(self, mock_ha_interface):
-        """Test when nighttime blocking is disabled."""
-        # Configure NOT to block at night
-        config = {
-            ConfKeys.COVERS.value: ["cover.test"],
-            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: False,
-        }
-        resolved = resolve(config)
-        engine = AutomationEngine(
-            resolved=resolved,
-            config=config,
-            ha_interface=mock_ha_interface,
-        )
-
-        # Test with sun below horizon
-        result = engine._nighttime_and_block_opening(const.HA_SUN_STATE_BELOW_HORIZON)
-
-        assert result is False
-
-    def test_nighttime_blocking_sun_state_none(self, mock_ha_interface):
-        """Test when sun state is None."""
-        # Configure to block at night
-        config = {
-            ConfKeys.COVERS.value: ["cover.test"],
-            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
-        }
-        resolved = resolve(config)
-        engine = AutomationEngine(
-            resolved=resolved,
-            config=config,
-            ha_interface=mock_ha_interface,
-        )
-
-        # Test with None sun state
-        result = engine._nighttime_and_block_opening(None)
-
-        assert result is False
 
 
 class TestInTimePeriodAutomationDisabled:
@@ -596,7 +486,7 @@ class TestLogAutomationResult:
 
 
 class TestCheckSunsetClosing:
-    """Test _check_sunset_closing method for night privacy feature."""
+    """Test _check_sunset_closing method for evening closure feature."""
 
     #
     # test_check_sunset_closing_feature_disabled

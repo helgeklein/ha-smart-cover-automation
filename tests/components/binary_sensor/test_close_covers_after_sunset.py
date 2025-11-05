@@ -1,6 +1,6 @@
 """Tests for CloseCoversAfterSunsetBinarySensor.
 
-This module tests the night privacy (close covers after sunset) configuration binary sensor.
+This module tests the evening closure (close covers after sunset) configuration binary sensor.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 async def test_close_covers_after_sunset_sensor_enabled(mock_hass_with_spec, mock_config_entry_basic) -> None:
     """Test close covers after sunset sensor returns True when enabled.
 
-    This test verifies that the night privacy binary sensor correctly
+    This test verifies that the evening closure binary sensor correctly
     reports True (Yes) when the close_covers_after_sunset configuration is enabled.
     """
     # Create coordinator
@@ -65,7 +65,7 @@ async def test_close_covers_after_sunset_sensor_enabled(mock_hass_with_spec, moc
 async def test_close_covers_after_sunset_sensor_disabled(mock_hass_with_spec, mock_config_entry_basic) -> None:
     """Test close covers after sunset sensor returns False when disabled.
 
-    This test verifies that the night privacy binary sensor correctly
+    This test verifies that the evening closure binary sensor correctly
     reports False (No) when the close_covers_after_sunset configuration is disabled.
     """
     # Create coordinator

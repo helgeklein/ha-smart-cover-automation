@@ -958,7 +958,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     # async_step_6
     #
     async def async_step_6(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 6: Configure night privacy and night silence settings."""
+        """Step 6: Configure evening closure and night silence settings."""
 
         if user_input is None:
             # Get currently valid settings

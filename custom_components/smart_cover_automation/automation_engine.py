@@ -244,14 +244,6 @@ class AutomationEngine:
             - severity: Log severity level for the message
         """
 
-        # Get sun entity for nighttime check
-        sun_state = self._ha_interface.get_sun_state()
-
-        # Check nighttime block
-        if self._nighttime_and_block_opening(sun_state):
-            message = "It's nighttime and 'Disable cover opening at night' is enabled. Skipping actions"
-            return (False, message, const.LogSeverity.DEBUG)
-
         # Check time period disable
         in_disabled_period, period_string = self._in_time_period_automation_disabled()
         if in_disabled_period:
@@ -259,27 +251,6 @@ class AutomationEngine:
             return (False, message, const.LogSeverity.DEBUG)
 
         return (True, "", const.LogSeverity.DEBUG)
-
-    #
-    # _nighttime_and_block_opening
-    #
-    def _nighttime_and_block_opening(self, sun_state: str | None) -> bool:
-        """Check if we're currently in a time period where "Disable cover opening at night" should be applied.
-
-        Args:
-            resolved: Resolved configuration settings
-            sun_state: Sun state string (above_horizon or below_horizon), or None if unavailable
-
-        Returns:
-            True if cover opening should be blocked, False otherwise
-        """
-
-        # Check if to be disabled during night time (sun below horizon)
-        if self.resolved.nighttime_block_opening:
-            if sun_state == const.HA_SUN_STATE_BELOW_HORIZON:
-                return True
-
-        return False
 
     #
     # _in_time_period_automation_disabled
