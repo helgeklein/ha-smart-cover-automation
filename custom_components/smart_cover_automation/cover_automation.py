@@ -132,26 +132,27 @@ class CoverAutomation:
         # Calculate sun hitting
         sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
         cover_attrs[const.COVER_ATTR_SUN_HITTING] = sun_hitting
-        cover_attrs[const.COVER_ATTR_SUN_AZIMUTH_DIFF] = sun_azimuth_difference
+        cover_attrs[const.COVER_ATTR_SUN_AZIMUTH_DIFF] = round(sun_azimuth_difference, 1)
 
-        # Calculate desired position
-        desired_pos, movement_reason = self._calculate_desired_position(sensor_data, sun_hitting)
+        # Calculate desired position (lockout protection and nighttime block are checked inside _calculate_desired_position)
+        desired_pos, movement_reason, lockout_protection = self._calculate_desired_position(sensor_data, sun_hitting, current_pos)
         cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = desired_pos
-
-        # Check for lockout protection (window sensors)
-        lockout_protection = self._check_lockout_protection(movement_reason)
         cover_attrs[const.COVER_ATTR_LOCKOUT_PROTECTION] = lockout_protection
-        if lockout_protection:
-            return cover_attrs
 
-        # Move cover if needed
-        movement_needed, actual_pos, message = await self._move_cover_if_needed(current_pos, desired_pos, features, movement_reason)
-        if not movement_needed:
-            # No movement - just add the current position to the history
+        # Move cover if needed (skip if movement_reason is None, e.g., nighttime block active)
+        if movement_reason is None:
+            # No movement - nighttime block or other condition preventing movement
             self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
+            movement_needed = False
+            message = "No movement (blocked by nighttime or other condition)"
         else:
-            # Movement occurred
-            cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
+            movement_needed, actual_pos, message = await self._move_cover_if_needed(current_pos, desired_pos, features, movement_reason)
+            if not movement_needed:
+                # No movement - just add the current position to the history
+                self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
+            else:
+                # Movement occurred
+                cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
 
         # Include position history in cover attributes
         position_entries = self._cover_pos_history_mgr.get_entries(self.entity_id)
@@ -223,17 +224,24 @@ class CoverAutomation:
         return is_moving
 
     #
-    # _check_lockout_protection
+    # _is_lockout_protection_active
     #
-    def _check_lockout_protection(self, movement_reason: CoverMovementReason) -> bool:
+    def _is_lockout_protection_active(self, movement_reason: CoverMovementReason) -> bool:
         """Check if lockout protection should be enforced for this cover.
 
         Lockout protection prevents cover closing when associated window sensors indicate
-        that a window is open.
+        that a window is open. This applies to both heat protection and sunset closing.
+
+        Args:
+            movement_reason: The reason for the potential cover movement
 
         Returns:
-            True if lockout is active (should skip), False otherwise
+            True if lockout is active (should prevent closing), False otherwise
         """
+
+        # Only apply to closing operations
+        if movement_reason not in (CoverMovementReason.CLOSING_HEAT_PROTECTION, CoverMovementReason.CLOSING_AFTER_SUNSET):
+            return False
 
         # Get configured window sensors for this cover
         window_sensors_key = f"{self.entity_id}_{const.COVER_SFX_WINDOW_SENSORS}"
@@ -251,8 +259,32 @@ class CoverAutomation:
                 open_sensors.append(sensor_id)
 
         # If any window is open, activate lockout protection
-        if open_sensors and movement_reason == CoverMovementReason.CLOSING_HEAT_PROTECTION:
-            self._log_cover_msg("Lockout protection active, skipping closing", const.LogSeverity.INFO)
+        if open_sensors:
+            self._log_cover_msg("Lockout protection active, preventing closing", const.LogSeverity.INFO)
+            return True
+
+        return False
+
+    #
+    # _is_nighttime_block_active
+    #
+    def _is_nighttime_block_active(self) -> bool:
+        """Check if nighttime block opening should prevent cover opening.
+
+        The nighttime block feature prevents automatic cover opening during nighttime
+        (when the sun is below the horizon). This does NOT prevent closing operations.
+
+        Returns:
+            True if nighttime block is active and should prevent opening, False otherwise
+        """
+
+        # Check if feature is enabled
+        if not self.resolved.nighttime_block_opening:
+            return False
+
+        # Check if sun is below horizon
+        sun_state = self._ha_interface.get_sun_state()
+        if sun_state == const.HA_SUN_STATE_BELOW_HORIZON:
             return True
 
         return False
@@ -371,39 +403,61 @@ class CoverAutomation:
     #
     # _calculate_desired_position
     #
-    def _calculate_desired_position(self, sensor_data: SensorData, sun_hitting: bool) -> tuple[int, CoverMovementReason]:
-        """Calculate desired cover position based on conditions.
+    def _calculate_desired_position(
+        self, sensor_data: SensorData, sun_hitting: bool, current_pos: int
+    ) -> tuple[int, CoverMovementReason | None, bool]:
+        """Calculate the desired cover position based on sensor data.
 
-        Args:
-            sensor_data: Current sensor data
-            sun_hitting: Whether sun is hitting the window
-
-        Returns:
-            Tuple of (desired_position, verb_translation_key, reason_translation_key)
+        Returns a tuple of (desired_position, movement_reason, lockout_protection_active).
         """
 
+        lockout_protection_active = False
+
         if sensor_data.should_close_for_sunset and self.entity_id in self.resolved.close_covers_after_sunset_cover_list:
-            # Night privacy mode - close the cover
-            max_closure_limit = self._get_cover_closure_limit(get_max=True)
-            desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
-            desired_pos_friendly_name = "night privacy state (closed)"
-            movement_reason = CoverMovementReason.CLOSING_AFTER_SUNSET
+            # Evening closure mode - check lockout protection first
+            if self._is_lockout_protection_active(CoverMovementReason.CLOSING_AFTER_SUNSET):
+                # Lockout protection active - keep current position (prevent closing)
+                lockout_protection_active = True
+                desired_pos = current_pos
+                desired_pos_friendly_name = "unchanged (lockout protection active)"
+                movement_reason = None  # No movement when lockout active
+            else:
+                # No lockout - close the cover
+                max_closure_limit = self._get_cover_closure_limit(get_max=True)
+                desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
+                desired_pos_friendly_name = "evening closure state (closed)"
+                movement_reason = CoverMovementReason.CLOSING_AFTER_SUNSET
         elif sensor_data.temp_hot and sensor_data.weather_sunny and sun_hitting:
-            # Heat protection mode - close the cover
-            max_closure_limit = self._get_cover_closure_limit(get_max=True)
-            desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
-            desired_pos_friendly_name = "heat protection state (closed)"
-            movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
+            # Heat protection mode - check lockout protection first
+            if self._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION):
+                # Lockout protection active - keep current position (prevent closing)
+                lockout_protection_active = True
+                desired_pos = current_pos
+                desired_pos_friendly_name = "unchanged (lockout protection active)"
+                movement_reason = None  # No movement when lockout active
+            else:
+                # No lockout - close the cover
+                max_closure_limit = self._get_cover_closure_limit(get_max=True)
+                desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
+                desired_pos_friendly_name = "heat protection state (closed)"
+                movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
         else:
-            # Let light in mode - open the cover
-            min_closure_limit = self._get_cover_closure_limit(get_max=False)
-            desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
-            desired_pos_friendly_name = "normal state (open)"
-            movement_reason = CoverMovementReason.OPENING_LET_LIGHT_IN
+            # Let light in mode - check if nighttime block is active
+            if self._is_nighttime_block_active():
+                # Nighttime block active - keep current position (no movement)
+                desired_pos = current_pos
+                desired_pos_friendly_name = "unchanged (nighttime block active)"
+                movement_reason = None  # No movement reason when nighttime block active
+            else:
+                # No nighttime block - open the cover
+                min_closure_limit = self._get_cover_closure_limit(get_max=False)
+                desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
+                desired_pos_friendly_name = "normal state (open)"
+                movement_reason = CoverMovementReason.OPENING_LET_LIGHT_IN
 
         self._log_cover_msg(f"Desired position: {desired_pos}%, {desired_pos_friendly_name}", const.LogSeverity.INFO)
 
-        return desired_pos, movement_reason
+        return desired_pos, movement_reason, lockout_protection_active
 
     #
     # _get_cover_closure_limit

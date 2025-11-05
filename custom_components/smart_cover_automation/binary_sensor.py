@@ -148,11 +148,11 @@ class StatusBinarySensor(IntegrationBinarySensor):
 # CloseCoversAfterSunsetBinarySensor
 #
 class CloseCoversAfterSunsetBinarySensor(IntegrationBinarySensor):
-    """Binary sensor that reports whether the night privacy feature is enabled.
+    """Binary sensor that reports whether the evening closure feature is enabled.
 
     State meanings:
-    - on: Night privacy is enabled (covers will close after sunset)
-    - off: Night privacy is disabled
+    - on: Evening closure is enabled (covers will close after sunset)
+    - off: Evening closure is disabled
     """
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
@@ -172,7 +172,7 @@ class CloseCoversAfterSunsetBinarySensor(IntegrationBinarySensor):
 
     @property
     def is_on(self) -> bool:  # pyright: ignore
-        """Return True if night privacy is enabled."""
+        """Return True if evening closure is enabled."""
         resolved = self.coordinator._resolved_settings()
         return resolved.close_covers_after_sunset
 
