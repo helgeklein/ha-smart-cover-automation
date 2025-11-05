@@ -43,9 +43,7 @@ Make sure to enable verbose (debug) logging when analyzing a problem. This can b
 
 ### Log File Location
 
-In the file system, you can find the **Home Assistant Core** log at `config/home-assistant.log`. It includes the log messages from this integration (filter for `smart_cover_automation`).
-
-In the UI, you can find the same log at **Settings** → **Systems** → **Logs**.
+You can find the **Home Assistant Core** log at **Settings** → **Systems** → **Logs**.
 
 ## Getting Help
 
