@@ -455,7 +455,9 @@ class CoverAutomation:
                 desired_pos_friendly_name = "normal state (open)"
                 movement_reason = CoverMovementReason.OPENING_LET_LIGHT_IN
 
-        self._log_cover_msg(f"Desired position: {desired_pos}%, {desired_pos_friendly_name}", const.LogSeverity.INFO)
+        self._log_cover_msg(
+            f"Current position: {current_pos}%, desired position: {desired_pos}%, {desired_pos_friendly_name}", const.LogSeverity.INFO
+        )
 
         return desired_pos, movement_reason, lockout_protection_active
 
