@@ -113,38 +113,19 @@
         }
     },
     "entity": {
-        "sensor": {
-            "automation_disabled_time_range": {
-                "name": "Time range: disabled",
-                "state": {
-                    "off": "Off"
-                }
-            },
-            "close_covers_after_sunset_delay": {
-                "name": "Evening closure: delay"
-            },
-            "sun_azimuth": {
-                "name": "Sun azimuth"
-            },
-            "sun_elevation": {
-                "name": "Sun elevation"
-            },
-            "temp_current_max": {
-                "name": "Temperature: today's maximum"
-            },
-            "temp_threshold": {
-                "name": "Temperature: heat threshold"
-            }
-        },
         "binary_sensor": {
-            "status": {
-                "name": "Status"
-            },
             "close_covers_after_sunset": {
                 "name": "Evening closure: enabled?",
                 "state": {
                     "on": "Yes",
                     "off": "No"
+                }
+            },
+            "lock_active": {
+                "name": "Lock Active",
+                "state": {
+                    "on": "Locked",
+                    "off": "Unlocked"
                 }
             },
             "nighttime_block_opening": {
@@ -153,6 +134,9 @@
                     "on": "Yes",
                     "off": "No"
                 }
+            },
+            "status": {
+                "name": "Status"
             },
             "temp_hot": {
                 "name": "Weather: hot?",
@@ -167,6 +151,43 @@
                     "on": "Yes",
                     "off": "No"
                 }
+            }
+        },
+        "select": {
+            "lock_mode": {
+                "name": "Lock Mode",
+                "state": {
+                    "unlocked": "Unlocked (automation active)",
+                    "hold_position": "Hold current position",
+                    "force_open": "Force open and lock",
+                    "force_close": "Force close and lock"
+                }
+            }
+        },
+        "sensor": {
+            "automation_disabled_time_range": {
+                "name": "Time range: disabled",
+                "state": {
+                    "off": "Off"
+                }
+            },
+            "close_covers_after_sunset_delay": {
+                "name": "Evening closure: delay"
+            },
+            "lock_mode": {
+                "name": "Lock Mode State"
+            },
+            "sun_azimuth": {
+                "name": "Sun azimuth"
+            },
+            "sun_elevation": {
+                "name": "Sun elevation"
+            },
+            "temp_current_max": {
+                "name": "Temperature: today's maximum"
+            },
+            "temp_threshold": {
+                "name": "Temperature: heat threshold"
             }
         },
         "switch": {
@@ -229,6 +250,16 @@
                 "reason_close_after_sunset": {
                     "name": "protect privacy at night",
                     "description": "Reason used when the cover closes automatically after sunset."
+                }
+            }
+        },
+        "set_lock": {
+            "name": "Set Cover Lock",
+            "description": "Lock all covers in a specific state to prevent automation from moving them. Useful for weather emergencies (hail, storms) or manual override scenarios.",
+            "fields": {
+                "lock_mode": {
+                    "name": "Lock Mode",
+                    "description": "How to lock the covers"
                 }
             }
         }

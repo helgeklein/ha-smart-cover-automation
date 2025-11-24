@@ -102,6 +102,73 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         self._ha_interface.status_sensor_unique_id = value
 
     #
+    # lock_mode
+    #
+    @property
+    def lock_mode(self) -> str:
+        """Get current lock mode."""
+
+        resolved = self._resolved_settings()
+        return resolved.lock_mode
+
+    #
+    # is_locked
+    #
+    @property
+    def is_locked(self) -> bool:
+        """Check if covers are locked (any mode except unlocked)."""
+
+        return self.lock_mode != const.LOCK_MODE_UNLOCKED
+
+    #
+    # async_set_lock_mode
+    #
+    async def async_set_lock_mode(self, lock_mode: str) -> None:
+        """Set the lock mode and persist to config.
+
+        Args:
+            lock_mode: One of LOCK_MODE_* constants
+
+        This method:
+        1. Validates the lock mode
+        2. Persists to config options
+        3. Triggers immediate coordinator refresh
+        4. Logs the change
+        """
+
+        old_mode = self.lock_mode
+
+        # Validate lock mode
+        valid_modes = [
+            const.LOCK_MODE_UNLOCKED,
+            const.LOCK_MODE_HOLD_POSITION,
+            const.LOCK_MODE_FORCE_OPEN,
+            const.LOCK_MODE_FORCE_CLOSE,
+        ]
+
+        if lock_mode not in valid_modes:
+            const.LOGGER.error(f"Invalid lock mode: {lock_mode}. Valid modes: {valid_modes}")
+            raise ValueError(f"Invalid lock mode: {lock_mode}")
+
+        # Update config entry options
+        new_options = dict(self.config_entry.options)
+        new_options[ConfKeys.LOCK_MODE.value] = lock_mode
+
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            options=new_options,
+        )
+
+        # Log the change
+        if lock_mode == const.LOCK_MODE_UNLOCKED:
+            const.LOGGER.info(f"Lock deactivated (was: {old_mode})")
+        else:
+            const.LOGGER.warning(f"Lock activated: {lock_mode} (was: {old_mode})")
+
+        # Trigger immediate refresh to apply lock state
+        await self.async_request_refresh()
+
+    #
     # _resolved_settings
     #
     def _resolved_settings(self) -> ResolvedConfig:

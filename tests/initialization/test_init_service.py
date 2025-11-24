@@ -40,12 +40,15 @@ class TestServiceRegistration:
             # Execute setup
             result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-        # Verify service was registered
+        # Verify services were registered (logbook_entry and set_lock)
         assert result is True
-        mock_hass_with_spec.services.async_register.assert_called_once()
-        call_args = mock_hass_with_spec.services.async_register.call_args
-        assert call_args[0][0] == DOMAIN
-        assert call_args[0][1] == SERVICE_LOGBOOK_ENTRY
+        assert mock_hass_with_spec.services.async_register.call_count == 2
+
+        # Check that both services were registered
+        call_args_list = mock_hass_with_spec.services.async_register.call_args_list
+        registered_services = [(call[0][0], call[0][1]) for call in call_args_list]
+        assert (DOMAIN, SERVICE_LOGBOOK_ENTRY) in registered_services
+        assert (DOMAIN, "set_lock") in registered_services
 
     async def test_service_not_registered_twice(self, mock_hass_with_spec) -> None:
         """Test that service is not re-registered if already exists."""
@@ -100,8 +103,8 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            # Get the registered service handler
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            # Get the logbook_entry service handler (first registered service)
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             # Call the service
             await service_handler(mock_service_call)
@@ -132,7 +135,7 @@ class TestServiceHandler:
             # Clear coordinators
             mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS] = {}
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             await service_handler(mock_service_call)
 
@@ -153,7 +156,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             # Call without entity_id
             call = MagicMock()
@@ -178,7 +181,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             call = MagicMock()
             call.data = {"entity_id": MOCK_COVER_ENTITY_ID}
@@ -202,7 +205,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             call = MagicMock()
             call.data = {
@@ -229,7 +232,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             # Add config_entry_id to service call
             mock_service_call.data["config_entry_id"] = mock_config_entry.entry_id
@@ -254,7 +257,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             await service_handler(mock_service_call)
 
@@ -276,7 +279,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             call = MagicMock()
             call.data = {
@@ -307,7 +310,7 @@ class TestServiceHandler:
             # Clear all coordinators - test None values don't cause AttributeError
             mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS] = {"some_id": None}
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             await service_handler(mock_service_call)
 
@@ -329,7 +332,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             call = MagicMock()
             call.data = {

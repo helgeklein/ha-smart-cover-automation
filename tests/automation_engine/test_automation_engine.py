@@ -460,8 +460,15 @@ class TestRunMethod:
         cover_states = {"cover.test": cover_state}
         result = await engine.run(cover_states)  # type: ignore[arg-type]
 
-        # Verify automation was blocked
-        assert result[ConfKeys.COVERS.value] == {}
+        # Verify automation was blocked but covers still appear with lock data
+        assert "cover.test" in result[ConfKeys.COVERS.value]
+        cover_data = result[ConfKeys.COVERS.value]["cover.test"]
+        # Cover should only have lock data, no automation actions taken
+        assert "cover_lock_mode" in cover_data
+        assert "cover_lock_active" in cover_data
+        # Global lock fields should also be in result
+        assert "lock_mode" in result
+        assert "lock_active" in result
 
 
 class TestLogAutomationResult:

@@ -43,12 +43,14 @@ class CoordinatorData(_CoordinatorDataRequired, total=False):
     """
 
     # Optional keys - may not be present depending on automation state
+    lock_mode: str
+    lock_active: bool
+    message: str
     sun_azimuth: float
     sun_elevation: float
     temp_current_max: float
     temp_hot: bool
     weather_sunny: bool
-    message: str
 
 
 @dataclass

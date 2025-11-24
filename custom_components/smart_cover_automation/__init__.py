@@ -22,9 +22,12 @@ from .const import (
     HA_OPTIONS,
     INTEGRATION_NAME,
     LOGGER,
+    SERVICE_FIELD_LOCK_MODE,
     SERVICE_LOGBOOK_ENTRY,
+    SERVICE_SET_LOCK,
     TRANSL_LOGBOOK_REASON_HEAT_PROTECTION,
     TRANSL_LOGBOOK_VERB_OPENING,
+    LockMode,
 )
 from .coordinator import DataUpdateCoordinator
 from .data import RuntimeData
@@ -37,9 +40,61 @@ if TYPE_CHECKING:
 # List of platforms provided by this integration
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,
 ]
+
+
+#
+# _async_register_lock_service
+#
+async def _async_register_lock_service(hass: HomeAssistant, coordinator: DataUpdateCoordinator) -> None:
+    """Register the set_lock service.
+
+    Args:
+        hass: Home Assistant instance
+        coordinator: The coordinator instance
+    """
+    import voluptuous as vol
+    from homeassistant.helpers import config_validation as cv
+
+    async def async_handle_set_lock(call: ServiceCall) -> None:
+        """Handle set_lock service call.
+
+        Args:
+            call: Service call with lock_mode parameter
+        """
+        lock_mode = call.data[SERVICE_FIELD_LOCK_MODE]
+
+        LOGGER.info(f"Service call: set_lock(lock_mode={lock_mode})")
+
+        # Validate lock mode
+        valid_modes = [mode.value for mode in LockMode]
+
+        if lock_mode not in valid_modes:
+            LOGGER.error(f"Invalid lock mode: {lock_mode}. Valid modes: {valid_modes}")
+            raise ValueError(f"Invalid lock mode: {lock_mode}")
+
+        # Apply lock mode via coordinator
+        await coordinator.async_set_lock_mode(lock_mode)
+
+    # Define service schema
+    set_lock_schema = vol.Schema(
+        {
+            vol.Required(SERVICE_FIELD_LOCK_MODE): cv.string,
+        }
+    )
+
+    # Register service (only if not already registered)
+    if not hass.services.has_service(DOMAIN, SERVICE_SET_LOCK):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_SET_LOCK,
+            async_handle_set_lock,
+            schema=set_lock_schema,
+        )
+        LOGGER.info("Set lock service registered")
 
 
 #
@@ -164,6 +219,9 @@ async def async_setup_entry(
                 SERVICE_LOGBOOK_ENTRY,
                 partial(_handle_logbook_entry_service, hass),
             )
+
+        # Register lock service
+        await _async_register_lock_service(hass, coordinator)
 
         # Call each platform's async_setup_entry()
         LOGGER.debug(f"Setting up platforms: {PLATFORMS}")

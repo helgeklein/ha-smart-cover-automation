@@ -19,6 +19,7 @@ from .const import (
     DOMAIN,
     SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
     SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY,
+    SENSOR_KEY_LOCK_MODE,
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
@@ -59,6 +60,7 @@ async def async_setup_entry(
         SunElevationSensor(coordinator),
         TempCurrentMaxSensor(coordinator),
         TempThresholdSensor(coordinator),
+        LockModeSensor(coordinator),
     ]
 
     async_add_entities(entities)
@@ -342,3 +344,36 @@ class TempThresholdSensor(IntegrationSensor):
         """
         resolved = self.coordinator._resolved_settings()
         return resolved.temp_threshold
+
+
+class LockModeSensor(IntegrationSensor):
+    """Sensor showing current lock mode."""
+
+    #
+    # __init__
+    #
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+        entity_description = SensorEntityDescription(
+            key=SENSOR_KEY_LOCK_MODE,
+            translation_key=SENSOR_KEY_LOCK_MODE,
+            icon="mdi:lock-outline",
+            entity_category=EntityCategory.DIAGNOSTIC,
+        )
+        super().__init__(coordinator, entity_description)
+
+    #
+    # native_value
+    #
+    @property
+    def native_value(self) -> str:  # pyright: ignore
+        """Return current lock mode.
+
+        Returns:
+            String representing the current lock mode.
+        """
+        return self.coordinator.lock_mode
