@@ -16,7 +16,7 @@ logger:
 """
 
 from datetime import timedelta
-from enum import Enum
+from enum import Enum, StrEnum
 from logging import getLogger
 from typing import Final
 
@@ -48,24 +48,17 @@ COVER_POSITION_HISTORY_SIZE: Final[int] = 3  # Number of positions to store in h
 COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Translation key for cover/window azimuth (°)
 
 
-class LockMode(str, Enum):
-    """Lock mode options for cover control.
+#
+# LockMode
+#
+class LockMode(StrEnum):
+    """Lock mode enum - single source of truth for all lock mode values."""
 
-    Lock modes provide emergency override of automation for scenarios
-    like hail protection or manual control requirements.
-    """
+    UNLOCKED = "unlocked"
+    HOLD_POSITION = "hold_position"
+    FORCE_OPEN = "force_open"
+    FORCE_CLOSE = "force_close"
 
-    UNLOCKED = "unlocked"  # Normal automation (default)
-    HOLD_POSITION = "hold_position"  # Prevent any movement
-    FORCE_OPEN = "force_open"  # Open to 100% and prevent automation
-    FORCE_CLOSE = "force_close"  # Close to 0% and prevent automation
-
-
-# Legacy constants for backward compatibility (deprecated)
-LOCK_MODE_UNLOCKED: Final[str] = LockMode.UNLOCKED.value
-LOCK_MODE_HOLD_POSITION: Final[str] = LockMode.HOLD_POSITION.value
-LOCK_MODE_FORCE_OPEN: Final[str] = LockMode.FORCE_OPEN.value
-LOCK_MODE_FORCE_CLOSE: Final[str] = LockMode.FORCE_CLOSE.value
 
 # Service constants
 SERVICE_SET_LOCK: Final[str] = "set_lock"  # Service name for setting lock mode

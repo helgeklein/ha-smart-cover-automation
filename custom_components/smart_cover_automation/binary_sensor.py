@@ -282,6 +282,9 @@ class WeatherSunnyBinarySensor(IntegrationBinarySensor):
             return False
 
 
+#
+# LockActiveSensor
+#
 class LockActiveSensor(IntegrationBinarySensor):
     """Binary sensor indicating if cover lock is active."""
 

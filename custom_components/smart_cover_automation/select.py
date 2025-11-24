@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.const import EntityCategory
 
+from . import const
 from .const import (
     DOMAIN,
     SELECT_KEY_LOCK_MODE,
-    LockMode,
 )
 from .entity import IntegrationEntity
 
@@ -41,7 +41,10 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class IntegrationSelect(IntegrationEntity, SelectEntity):
+#
+# IntegrationSelect
+#
+class IntegrationSelect(IntegrationEntity, SelectEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
     """Base select entity."""
 
     #
@@ -52,11 +55,29 @@ class IntegrationSelect(IntegrationEntity, SelectEntity):
         coordinator: DataUpdateCoordinator,
         entity_description: SelectEntityDescription,
     ) -> None:
+        """Initialize the sensor entity.
+
+        Args:
+            coordinator: The DataUpdateCoordinator that manages automation logic
+                         and provides data for this select
+            entity_description: Configuration describing the entity's properties
+                                (name, device class, etc.)
+        """
+        # Initialize the base entity with coordinator integration
         super().__init__(coordinator)
+
+        # Store the entity description that defines this sensor's characteristics
         self.entity_description = entity_description
+
+        # Override the unique ID or HA uses the device class instead of the key.
+        # Expected resulting entity_id pattern:
+        #   sensor.smart_cover_automation_{translated_key}
         self._attr_unique_id = f"{DOMAIN}_{entity_description.key}"
 
 
+#
+# LockModeSelect
+#
 class LockModeSelect(IntegrationSelect):
     """Select entity for choosing lock mode."""
 
@@ -68,19 +89,19 @@ class LockModeSelect(IntegrationSelect):
             coordinator,
             SelectEntityDescription(
                 key=SELECT_KEY_LOCK_MODE,
-                name="Lock Mode",
+                translation_key=SELECT_KEY_LOCK_MODE,
                 icon="mdi:lock",
                 entity_category=EntityCategory.CONFIG,
             ),
         )
 
-        self._attr_options = [mode.value for mode in LockMode]
+        self._attr_options = [mode.value for mode in const.LockMode]
 
     #
     # current_option
     #
     @property
-    def current_option(self) -> str:
+    def current_option(self) -> str | None:  # pyright: ignore
         """Return current lock mode."""
 
         return self.coordinator.lock_mode
@@ -91,4 +112,11 @@ class LockModeSelect(IntegrationSelect):
     async def async_select_option(self, option: str) -> None:
         """Change the lock mode."""
 
-        await self.coordinator.async_set_lock_mode(option)
+        # Convert string to LockMode enum
+        try:
+            lock_mode = const.LockMode(option)
+        except ValueError:
+            const.LOGGER.error(f"Invalid lock mode value: {option}")
+            return
+
+        await self.coordinator.async_set_lock_mode(lock_mode)

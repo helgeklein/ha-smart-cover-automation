@@ -122,7 +122,7 @@
                 }
             },
             "lock_active": {
-                "name": "Lock Active",
+                "name": "Lock status",
                 "state": {
                     "on": "Locked",
                     "off": "Unlocked"
@@ -155,7 +155,7 @@
         },
         "select": {
             "lock_mode": {
-                "name": "Lock Mode",
+                "name": "Lock mode",
                 "state": {
                     "unlocked": "Unlocked (automation active)",
                     "hold_position": "Hold current position",
@@ -175,7 +175,7 @@
                 "name": "Evening closure: delay"
             },
             "lock_mode": {
-                "name": "Lock Mode State"
+                "name": "Lock mode"
             },
             "sun_azimuth": {
                 "name": "Sun azimuth"
@@ -258,7 +258,7 @@
             "description": "Lock all covers in a specific state to prevent automation from moving them. Useful for weather emergencies (hail, storms) or manual override scenarios.",
             "fields": {
                 "lock_mode": {
-                    "name": "Lock Mode",
+                    "name": "Lock mode",
                     "description": "How to lock the covers"
                 }
             }

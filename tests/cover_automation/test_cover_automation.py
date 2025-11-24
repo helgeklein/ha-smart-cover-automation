@@ -31,7 +31,7 @@ from homeassistant.const import (
 )
 
 from custom_components.smart_cover_automation import const
-from custom_components.smart_cover_automation.const import LOCK_MODE_UNLOCKED
+from custom_components.smart_cover_automation.const import LockMode
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverMovementReason,
@@ -90,7 +90,7 @@ def cover_automation(mock_resolved_config, basic_config, mock_cover_pos_history_
         config=basic_config,
         cover_pos_history_mgr=mock_cover_pos_history_mgr,
         ha_interface=mock_ha_interface,
-        lock_mode=LOCK_MODE_UNLOCKED,
+        lock_mode=LockMode.UNLOCKED,
     )
 
 
@@ -141,7 +141,7 @@ class TestCoverAutomationInitialization:
             config=basic_config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
-            lock_mode=LOCK_MODE_UNLOCKED,
+            lock_mode=LockMode.UNLOCKED,
         )
 
         assert cover_auto.entity_id == "cover.living_room"
@@ -168,7 +168,7 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
-            lock_mode=LOCK_MODE_UNLOCKED,
+            lock_mode=LockMode.UNLOCKED,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth is None
@@ -182,7 +182,7 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
-            lock_mode=LOCK_MODE_UNLOCKED,
+            lock_mode=LockMode.UNLOCKED,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth is None
@@ -196,7 +196,7 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
-            lock_mode=LOCK_MODE_UNLOCKED,
+            lock_mode=LockMode.UNLOCKED,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth == 0.0

@@ -11,6 +11,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from . import const
 from .automation_engine import AutomationEngine
 from .config import ConfKeys, ResolvedConfig, resolve_entry
+from .const import LockMode
 from .data import CoordinatorData
 from .ha_interface import HomeAssistantInterface, WeatherEntityNotFoundError
 
@@ -105,7 +106,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
     # lock_mode
     #
     @property
-    def lock_mode(self) -> str:
+    def lock_mode(self) -> LockMode:
         """Get current lock mode."""
 
         resolved = self._resolved_settings()
@@ -118,16 +119,16 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
     def is_locked(self) -> bool:
         """Check if covers are locked (any mode except unlocked)."""
 
-        return self.lock_mode != const.LOCK_MODE_UNLOCKED
+        return self.lock_mode != const.LockMode.UNLOCKED
 
     #
     # async_set_lock_mode
     #
-    async def async_set_lock_mode(self, lock_mode: str) -> None:
+    async def async_set_lock_mode(self, lock_mode: const.LockMode) -> None:
         """Set the lock mode and persist to config.
 
         Args:
-            lock_mode: One of LOCK_MODE_* constants
+            lock_mode: lock mode to set
 
         This method:
         1. Validates the lock mode
@@ -139,12 +140,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         old_mode = self.lock_mode
 
         # Validate lock mode
-        valid_modes = [
-            const.LOCK_MODE_UNLOCKED,
-            const.LOCK_MODE_HOLD_POSITION,
-            const.LOCK_MODE_FORCE_OPEN,
-            const.LOCK_MODE_FORCE_CLOSE,
-        ]
+        valid_modes = [mode.value for mode in const.LockMode]
 
         if lock_mode not in valid_modes:
             const.LOGGER.error(f"Invalid lock mode: {lock_mode}. Valid modes: {valid_modes}")
@@ -160,7 +156,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         )
 
         # Log the change
-        if lock_mode == const.LOCK_MODE_UNLOCKED:
+        if lock_mode == const.LockMode.UNLOCKED:
             const.LOGGER.info(f"Lock deactivated (was: {old_mode})")
         else:
             const.LOGGER.warning(f"Lock activated: {lock_mode} (was: {old_mode})")

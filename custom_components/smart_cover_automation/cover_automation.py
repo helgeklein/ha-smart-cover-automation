@@ -62,7 +62,7 @@ class CoverAutomation:
         config: dict[str, Any],
         cover_pos_history_mgr: CoverPositionHistoryManager,
         ha_interface: Any,
-        lock_mode: str | const.LockMode,
+        lock_mode: const.LockMode,
     ) -> None:
         """Initialize cover automation.
 
@@ -100,7 +100,7 @@ class CoverAutomation:
 
         # Add lock state to attributes
         cover_attrs[const.COVER_ATTR_LOCK_MODE] = self._lock_mode
-        cover_attrs[const.COVER_ATTR_LOCK_ACTIVE] = self._lock_mode != const.LockMode.UNLOCKED.value
+        cover_attrs[const.COVER_ATTR_LOCK_ACTIVE] = self._lock_mode != const.LockMode.UNLOCKED
 
         # Get cover azimuth
         cover_azimuth = self._get_cover_azimuth()
@@ -132,9 +132,10 @@ class CoverAutomation:
         else:
             cover_attrs[const.COVER_ATTR_POS_CURRENT] = current_pos
 
-        # Handle lock modes BEFORE normal automation logic
-        if self._lock_mode != const.LOCK_MODE_UNLOCKED:
-            return await self._process_locked_cover(cover_attrs, current_pos, features)
+        # Handle lock modes before normal automation logic
+        locked = await self._process_lock_mode(cover_attrs, current_pos, features)
+        if locked:
+            return cover_attrs
 
         # Check for manual override
         if self._check_manual_override(current_pos):
@@ -559,22 +560,22 @@ class CoverAutomation:
             const.LOGGER.error(f"[{self.entity_id}] Failed to control cover: {err}")
             return False, None, f"Error: {err}"
 
-    # TODO: Refactor the following method to reduce complexity and increase readability
     #
     # _process_locked_cover
     #
-    async def _process_locked_cover(
+    async def _process_lock_mode(
         self,
         cover_attrs: dict[str, Any],
         current_pos: int,
         features: int,
-    ) -> dict[str, Any]:
-        """Process cover when lock is active.
+    ) -> bool:
+        """Process lock modes.
 
         This method enforces the lock mode by:
-        1. HOLD_POSITION: Do nothing, skip automation
-        2. FORCE_OPEN: Ensure cover is at 100%, move if not
-        3. FORCE_CLOSE: Ensure cover is at 0%, move if not
+        1. UNLOCKED: No action, normal automation
+        2. HOLD_POSITION: Do nothing, skip automation
+        3. FORCE_OPEN: Ensure cover is at 100%, move if not
+        4. FORCE_CLOSE: Ensure cover is at 0%, move if not
 
         Args:
             cover_attrs: Cover attributes dict to populate
@@ -582,61 +583,89 @@ class CoverAutomation:
             features: Cover supported features
 
         Returns:
-            Updated cover_attrs dict
+            True if lock mode, False otherwise
         """
 
-        if self._lock_mode == const.LockMode.HOLD_POSITION.value:
-            # HOLD_POSITION: Just block all automation
-            const.LOGGER.info(f"{self.entity_id}: Lock active (HOLD_POSITION), skipping automation")
-            cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = current_pos
-            cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = current_pos
-            self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
-            return cover_attrs
+        if self._lock_mode == const.LockMode.UNLOCKED:
+            return False
 
-        elif self._lock_mode == const.LockMode.FORCE_OPEN.value:
-            # FORCE_OPEN: Ensure cover is fully open (100%)
-            target_pos = const.COVER_POS_FULLY_OPEN
+        # TODO: continue here
 
-            if current_pos == target_pos:
-                const.LOGGER.info(f"{self.entity_id}: Lock active (FORCE_OPEN), already at target position {target_pos}%")
-                cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = target_pos
-                cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = target_pos
-                self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
-            else:
-                const.LOGGER.warning(f"{self.entity_id}: Lock active (FORCE_OPEN), moving to target position {target_pos}%")
-                cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = target_pos
-                cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = target_pos
+        if self._lock_mode == const.LockMode.HOLD_POSITION:
+            # Just block all automation
+            self._log_cover_msg(f"Lock active ({self._lock_mode}), skipping automation", const.LogSeverity.INFO)
+            self._set_lock_attrs(cover_attrs, current_pos, False)
 
-                # Move cover to target position
-                actual_pos = await self._ha_interface.set_cover_position(self.entity_id, target_pos, features)
-                self._cover_pos_history_mgr.add(self.entity_id, actual_pos, cover_moved=True)
+        elif self._lock_mode == const.LockMode.FORCE_OPEN:
+            # Ensure cover is fully open (100%)
+            await self._enforce_locked_position(
+                cover_attrs=cover_attrs,
+                current_pos=current_pos,
+                target_pos=const.COVER_POS_FULLY_OPEN,
+                features=features,
+            )
 
-            return cover_attrs
-
-        elif self._lock_mode == const.LockMode.FORCE_CLOSE.value:
-            # FORCE_CLOSE: Ensure cover is fully closed (0%)
-            target_pos = const.COVER_POS_FULLY_CLOSED
-
-            if current_pos == target_pos:
-                const.LOGGER.info(f"{self.entity_id}: Lock active (FORCE_CLOSE), already at target position {target_pos}%")
-                cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = target_pos
-                cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = target_pos
-                self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
-            else:
-                const.LOGGER.warning(f"{self.entity_id}: Lock active (FORCE_CLOSE), moving to target position {target_pos}%")
-                cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = target_pos
-                cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = target_pos
-
-                # Move cover to target position
-                actual_pos = await self._ha_interface.set_cover_position(self.entity_id, target_pos, features)
-                self._cover_pos_history_mgr.add(self.entity_id, actual_pos, cover_moved=True)
-
-            return cover_attrs
+        elif self._lock_mode == const.LockMode.FORCE_CLOSE:
+            # Ensure cover is fully closed (0%)
+            await self._enforce_locked_position(
+                cover_attrs=cover_attrs,
+                current_pos=current_pos,
+                target_pos=const.COVER_POS_FULLY_CLOSED,
+                features=features,
+            )
 
         else:
-            # Should never reach here, but handle gracefully
-            const.LOGGER.error(f"{self.entity_id}: Unknown lock mode: {self._lock_mode}")
-            return cover_attrs
+            # Type checker will fail if a new lock mode is added but not handled
+            assert_never(self._lock_mode)
+
+        return True
+
+    #
+    # _set_lock_attrs
+    #
+    def _set_lock_attrs(self, cover_attrs: dict[str, Any], position: int, cover_moved: bool) -> None:
+        """Set lock-related attributes.
+
+        Args:
+            cover_attrs: Cover attributes dict to populate
+            position: Current/target position
+            cover_moved: Whether the cover moved
+        """
+
+        cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = position
+        cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = position
+        self._cover_pos_history_mgr.add(self.entity_id, position, cover_moved=cover_moved)
+
+    #
+    # _enforce_locked_position
+    #
+    async def _enforce_locked_position(
+        self,
+        cover_attrs: dict[str, Any],
+        current_pos: int,
+        target_pos: int,
+        features: int,
+    ) -> None:
+        """Enforce a locked position (FORCE_OPEN or FORCE_CLOSE).
+
+        Args:
+            cover_attrs: Cover attributes dict to populate
+            current_pos: Current cover position
+            target_pos: Target position to enforce
+            lock_mode_name: Name of lock mode for logging
+            features: Cover supported features
+        """
+
+        cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = target_pos
+        cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = target_pos
+
+        if current_pos == target_pos:
+            const.LOGGER.info(f"{self.entity_id}: Lock active ({self._lock_mode}), already at target position ({target_pos}%)")
+            self._cover_pos_history_mgr.add(self.entity_id, target_pos, cover_moved=False)
+        else:
+            const.LOGGER.warning(f"{self.entity_id}: Lock active ({self._lock_mode}), moving to target position ({target_pos}%)")
+            actual_pos = await self._ha_interface.set_cover_position(self.entity_id, target_pos, features)
+            self._cover_pos_history_mgr.add(self.entity_id, actual_pos, cover_moved=True)
 
     #
     # _log_cover_msg

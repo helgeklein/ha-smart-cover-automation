@@ -87,9 +87,9 @@ class AutomationEngine:
             self._log_automation_result(message, const.LogSeverity.WARNING)
             return result
 
-        # Get current lock state
+        # Get lock state
         lock_mode = self.resolved.lock_mode
-        is_locked = lock_mode != const.LOCK_MODE_UNLOCKED
+        is_locked = lock_mode != const.LockMode.UNLOCKED
 
         # Store sensor data and lock state in result
         result["sun_azimuth"] = sensor_data.sun_azimuth

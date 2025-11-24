@@ -14,6 +14,7 @@ from homeassistant.const import Platform
 from homeassistant.core import ServiceCall
 from homeassistant.loader import async_get_loaded_integration
 
+from . import const
 from .config import ConfKeys
 from .config_flow import OptionsFlowHandler
 from .const import (
@@ -27,7 +28,6 @@ from .const import (
     SERVICE_SET_LOCK,
     TRANSL_LOGBOOK_REASON_HEAT_PROTECTION,
     TRANSL_LOGBOOK_VERB_OPENING,
-    LockMode,
 )
 from .coordinator import DataUpdateCoordinator
 from .data import RuntimeData
@@ -70,7 +70,7 @@ async def _async_register_lock_service(hass: HomeAssistant, coordinator: DataUpd
         LOGGER.info(f"Service call: set_lock(lock_mode={lock_mode})")
 
         # Validate lock mode
-        valid_modes = [mode.value for mode in LockMode]
+        valid_modes = [mode.value for mode in const.LockMode]
 
         if lock_mode not in valid_modes:
             LOGGER.error(f"Invalid lock mode: {lock_mode}. Valid modes: {valid_modes}")

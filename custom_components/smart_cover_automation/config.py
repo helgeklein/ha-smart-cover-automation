@@ -12,7 +12,7 @@ from datetime import time
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
-from custom_components.smart_cover_automation.const import HA_OPTIONS
+from custom_components.smart_cover_automation.const import HA_OPTIONS, LockMode
 
 T = TypeVar("T")
 
@@ -221,7 +221,7 @@ class ResolvedConfig:
     covers_min_closure: int
     covers_min_position_delta: int
     enabled: bool
-    lock_mode: str
+    lock_mode: LockMode
     manual_override_duration: int
     nighttime_block_opening: bool
     simulation_mode: bool

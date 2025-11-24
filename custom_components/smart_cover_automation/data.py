@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypedDict
 
+from .const import LockMode
+
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.loader import Integration
@@ -43,7 +45,7 @@ class CoordinatorData(_CoordinatorDataRequired, total=False):
     """
 
     # Optional keys - may not be present depending on automation state
-    lock_mode: str
+    lock_mode: LockMode
     lock_active: bool
     message: str
     sun_azimuth: float
