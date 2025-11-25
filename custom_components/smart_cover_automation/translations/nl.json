@@ -113,6 +113,57 @@
         }
     },
     "entity": {
+        "binary_sensor": {
+            "close_covers_after_sunset": {
+                "name": "Avondsluiting: ingeschakeld?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nee"
+                }
+            },
+            "lock_active": {
+                "name": "Vergrendelstatus",
+                "state": {
+                    "on": "Vergrendeld",
+                    "off": "Ontgrendeld"
+                }
+            },
+            "nighttime_block_opening": {
+                "name": "Nacht: openen blokkeren?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nee"
+                }
+            },
+            "status": {
+                "name": "Status"
+            },
+            "temp_hot": {
+                "name": "Weer: heet?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nee"
+                }
+            },
+            "weather_sunny": {
+                "name": "Weer: zonnig?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nee"
+                }
+            }
+        },
+        "select": {
+            "lock_mode": {
+                "name": "Vergrendelmodus",
+                "state": {
+                    "unlocked": "Ontgrendeld (automatisering actief)",
+                    "hold_position": "Huidige positie vasthouden",
+                    "force_open": "Openen afdwingen en vergrendelen",
+                    "force_close": "Sluiten afdwingen en vergrendelen"
+                }
+            }
+        },
         "sensor": {
             "automation_disabled_time_range": {
                 "name": "Tijdvenster: uitgeschakeld",
@@ -134,39 +185,6 @@
             },
             "temp_threshold": {
                 "name": "Temperatuur: hittedrempel"
-            }
-        },
-        "binary_sensor": {
-            "status": {
-                "name": "Status"
-            },
-            "close_covers_after_sunset": {
-                "name": "Avondsluiting: ingeschakeld?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nee"
-                }
-            },
-            "nighttime_block_opening": {
-                "name": "Nacht: openen blokkeren?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nee"
-                }
-            },
-            "temp_hot": {
-                "name": "Weer: heet?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nee"
-                }
-            },
-            "weather_sunny": {
-                "name": "Weer: zonnig?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nee"
-                }
             }
         },
         "switch": {
@@ -229,6 +247,16 @@
                 "reason_close_after_sunset": {
                     "name": "de privacy 's nachts te beschermen",
                     "description": "Reden die wordt gebruikt wanneer het rolluik automatisch sluit na zonsondergang."
+                }
+            }
+        },
+        "set_lock": {
+            "name": "Rolluikvergrendeling instellen",
+            "description": "Vergrendel alle rolluiken in een specifieke toestand om te voorkomen dat de automatisering ze verplaatst. Handig bij weernoden (hagel, stormen) of handmatige override-scenario's.",
+            "fields": {
+                "lock_mode": {
+                    "name": "Vergrendelmodus",
+                    "description": "Hoe de rolluiken moeten worden vergrendeld"
                 }
             }
         }

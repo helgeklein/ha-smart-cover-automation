@@ -113,6 +113,57 @@
         }
     },
     "entity": {
+        "binary_sensor": {
+            "close_covers_after_sunset": {
+                "name": "Kvällsstängning: aktiverad?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nej"
+                }
+            },
+            "lock_active": {
+                "name": "Låsstatus",
+                "state": {
+                    "on": "Låst",
+                    "off": "Upplåst"
+                }
+            },
+            "nighttime_block_opening": {
+                "name": "Natt: blockera öppning?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nej"
+                }
+            },
+            "status": {
+                "name": "Status"
+            },
+            "temp_hot": {
+                "name": "Väder: varmt?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nej"
+                }
+            },
+            "weather_sunny": {
+                "name": "Väder: soligt?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nej"
+                }
+            }
+        },
+        "select": {
+            "lock_mode": {
+                "name": "Låsläge",
+                "state": {
+                    "unlocked": "Upplåst (automatisering aktiv)",
+                    "hold_position": "Behåll aktuell position",
+                    "force_open": "Tvinga öppning och lås",
+                    "force_close": "Tvinga stängning och lås"
+                }
+            }
+        },
         "sensor": {
             "automation_disabled_time_range": {
                 "name": "Tidsintervall: inaktiverat",
@@ -134,39 +185,6 @@
             },
             "temp_threshold": {
                 "name": "Temperatur: värmetröskel"
-            }
-        },
-        "binary_sensor": {
-            "status": {
-                "name": "Status"
-            },
-            "close_covers_after_sunset": {
-                "name": "Kvällsstängning: aktiverad?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nej"
-                }
-            },
-            "nighttime_block_opening": {
-                "name": "Natt: blockera öppning?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nej"
-                }
-            },
-            "temp_hot": {
-                "name": "Väder: varmt?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nej"
-                }
-            },
-            "weather_sunny": {
-                "name": "Väder: soligt?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nej"
-                }
             }
         },
         "switch": {
@@ -229,6 +247,16 @@
                 "reason_close_after_sunset": {
                     "name": "skydda integriteten nattetid",
                     "description": "Orsak som används när persiennen stängs automatiskt efter solnedgången."
+                }
+            }
+        },
+        "set_lock": {
+            "name": "Ställ in persiennlås",
+            "description": "Lås alla persienner i ett specifikt läge för att hindra automationen från att flytta dem. Användbart vid vädernödlägen (hagel, stormar) eller manuella åsidosättningar.",
+            "fields": {
+                "lock_mode": {
+                    "name": "Låsläge",
+                    "description": "Hur persiennerna ska låsas"
                 }
             }
         }

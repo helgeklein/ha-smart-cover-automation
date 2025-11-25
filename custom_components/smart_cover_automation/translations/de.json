@@ -113,6 +113,57 @@
         }
     },
     "entity": {
+        "binary_sensor": {
+            "close_covers_after_sunset": {
+                "name": "Nachtschließen: aktiviert?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nein"
+                }
+            },
+            "lock_active": {
+                "name": "Sperrstatus",
+                "state": {
+                    "on": "Gesperrt",
+                    "off": "Entsperrt"
+                }
+            },
+            "nighttime_block_opening": {
+                "name": "Nacht: Öffnen blockieren?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nein"
+                }
+            },
+            "status": {
+                "name": "Status"
+            },
+            "temp_hot": {
+                "name": "Wetter: heiß?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nein"
+                }
+            },
+            "weather_sunny": {
+                "name": "Wetter: sonnig?",
+                "state": {
+                    "on": "Ja",
+                    "off": "Nein"
+                }
+            }
+        },
+        "select": {
+            "lock_mode": {
+                "name": "Sperrmodus",
+                "state": {
+                    "unlocked": "Entsperrt (Automatisierung aktiv)",
+                    "hold_position": "Position halten",
+                    "force_open": "Öffnen erzwingen und sperren",
+                    "force_close": "Schließen erzwingen und sperren"
+                }
+            }
+        },
         "sensor": {
             "automation_disabled_time_range": {
                 "name": "Zeitraum: deaktiviert",
@@ -134,39 +185,6 @@
             },
             "temp_threshold": {
                 "name": "Temperatur: Hitzeschwelle"
-            }
-        },
-        "binary_sensor": {
-            "status": {
-                "name": "Status"
-            },
-            "close_covers_after_sunset": {
-                "name": "Nachtschließen: aktiviert?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nein"
-                }
-            },
-            "nighttime_block_opening": {
-                "name": "Nacht: Öffnen blockieren?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nein"
-                }
-            },
-            "temp_hot": {
-                "name": "Wetter: heiß?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nein"
-                }
-            },
-            "weather_sunny": {
-                "name": "Wetter: sonnig?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nein"
-                }
             }
         },
         "switch": {
@@ -229,6 +247,16 @@
                 "reason_close_after_sunset": {
                     "name": "die Privatsphäre nachts zu schützen",
                     "description": "Grund, wenn der Rollladen automatisch nach Sonnenuntergang geschlossen wird."
+                }
+            }
+        },
+        "set_lock": {
+            "name": "Rollladensperre setzen",
+            "description": "Alle Rollläden in einen bestimmten Zustand sperren, damit die Automatisierung sie nicht bewegen kann. Nützlich bei Wetternotfällen (Hagel, Stürme) oder bei manuellen Override-Szenarien.",
+            "fields": {
+                "lock_mode": {
+                    "name": "Sperrmodus",
+                    "description": "Wie die Rollläden gesperrt werden sollen"
                 }
             }
         }

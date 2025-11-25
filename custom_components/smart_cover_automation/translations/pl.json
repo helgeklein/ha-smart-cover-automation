@@ -113,6 +113,57 @@
         }
     },
     "entity": {
+        "binary_sensor": {
+            "close_covers_after_sunset": {
+                "name": "Zamykanie wieczorne: włączone?",
+                "state": {
+                    "on": "Tak",
+                    "off": "Nie"
+                }
+            },
+            "lock_active": {
+                "name": "Stan blokady",
+                "state": {
+                    "on": "Zablokowane",
+                    "off": "Odblokowane"
+                }
+            },
+            "nighttime_block_opening": {
+                "name": "Noc: blokować otwieranie?",
+                "state": {
+                    "on": "Tak",
+                    "off": "Nie"
+                }
+            },
+            "status": {
+                "name": "Status"
+            },
+            "temp_hot": {
+                "name": "Pogoda: gorąco?",
+                "state": {
+                    "on": "Tak",
+                    "off": "Nie"
+                }
+            },
+            "weather_sunny": {
+                "name": "Pogoda: słonecznie?",
+                "state": {
+                    "on": "Tak",
+                    "off": "Nie"
+                }
+            }
+        },
+        "select": {
+            "lock_mode": {
+                "name": "Tryb blokady",
+                "state": {
+                    "unlocked": "Odblokowany (automatyzacja aktywna)",
+                    "hold_position": "Utrzymaj bieżącą pozycję",
+                    "force_open": "Wymuś otwarcie i zablokuj",
+                    "force_close": "Wymuś zamknięcie i zablokuj"
+                }
+            }
+        },
         "sensor": {
             "automation_disabled_time_range": {
                 "name": "Przedział czasu: wyłączony",
@@ -134,39 +185,6 @@
             },
             "temp_threshold": {
                 "name": "Temperatura: próg upału"
-            }
-        },
-        "binary_sensor": {
-            "status": {
-                "name": "Status"
-            },
-            "close_covers_after_sunset": {
-                "name": "Zamykanie wieczorne: włączone?",
-                "state": {
-                    "on": "Tak",
-                    "off": "Nie"
-                }
-            },
-            "nighttime_block_opening": {
-                "name": "Noc: blokować otwieranie?",
-                "state": {
-                    "on": "Tak",
-                    "off": "Nie"
-                }
-            },
-            "temp_hot": {
-                "name": "Pogoda: gorąco?",
-                "state": {
-                    "on": "Tak",
-                    "off": "Nie"
-                }
-            },
-            "weather_sunny": {
-                "name": "Pogoda: słonecznie?",
-                "state": {
-                    "on": "Tak",
-                    "off": "Nie"
-                }
             }
         },
         "switch": {
@@ -229,6 +247,16 @@
                 "reason_close_after_sunset": {
                     "name": "chronić prywatność nocą",
                     "description": "Powód używany, gdy roleta zamyka się automatycznie po zachodzie słońca."
+                }
+            }
+        },
+        "set_lock": {
+            "name": "Ustaw blokadę rolet",
+            "description": "Zablokuj wszystkie rolety w określonym stanie, aby automatyzacja nie mogła ich poruszać. Przydatne w sytuacjach awaryjnych pogodowych (grad, burze) lub podczas ręcznego nadpisania.",
+            "fields": {
+                "lock_mode": {
+                    "name": "Tryb blokady",
+                    "description": "Jak zablokować rolety"
                 }
             }
         }
