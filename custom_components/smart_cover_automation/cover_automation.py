@@ -561,7 +561,7 @@ class CoverAutomation:
             return False, None, f"Error: {err}"
 
     #
-    # _process_locked_cover
+    # _process_lock_mode
     #
     async def _process_lock_mode(self, cover_attrs: dict[str, Any], current_pos: int, features: int) -> bool:
         """Process lock modes.
