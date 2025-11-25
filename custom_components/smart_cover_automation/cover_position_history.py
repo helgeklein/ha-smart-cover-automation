@@ -69,6 +69,9 @@ class CoverPositionHistory:
         return iter(entry.position for entry in self._entries)
 
 
+#
+# CoverPositionHistoryManager
+#
 class CoverPositionHistoryManager:
     """Manages position history for all covers in the coordinator."""
 
@@ -76,6 +79,9 @@ class CoverPositionHistoryManager:
         """Initialize the position history manager."""
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
 
+    #
+    # add
+    #
     def add(self, entity_id: str, new_position: int, cover_moved: bool, timestamp: datetime | None = None) -> None:
         """Add a new cover position to the history.
 
@@ -93,6 +99,9 @@ class CoverPositionHistoryManager:
         history = self._cover_position_history[entity_id]
         history.add_position(new_position, cover_moved, timestamp)
 
+    #
+    # get_entries
+    #
     def get_entries(self, entity_id: str) -> list[PositionEntry]:
         """Get the position history entries with timestamps for a cover.
 
@@ -108,6 +117,9 @@ class CoverPositionHistoryManager:
         else:
             return []
 
+    #
+    # get_latest_entry
+    #
     def get_latest_entry(self, entity_id: str) -> PositionEntry | None:
         """Get the latest (newest) position entry with timestamp from the cover position history.
 
