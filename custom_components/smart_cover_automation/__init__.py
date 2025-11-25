@@ -59,6 +59,9 @@ async def _async_register_lock_service(hass: HomeAssistant, coordinator: DataUpd
     import voluptuous as vol
     from homeassistant.helpers import config_validation as cv
 
+    #
+    # async_handle_set_lock
+    #
     async def async_handle_set_lock(call: ServiceCall) -> None:
         """Handle set_lock service call.
 
