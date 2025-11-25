@@ -71,6 +71,7 @@ set_lock:
       example: "force_close"
       selector:
         select:
+          translation_key: "lock_mode"
           options:
             - label: "Unlocked (normal automation)"
               value: "unlocked"

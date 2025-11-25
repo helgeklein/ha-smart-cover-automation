@@ -260,5 +260,15 @@
                 }
             }
         }
+    },
+    "selector": {
+        "lock_mode": {
+            "options": {
+                "unlocked": "Unlocked (automation active)",
+                "hold_position": "Hold current position",
+                "force_open": "Force open and lock",
+                "force_close": "Force close and lock"
+            }
+        }
     }
 }

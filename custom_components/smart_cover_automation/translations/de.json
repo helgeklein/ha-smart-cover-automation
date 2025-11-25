@@ -260,5 +260,15 @@
                 }
             }
         }
+    },
+    "selector": {
+        "lock_mode": {
+            "options": {
+                "unlocked": "Entsperrt (Automatisierung aktiv)",
+                "hold_position": "Position halten",
+                "force_open": "Öffnen erzwingen und sperren",
+                "force_close": "Schließen erzwingen und sperren"
+            }
+        }
     }
 }

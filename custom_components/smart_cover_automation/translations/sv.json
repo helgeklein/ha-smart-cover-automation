@@ -260,5 +260,15 @@
                 }
             }
         }
+    },
+    "selector": {
+        "lock_mode": {
+            "options": {
+                "unlocked": "Upplåst (automatisering aktiv)",
+                "hold_position": "Behåll aktuell position",
+                "force_open": "Tvinga öppning och lås",
+                "force_close": "Tvinga stängning och lås"
+            }
+        }
     }
 }

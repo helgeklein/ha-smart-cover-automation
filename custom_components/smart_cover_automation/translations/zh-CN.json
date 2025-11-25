@@ -260,5 +260,15 @@
                 }
             }
         }
+    },
+    "selector": {
+        "lock_mode": {
+            "options": {
+                "unlocked": "未锁定（自动化启用）",
+                "hold_position": "保持当前位置",
+                "force_open": "强制开启并锁定",
+                "force_close": "强制关闭并锁定"
+            }
+        }
     }
 }

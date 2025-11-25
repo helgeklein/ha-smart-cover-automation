@@ -260,5 +260,15 @@
                 }
             }
         }
+    },
+    "selector": {
+        "lock_mode": {
+            "options": {
+                "unlocked": "Ontgrendeld (automatisering actief)",
+                "hold_position": "Huidige positie vasthouden",
+                "force_open": "Openen afdwingen en vergrendelen",
+                "force_close": "Sluiten afdwingen en vergrendelen"
+            }
+        }
     }
 }
