@@ -174,9 +174,6 @@
             "close_covers_after_sunset_delay": {
                 "name": "Evening closure: delay"
             },
-            "lock_mode": {
-                "name": "Lock mode"
-            },
             "sun_azimuth": {
                 "name": "Sun azimuth"
             },

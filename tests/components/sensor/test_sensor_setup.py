@@ -59,8 +59,8 @@ async def test_async_setup_entry_creates_all_sensors(mock_coordinator_basic: Dat
     # Get the list of entities that were passed to async_add_entities
     entities_list = mock_add_entities.call_args[0][0]
 
-    # Verify we have exactly 7 entities (including lock_mode sensor)
-    assert len(entities_list) == 7
+    # Verify we have exactly 6 entities
+    assert len(entities_list) == 6
 
     # Verify each entity type is present
     entity_types = [type(entity) for entity in entities_list]
@@ -70,7 +70,6 @@ async def test_async_setup_entry_creates_all_sensors(mock_coordinator_basic: Dat
     assert SunElevationSensor in entity_types
     assert TempCurrentMaxSensor in entity_types
     assert TempThresholdSensor in entity_types
-    # LockModeSensor is also included but we don't import it for this test
 
 
 async def test_async_setup_entry_entities_use_coordinator(mock_coordinator_basic: DataUpdateCoordinator) -> None:
@@ -140,8 +139,8 @@ async def test_async_setup_entry_with_real_hass_instance() -> None:
         async_add_entities=capture_entities,
     )
 
-    # Verify we captured 7 entities (including lock_mode sensor)
-    assert len(added_entities) == 7
+    # Verify we captured 6 entities
+    assert len(added_entities) == 6
 
     # Verify entities are the correct types
     assert any(isinstance(e, AutomationDisabledTimeRangeSensor) for e in added_entities)
@@ -150,4 +149,3 @@ async def test_async_setup_entry_with_real_hass_instance() -> None:
     assert any(isinstance(e, SunElevationSensor) for e in added_entities)
     assert any(isinstance(e, TempCurrentMaxSensor) for e in added_entities)
     assert any(isinstance(e, TempThresholdSensor) for e in added_entities)
-    # LockModeSensor is also included but we don't explicitly check for it

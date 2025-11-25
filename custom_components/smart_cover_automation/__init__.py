@@ -97,7 +97,7 @@ async def _async_register_lock_service(hass: HomeAssistant, coordinator: DataUpd
             async_handle_set_lock,
             schema=set_lock_schema,
         )
-        LOGGER.info("Set lock service registered")
+        LOGGER.debug("Set lock service registered")
 
 
 #
@@ -190,7 +190,6 @@ async def async_setup_entry(
     - Sets up platforms
     - Sets up the reload listener
     """
-    LOGGER.info("=========================================================")
     LOGGER.info("Starting integration setup")
 
     try:
@@ -252,10 +251,12 @@ async def async_setup_entry(
         return False
     else:
         LOGGER.info(f"{INTEGRATION_NAME} integration setup completed")
-        LOGGER.info("=========================================================")
         return True
 
 
+#
+# async_get_options_flow
+#
 async def async_get_options_flow(entry: IntegrationConfigEntry) -> OptionsFlowHandler:
     """Return the options flow for this handler.
 
@@ -265,6 +266,9 @@ async def async_get_options_flow(entry: IntegrationConfigEntry) -> OptionsFlowHa
     return OptionsFlowHandler(entry)
 
 
+#
+# async_unload_entry
+#
 async def async_unload_entry(
     hass: HomeAssistant,
     entry: IntegrationConfigEntry,
@@ -297,6 +301,9 @@ async def async_unload_entry(
         return False
 
 
+#
+# async_reload_entry
+#
 async def async_reload_entry(
     hass: HomeAssistant,
     entry: IntegrationConfigEntry,
