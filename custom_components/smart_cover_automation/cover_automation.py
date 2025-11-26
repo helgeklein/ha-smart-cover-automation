@@ -49,6 +49,34 @@ class SensorData:
     should_close_for_sunset: bool  # True only in the ONE update cycle when covers should close after sunset
 
 
+@dataclass
+class CoverState:
+    """Type-safe container for cover automation state.
+
+    Note: Lock state and position history are managed separately
+    as CoverAutomation member variables and added during to_dict().
+    """
+
+    # Cover configuration
+    cover_azimuth: float | None = None
+
+    # Cover physical state
+    state: str | None = None
+    supported_features: int | None = None
+    pos_current: int | None = None
+
+    # Automation targets
+    pos_target_desired: int | None = None
+    pos_target_final: int | None = None
+
+    # Sun calculations
+    sun_hitting: bool | None = None
+    sun_azimuth_diff: float | None = None
+
+    # Protection states
+    lockout_protection: bool | None = None
+
+
 class CoverAutomation:
     """Handles automation logic for a single cover."""
 
@@ -83,6 +111,57 @@ class CoverAutomation:
         self._lock_mode = lock_mode
 
     #
+    # _cover_state_to_dict
+    #
+    def _cover_state_to_dict(self, cover_state: CoverState) -> dict[str, Any]:
+        """Convert CoverState to dictionary, adding data from member variables.
+
+        Only includes fields that have been set (not None) to maintain backward compatibility.
+
+        Args:
+            cover_state: The cover state object
+
+        Returns:
+            Dictionary with all cover attributes for coordinator.data storage
+        """
+
+        result: dict[str, Any] = {}
+
+        # Add fields from CoverState (only if they have values)
+        if cover_state.cover_azimuth is not None:
+            result[const.COVER_ATTR_COVER_AZIMUTH] = cover_state.cover_azimuth
+        if cover_state.state is not None:
+            result[const.COVER_ATTR_STATE] = cover_state.state
+        if cover_state.supported_features is not None:
+            result[const.COVER_ATTR_SUPPORTED_FEATURES] = cover_state.supported_features
+        if cover_state.pos_current is not None:
+            result[const.COVER_ATTR_POS_CURRENT] = cover_state.pos_current
+        if cover_state.pos_target_desired is not None:
+            result[const.COVER_ATTR_POS_TARGET_DESIRED] = cover_state.pos_target_desired
+        if cover_state.pos_target_final is not None:
+            result[const.COVER_ATTR_POS_TARGET_FINAL] = cover_state.pos_target_final
+        if cover_state.sun_hitting is not None:
+            result[const.COVER_ATTR_SUN_HITTING] = cover_state.sun_hitting
+        if cover_state.sun_azimuth_diff is not None:
+            result[const.COVER_ATTR_SUN_AZIMUTH_DIFF] = cover_state.sun_azimuth_diff
+        if cover_state.lockout_protection is not None:
+            result[const.COVER_ATTR_LOCKOUT_PROTECTION] = cover_state.lockout_protection
+
+        # Always add lock mode and lock active status from member variables
+        result[const.COVER_ATTR_LOCK_MODE] = self._lock_mode
+        result[const.COVER_ATTR_LOCK_ACTIVE] = self._lock_mode != const.LockMode.UNLOCKED
+
+        # Add position history from position history manager (only if there are entries)
+        position_entries = self._cover_pos_history_mgr.get_entries(self.entity_id)
+        position_list = [entry.position for entry in position_entries]
+        if position_list or cover_state.pos_current is not None:
+            # Include position history if there are entries OR if we have a current position
+            # (which means we successfully processed far enough to know the current position)
+            result[const.COVER_ATTR_POS_HISTORY] = position_list
+
+        return result
+
+    #
     # process
     #
     async def process(self, state: State | None, sensor_data: SensorData) -> dict[str, Any]:
@@ -96,60 +175,63 @@ class CoverAutomation:
             Dictionary of cover attributes
         """
 
-        cover_attrs: dict[str, Any] = {}
-
-        # Add lock state to attributes
-        cover_attrs[const.COVER_ATTR_LOCK_MODE] = self._lock_mode
-        cover_attrs[const.COVER_ATTR_LOCK_ACTIVE] = self._lock_mode != const.LockMode.UNLOCKED
+        cover_state = CoverState()
 
         # Get cover azimuth
         cover_azimuth = self._get_cover_azimuth()
         if cover_azimuth is None:
-            return cover_attrs
+            return self._cover_state_to_dict(cover_state)
         else:
-            cover_attrs[const.COVER_ATTR_COVER_AZIMUTH] = cover_azimuth
+            cover_state.cover_azimuth = cover_azimuth
 
         # Validate current cover state
         if not self._validate_cover_state(state):
-            return cover_attrs
+            return self._cover_state_to_dict(cover_state)
         else:
             # At this point, we know state is not None due to validation (type narrowing for type checkers)
             assert state is not None
-            cover_attrs[const.COVER_ATTR_STATE] = state.state
+            cover_state.state = state.state
 
         # Check if cover is moving
         if self._is_cover_moving(state):
-            return cover_attrs
+            return self._cover_state_to_dict(cover_state)
 
         # Get cover features
         features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
-        cover_attrs[const.COVER_ATTR_SUPPORTED_FEATURES] = features
+        cover_state.supported_features = features
 
         # Get cover position
         success, current_pos = self._get_cover_position(state, features)
         if not success:
-            return cover_attrs
+            return self._cover_state_to_dict(cover_state)
         else:
-            cover_attrs[const.COVER_ATTR_POS_CURRENT] = current_pos
+            cover_state.pos_current = current_pos
 
         # Handle lock modes before normal automation logic
-        locked = await self._process_lock_mode(cover_attrs, current_pos, features)
+        # Note: _process_lock_mode() still works with dicts for backward compatibility with tests
+        lock_attrs: dict[str, Any] = {}
+        locked = await self._process_lock_mode(lock_attrs, current_pos, features)
         if locked:
-            return cover_attrs
+            # Merge lock attributes into CoverState
+            if const.COVER_ATTR_POS_TARGET_DESIRED in lock_attrs:
+                cover_state.pos_target_desired = lock_attrs[const.COVER_ATTR_POS_TARGET_DESIRED]
+            if const.COVER_ATTR_POS_TARGET_FINAL in lock_attrs:
+                cover_state.pos_target_final = lock_attrs[const.COVER_ATTR_POS_TARGET_FINAL]
+            return self._cover_state_to_dict(cover_state)
 
         # Check for manual override
         if self._check_manual_override(current_pos):
-            return cover_attrs
+            return self._cover_state_to_dict(cover_state)
 
         # Calculate sun hitting
         sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
-        cover_attrs[const.COVER_ATTR_SUN_HITTING] = sun_hitting
-        cover_attrs[const.COVER_ATTR_SUN_AZIMUTH_DIFF] = round(sun_azimuth_difference, 1)
+        cover_state.sun_hitting = sun_hitting
+        cover_state.sun_azimuth_diff = round(sun_azimuth_difference, 1)
 
         # Calculate desired position (lockout protection and nighttime block are checked inside _calculate_desired_position)
         desired_pos, movement_reason, lockout_protection = self._calculate_desired_position(sensor_data, sun_hitting, current_pos)
-        cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = desired_pos
-        cover_attrs[const.COVER_ATTR_LOCKOUT_PROTECTION] = lockout_protection
+        cover_state.pos_target_desired = desired_pos
+        cover_state.lockout_protection = lockout_protection
 
         # Move cover if needed (skip if movement_reason is None, e.g., nighttime block active)
         if movement_reason is None:
@@ -164,16 +246,13 @@ class CoverAutomation:
                 self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
             else:
                 # Movement occurred
-                cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
-
-        # Include position history in cover attributes
-        position_entries = self._cover_pos_history_mgr.get_entries(self.entity_id)
-        cover_attrs[const.COVER_ATTR_POS_HISTORY] = [entry.position for entry in position_entries]
+                cover_state.pos_target_final = actual_pos
 
         # Log per-cover attributes
-        const.LOGGER.debug(f"[{self.entity_id}] Cover result: {message}. Cover data: {str(cover_attrs)}")
+        result = self._cover_state_to_dict(cover_state)
+        const.LOGGER.debug(f"[{self.entity_id}] Cover result: {message}. Cover data: {str(result)}")
 
-        return cover_attrs
+        return result
 
     #
     # _get_cover_azimuth
@@ -573,12 +652,12 @@ class CoverAutomation:
         4. FORCE_CLOSE: Ensure cover is at 0%, move if not
 
         Args:
-            cover_attrs: Cover attributes dict to populate
+            cover_attrs: Dictionary to populate with cover attributes
             current_pos: Current cover position
             features: Cover supported features
 
         Returns:
-            True if lock mode, False otherwise
+            True if lock mode active (automation should be skipped), False otherwise
         """
 
         if self._lock_mode == const.LockMode.UNLOCKED:
@@ -614,8 +693,9 @@ class CoverAutomation:
         """Set lock-related attributes.
 
         Args:
-            cover_attrs: Cover attributes dict to populate
-            position: Current/target position
+            cover_attrs: Dictionary to populate with cover attributes
+            desired_pos: Desired position
+            target_pos: Target position
             cover_moved: Whether the cover moved
         """
 
@@ -630,7 +710,7 @@ class CoverAutomation:
         """Enforce a locked position (FORCE_OPEN or FORCE_CLOSE).
 
         Args:
-            cover_attrs: Cover attributes dict to populate
+            cover_attrs: Dictionary to populate with cover attributes
             current_pos: Current cover position
             target_pos: Target position to enforce
             features: Cover supported features
