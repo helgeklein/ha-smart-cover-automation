@@ -137,11 +137,8 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         4. Logs the change
         """
 
-        old_mode = self.lock_mode
-
         # Validate lock mode
         valid_modes = [mode.value for mode in const.LockMode]
-
         if lock_mode not in valid_modes:
             const.LOGGER.error(f"Invalid lock mode: {lock_mode}. Valid modes: {valid_modes}")
             raise ValueError(f"Invalid lock mode: {lock_mode}")
@@ -150,19 +147,9 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         new_options = dict(self.config_entry.options)
         new_options[ConfKeys.LOCK_MODE.value] = lock_mode
 
-        self.hass.config_entries.async_update_entry(
-            self.config_entry,
-            options=new_options,
-        )
-
-        # Log the change
-        if lock_mode == const.LockMode.UNLOCKED:
-            const.LOGGER.info(f"Lock deactivated (was: {old_mode})")
-        else:
-            const.LOGGER.warning(f"Lock activated: {lock_mode} (was: {old_mode})")
-
-        # Trigger immediate refresh to apply lock state
-        await self.async_request_refresh()
+        # This will trigger the update listener (async_reload_entry) in __init__.py
+        # which will compare configs and decide on refresh vs. reload
+        self.hass.config_entries.async_update_entry(self.config_entry, options=new_options)
 
     #
     # _resolved_settings

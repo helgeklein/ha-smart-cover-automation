@@ -300,7 +300,6 @@ class LockActiveSensor(IntegrationBinarySensor):
         entity_description = BinarySensorEntityDescription(
             key=BINARY_SENSOR_KEY_LOCK_ACTIVE,
             translation_key=BINARY_SENSOR_KEY_LOCK_ACTIVE,
-            icon="mdi:lock",
             device_class=BinarySensorDeviceClass.LOCK,
             entity_category=EntityCategory.DIAGNOSTIC,
         )
@@ -311,5 +310,9 @@ class LockActiveSensor(IntegrationBinarySensor):
     #
     @property
     def is_on(self) -> bool:  # pyright: ignore
-        """Return True if lock is active."""
-        return self.coordinator.is_locked
+        """Return False if lock is active.
+
+        That may seem counterintuitive, but in Home Assistant a lock binary sensor
+        is "on" when the lock is open (unlocked), and "off" when it is closed (locked).
+        """
+        return not self.coordinator.is_locked

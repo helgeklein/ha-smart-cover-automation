@@ -122,11 +122,7 @@
                 }
             },
             "lock_active": {
-                "name": "Sperrstatus",
-                "state": {
-                    "on": "Gesperrt",
-                    "off": "Entsperrt"
-                }
+                "name": "Sperrstatus"
             },
             "nighttime_block_opening": {
                 "name": "Nacht: Öffnen blockieren?",

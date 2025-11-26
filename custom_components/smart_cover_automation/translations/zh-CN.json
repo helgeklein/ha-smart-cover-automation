@@ -122,11 +122,7 @@
                 }
             },
             "lock_active": {
-                "name": "锁定状态",
-                "state": {
-                    "on": "已锁定",
-                    "off": "未锁定"
-                }
+                "name": "锁定状态"
             },
             "nighttime_block_opening": {
                 "name": "夜间：阻止开启？",

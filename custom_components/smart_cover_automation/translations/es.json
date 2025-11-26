@@ -122,11 +122,7 @@
                 }
             },
             "lock_active": {
-                "name": "Estado de bloqueo",
-                "state": {
-                    "on": "Bloqueado",
-                    "off": "Desbloqueado"
-                }
+                "name": "Estado de bloqueo"
             },
             "nighttime_block_opening": {
                 "name": "Noche: ¿bloquear apertura?",

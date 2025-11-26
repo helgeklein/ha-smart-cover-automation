@@ -122,11 +122,7 @@
                 }
             },
             "lock_active": {
-                "name": "Lock status",
-                "state": {
-                    "on": "Locked",
-                    "off": "Unlocked"
-                }
+                "name": "Lock status"
             },
             "nighttime_block_opening": {
                 "name": "Nighttime: block opening?",

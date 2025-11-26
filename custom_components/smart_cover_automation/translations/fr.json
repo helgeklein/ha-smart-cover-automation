@@ -122,11 +122,7 @@
                 }
             },
             "lock_active": {
-                "name": "Statut du verrouillage",
-                "state": {
-                    "on": "Verrouillé",
-                    "off": "Déverrouillé"
-                }
+                "name": "Statut du verrouillage"
             },
             "nighttime_block_opening": {
                 "name": "Nuit : bloquer l'ouverture ?",

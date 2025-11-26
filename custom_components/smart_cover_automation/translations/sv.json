@@ -122,11 +122,7 @@
                 }
             },
             "lock_active": {
-                "name": "Låsstatus",
-                "state": {
-                    "on": "Låst",
-                    "off": "Upplåst"
-                }
+                "name": "Låsstatus"
             },
             "nighttime_block_opening": {
                 "name": "Natt: blockera öppning?",

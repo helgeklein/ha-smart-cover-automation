@@ -317,9 +317,9 @@ async def async_reload_entry(
     # without requiring a full reload
     runtime_configurable_keys = {
         ConfKeys.ENABLED.value,
+        ConfKeys.LOCK_MODE.value,
         ConfKeys.SIMULATION_MODE.value,
         ConfKeys.VERBOSE_LOGGING.value,
-        ConfKeys.TEMP_THRESHOLD.value,
     }
 
     if hasattr(entry, "runtime_data") and entry.runtime_data:
@@ -333,16 +333,16 @@ async def async_reload_entry(
 
         # Determine which keys have actually changed
         changed_keys = {key for key in set(old_config.keys()) | set(new_config.keys()) if old_config.get(key) != new_config.get(key)}
+        changes = ", ".join(f"{key}={new_config.get(key)}" for key in sorted(changed_keys))
 
         # If the only changes are to runtime-configurable keys, just refresh
         if changed_keys and changed_keys.issubset(runtime_configurable_keys):
-            LOGGER.debug(
-                "Runtime-only option change detected (%s), refreshing coordinator",
-                ", ".join(sorted(changed_keys)),
-            )
+            LOGGER.info(f"Runtime settings change detected ({changes}), refreshing coordinator")
+
             # Update the stored config with new values
             coordinator._merged_config = new_config
             entry.runtime_data.config = new_config
+
             # Trigger a coordinator refresh to apply the changes
             await coordinator.async_request_refresh()
             return
