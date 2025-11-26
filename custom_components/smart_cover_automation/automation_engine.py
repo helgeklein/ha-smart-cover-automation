@@ -97,8 +97,6 @@ class AutomationEngine:
         result["temp_current_max"] = sensor_data.temp_max
         result["temp_hot"] = sensor_data.temp_hot
         result["weather_sunny"] = sensor_data.weather_sunny
-        result["lock_mode"] = lock_mode
-        result["lock_active"] = is_locked
 
         # Log sensor states
         sensor_states = {k: v for k, v in result.items() if k != ConfKeys.COVERS.value}
@@ -106,10 +104,11 @@ class AutomationEngine:
 
         # Log global settings
         global_settings = {
-            "temp_threshold": self.resolved.temp_threshold,
-            "sun_elevation_threshold": self.resolved.sun_elevation_threshold,
-            "sun_azimuth_tolerance": self.resolved.sun_azimuth_tolerance,
+            "lock_mode": lock_mode,
             "covers_min_position_delta": self.resolved.covers_min_position_delta,
+            "sun_azimuth_tolerance": self.resolved.sun_azimuth_tolerance,
+            "sun_elevation_threshold": self.resolved.sun_elevation_threshold,
+            "temp_threshold": self.resolved.temp_threshold,
             "weather_hot_cutover_time": self.resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
         }
         const.LOGGER.info(f"Global settings: {str(global_settings)}")

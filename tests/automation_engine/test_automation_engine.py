@@ -466,9 +466,6 @@ class TestRunMethod:
         # Cover should only have lock data, no automation actions taken
         assert "cover_lock_mode" in cover_data
         assert "cover_lock_active" in cover_data
-        # Global lock fields should also be in result
-        assert "lock_mode" in result
-        assert "lock_active" in result
 
 
 class TestLogAutomationResult:
