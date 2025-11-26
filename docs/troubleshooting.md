@@ -24,6 +24,7 @@ The integration comes with the following sensors that help you understand the in
 
 - **Evening closure: enabled?** When enabled, covers will be closed a certain time after sunset.
 - **Evening closure: delay** Time to wait after sunset before closing the covers.
+- **Lock status**: Whether lock mode is enabled or disabled.
 - **Nighttime: block opening?** Whether to block automatic cover opening during nighttime (when the sun is below the horizon).
 - **Status:** Overall status returned by the last automation update.
 - **Sun azimuth:** Current sun azimuth (angle from north).
