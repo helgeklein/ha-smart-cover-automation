@@ -11,6 +11,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from . import const
 from .automation_engine import AutomationEngine
 from .config import ConfKeys, ResolvedConfig, resolve_entry
+from .const import LockMode
 from .data import CoordinatorData
 from .ha_interface import HomeAssistantInterface, WeatherEntityNotFoundError
 
@@ -100,6 +101,55 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         """Set the unique_id of the status binary sensor."""
 
         self._ha_interface.status_sensor_unique_id = value
+
+    #
+    # lock_mode
+    #
+    @property
+    def lock_mode(self) -> LockMode:
+        """Get current lock mode."""
+
+        resolved = self._resolved_settings()
+        return resolved.lock_mode
+
+    #
+    # is_locked
+    #
+    @property
+    def is_locked(self) -> bool:
+        """Check if covers are locked (any mode except unlocked)."""
+
+        return self.lock_mode != const.LockMode.UNLOCKED
+
+    #
+    # async_set_lock_mode
+    #
+    async def async_set_lock_mode(self, lock_mode: const.LockMode) -> None:
+        """Set the lock mode and persist to config.
+
+        Args:
+            lock_mode: lock mode to set
+
+        This method:
+        1. Validates the lock mode
+        2. Persists to config options
+        3. Triggers immediate coordinator refresh
+        4. Logs the change
+        """
+
+        # Validate lock mode
+        valid_modes = [mode.value for mode in const.LockMode]
+        if lock_mode not in valid_modes:
+            const.LOGGER.error(f"Invalid lock mode: {lock_mode}. Valid modes: {valid_modes}")
+            raise ValueError(f"Invalid lock mode: {lock_mode}")
+
+        # Update config entry options
+        new_options = dict(self.config_entry.options)
+        new_options[ConfKeys.LOCK_MODE.value] = lock_mode
+
+        # This will trigger the update listener (async_reload_entry) in __init__.py
+        # which will compare configs and decide on refresh vs. reload
+        self.hass.config_entries.async_update_entry(self.config_entry, options=new_options)
 
     #
     # _resolved_settings

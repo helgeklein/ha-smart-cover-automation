@@ -12,7 +12,7 @@ from datetime import time
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
-from custom_components.smart_cover_automation.const import HA_OPTIONS
+from custom_components.smart_cover_automation.const import HA_OPTIONS, LockMode
 
 T = TypeVar("T")
 
@@ -52,6 +52,7 @@ class ConfKeys(StrEnum):
     COVERS_MIN_CLOSURE = "covers_min_closure"  # Minimum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_POSITION_DELTA = "covers_min_position_delta"  # Ignore smaller position changes (%).
     ENABLED = "enabled"  # Global on/off for all automation.
+    LOCK_MODE = "lock_mode"  # Current lock mode for all covers.
     MANUAL_OVERRIDE_DURATION = "manual_override_duration"  # Duration (seconds) to skip a cover's automation after manual cover move.
     NIGHTTIME_BLOCK_OPENING = "nighttime_block_opening"  # Disable cover open automation at night.
     SIMULATION_MODE = "simulation_mode"  # If enabled, no actual cover commands are sent.
@@ -184,6 +185,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int),
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.LOCK_MODE: _ConfSpec(default="unlocked", converter=_Converters.to_str),
     ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds),
     ConfKeys.NIGHTTIME_BLOCK_OPENING: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool),
@@ -219,6 +221,7 @@ class ResolvedConfig:
     covers_min_closure: int
     covers_min_position_delta: int
     enabled: bool
+    lock_mode: LockMode
     manual_override_duration: int
     nighttime_block_opening: bool
     simulation_mode: bool

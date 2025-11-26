@@ -22,6 +22,7 @@ from homeassistant.const import EntityCategory
 
 from .const import (
     BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET,
+    BINARY_SENSOR_KEY_LOCK_ACTIVE,
     BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
     BINARY_SENSOR_KEY_STATUS,
     BINARY_SENSOR_KEY_TEMP_HOT,
@@ -63,6 +64,7 @@ async def async_setup_entry(
         NighttimeBlockOpeningBinarySensor(coordinator),
         TempHotBinarySensor(coordinator),
         WeatherSunnyBinarySensor(coordinator),
+        LockActiveSensor(coordinator),
     ]
 
     async_add_entities(entities)
@@ -278,3 +280,39 @@ class WeatherSunnyBinarySensor(IntegrationBinarySensor):
             return self.coordinator.data["weather_sunny"]
         else:
             return False
+
+
+#
+# LockActiveSensor
+#
+class LockActiveSensor(IntegrationBinarySensor):
+    """Binary sensor indicating if cover lock is active."""
+
+    #
+    # __init__
+    #
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+        entity_description = BinarySensorEntityDescription(
+            key=BINARY_SENSOR_KEY_LOCK_ACTIVE,
+            translation_key=BINARY_SENSOR_KEY_LOCK_ACTIVE,
+            device_class=BinarySensorDeviceClass.LOCK,
+            entity_category=EntityCategory.DIAGNOSTIC,
+        )
+        super().__init__(coordinator, entity_description)
+
+    #
+    # is_on
+    #
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
+        """Return False if lock is active.
+
+        That may seem counterintuitive, but in Home Assistant a lock binary sensor
+        is "on" when the lock is open (unlocked), and "off" when it is closed (locked).
+        """
+        return not self.coordinator.is_locked

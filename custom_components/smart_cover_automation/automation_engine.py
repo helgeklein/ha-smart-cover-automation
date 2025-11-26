@@ -87,12 +87,18 @@ class AutomationEngine:
             self._log_automation_result(message, const.LogSeverity.WARNING)
             return result
 
-        # Store sensor data in result
+        # Get lock state
+        lock_mode = self.resolved.lock_mode
+        is_locked = lock_mode != const.LockMode.UNLOCKED
+
+        # Store sensor data and lock state in result
         result["sun_azimuth"] = sensor_data.sun_azimuth
         result["sun_elevation"] = sensor_data.sun_elevation
         result["temp_current_max"] = sensor_data.temp_max
         result["temp_hot"] = sensor_data.temp_hot
         result["weather_sunny"] = sensor_data.weather_sunny
+        result["lock_mode"] = lock_mode
+        result["lock_active"] = is_locked
 
         # Log sensor states
         sensor_states = {k: v for k, v in result.items() if k != ConfKeys.COVERS.value}
@@ -108,6 +114,10 @@ class AutomationEngine:
         }
         const.LOGGER.info(f"Global settings: {str(global_settings)}")
 
+        # Log lock state if active
+        if is_locked:
+            const.LOGGER.warning(f"Cover lock active: {lock_mode}")
+
         # Check global blocking conditions
         success, message, severity = self._check_global_conditions()
         if not success:
@@ -122,6 +132,7 @@ class AutomationEngine:
                 config=self.config,
                 cover_pos_history_mgr=self._cover_pos_history_mgr,
                 ha_interface=self._ha_interface,
+                lock_mode=lock_mode,
             )
             cover_attrs = await cover_automation.process(state, sensor_data)
             if cover_attrs:

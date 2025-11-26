@@ -113,6 +113,53 @@
         }
     },
     "entity": {
+        "binary_sensor": {
+            "close_covers_after_sunset": {
+                "name": "Fermeture du soir : activée ?",
+                "state": {
+                    "on": "Oui",
+                    "off": "Non"
+                }
+            },
+            "lock_active": {
+                "name": "Statut du verrouillage"
+            },
+            "nighttime_block_opening": {
+                "name": "Nuit : bloquer l'ouverture ?",
+                "state": {
+                    "on": "Oui",
+                    "off": "Non"
+                }
+            },
+            "status": {
+                "name": "Statut"
+            },
+            "temp_hot": {
+                "name": "Météo : chaud ?",
+                "state": {
+                    "on": "Oui",
+                    "off": "Non"
+                }
+            },
+            "weather_sunny": {
+                "name": "Météo : ensoleillé ?",
+                "state": {
+                    "on": "Oui",
+                    "off": "Non"
+                }
+            }
+        },
+        "select": {
+            "lock_mode": {
+                "name": "Mode de verrouillage",
+                "state": {
+                    "unlocked": "Déverrouillé (automatisation active)",
+                    "hold_position": "Maintenir la position actuelle",
+                    "force_open": "Forcer l'ouverture et verrouiller",
+                    "force_close": "Forcer la fermeture et verrouiller"
+                }
+            }
+        },
         "sensor": {
             "automation_disabled_time_range": {
                 "name": "Plage horaire : désactivée",
@@ -134,39 +181,6 @@
             },
             "temp_threshold": {
                 "name": "Température : seuil de chaleur"
-            }
-        },
-        "binary_sensor": {
-            "status": {
-                "name": "Statut"
-            },
-            "close_covers_after_sunset": {
-                "name": "Fermeture du soir : activée ?",
-                "state": {
-                    "on": "Oui",
-                    "off": "Non"
-                }
-            },
-            "nighttime_block_opening": {
-                "name": "Nuit : bloquer l'ouverture ?",
-                "state": {
-                    "on": "Oui",
-                    "off": "Non"
-                }
-            },
-            "temp_hot": {
-                "name": "Météo : chaud ?",
-                "state": {
-                    "on": "Oui",
-                    "off": "Non"
-                }
-            },
-            "weather_sunny": {
-                "name": "Météo : ensoleillé ?",
-                "state": {
-                    "on": "Oui",
-                    "off": "Non"
-                }
             }
         },
         "switch": {
@@ -227,9 +241,29 @@
                     "description": "Motif utilisé lorsque le volet se déplace pour laisser entrer davantage de lumière."
                 },
                 "reason_close_after_sunset": {
-                    "name": "protéger l'intimité la nuit",
+                    "name": "protéger la vie privée la nuit",
                     "description": "Motif utilisé lorsque le volet se ferme automatiquement après le coucher du soleil."
                 }
+            }
+        },
+        "set_lock": {
+            "name": "Verrouiller le volet",
+            "description": "Verrouiller tous les volets dans un état spécifique pour empêcher l'automatisation de les déplacer. Utile pour les urgences météorologiques (grêle, tempêtes) ou les scénarios de remplacement manuel.",
+            "fields": {
+                "lock_mode": {
+                    "name": "Mode de verrouillage",
+                    "description": "Comment verrouiller les volets"
+                }
+            }
+        }
+    },
+    "selector": {
+        "lock_mode": {
+            "options": {
+                "unlocked": "Déverrouillé (automatisation active)",
+                "hold_position": "Maintenir la position actuelle",
+                "force_open": "Forcer l'ouverture et verrouiller",
+                "force_close": "Forcer la fermeture et verrouiller"
             }
         }
     }

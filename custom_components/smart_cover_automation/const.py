@@ -16,7 +16,7 @@ logger:
 """
 
 from datetime import timedelta
-from enum import Enum
+from enum import Enum, StrEnum
 from logging import getLogger
 from typing import Final
 
@@ -47,6 +47,23 @@ COVER_POSITION_HISTORY_SIZE: Final[int] = 3  # Number of positions to store in h
 # Cover translation keys
 COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Translation key for cover/window azimuth (°)
 
+
+#
+# LockMode
+#
+class LockMode(StrEnum):
+    """Lock mode enum - single source of truth for all lock mode values."""
+
+    UNLOCKED = "unlocked"
+    HOLD_POSITION = "hold_position"
+    FORCE_OPEN = "force_open"
+    FORCE_CLOSE = "force_close"
+
+
+# Service constants
+SERVICE_SET_LOCK: Final[str] = "set_lock"  # Service name for setting lock mode
+SERVICE_FIELD_LOCK_MODE: Final[str] = "lock_mode"  # Field name for lock mode parameter
+
 # Entity keys
 BINARY_SENSOR_KEY_STATUS: Final[str] = "status"  # Key for the status binary sensor entity
 BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET: Final[str] = (
@@ -57,6 +74,7 @@ BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING: Final[str] = (
 )
 BINARY_SENSOR_KEY_TEMP_HOT: Final[str] = "temp_hot"  # Key for the temp_hot binary sensor entity
 BINARY_SENSOR_KEY_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Key for the weather_sunny binary sensor entity
+BINARY_SENSOR_KEY_LOCK_ACTIVE: Final[str] = "lock_active"  # Key for the lock active binary sensor entity
 SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE: Final[str] = (
     "automation_disabled_time_range"  # Key for the automation disabled time range sensor entity
 )
@@ -67,9 +85,13 @@ SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth se
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity
 SENSOR_KEY_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Key for the current maximum temperature sensor entity
 SENSOR_KEY_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Key for the temperature threshold sensor entity
+SENSOR_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode sensor entity
+SELECT_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode select entity
 
 # Cover attribute keys (exposed on each cover entity)
 COVER_ATTR_COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
+COVER_ATTR_LOCK_ACTIVE: Final[str] = "cover_lock_active"  # Whether lock is active
+COVER_ATTR_LOCK_MODE: Final[str] = "cover_lock_mode"  # Current lock mode
 COVER_ATTR_LOCKOUT_PROTECTION: Final[str] = "cover_lockout_protection"  # Lockout protection status
 COVER_ATTR_POS_CURRENT: Final[str] = "cover_pos_current"  # Current cover position
 COVER_ATTR_POS_HISTORY: Final[str] = "cover_pos_history"  # Position history

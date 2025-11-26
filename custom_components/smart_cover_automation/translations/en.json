@@ -113,6 +113,53 @@
         }
     },
     "entity": {
+        "binary_sensor": {
+            "close_covers_after_sunset": {
+                "name": "Evening closure: enabled?",
+                "state": {
+                    "on": "Yes",
+                    "off": "No"
+                }
+            },
+            "lock_active": {
+                "name": "Lock status"
+            },
+            "nighttime_block_opening": {
+                "name": "Nighttime: block opening?",
+                "state": {
+                    "on": "Yes",
+                    "off": "No"
+                }
+            },
+            "status": {
+                "name": "Status"
+            },
+            "temp_hot": {
+                "name": "Weather: hot?",
+                "state": {
+                    "on": "Yes",
+                    "off": "No"
+                }
+            },
+            "weather_sunny": {
+                "name": "Weather: sunny?",
+                "state": {
+                    "on": "Yes",
+                    "off": "No"
+                }
+            }
+        },
+        "select": {
+            "lock_mode": {
+                "name": "Lock mode",
+                "state": {
+                    "unlocked": "Unlocked (automation active)",
+                    "hold_position": "Hold current position",
+                    "force_open": "Force open and lock",
+                    "force_close": "Force close and lock"
+                }
+            }
+        },
         "sensor": {
             "automation_disabled_time_range": {
                 "name": "Time range: disabled",
@@ -134,39 +181,6 @@
             },
             "temp_threshold": {
                 "name": "Temperature: heat threshold"
-            }
-        },
-        "binary_sensor": {
-            "status": {
-                "name": "Status"
-            },
-            "close_covers_after_sunset": {
-                "name": "Evening closure: enabled?",
-                "state": {
-                    "on": "Yes",
-                    "off": "No"
-                }
-            },
-            "nighttime_block_opening": {
-                "name": "Nighttime: block opening?",
-                "state": {
-                    "on": "Yes",
-                    "off": "No"
-                }
-            },
-            "temp_hot": {
-                "name": "Weather: hot?",
-                "state": {
-                    "on": "Yes",
-                    "off": "No"
-                }
-            },
-            "weather_sunny": {
-                "name": "Weather: sunny?",
-                "state": {
-                    "on": "Yes",
-                    "off": "No"
-                }
             }
         },
         "switch": {
@@ -230,6 +244,26 @@
                     "name": "protect privacy at night",
                     "description": "Reason used when the cover closes automatically after sunset."
                 }
+            }
+        },
+        "set_lock": {
+            "name": "Set Cover Lock",
+            "description": "Lock all covers in a specific state to prevent automation from moving them. Useful for weather emergencies (hail, storms) or manual override scenarios.",
+            "fields": {
+                "lock_mode": {
+                    "name": "Lock mode",
+                    "description": "How to lock the covers"
+                }
+            }
+        }
+    },
+    "selector": {
+        "lock_mode": {
+            "options": {
+                "unlocked": "Unlocked (automation active)",
+                "hold_position": "Hold current position",
+                "force_open": "Force open and lock",
+                "force_close": "Force close and lock"
             }
         }
     }

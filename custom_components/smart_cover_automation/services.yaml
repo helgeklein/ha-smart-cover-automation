@@ -54,3 +54,30 @@ logbook_entry:
       description: Localized label for the letting light in reason.
       required: false
       advanced: true
+
+#
+# Service to set the cover lock mode.
+#
+set_lock:
+  name: Set Cover Lock
+  description: >
+    Lock all covers in a specific state to prevent automation from moving them.
+    Useful for weather emergencies (hail, storms) or manual override scenarios.
+  fields:
+    lock_mode:
+      name: Lock Mode
+      description: How to lock the covers
+      required: true
+      example: "force_close"
+      selector:
+        select:
+          translation_key: "lock_mode"
+          options:
+            - label: "Unlocked (normal automation)"
+              value: "unlocked"
+            - label: "Hold current position"
+              value: "hold_position"
+            - label: "Force open and lock"
+              value: "force_open"
+            - label: "Force close and lock"
+              value: "force_close"

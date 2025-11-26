@@ -34,6 +34,9 @@ if TYPE_CHECKING:
     from .data import IntegrationConfigEntry
 
 
+#
+# async_setup_entry
+#
 async def async_setup_entry(
     hass: HomeAssistant,  # noqa: ARG001 Unused function argument: `hass`
     entry: IntegrationConfigEntry,
@@ -81,6 +84,9 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):  # pyright: ignore[rep
     - Integration with Home Assistant's sensor platform
     """
 
+    #
+    # __init__
+    #
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
