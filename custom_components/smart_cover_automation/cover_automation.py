@@ -208,15 +208,8 @@ class CoverAutomation:
             cover_state.pos_current = current_pos
 
         # Handle lock modes before normal automation logic
-        # Note: _process_lock_mode() still works with dicts for backward compatibility with tests
-        lock_attrs: dict[str, Any] = {}
-        locked = await self._process_lock_mode(lock_attrs, current_pos, features)
+        locked = await self._process_lock_mode(cover_state, current_pos, features)
         if locked:
-            # Merge lock attributes into CoverState
-            if const.COVER_ATTR_POS_TARGET_DESIRED in lock_attrs:
-                cover_state.pos_target_desired = lock_attrs[const.COVER_ATTR_POS_TARGET_DESIRED]
-            if const.COVER_ATTR_POS_TARGET_FINAL in lock_attrs:
-                cover_state.pos_target_final = lock_attrs[const.COVER_ATTR_POS_TARGET_FINAL]
             return self._cover_state_to_dict(cover_state)
 
         # Check for manual override
@@ -642,7 +635,7 @@ class CoverAutomation:
     #
     # _process_lock_mode
     #
-    async def _process_lock_mode(self, cover_attrs: dict[str, Any], current_pos: int, features: int) -> bool:
+    async def _process_lock_mode(self, cover_state: CoverState, current_pos: int, features: int) -> bool:
         """Process lock modes.
 
         This method enforces the lock mode by:
@@ -652,7 +645,7 @@ class CoverAutomation:
         4. FORCE_CLOSE: Ensure cover is at 0%, move if not
 
         Args:
-            cover_attrs: Dictionary to populate with cover attributes
+            cover_state: Cover state object to populate
             current_pos: Current cover position
             features: Cover supported features
 
@@ -666,18 +659,18 @@ class CoverAutomation:
         if self._lock_mode == const.LockMode.HOLD_POSITION:
             # Just block all automation
             self._log_cover_msg(f"Lock active ({self._lock_mode}), skipping automation", const.LogSeverity.INFO)
-            self._set_lock_attrs(cover_attrs, desired_pos=current_pos, target_pos=current_pos, cover_moved=False)
+            self._set_lock_attrs(cover_state, desired_pos=current_pos, target_pos=current_pos, cover_moved=False)
 
         elif self._lock_mode == const.LockMode.FORCE_OPEN:
             # Ensure cover is fully open (100%)
             await self._enforce_locked_position(
-                cover_attrs, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_OPEN, features=features
+                cover_state, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_OPEN, features=features
             )
 
         elif self._lock_mode == const.LockMode.FORCE_CLOSE:
             # Ensure cover is fully closed (0%)
             await self._enforce_locked_position(
-                cover_attrs, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_CLOSED, features=features
+                cover_state, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_CLOSED, features=features
             )
 
         else:
@@ -689,28 +682,28 @@ class CoverAutomation:
     #
     # _set_lock_attrs
     #
-    def _set_lock_attrs(self, cover_attrs: dict[str, Any], desired_pos: int, target_pos: int, cover_moved: bool) -> None:
+    def _set_lock_attrs(self, cover_state: CoverState, desired_pos: int, target_pos: int, cover_moved: bool) -> None:
         """Set lock-related attributes.
 
         Args:
-            cover_attrs: Dictionary to populate with cover attributes
+            cover_state: Cover state object to populate
             desired_pos: Desired position
             target_pos: Target position
             cover_moved: Whether the cover moved
         """
 
-        cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = desired_pos
-        cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = target_pos
+        cover_state.pos_target_desired = desired_pos
+        cover_state.pos_target_final = target_pos
         self._cover_pos_history_mgr.add(self.entity_id, new_position=target_pos, cover_moved=cover_moved)
 
     #
     # _enforce_locked_position
     #
-    async def _enforce_locked_position(self, cover_attrs: dict[str, Any], current_pos: int, target_pos: int, features: int) -> None:
+    async def _enforce_locked_position(self, cover_state: CoverState, current_pos: int, target_pos: int, features: int) -> None:
         """Enforce a locked position (FORCE_OPEN or FORCE_CLOSE).
 
         Args:
-            cover_attrs: Dictionary to populate with cover attributes
+            cover_state: Cover state object to populate
             current_pos: Current cover position
             target_pos: Target position to enforce
             features: Cover supported features
@@ -728,7 +721,7 @@ class CoverAutomation:
 
         # Log and store position
         self._log_cover_msg(f"Lock active ({self._lock_mode}), {move_msg} ({target_pos}%)", const.LogSeverity.INFO)
-        self._set_lock_attrs(cover_attrs, desired_pos=new_pos, target_pos=new_pos, cover_moved=cover_moved)
+        self._set_lock_attrs(cover_state, desired_pos=new_pos, target_pos=new_pos, cover_moved=cover_moved)
 
     #
     # _log_cover_msg

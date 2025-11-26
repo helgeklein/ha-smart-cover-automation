@@ -17,9 +17,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.const import LockMode
-from custom_components.smart_cover_automation.cover_automation import CoverAutomation
+from custom_components.smart_cover_automation.cover_automation import CoverAutomation, CoverState
 
 
 @pytest.fixture
@@ -87,11 +86,12 @@ class TestProcessLockModeUnlocked:
             LockMode.UNLOCKED, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=50, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=50, features=0)
 
         assert locked is False
-        assert cover_attrs == {}  # No attributes should be set
+        assert cover_state.pos_target_desired is None  # No attributes should be set
+        assert cover_state.pos_target_final is None
         mock_cover_pos_history_mgr.add.assert_not_called()
         mock_ha_interface.set_cover_position.assert_not_called()
 
@@ -106,12 +106,12 @@ class TestProcessLockModeHoldPosition:
             LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=42, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=42, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 42
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 42
+        assert cover_state.pos_target_desired == 42
+        assert cover_state.pos_target_final == 42
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=42, cover_moved=False)
         mock_ha_interface.set_cover_position.assert_not_called()
 
@@ -122,12 +122,12 @@ class TestProcessLockModeHoldPosition:
             LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=0, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=0, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 0
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 0
+        assert cover_state.pos_target_desired == 0
+        assert cover_state.pos_target_final == 0
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=False)
 
     @pytest.mark.asyncio
@@ -137,12 +137,12 @@ class TestProcessLockModeHoldPosition:
             LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=100, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=100, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 100
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 100
+        assert cover_state.pos_target_desired == 100
+        assert cover_state.pos_target_final == 100
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=False)
 
 
@@ -156,12 +156,12 @@ class TestProcessLockModeForceOpen:
             LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=100, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=100, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 100
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 100
+        assert cover_state.pos_target_desired == 100
+        assert cover_state.pos_target_final == 100
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=False)
         mock_ha_interface.set_cover_position.assert_not_called()
 
@@ -175,12 +175,12 @@ class TestProcessLockModeForceOpen:
             LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=0, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=0, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 100
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 100
+        assert cover_state.pos_target_desired == 100
+        assert cover_state.pos_target_final == 100
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 100, 0)
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=True)
 
@@ -194,12 +194,12 @@ class TestProcessLockModeForceOpen:
             LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=50, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=50, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 100
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 100
+        assert cover_state.pos_target_desired == 100
+        assert cover_state.pos_target_final == 100
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 100, 0)
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=True)
 
@@ -211,9 +211,9 @@ class TestProcessLockModeForceOpen:
             LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
+        cover_state = CoverState()
         features = 15  # Some feature flags
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=25, features=features)
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=25, features=features)
 
         assert locked is True
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 100, features)
@@ -229,12 +229,12 @@ class TestProcessLockModeForceClose:
             LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=0, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=0, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 0
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 0
+        assert cover_state.pos_target_desired == 0
+        assert cover_state.pos_target_final == 0
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=False)
         mock_ha_interface.set_cover_position.assert_not_called()
 
@@ -248,12 +248,12 @@ class TestProcessLockModeForceClose:
             LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=100, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=100, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 0
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 0
+        assert cover_state.pos_target_desired == 0
+        assert cover_state.pos_target_final == 0
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 0, 0)
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=True)
 
@@ -267,12 +267,12 @@ class TestProcessLockModeForceClose:
             LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=75, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=75, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 0
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 0
+        assert cover_state.pos_target_desired == 0
+        assert cover_state.pos_target_final == 0
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 0, 0)
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=True)
 
@@ -284,9 +284,9 @@ class TestProcessLockModeForceClose:
             LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
+        cover_state = CoverState()
         features = 31  # Some feature flags
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=88, features=features)
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=88, features=features)
 
         assert locked is True
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 0, features)
@@ -306,12 +306,12 @@ class TestProcessLockModeEdgeCases:
             LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=0, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=0, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 95
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 95
+        assert cover_state.pos_target_desired == 95
+        assert cover_state.pos_target_final == 95
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=95, cover_moved=True)
 
     @pytest.mark.asyncio
@@ -325,39 +325,40 @@ class TestProcessLockModeEdgeCases:
             LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=100, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=100, features=0)
 
         assert locked is True
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] == 5
-        assert cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] == 5
+        assert cover_state.pos_target_desired == 5
+        assert cover_state.pos_target_final == 5
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=5, cover_moved=True)
 
     @pytest.mark.asyncio
     async def test_empty_cover_attrs_dict(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
-        """Test that method works with initially empty cover_attrs dict."""
+        """Test that method works with initially empty CoverState."""
         cover_auto = create_cover_automation(
             LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=50, features=0)
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=50, features=0)
 
         assert locked is True
-        assert len(cover_attrs) == 2  # Should have 2 keys added
+        assert cover_state.pos_target_desired == 50
+        assert cover_state.pos_target_final == 50
 
     @pytest.mark.asyncio
     async def test_cover_attrs_with_existing_data(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
-        """Test that method preserves existing cover_attrs data."""
+        """Test that method preserves existing CoverState data."""
         cover_auto = create_cover_automation(
             LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
         )
 
-        cover_attrs = {"existing_key": "existing_value", const.COVER_ATTR_COVER_AZIMUTH: 180}
-        locked = await cover_auto._process_lock_mode(cover_attrs, current_pos=50, features=0)
+        cover_state = CoverState(cover_azimuth=180.0, state="open")
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=50, features=0)
 
         assert locked is True
-        assert cover_attrs["existing_key"] == "existing_value"
-        assert cover_attrs[const.COVER_ATTR_COVER_AZIMUTH] == 180
-        assert const.COVER_ATTR_POS_TARGET_DESIRED in cover_attrs
-        assert const.COVER_ATTR_POS_TARGET_FINAL in cover_attrs
+        assert cover_state.cover_azimuth == 180.0
+        assert cover_state.state == "open"
+        assert cover_state.pos_target_desired == 50
+        assert cover_state.pos_target_final == 50
