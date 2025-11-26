@@ -54,8 +54,8 @@ async def test_binary_sensor_entity_properties(mock_hass_with_spec, mock_config_
         add_entities,
     )
 
-    # Binary sensor platform should expose five entities
-    assert len(captured) == 5
+    # Binary sensor platform should expose six entities (including lock_active)
+    assert len(captured) == 6
 
 
 async def test_binary_sensor_is_on_state_with_failed_coordinator(mock_hass_with_spec, mock_config_entry_basic) -> None:
@@ -119,8 +119,8 @@ async def test_binary_sensor_translation_keys_set(mock_hass_with_spec, mock_conf
         add_entities,
     )
 
-    # Verify all binary sensors have translation_key set
-    assert len(captured) == 5
+    # Verify all binary sensors have translation_key set (including lock_active)
+    assert len(captured) == 6
     for entity in captured:
         # Check that translation_key attribute exists and matches the entity key
         assert hasattr(entity, "translation_key"), f"Entity {entity.entity_description.key} missing translation_key attribute"

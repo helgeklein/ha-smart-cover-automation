@@ -40,12 +40,15 @@ class TestServiceRegistration:
             # Execute setup
             result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-        # Verify service was registered
+        # Verify services were registered (logbook_entry and set_lock)
         assert result is True
-        mock_hass_with_spec.services.async_register.assert_called_once()
-        call_args = mock_hass_with_spec.services.async_register.call_args
-        assert call_args[0][0] == DOMAIN
-        assert call_args[0][1] == SERVICE_LOGBOOK_ENTRY
+        assert mock_hass_with_spec.services.async_register.call_count == 2
+
+        # Check that both services were registered
+        call_args_list = mock_hass_with_spec.services.async_register.call_args_list
+        registered_services = [(call[0][0], call[0][1]) for call in call_args_list]
+        assert (DOMAIN, SERVICE_LOGBOOK_ENTRY) in registered_services
+        assert (DOMAIN, "set_lock") in registered_services
 
     async def test_service_not_registered_twice(self, mock_hass_with_spec) -> None:
         """Test that service is not re-registered if already exists."""
@@ -100,8 +103,8 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            # Get the registered service handler
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            # Get the logbook_entry service handler (first registered service)
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             # Call the service
             await service_handler(mock_service_call)
@@ -132,7 +135,7 @@ class TestServiceHandler:
             # Clear coordinators
             mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS] = {}
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             await service_handler(mock_service_call)
 
@@ -153,7 +156,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             # Call without entity_id
             call = MagicMock()
@@ -178,7 +181,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             call = MagicMock()
             call.data = {"entity_id": MOCK_COVER_ENTITY_ID}
@@ -202,7 +205,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             call = MagicMock()
             call.data = {
@@ -229,7 +232,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             # Add config_entry_id to service call
             mock_service_call.data["config_entry_id"] = mock_config_entry.entry_id
@@ -254,7 +257,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             await service_handler(mock_service_call)
 
@@ -276,7 +279,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             call = MagicMock()
             call.data = {
@@ -307,7 +310,7 @@ class TestServiceHandler:
             # Clear all coordinators - test None values don't cause AttributeError
             mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS] = {"some_id": None}
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             await service_handler(mock_service_call)
 
@@ -329,7 +332,7 @@ class TestServiceHandler:
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
 
-            service_handler = mock_hass_with_spec.services.async_register.call_args[0][2]
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
 
             call = MagicMock()
             call.data = {
@@ -344,3 +347,202 @@ class TestServiceHandler:
             call_kwargs = mock_coordinator._ha_interface.add_logbook_entry.call_args.kwargs
             assert call_kwargs["verb_key"] == "verb_opening"
             assert call_kwargs["reason_key"] == "reason_heat_protection"
+
+
+class TestSetLockServiceHandler:
+    """Test suite for set_lock service handler."""
+
+    @pytest.fixture
+    def mock_set_lock_call(self) -> MagicMock:
+        """Create a mock set_lock service call."""
+        call = MagicMock()
+        call.data = {"lock_mode": "force_close"}
+        return call
+
+    async def test_set_lock_service_registered_on_first_setup(self, mock_hass_with_spec) -> None:
+        """Test that set_lock service is registered during integration setup."""
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.async_set_lock_mode = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+        assert result is True
+        # Verify set_lock service was registered
+        call_args_list = mock_hass_with_spec.services.async_register.call_args_list
+        registered_services = [(call[0][0], call[0][1]) for call in call_args_list]
+        assert (DOMAIN, "set_lock") in registered_services
+
+    async def test_set_lock_with_valid_mode(self, mock_hass_with_spec, mock_set_lock_call) -> None:
+        """Test set_lock handler processes valid lock mode."""
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.async_set_lock_mode = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            # Get the set_lock service handler (second registered service)
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            # Call the service
+            await service_handler(mock_set_lock_call)
+
+            # Verify coordinator method was called with correct mode
+            mock_coordinator.async_set_lock_mode.assert_called_once_with("force_close")
+
+    @pytest.mark.parametrize(
+        "lock_mode",
+        ["unlocked", "hold_position", "force_open", "force_close"],
+    )
+    async def test_set_lock_all_valid_modes(self, mock_hass_with_spec, lock_mode) -> None:
+        """Test set_lock accepts all valid lock modes."""
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.async_set_lock_mode = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            call = MagicMock()
+            call.data = {"lock_mode": lock_mode}
+
+            await service_handler(call)
+
+            mock_coordinator.async_set_lock_mode.assert_called_once_with(lock_mode)
+
+    async def test_set_lock_with_invalid_mode(self, mock_hass_with_spec) -> None:
+        """Test set_lock rejects invalid lock mode with ValueError."""
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.async_set_lock_mode = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            call = MagicMock()
+            call.data = {"lock_mode": "invalid_mode"}
+
+            # Should raise ValueError for invalid mode
+            with pytest.raises(ValueError, match="Invalid lock mode: invalid_mode"):
+                await service_handler(call)
+
+            # Coordinator method should not be called for invalid mode
+            mock_coordinator.async_set_lock_mode.assert_not_called()
+
+    async def test_set_lock_logs_service_call(self, mock_hass_with_spec, caplog) -> None:
+        """Test set_lock logs INFO message with lock mode."""
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+            caplog.at_level("INFO", logger="custom_components.smart_cover_automation"),
+        ):
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.async_set_lock_mode = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            call = MagicMock()
+            call.data = {"lock_mode": "hold_position"}
+
+            await service_handler(call)
+
+            # Verify INFO log contains lock mode
+            assert "Service call: set_lock(lock_mode=hold_position)" in caplog.text
+
+    async def test_set_lock_logs_error_for_invalid_mode(self, mock_hass_with_spec, caplog) -> None:
+        """Test set_lock logs ERROR for invalid lock mode."""
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+            caplog.at_level("ERROR", logger="custom_components.smart_cover_automation"),
+        ):
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.async_set_lock_mode = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            call = MagicMock()
+            call.data = {"lock_mode": "bad_mode"}
+
+            try:
+                await service_handler(call)
+            except ValueError:
+                pass  # Expected
+
+            # Verify ERROR log contains invalid mode and valid modes
+            assert "Invalid lock mode: bad_mode" in caplog.text
+            assert "Valid modes:" in caplog.text
+
+    async def test_set_lock_service_schema_validation(self, mock_hass_with_spec) -> None:
+        """Test set_lock service schema requires lock_mode field."""
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.async_set_lock_mode = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            # Get the schema from service registration
+            schema = mock_hass_with_spec.services.async_register.call_args_list[1][1]["schema"]
+
+            # Verify schema requires lock_mode
+            import voluptuous as vol
+
+            # Valid data should pass
+            schema({"lock_mode": "unlocked"})
+
+            # Missing lock_mode should raise error
+            with pytest.raises(vol.error.MultipleInvalid):
+                schema({})
+
+            # Extra fields should be rejected
+            with pytest.raises(vol.error.MultipleInvalid):
+                schema({"lock_mode": "unlocked", "extra_field": "value"})

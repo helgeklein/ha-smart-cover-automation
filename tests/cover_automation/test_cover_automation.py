@@ -31,6 +31,7 @@ from homeassistant.const import (
 )
 
 from custom_components.smart_cover_automation import const
+from custom_components.smart_cover_automation.const import LockMode
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverMovementReason,
@@ -89,6 +90,7 @@ def cover_automation(mock_resolved_config, basic_config, mock_cover_pos_history_
         config=basic_config,
         cover_pos_history_mgr=mock_cover_pos_history_mgr,
         ha_interface=mock_ha_interface,
+        lock_mode=LockMode.UNLOCKED,
     )
 
 
@@ -139,6 +141,7 @@ class TestCoverAutomationInitialization:
             config=basic_config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
+            lock_mode=LockMode.UNLOCKED,
         )
 
         assert cover_auto.entity_id == "cover.living_room"
@@ -165,6 +168,7 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
+            lock_mode=LockMode.UNLOCKED,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth is None
@@ -178,6 +182,7 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
+            lock_mode=LockMode.UNLOCKED,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth is None
@@ -191,6 +196,7 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
+            lock_mode=LockMode.UNLOCKED,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth == 0.0
@@ -1092,13 +1098,14 @@ class TestProcessMethod:
         """Test process when cover azimuth is missing."""
         cover_automation.config = {}  # No azimuth configured
         result = await cover_automation.process(mock_state, sensor_data)
-        assert result == {}
+        # Result should only contain lock fields when azimuth is missing
+        assert result == {"cover_lock_active": False, "cover_lock_mode": "unlocked"}
 
     async def test_process_invalid_state(self, cover_automation, sensor_data, mock_cover_pos_history_mgr):
         """Test process when cover state is invalid."""
         result = await cover_automation.process(None, sensor_data)
         assert const.COVER_ATTR_COVER_AZIMUTH in result
-        assert len(result) == 1  # Only azimuth added
+        assert len(result) == 3  # Azimuth + lock_mode + lock_active
 
     async def test_process_cover_moving(self, cover_automation, sensor_data, mock_cover_pos_history_mgr):
         """Test process when cover is moving."""

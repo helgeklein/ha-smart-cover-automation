@@ -14,6 +14,7 @@ from homeassistant.const import Platform
 from homeassistant.core import ServiceCall
 from homeassistant.loader import async_get_loaded_integration
 
+from . import const
 from .config import ConfKeys
 from .config_flow import OptionsFlowHandler
 from .const import (
@@ -22,7 +23,9 @@ from .const import (
     HA_OPTIONS,
     INTEGRATION_NAME,
     LOGGER,
+    SERVICE_FIELD_LOCK_MODE,
     SERVICE_LOGBOOK_ENTRY,
+    SERVICE_SET_LOCK,
     TRANSL_LOGBOOK_REASON_HEAT_PROTECTION,
     TRANSL_LOGBOOK_VERB_OPENING,
 )
@@ -37,9 +40,64 @@ if TYPE_CHECKING:
 # List of platforms provided by this integration
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,
 ]
+
+
+#
+# _async_register_lock_service
+#
+async def _async_register_lock_service(hass: HomeAssistant, coordinator: DataUpdateCoordinator) -> None:
+    """Register the set_lock service.
+
+    Args:
+        hass: Home Assistant instance
+        coordinator: The coordinator instance
+    """
+    import voluptuous as vol
+    from homeassistant.helpers import config_validation as cv
+
+    #
+    # async_handle_set_lock
+    #
+    async def async_handle_set_lock(call: ServiceCall) -> None:
+        """Handle set_lock service call.
+
+        Args:
+            call: Service call with lock_mode parameter
+        """
+        lock_mode = call.data[SERVICE_FIELD_LOCK_MODE]
+
+        LOGGER.info(f"Service call: set_lock(lock_mode={lock_mode})")
+
+        # Validate lock mode
+        valid_modes = [mode.value for mode in const.LockMode]
+
+        if lock_mode not in valid_modes:
+            LOGGER.error(f"Invalid lock mode: {lock_mode}. Valid modes: {valid_modes}")
+            raise ValueError(f"Invalid lock mode: {lock_mode}")
+
+        # Apply lock mode via coordinator
+        await coordinator.async_set_lock_mode(lock_mode)
+
+    # Define service schema
+    set_lock_schema = vol.Schema(
+        {
+            vol.Required(SERVICE_FIELD_LOCK_MODE): cv.string,
+        }
+    )
+
+    # Register service (only if not already registered)
+    if not hass.services.has_service(DOMAIN, SERVICE_SET_LOCK):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_SET_LOCK,
+            async_handle_set_lock,
+            schema=set_lock_schema,
+        )
+        LOGGER.debug("Set lock service registered")
 
 
 #
@@ -132,7 +190,6 @@ async def async_setup_entry(
     - Sets up platforms
     - Sets up the reload listener
     """
-    LOGGER.info("=========================================================")
     LOGGER.info("Starting integration setup")
 
     try:
@@ -165,6 +222,9 @@ async def async_setup_entry(
                 partial(_handle_logbook_entry_service, hass),
             )
 
+        # Register lock service
+        await _async_register_lock_service(hass, coordinator)
+
         # Call each platform's async_setup_entry()
         LOGGER.debug(f"Setting up platforms: {PLATFORMS}")
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -191,10 +251,12 @@ async def async_setup_entry(
         return False
     else:
         LOGGER.info(f"{INTEGRATION_NAME} integration setup completed")
-        LOGGER.info("=========================================================")
         return True
 
 
+#
+# async_get_options_flow
+#
 async def async_get_options_flow(entry: IntegrationConfigEntry) -> OptionsFlowHandler:
     """Return the options flow for this handler.
 
@@ -204,6 +266,9 @@ async def async_get_options_flow(entry: IntegrationConfigEntry) -> OptionsFlowHa
     return OptionsFlowHandler(entry)
 
 
+#
+# async_unload_entry
+#
 async def async_unload_entry(
     hass: HomeAssistant,
     entry: IntegrationConfigEntry,
@@ -236,6 +301,9 @@ async def async_unload_entry(
         return False
 
 
+#
+# async_reload_entry
+#
 async def async_reload_entry(
     hass: HomeAssistant,
     entry: IntegrationConfigEntry,
@@ -249,9 +317,9 @@ async def async_reload_entry(
     # without requiring a full reload
     runtime_configurable_keys = {
         ConfKeys.ENABLED.value,
+        ConfKeys.LOCK_MODE.value,
         ConfKeys.SIMULATION_MODE.value,
         ConfKeys.VERBOSE_LOGGING.value,
-        ConfKeys.TEMP_THRESHOLD.value,
     }
 
     if hasattr(entry, "runtime_data") and entry.runtime_data:
@@ -265,16 +333,16 @@ async def async_reload_entry(
 
         # Determine which keys have actually changed
         changed_keys = {key for key in set(old_config.keys()) | set(new_config.keys()) if old_config.get(key) != new_config.get(key)}
+        changes = ", ".join(f"{key}={new_config.get(key)}" for key in sorted(changed_keys))
 
         # If the only changes are to runtime-configurable keys, just refresh
         if changed_keys and changed_keys.issubset(runtime_configurable_keys):
-            LOGGER.debug(
-                "Runtime-only option change detected (%s), refreshing coordinator",
-                ", ".join(sorted(changed_keys)),
-            )
+            LOGGER.info(f"Runtime settings change detected ({changes}), refreshing coordinator")
+
             # Update the stored config with new values
             coordinator._merged_config = new_config
             entry.runtime_data.config = new_config
+
             # Trigger a coordinator refresh to apply the changes
             await coordinator.async_request_refresh()
             return

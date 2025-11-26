@@ -59,6 +59,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
+#
+# IntegrationSwitch
+#
 class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
     """Base switch entity for Smart Cover Automation integration.
 
@@ -74,6 +77,9 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
     - Base methods for persisting switch state changes in config options
     """
 
+    #
+    # __init__
+    #
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
@@ -106,6 +112,9 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
     # which provides the correct coordinator-based availability logic.
     # No override is needed since the default behavior is exactly what we want.
 
+    #
+    # is_on
+    #
     @property
     def is_on(self) -> bool:  # pyright: ignore
         """Return whether the switch is currently on.
@@ -116,6 +125,9 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         resolved = resolve_entry(self.coordinator.config_entry)
         return bool(getattr(resolved, self._config_key.lower()))
 
+    #
+    # async_turn_on
+    #
     async def async_turn_on(self, **_: Any) -> None:
         """Turn the switch on.
 
@@ -124,6 +136,9 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         """
         await self._async_persist_option(self._config_key, True)
 
+    #
+    # async_turn_off
+    #
     async def async_turn_off(self, **_: Any) -> None:
         """Turn the switch off.
 
@@ -132,6 +147,9 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         """
         await self._async_persist_option(self._config_key, False)
 
+    #
+    # _async_persist_option
+    #
     async def _async_persist_option(self, config_key: str, value: bool) -> None:
         """Persist an option to the config entry.
 
@@ -153,6 +171,9 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         self.coordinator.hass.config_entries.async_update_entry(entry, options=current_options)
 
 
+#
+# EnabledSwitch
+#
 class EnabledSwitch(IntegrationSwitch):
     """Switch for controlling the master automation enable/disable state."""
 
@@ -172,6 +193,9 @@ class EnabledSwitch(IntegrationSwitch):
         super().__init__(coordinator, entity_description, ConfKeys.ENABLED.value)
 
 
+#
+# SimulationModeSwitch
+#
 class SimulationModeSwitch(IntegrationSwitch):
     """Switch for controlling simulation mode."""
 
@@ -186,6 +210,9 @@ class SimulationModeSwitch(IntegrationSwitch):
         super().__init__(coordinator, entity_description, ConfKeys.SIMULATION_MODE.value)
 
 
+#
+# VerboseLoggingSwitch
+#
 class VerboseLoggingSwitch(IntegrationSwitch):
     """Switch for controlling verbose (debug) logging."""
 

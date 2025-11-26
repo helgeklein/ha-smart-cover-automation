@@ -113,6 +113,53 @@
         }
     },
     "entity": {
+        "binary_sensor": {
+            "close_covers_after_sunset": {
+                "name": "Fecho ao entardecer: ativado?",
+                "state": {
+                    "on": "Sim",
+                    "off": "Não"
+                }
+            },
+            "lock_active": {
+                "name": "Estado do bloqueio"
+            },
+            "nighttime_block_opening": {
+                "name": "Noite: bloquear abertura?",
+                "state": {
+                    "on": "Sim",
+                    "off": "Não"
+                }
+            },
+            "status": {
+                "name": "Estado"
+            },
+            "temp_hot": {
+                "name": "Tempo: calor?",
+                "state": {
+                    "on": "Sim",
+                    "off": "Não"
+                }
+            },
+            "weather_sunny": {
+                "name": "Tempo: ensolarado?",
+                "state": {
+                    "on": "Sim",
+                    "off": "Não"
+                }
+            }
+        },
+        "select": {
+            "lock_mode": {
+                "name": "Modo de bloqueio",
+                "state": {
+                    "unlocked": "Desbloqueado (automação ativa)",
+                    "hold_position": "Manter posição atual",
+                    "force_open": "Forçar abertura e bloquear",
+                    "force_close": "Forçar fecho e bloquear"
+                }
+            }
+        },
         "sensor": {
             "automation_disabled_time_range": {
                 "name": "Intervalo de tempo: desativado",
@@ -134,39 +181,6 @@
             },
             "temp_threshold": {
                 "name": "Temperatura: limiar de calor"
-            }
-        },
-        "binary_sensor": {
-            "status": {
-                "name": "Estado"
-            },
-            "close_covers_after_sunset": {
-                "name": "Fecho ao entardecer: ativado?",
-                "state": {
-                    "on": "Sim",
-                    "off": "Não"
-                }
-            },
-            "nighttime_block_opening": {
-                "name": "Noite: bloquear abertura?",
-                "state": {
-                    "on": "Sim",
-                    "off": "Não"
-                }
-            },
-            "temp_hot": {
-                "name": "Tempo: calor?",
-                "state": {
-                    "on": "Sim",
-                    "off": "Não"
-                }
-            },
-            "weather_sunny": {
-                "name": "Tempo: ensolarado?",
-                "state": {
-                    "on": "Sim",
-                    "off": "Não"
-                }
             }
         },
         "switch": {
@@ -230,6 +244,26 @@
                     "name": "proteger a privacidade à noite",
                     "description": "Motivo usado quando a persiana fecha automaticamente após o pôr do sol."
                 }
+            }
+        },
+        "set_lock": {
+            "name": "Definir bloqueio da persiana",
+            "description": "Bloqueia todas as persianas num estado específico para impedir que a automação as mova. Útil para emergências meteorológicas (granizo, tempestades) ou cenários de substituição manual.",
+            "fields": {
+                "lock_mode": {
+                    "name": "Modo de bloqueio",
+                    "description": "Como bloquear as persianas"
+                }
+            }
+        }
+    },
+    "selector": {
+        "lock_mode": {
+            "options": {
+                "unlocked": "Desbloqueado (automação ativa)",
+                "hold_position": "Manter posição atual",
+                "force_open": "Forçar abertura e bloquear",
+                "force_close": "Forçar fecho e bloquear"
             }
         }
     }

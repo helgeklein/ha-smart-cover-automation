@@ -113,6 +113,53 @@
         }
     },
     "entity": {
+        "binary_sensor": {
+            "close_covers_after_sunset": {
+                "name": "Chiusura serale: attivata?",
+                "state": {
+                    "on": "Sì",
+                    "off": "No"
+                }
+            },
+            "lock_active": {
+                "name": "Stato blocco"
+            },
+            "nighttime_block_opening": {
+                "name": "Notte: bloccare l'apertura?",
+                "state": {
+                    "on": "Sì",
+                    "off": "No"
+                }
+            },
+            "status": {
+                "name": "Stato"
+            },
+            "temp_hot": {
+                "name": "Meteo: caldo?",
+                "state": {
+                    "on": "Sì",
+                    "off": "No"
+                }
+            },
+            "weather_sunny": {
+                "name": "Meteo: soleggiato?",
+                "state": {
+                    "on": "Sì",
+                    "off": "No"
+                }
+            }
+        },
+        "select": {
+            "lock_mode": {
+                "name": "Modalità di blocco",
+                "state": {
+                    "unlocked": "Sbloccato (automazione attiva)",
+                    "hold_position": "Mantieni la posizione attuale",
+                    "force_open": "Forza apertura e blocca",
+                    "force_close": "Forza chiusura e blocca"
+                }
+            }
+        },
         "sensor": {
             "automation_disabled_time_range": {
                 "name": "Intervallo orario: disattivato",
@@ -134,39 +181,6 @@
             },
             "temp_threshold": {
                 "name": "Temperatura: soglia di calore"
-            }
-        },
-        "binary_sensor": {
-            "status": {
-                "name": "Stato"
-            },
-            "close_covers_after_sunset": {
-                "name": "Chiusura serale: attivata?",
-                "state": {
-                    "on": "Sì",
-                    "off": "No"
-                }
-            },
-            "nighttime_block_opening": {
-                "name": "Notte: bloccare l'apertura?",
-                "state": {
-                    "on": "Sì",
-                    "off": "No"
-                }
-            },
-            "temp_hot": {
-                "name": "Meteo: caldo?",
-                "state": {
-                    "on": "Sì",
-                    "off": "No"
-                }
-            },
-            "weather_sunny": {
-                "name": "Meteo: soleggiato?",
-                "state": {
-                    "on": "Sì",
-                    "off": "No"
-                }
             }
         },
         "switch": {
@@ -230,6 +244,26 @@
                     "name": "proteggere la privacy di notte",
                     "description": "Motivo usato quando la tapparella si chiude automaticamente dopo il tramonto."
                 }
+            }
+        },
+        "set_lock": {
+            "name": "Imposta blocco tapparelle",
+            "description": "Blocca tutte le tapparelle in uno stato specifico per impedire all'automazione di muoverle. Utile per emergenze meteorologiche (grandine, tempeste) o scenari di override manuale.",
+            "fields": {
+                "lock_mode": {
+                    "name": "Modalità di blocco",
+                    "description": "Come bloccare le tapparelle"
+                }
+            }
+        }
+    },
+    "selector": {
+        "lock_mode": {
+            "options": {
+                "unlocked": "Sbloccato (automazione attiva)",
+                "hold_position": "Mantieni la posizione attuale",
+                "force_open": "Forza apertura e blocca",
+                "force_close": "Forza chiusura e blocca"
             }
         }
     }

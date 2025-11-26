@@ -10,9 +10,16 @@
     - Only change tests, not the code they're testing.
     - If you suspect an error in code being tested, tell the user about it.
 
-## Test coverage
+## Test
+
+### Test coverage
 
 - config_flow.py: 100% test coverage required by Home Assistant
+
+### Test commands
+
+- The script `scripts/test` always runs all tests. It's not suitable to run only individual Python test files.
+- To run individual Python test files, invoke Python directly.
 
 ## Coding style
 

@@ -384,17 +384,19 @@ def flow_handler() -> "FlowHandler":
     return FlowHandler()
 
 
-def create_integration_coordinator(covers: list[str] | None = None) -> "DataUpdateCoordinator":
+def create_integration_coordinator(covers: list[str] | None = None, lock_mode: str | None = None) -> "DataUpdateCoordinator":
     """Create a coordinator specifically configured for integration testing.
 
     Provides a DataUpdateCoordinator with:
     - Mock Home Assistant instance with weather service
     - Temperature automation configuration
     - Optional custom cover list
+    - Optional lock mode
     - Ready for comprehensive integration testing scenarios
 
     Args:
         covers: Optional list of cover entity IDs. Defaults to single test cover.
+        lock_mode: Optional lock mode to set. Defaults to None (uses config default).
 
     Returns:
         DataUpdateCoordinator configured for integration testing
@@ -408,6 +410,8 @@ def create_integration_coordinator(covers: list[str] | None = None) -> "DataUpda
     hass.config_entries = MagicMock()
 
     config = create_temperature_config(covers=covers)
+    if lock_mode is not None:
+        config[ConfKeys.LOCK_MODE.value] = lock_mode
     config_entry = MockConfigEntry(config)
     return DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 

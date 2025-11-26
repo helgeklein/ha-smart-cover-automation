@@ -113,6 +113,53 @@
         }
     },
     "entity": {
+        "binary_sensor": {
+            "close_covers_after_sunset": {
+                "name": "夜间关闭：已启用？",
+                "state": {
+                    "on": "是",
+                    "off": "否"
+                }
+            },
+            "lock_active": {
+                "name": "锁定状态"
+            },
+            "nighttime_block_opening": {
+                "name": "夜间：阻止开启？",
+                "state": {
+                    "on": "是",
+                    "off": "否"
+                }
+            },
+            "status": {
+                "name": "状态"
+            },
+            "temp_hot": {
+                "name": "天气：炎热？",
+                "state": {
+                    "on": "是",
+                    "off": "否"
+                }
+            },
+            "weather_sunny": {
+                "name": "天气：晴朗？",
+                "state": {
+                    "on": "是",
+                    "off": "否"
+                }
+            }
+        },
+        "select": {
+            "lock_mode": {
+                "name": "锁定模式",
+                "state": {
+                    "unlocked": "未锁定（自动化启用）",
+                    "hold_position": "保持当前位置",
+                    "force_open": "强制开启并锁定",
+                    "force_close": "强制关闭并锁定"
+                }
+            }
+        },
         "sensor": {
             "automation_disabled_time_range": {
                 "name": "时间范围：已禁用",
@@ -134,39 +181,6 @@
             },
             "temp_threshold": {
                 "name": "温度：高温阈值"
-            }
-        },
-        "binary_sensor": {
-            "status": {
-                "name": "状态"
-            },
-            "close_covers_after_sunset": {
-                "name": "夜间关闭：已启用？",
-                "state": {
-                    "on": "是",
-                    "off": "否"
-                }
-            },
-            "nighttime_block_opening": {
-                "name": "夜间：阻止开启？",
-                "state": {
-                    "on": "是",
-                    "off": "否"
-                }
-            },
-            "temp_hot": {
-                "name": "天气：炎热？",
-                "state": {
-                    "on": "是",
-                    "off": "否"
-                }
-            },
-            "weather_sunny": {
-                "name": "天气：晴朗？",
-                "state": {
-                    "on": "是",
-                    "off": "否"
-                }
             }
         },
         "switch": {
@@ -230,6 +244,26 @@
                     "name": "在夜间保护隐私",
                     "description": "当遮阳设备在日落后自动关闭时使用的原因。"
                 }
+            }
+        },
+        "set_lock": {
+            "name": "设置遮阳锁定",
+            "description": "将所有遮阳设备锁定在特定状态，防止自动化移动它们。适用于天气紧急情况（冰雹、风暴）或手动覆盖场景。",
+            "fields": {
+                "lock_mode": {
+                    "name": "锁定模式",
+                    "description": "如何锁定遮阳设备"
+                }
+            }
+        }
+    },
+    "selector": {
+        "lock_mode": {
+            "options": {
+                "unlocked": "未锁定（自动化启用）",
+                "hold_position": "保持当前位置",
+                "force_open": "强制开启并锁定",
+                "force_close": "强制关闭并锁定"
             }
         }
     }
