@@ -89,4 +89,4 @@ In the sixth step of the configuration wizard, the following settings can be con
 
 ## Next Steps
 
-After the configuration wizard, take a look at the [switches]({{ '/configuration-switches/' | relative_url }}).
+After the configuration wizard, take a look at the [UI configuration entities]({{ '/ui-configuration-entities/' | relative_url }}).

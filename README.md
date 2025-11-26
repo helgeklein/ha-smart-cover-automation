@@ -25,14 +25,18 @@ A Home Assistant integration to automate the control of your smart home's window
     - Close a subset of covers after sunset for privacy.
     - Don't move the covers when people are sleeping.
     - Don't open the covers when the sun is below the horizon.
-- **Pre-positioning before silent phases:** (TODO)
-    - Move the covers to the position they need to be in ahead of time so that there's silence at night but the covers are closed when the sun starts shining in the morning.
 - **Plant light:**
     - Define min/max positions for the covers so that plants on the windowsill receive enough light.
+- **Lock mode** for wind or hail protection, and other scenarios:
+    - Move the covers to opened or closed state and keep them there.
+    - Alternatively, lock the covers in their current position.
+    - Can be triggered as an action, e.g., when a warning is received from a weather service.
 - **Comfort:**
     - Micro-adjustments are avoided.
 - **Supported covers:** Works with any cover entity that supports open/close or position control.
 - **Rich language support:** UI translations available for Chinese, Dutch, English, French, German, Italian, Polish, Portuguese, Spanish, Swedish.
+- **Pre-positioning before silent phases:** (TODO)
+    - Move the covers to the position they need to be in ahead of time so that there's silence at night but the covers are closed when the sun starts shining in the morning.
 
 ## Configuration Options
 
