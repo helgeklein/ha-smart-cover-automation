@@ -966,14 +966,14 @@ async def capture_platform_entities(hass: HomeAssistant, config: dict[str, Any],
         List of entities created by the platform
     """
     from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
-    from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+    from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
 
     hass_mock = cast(MagicMock, hass)
     entry = MockConfigEntry(config)
 
     # Setup coordinator with basic successful state
     coordinator = DataUpdateCoordinator(hass_mock, cast(IntegrationConfigEntry, entry))
-    coordinator.data = {"covers": {}}
+    coordinator.data = CoordinatorData(covers={})
     coordinator.last_update_success = True
 
     # Store coordinator in runtime data

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import pytest
 
+from custom_components.smart_cover_automation.data import CoordinatorData
 from custom_components.smart_cover_automation.sensor import (
     SunAzimuthSensor,
     SunElevationSensor,
@@ -40,10 +41,10 @@ async def test_sun_azimuth_sensor_with_valid_data(mock_coordinator_basic, sun_az
     Coverage target: sensor.py SunAzimuthSensor native_value with data
     """
     # Set coordinator data with sun_azimuth
-    mock_coordinator_basic.data = {
-        "sun_azimuth": sun_azimuth_value,
-        "covers": {},
-    }
+    mock_coordinator_basic.data = CoordinatorData(
+        covers={},
+        sun_azimuth=sun_azimuth_value,
+    )
 
     # Create sensor instance
     sensor = SunAzimuthSensor(mock_coordinator_basic)
@@ -60,9 +61,9 @@ async def test_sun_azimuth_sensor_with_valid_data(mock_coordinator_basic, sun_az
     "coordinator_data",
     [
         None,  # No data at all
-        {},  # Empty data dict
-        {"covers": {}},  # Valid data but missing sun_azimuth key
-        {"sun_elevation": 45.0},  # Data with different key
+        CoordinatorData(covers={}),  # Empty data (missing sun_azimuth)
+        CoordinatorData(covers={}),  # Valid data but missing sun_azimuth key
+        CoordinatorData(covers={}, sun_elevation=45.0),  # Data with different key
     ],
 )
 async def test_sun_azimuth_sensor_with_missing_data(mock_coordinator_basic, coordinator_data) -> None:
@@ -106,10 +107,10 @@ async def test_sun_elevation_sensor_with_valid_data(mock_coordinator_basic, sun_
     Coverage target: sensor.py SunElevationSensor native_value with data
     """
     # Set coordinator data with sun_elevation
-    mock_coordinator_basic.data = {
-        "sun_elevation": sun_elevation_value,
-        "covers": {},
-    }
+    mock_coordinator_basic.data = CoordinatorData(
+        covers={},
+        sun_elevation=sun_elevation_value,
+    )
 
     # Create sensor instance
     sensor = SunElevationSensor(mock_coordinator_basic)
@@ -126,9 +127,9 @@ async def test_sun_elevation_sensor_with_valid_data(mock_coordinator_basic, sun_
     "coordinator_data",
     [
         None,  # No data at all
-        {},  # Empty data dict
-        {"covers": {}},  # Valid data but missing sun_elevation key
-        {"sun_azimuth": 180.0},  # Data with different key
+        CoordinatorData(covers={}),  # Empty data (missing sun_elevation)
+        CoordinatorData(covers={}),  # Valid data but missing sun_elevation key
+        CoordinatorData(covers={}, sun_azimuth=180.0),  # Data with different key
     ],
 )
 async def test_sun_elevation_sensor_with_missing_data(mock_coordinator_basic, coordinator_data) -> None:

@@ -11,7 +11,7 @@ from homeassistant.const import Platform
 from homeassistant.exceptions import HomeAssistantError, ServiceNotFound
 
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
 from custom_components.smart_cover_automation.ha_interface import ServiceCallError
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
@@ -109,8 +109,8 @@ class TestCoordinatorErrorHandling:
         result = coordinator.data
 
         # Should complete with cover in result showing the error
-        assert "covers" in result
-        assert MOCK_COVER_ENTITY_ID in result["covers"]
+        assert hasattr(result, "covers")
+        assert MOCK_COVER_ENTITY_ID in result.covers
 
     @pytest.mark.parametrize(
         "error_type,exception_class,service_name,test_description",
@@ -161,7 +161,8 @@ class TestCoordinatorErrorHandling:
 
         # Should either return None or have cover data, depending on error handling
         # The key is that it doesn't crash the entire automation
-        assert result is None or "covers" in result, f"Failed for {test_description}"
+        # Should complete but with minimal state
+        assert result is None or hasattr(result, "covers"), f"Failed for {test_description}"
 
     async def test_weather_forecast_temperature_unavailable(self, caplog) -> None:
         """Test graceful degradation when weather forecast temperature is unavailable.
@@ -213,5 +214,6 @@ class TestCoordinatorErrorHandling:
 
         # Verify that automation was skipped due to weather data unavailability
         assert coordinator.data is not None
-        assert coordinator.data == {"covers": {}}
+        # Verify empty result was returned
+        assert coordinator.data == CoordinatorData(covers={})
         assert "Weather data unavailable, skipping actions" in caplog.text

@@ -236,8 +236,8 @@ class SunAzimuthSensor(IntegrationSensor):
             Float representing the sun's azimuth angle (0° to 360°),
             or None if sun position data is unavailable.
         """
-        if self.coordinator.data and "sun_azimuth" in self.coordinator.data:
-            return self.coordinator.data["sun_azimuth"]
+        if self.coordinator.data:
+            return self.coordinator.data.sun_azimuth
         else:
             return None
 
@@ -273,8 +273,8 @@ class SunElevationSensor(IntegrationSensor):
             Float representing the sun's elevation angle (min. -90° at nadir to max. +90° at zenith),
             or None if sun position data is unavailable.
         """
-        if self.coordinator.data and "sun_elevation" in self.coordinator.data:
-            return self.coordinator.data["sun_elevation"]
+        if self.coordinator.data:
+            return self.coordinator.data.sun_elevation
         else:
             return None
 
@@ -310,8 +310,8 @@ class TempCurrentMaxSensor(IntegrationSensor):
             Float representing the current maximum temperature in degrees Celsius,
             or None if that is unavailable.
         """
-        if self.coordinator.data and "temp_current_max" in self.coordinator.data:
-            return self.coordinator.data["temp_current_max"]
+        if self.coordinator.data:
+            return self.coordinator.data.temp_current_max
         else:
             return None
 

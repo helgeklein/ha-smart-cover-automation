@@ -255,7 +255,7 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
 
         await coordinator.async_refresh()
 
-        covers_data = coordinator.data.get(ConfKeys.COVERS.value, {})
+        covers_data = coordinator.data.covers
         cover_data = covers_data[MOCK_COVER_ENTITY_ID]
 
         assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_position, (

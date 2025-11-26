@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import pytest
 
+from custom_components.smart_cover_automation.data import CoordinatorData
 from custom_components.smart_cover_automation.sensor import (
     TempCurrentMaxSensor,
     TempThresholdSensor,
@@ -39,10 +40,10 @@ async def test_temp_current_max_sensor_with_valid_data(mock_coordinator_basic, t
     Coverage target: sensor.py TempCurrentMaxSensor native_value with data
     """
     # Set coordinator data with temp_current_max
-    mock_coordinator_basic.data = {
-        "temp_current_max": temp_value,
-        "covers": {},
-    }
+    mock_coordinator_basic.data = CoordinatorData(
+        covers={},
+        temp_current_max=temp_value,
+    )
 
     # Create sensor instance
     sensor = TempCurrentMaxSensor(mock_coordinator_basic)
@@ -59,9 +60,9 @@ async def test_temp_current_max_sensor_with_valid_data(mock_coordinator_basic, t
     "coordinator_data",
     [
         None,  # No data at all
-        {},  # Empty data dict
-        {"covers": {}},  # Valid data but missing temp_current_max key
-        {"sun_elevation": 45.0},  # Data with different key
+        CoordinatorData(covers={}),  # Empty data (missing temp_current_max)
+        CoordinatorData(covers={}),  # Valid data but missing temp_current_max key
+        CoordinatorData(covers={}, sun_elevation=45.0),  # Data with different key
     ],
 )
 async def test_temp_current_max_sensor_with_missing_data(mock_coordinator_basic, coordinator_data) -> None:

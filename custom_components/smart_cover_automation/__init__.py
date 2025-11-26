@@ -147,7 +147,7 @@ async def _handle_logbook_entry_service(hass: HomeAssistant, call: ServiceCall) 
         for candidate in registered_coordinators.values():
             if candidate is None:
                 continue
-            covers = {} if candidate.data is None else candidate.data.get("covers", {})
+            covers = {} if candidate.data is None else candidate.data.covers
             if entity_id in covers:
                 coordinator_for_call = candidate
                 break

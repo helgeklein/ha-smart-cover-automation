@@ -11,6 +11,8 @@ import logging
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
+from custom_components.smart_cover_automation.data import CoordinatorData
+
 from ..conftest import create_invalid_weather_service
 
 
@@ -217,5 +219,5 @@ class TestDateParsingEdgeCases:
         result = mock_coordinator_basic.data
 
         # Should return empty result due to missing valid temperature
-        assert result == {"covers": {}}
+        assert result == CoordinatorData(covers={})
         assert "All covers unavailable; skipping actions" in caplog.text

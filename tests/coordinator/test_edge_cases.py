@@ -13,11 +13,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
 )
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
 from tests.conftest import (
     TEST_DIRECT_AZIMUTH,
     MockConfigEntry,
@@ -57,7 +56,7 @@ class TestEdgeCases(TestDataUpdateCoordinatorBase):
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert coordinator.data == CoordinatorData(covers={})  # Minimal valid state returned
         assert "No covers configured; skipping actions" in caplog.text
 
     async def test_angle_calculation_utility(

@@ -140,7 +140,7 @@ class TestCoverControlEdgeCases:
         result = coordinator.data
 
         # Should have processed the cover
-        assert "covers" in result
-        assert "cover.test_cover" in result["covers"]
-        cover_data = result["covers"]["cover.test_cover"]
+        assert hasattr(result, "covers")
+        assert "cover.test_cover" in result.covers
+        cover_data = result.covers["cover.test_cover"]
         assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == 100  # Should open due to cold

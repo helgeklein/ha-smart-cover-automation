@@ -79,7 +79,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
         result = await coordinator._async_update_data()
 
         # Verify current position is recorded but no target position is set
-        cover_result = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        cover_result = result.covers[MOCK_COVER_ENTITY_ID]
         assert cover_result[COVER_ATTR_POS_CURRENT] == current_position
         assert COVER_ATTR_POS_TARGET_DESIRED not in cover_result
 
@@ -119,7 +119,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
         result = await coordinator._async_update_data()
 
         # Verify target position was calculated (hot + sunny + sun hitting = close)
-        cover_result = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        cover_result = result.covers[MOCK_COVER_ENTITY_ID]
         assert COVER_ATTR_POS_TARGET_DESIRED in cover_result
         assert cover_result[COVER_ATTR_POS_TARGET_DESIRED] == 0  # Fully closed
 
@@ -158,5 +158,5 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
         result = await coordinator._async_update_data()
 
         # Verify automation proceeded normally
-        cover_result = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        cover_result = result.covers[MOCK_COVER_ENTITY_ID]
         assert COVER_ATTR_POS_TARGET_DESIRED in cover_result

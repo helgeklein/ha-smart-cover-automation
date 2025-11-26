@@ -443,8 +443,8 @@ async def test_numeric_direction_strings_are_processed(numeric_direction: str, e
 
     # Verify numeric string was processed successfully
     assert result is not None, f"Coordinator should return data for numeric direction string ({description})"
-    assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-    cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+    assert MOCK_COVER_ENTITY_ID in result.covers
+    cover_data = result.covers[MOCK_COVER_ENTITY_ID]
 
     if expected_processed:
         # Should have azimuth as float and no error
