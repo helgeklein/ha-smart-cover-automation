@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Étape 1 sur 6",
+                "title": "Smart Cover Automation - Étape 1 sur 5",
                 "description": "Sélectionnez un **capteur de prévisions météo** et les **volets** à automatiser (obligatoire).",
                 "data": {
                     "covers": "Volets à automatiser :",
@@ -28,32 +28,12 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Étape 2 sur 6",
+                "title": "Smart Cover Automation - Étape 2 sur 5",
                 "description": "Configurez l'**azimut** (direction) pour chaque volet (obligatoire).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest)"
             },
             "3": {
-                "title": "Smart Cover Automation - Étape 3 sur 6",
-                "description": "Configurez **des paramètres supplémentaires** (facultatif).",
-                "data": {
-                    "covers_max_closure": "Position maximale du volet :",
-                    "covers_min_closure": "Position minimale du volet :",
-                    "manual_override_duration": "Durée de l'override manuel :",
-                    "sun_azimuth_tolerance": "Tolérance de l'azimut solaire :",
-                    "sun_elevation_threshold": "Élévation solaire minimale :",
-                    "temp_threshold": "Seuil de chaleur :"
-                },
-                "data_description": {
-                    "covers_max_closure": "Ne jamais fermer au-delà de cette valeur afin de laisser passer un peu de lumière (0 = totalement fermé, 100 = totalement ouvert).",
-                    "covers_min_closure": "Ne jamais ouvrir au-delà de cette valeur afin de conserver un minimum d’ombre (0 = totalement fermé, 100 = totalement ouvert).",
-                    "manual_override_duration": "Durée pendant laquelle ignorer un store après un mouvement manuel (0 = ne pas ignorer).",
-                    "sun_azimuth_tolerance": "Angle horizontal maximal à partir duquel on considère que le soleil frappe la fenêtre (degrés).",
-                    "sun_elevation_threshold": "L’automatisation commence à agir lorsque l’élévation du soleil dépasse ce seuil (degrés au-dessus de l’horizon).",
-                    "temp_threshold": "Température à partir de laquelle l’automatisation ferme les volets pour se protéger de la chaleur (degrés Celsius)."
-                }
-            },
-            "4": {
-                "title": "Smart Cover Automation - Étape 4 sur 6",
-                "description": "Configurez les positions **min/max** pour chaque volet (facultatif). Si aucune valeur n'est définie, les valeurs globales configurées à l'étape précédente seront utilisées.\n\n(0 = totalement fermé, 100 = totalement ouvert)",
+                "title": "Smart Cover Automation - Étape 3 sur 5",
+                "description": "Configurez les positions **min/max** pour chaque volet (facultatif).\n\n(0 = totalement fermé, 100 = totalement ouvert)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Positions maximales du volet"
@@ -63,8 +43,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Étape 5 sur 6",
+            "4": {
+                "title": "Smart Cover Automation - Étape 4 sur 5",
                 "description": "Activez la protection anti-blocage en configurant des **capteurs de fenêtre** pour chaque volet (facultatif). Si un capteur de fenêtre associé à un volet indique que la fenêtre est ouverte, le volet ne se fermera pas.",
                 "sections": {
                     "section_window_sensors": {
@@ -72,8 +52,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Étape 6 sur 6",
+            "5": {
+                "title": "Smart Cover Automation - Étape 5 sur 5",
                 "description": "Configurez les **paramètres temporels** de l'automatisation (facultatif).",
                 "data": {
                     "nighttime_block_opening": "Désactiver l'ouverture des volets la nuit :"

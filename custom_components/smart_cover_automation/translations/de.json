@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Schritt 1 von 6",
+                "title": "Smart Cover Automation - Schritt 1 von 5",
                 "description": "Wählen Sie einen **Wettervorhersage-Sensor** und die zu automatisierenden **Rollläden** aus (erforderlich).",
                 "data": {
                     "covers": "Zu automatisierende Rollläden:",
@@ -28,32 +28,12 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Schritt 2 von 6",
+                "title": "Smart Cover Automation - Schritt 2 von 5",
                 "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen (erforderlich).\n\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)"
             },
             "3": {
-                "title": "Smart Cover Automation - Schritt 3 von 6",
-                "description": "Konfigurieren Sie **zusätzliche Einstellungen** (optional).",
-                "data": {
-                    "covers_max_closure": "Maximale Rollladenposition:",
-                    "covers_min_closure": "Minimale Rollladenposition:",
-                    "manual_override_duration": "Dauer der manuellen Übersteuerung:",
-                    "sun_azimuth_tolerance": "Sonnen-Azimut-Toleranz:",
-                    "sun_elevation_threshold": "Minimale Sonnenhöhe:",
-                    "temp_threshold": "Hitzeschwelle:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Nie weiter schließen als diesen Wert, damit stets etwas Licht bleibt (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
-                    "covers_min_closure": "Nie weiter öffnen als diesen Wert, um immer etwas Schatten zu behalten (0 = vollständig geschlossen, 100 = vollständig geöffnet).",
-                    "manual_override_duration": "Wie lange ein Rollladen nach manueller Bewegung übersprungen wird (0 = kein Überspringen).",
-                    "sun_azimuth_tolerance": "Maximaler horizontaler Winkel, bei dem die Sonne als direkt auf das Fenster scheinend gilt (Grad).",
-                    "sun_elevation_threshold": "Die Automatisierung wird aktiv, sobald die Sonnenhöhe diesen Schwellenwert übersteigt (Grad über dem Horizont).",
-                    "temp_threshold": "Temperatur, ab der die Automatisierung die Rollläden zum Hitzeschutz schließt (Grad Celsius)."
-                }
-            },
-            "4": {
-                "title": "Smart Cover Automation - Schritt 4 von 6",
-                "description": "Konfigurieren Sie die **Min/Max**-Positionen für jeden Rollladen (optional). Wenn nichts festgelegt ist, werden die globalen Werte aus dem vorherigen Schritt verwendet.\n\n(0 = vollständig geschlossen, 100 = vollständig geöffnet)",
+                "title": "Smart Cover Automation - Schritt 3 von 5",
+                "description": "Konfigurieren Sie die **Min/Max**-Positionen für jeden Rollladen (optional).\n\n(0 = vollständig geschlossen, 100 = vollständig geöffnet)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Maximale Rollladenpositionen"
@@ -63,8 +43,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Schritt 5 von 6",
+            "4": {
+                "title": "Smart Cover Automation - Schritt 4 von 5",
                 "description": "Aktivieren Sie den Aussperrschutz, indem Sie **Fenstersensoren** für jeden Rollladen konfigurieren (optional). Wenn ein Fenstersensor meldet, dass ein Fenster geöffnet ist, wird der Rollladen nicht geschlossen.",
                 "sections": {
                     "section_window_sensors": {
@@ -72,8 +52,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Schritt 6 von 6",
+            "5": {
+                "title": "Smart Cover Automation - Schritt 5 von 5",
                 "description": "Konfigurieren Sie **Zeiteinstellungen** für die Automatisierung (optional).",
                 "data": {
                     "nighttime_block_opening": "Öffnen der Rollläden nachts deaktivieren:"

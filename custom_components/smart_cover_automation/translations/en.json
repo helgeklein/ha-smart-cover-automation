@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Step 1 of 6",
+                "title": "Smart Cover Automation - Step 1 of 5",
                 "description": "Select a **weather forecast sensor** and the **covers** to automate (required).",
                 "data": {
                     "covers": "Covers to automate:",
@@ -28,32 +28,12 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Step 2 of 6",
+                "title": "Smart Cover Automation - Step 2 of 5",
                 "description": "Configure the **azimuth** (direction) for each cover (required).\n\n(0°=North, 90°=East, 180°=South, 270°=West)"
             },
             "3": {
-                "title": "Smart Cover Automation - Step 3 of 6",
-                "description": "Configure **additional settings** (optional).",
-                "data": {
-                    "covers_max_closure": "Maximum cover position:",
-                    "covers_min_closure": "Minimum cover position:",
-                    "manual_override_duration": "Manual override duration:",
-                    "sun_azimuth_tolerance": "Sun azimuth tolerance:",
-                    "sun_elevation_threshold": "Minimal sun elevation:",
-                    "temp_threshold": "Heat threshold:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Never close more than this to always let some light in (0 = fully closed, 100 = fully open).",
-                    "covers_min_closure": "Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).",
-                    "manual_override_duration": "How long to skip a cover after it has been moved manually (0 = no skipping).",
-                    "sun_azimuth_tolerance": "Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).",
-                    "sun_elevation_threshold": "The automation starts operating when the sun's elevation is above this threshold (degrees above horizon).",
-                    "temp_threshold": "Temperature at which the automation starts closing covers to protect from heat (degrees Celsius)."
-                }
-            },
-            "4": {
-                "title": "Smart Cover Automation - Step 4 of 6",
-                "description": "Configure the **min/max** positions for each cover (optional). If not set, the global values configured in the previous step will be used.\n\n(0 = fully closed, 100 = fully open)",
+                "title": "Smart Cover Automation - Step 3 of 5",
+                "description": "Configure the **min/max** positions for each cover (optional).\n\n(0 = fully closed, 100 = fully open)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Maximum cover positions"
@@ -63,8 +43,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Step 5 of 6",
+            "4": {
+                "title": "Smart Cover Automation - Step 4 of 5",
                 "description": "Enable lockout protection by configuring **window sensors** for each cover (optional). If any window sensor associated with a cover reports that the window is open, the cover won't be closed.",
                 "sections": {
                     "section_window_sensors": {
@@ -72,8 +52,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Step 6 of 6",
+            "5": {
+                "title": "Smart Cover Automation - Step 5 of 5",
                 "description": "Configure **time settings** for the automation (optional).",
                 "data": {
                     "nighttime_block_opening": "Disable cover opening at night:"

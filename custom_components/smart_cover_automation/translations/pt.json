@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Passo 1 de 6",
+                "title": "Smart Cover Automation - Passo 1 de 5",
                 "description": "Selecione um **sensor de previsão do tempo** e as **persianas** para automatizar (obrigatório).",
                 "data": {
                     "covers": "Persianas para automatizar:",
@@ -28,32 +28,12 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Passo 2 de 6",
+                "title": "Smart Cover Automation - Passo 2 de 5",
                 "description": "Configure o **azimute** (direção) de cada persiana (obrigatório).\n\n(0°=Norte, 90°=Este, 180°=Sul, 270°=Oeste)"
             },
             "3": {
-                "title": "Smart Cover Automation - Passo 3 de 6",
-                "description": "Configure **definições adicionais** (opcional).",
-                "data": {
-                    "covers_max_closure": "Posição máxima da persiana:",
-                    "covers_min_closure": "Posição mínima da persiana:",
-                    "manual_override_duration": "Duração da override manual:",
-                    "sun_azimuth_tolerance": "Tolerância do azimute solar:",
-                    "sun_elevation_threshold": "Elevação solar mínima:",
-                    "temp_threshold": "Limiar de calor:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Nunca feche além deste valor para deixar sempre entrar alguma luz (0 = totalmente fechado, 100 = totalmente aberto).",
-                    "covers_min_closure": "Nunca abra além deste valor para garantir sempre um mínimo de sombra (0 = totalmente fechado, 100 = totalmente aberto).",
-                    "manual_override_duration": "Tempo durante o qual ignorar uma persiana depois de movida manualmente (0 = não ignorar).",
-                    "sun_azimuth_tolerance": "Ângulo horizontal máximo em que se considera que o sol incide na janela (graus).",
-                    "sun_elevation_threshold": "A automatização começa a atuar quando a elevação solar ultrapassa este limite (graus acima do horizonte).",
-                    "temp_threshold": "Temperatura a partir da qual a automatização fecha as persianas para proteger do calor (graus Celsius)."
-                }
-            },
-            "4": {
-                "title": "Smart Cover Automation - Passo 4 de 6",
-                "description": "Configure as posições **mín/máx** para cada persiana (opcional). Se nada for definido, serão utilizados os valores globais configurados na etapa anterior.\n\n(0 = totalmente fechada, 100 = totalmente aberta)",
+                "title": "Smart Cover Automation - Passo 3 de 5",
+                "description": "Configure as posições **mín/máx** para cada persiana (opcional).\n\n(0 = totalmente fechada, 100 = totalmente aberta)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Posições máximas da persiana"
@@ -63,8 +43,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Passo 5 de 6",
+            "4": {
+                "title": "Smart Cover Automation - Passo 4 de 5",
                 "description": "Ative a proteção contra bloqueio configurando **sensores de janela** para cada persiana (opcional). Se algum sensor de janela associado a uma persiana indicar que a janela está aberta, a persiana não será fechada.",
                 "sections": {
                     "section_window_sensors": {
@@ -72,8 +52,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Passo 6 de 6",
+            "5": {
+                "title": "Smart Cover Automation - Passo 5 de 5",
                 "description": "Configure **definições de tempo** para a automação (opcional).",
                 "data": {
                     "nighttime_block_opening": "Desativar abertura das persianas à noite:"

@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Passo 1 di 6",
+                "title": "Smart Cover Automation - Passo 1 di 5",
                 "description": "Seleziona un **sensore di previsione meteo** e le **tapparelle** da automatizzare (obbligatorio).",
                 "data": {
                     "covers": "Tapparelle da automatizzare:",
@@ -28,32 +28,12 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Passo 2 di 6",
+                "title": "Smart Cover Automation - Passo 2 di 5",
                 "description": "Configura l'**azimut** (direzione) per ciascuna tapparella (obbligatorio).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)"
             },
             "3": {
-                "title": "Smart Cover Automation - Passo 3 di 6",
-                "description": "Configura **impostazioni aggiuntive** (opzionale).",
-                "data": {
-                    "covers_max_closure": "Posizione massima della tapparella:",
-                    "covers_min_closure": "Posizione minima della tapparella:",
-                    "manual_override_duration": "Durata dell'override manuale:",
-                    "sun_azimuth_tolerance": "Tolleranza dell'azimut solare:",
-                    "sun_elevation_threshold": "Elevazione solare minima:",
-                    "temp_threshold": "Soglia di calore:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Non chiudere mai oltre questo valore per lasciare sempre entrare un po' di luce (0 = completamente chiuso, 100 = completamente aperto).",
-                    "covers_min_closure": "Non aprire mai oltre questo valore per garantire sempre un minimo di ombra (0 = completamente chiuso, 100 = completamente aperto).",
-                    "manual_override_duration": "Durata per cui ignorare una tapparella dopo che è stata mossa manualmente (0 = non ignorare).",
-                    "sun_azimuth_tolerance": "Angolo orizzontale massimo in cui il sole è considerato diretto sulla finestra (gradi).",
-                    "sun_elevation_threshold": "L'automazione entra in funzione quando l'elevazione del sole supera questa soglia (gradi sopra l'orizzonte).",
-                    "temp_threshold": "Temperatura alla quale l'automazione chiude le tapparelle per proteggere dal calore (gradi Celsius)."
-                }
-            },
-            "4": {
-                "title": "Smart Cover Automation - Passo 4 di 6",
-                "description": "Configura le posizioni **min/max** per ciascuna tapparella (opzionale). Se non vengono impostati valori, verranno utilizzati quelli globali configurati nel passaggio precedente.\n\n(0 = completamente chiusa, 100 = completamente aperta)",
+                "title": "Smart Cover Automation - Passo 3 di 5",
+                "description": "Configura le posizioni **min/max** per ciascuna tapparella (opzionale).\n\n(0 = completamente chiusa, 100 = completamente aperta)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Posizioni massime della tapparella"
@@ -63,8 +43,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Passo 5 di 6",
+            "4": {
+                "title": "Smart Cover Automation - Passo 4 di 5",
                 "description": "Attiva la protezione anti-blocco configurando **sensori finestra** per ciascuna tapparella (opzionale). Se un sensore finestra associato a una tapparella segnala che la finestra è aperta, la tapparella non verrà chiusa.",
                 "sections": {
                     "section_window_sensors": {
@@ -72,8 +52,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Passo 6 di 6",
+            "5": {
+                "title": "Smart Cover Automation - Passo 5 di 5",
                 "description": "Configura le **impostazioni temporali** dell'automazione (opzionale).",
                 "data": {
                     "nighttime_block_opening": "Disattiva l'apertura delle tapparelle di notte:"
