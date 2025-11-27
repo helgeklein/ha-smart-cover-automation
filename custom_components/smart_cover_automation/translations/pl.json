@@ -178,9 +178,6 @@
             },
             "temp_current_max": {
                 "name": "Temperatura: dzisiejsze maksimum"
-            },
-            "temp_threshold": {
-                "name": "Temperatura: próg upału"
             }
         },
         "number": {

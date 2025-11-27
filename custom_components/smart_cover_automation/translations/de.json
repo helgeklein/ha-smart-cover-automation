@@ -178,9 +178,6 @@
             },
             "temp_current_max": {
                 "name": "Temperatur: Tagesmaximum"
-            },
-            "temp_threshold": {
-                "name": "Temperatur: Hitzeschwelle"
             }
         },
         "number": {

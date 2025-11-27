@@ -178,9 +178,6 @@
             },
             "temp_current_max": {
                 "name": "Temperature: today's maximum"
-            },
-            "temp_threshold": {
-                "name": "Temperature: heat threshold"
             }
         },
         "number": {

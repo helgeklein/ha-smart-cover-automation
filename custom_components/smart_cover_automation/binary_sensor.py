@@ -70,6 +70,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
+#
+# IntegrationBinarySensor
+#
 class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
     """Base binary sensor entity for Smart Cover Automation integration.
 
@@ -84,6 +87,9 @@ class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright
     - Integration with Home Assistant's binary sensor platform
     """
 
+    #
+    # __init__
+    #
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,

@@ -1,21 +1,21 @@
 """Number platform for smart_cover_automation.
 
 This module provides number entities that allow users to configure various
-numeric settings of the Smart Cover Automation integration. The number entities
-allow users to adjust settings through the Home Assistant interface.
-
-The number entities that appear in Home Assistant are:
-- Entity: number.smart_cover_automation_temp_threshold - Temperature threshold for heat protection
+numeric settings of the Smart Cover Automation integration.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberEntityDescription
+from homeassistant.components.number import (
+    NumberDeviceClass,
+    NumberEntity,
+    NumberEntityDescription,
+)
 from homeassistant.const import EntityCategory, UnitOfTemperature
 
-from .config import ConfKeys, resolve_entry
+from .config import ConfKeys
 from .const import DOMAIN, NUMBER_KEY_TEMP_THRESHOLD
 from .entity import IntegrationEntity
 
@@ -118,7 +118,7 @@ class IntegrationNumber(IntegrationEntity, NumberEntity):  # pyright: ignore[rep
         Reads from the resolved settings to get the current state.
         This reflects changes made through the integration's options flow.
         """
-        resolved = resolve_entry(self.coordinator.config_entry)
+        resolved = self.coordinator._resolved_settings()
         return float(getattr(resolved, self._config_key.lower()))
 
     #

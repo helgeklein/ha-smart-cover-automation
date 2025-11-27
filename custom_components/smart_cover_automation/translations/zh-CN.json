@@ -178,9 +178,6 @@
             },
             "temp_current_max": {
                 "name": "温度：今日最高值"
-            },
-            "temp_threshold": {
-                "name": "温度：高温阈值"
             }
         },
         "number": {

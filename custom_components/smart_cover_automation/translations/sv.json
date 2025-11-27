@@ -178,9 +178,6 @@
             },
             "temp_current_max": {
                 "name": "Temperatur: dagens högsta"
-            },
-            "temp_threshold": {
-                "name": "Temperatur: värmetröskel"
             }
         },
         "number": {

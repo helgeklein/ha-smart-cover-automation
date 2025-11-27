@@ -178,9 +178,6 @@
             },
             "temp_current_max": {
                 "name": "Temperatuur: maximum van vandaag"
-            },
-            "temp_threshold": {
-                "name": "Temperatuur: hittedrempel"
             }
         },
         "number": {

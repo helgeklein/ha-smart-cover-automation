@@ -81,7 +81,6 @@ SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY: Final[str] = (
 SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity
 SENSOR_KEY_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Key for the current maximum temperature sensor entity
-SENSOR_KEY_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Key for the temperature threshold sensor entity
 SENSOR_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode sensor entity
 SELECT_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode select entity
 NUMBER_KEY_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Key for the temperature threshold number entity

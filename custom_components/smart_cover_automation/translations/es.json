@@ -178,9 +178,6 @@
             },
             "temp_current_max": {
                 "name": "Temperatura: máximo de hoy"
-            },
-            "temp_threshold": {
-                "name": "Temperatura: umbral de calor"
             }
         },
         "number": {
