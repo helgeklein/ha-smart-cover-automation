@@ -183,6 +183,11 @@
                 "name": "温度：高温阈值"
             }
         },
+        "number": {
+            "temp_threshold": {
+                "name": "温度：高温阈值"
+            }
+        },
         "switch": {
             "enabled": {
                 "name": "自动化已启用"

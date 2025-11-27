@@ -183,6 +183,11 @@
                 "name": "Temperatura: limiar de calor"
             }
         },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperatura: limiar de calor"
+            }
+        },
         "switch": {
             "enabled": {
                 "name": "Automação ativada"

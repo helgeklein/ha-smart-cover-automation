@@ -183,6 +183,11 @@
                 "name": "Temperatura: umbral de calor"
             }
         },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperatura: umbral de calor"
+            }
+        },
         "switch": {
             "enabled": {
                 "name": "Automatización activada"

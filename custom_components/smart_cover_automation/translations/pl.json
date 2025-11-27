@@ -183,6 +183,11 @@
                 "name": "Temperatura: próg upału"
             }
         },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperatura: próg upału"
+            }
+        },
         "switch": {
             "enabled": {
                 "name": "Automatyzacja włączona"

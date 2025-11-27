@@ -183,6 +183,11 @@
                 "name": "Temperatur: värmetröskel"
             }
         },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperatur: värmetröskel"
+            }
+        },
         "switch": {
             "enabled": {
                 "name": "Automatisering aktiverad"

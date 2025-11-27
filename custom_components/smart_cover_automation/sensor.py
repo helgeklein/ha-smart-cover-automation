@@ -22,7 +22,6 @@ from .const import (
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
-    SENSOR_KEY_TEMP_THRESHOLD,
 )
 from .entity import IntegrationEntity
 
@@ -61,7 +60,6 @@ async def async_setup_entry(
         SunAzimuthSensor(coordinator),
         SunElevationSensor(coordinator),
         TempCurrentMaxSensor(coordinator),
-        TempThresholdSensor(coordinator),
     ]
 
     async_add_entities(entities)
@@ -314,37 +312,3 @@ class TempCurrentMaxSensor(IntegrationSensor):
             return self.coordinator.data.temp_current_max
         else:
             return None
-
-
-#
-# TempThresholdSensor
-#
-class TempThresholdSensor(IntegrationSensor):
-    """Sensor that reports the configured threshold temperature."""
-
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the sensor.
-
-        Args:
-            coordinator: Provides the data for this sensor
-        """
-        entity_description = SensorEntityDescription(
-            key=SENSOR_KEY_TEMP_THRESHOLD,
-            translation_key=SENSOR_KEY_TEMP_THRESHOLD,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            device_class=SensorDeviceClass.TEMPERATURE,
-            # We're not setting state_class (SensorStateClass) to avoid cluttering long-term statistics
-            icon="mdi:thermometer-lines",
-            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        )
-        super().__init__(coordinator, entity_description)
-
-    @property
-    def native_value(self) -> float:  # pyright: ignore
-        """Return the configured threshold temperature.
-
-        Returns:
-            Float representing the configured threshold temperature in degrees Celsius.
-        """
-        resolved = self.coordinator._resolved_settings()
-        return resolved.temp_threshold

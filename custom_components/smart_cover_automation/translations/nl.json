@@ -183,6 +183,11 @@
                 "name": "Temperatuur: hittedrempel"
             }
         },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperatuur: hittedrempel"
+            }
+        },
         "switch": {
             "enabled": {
                 "name": "Automatisering ingeschakeld"

@@ -183,6 +183,11 @@
                 "name": "Température : seuil de chaleur"
             }
         },
+        "number": {
+            "temp_threshold": {
+                "name": "Température : seuil de chaleur"
+            }
+        },
         "switch": {
             "enabled": {
                 "name": "Automatisation activée"

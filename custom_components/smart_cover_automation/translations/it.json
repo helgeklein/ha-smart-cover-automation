@@ -183,6 +183,11 @@
                 "name": "Temperatura: soglia di calore"
             }
         },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperatura: soglia di calore"
+            }
+        },
         "switch": {
             "enabled": {
                 "name": "Automazione attiva"

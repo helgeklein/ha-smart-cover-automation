@@ -183,6 +183,11 @@
                 "name": "Temperature: heat threshold"
             }
         },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperature: heat threshold"
+            }
+        },
         "switch": {
             "enabled": {
                 "name": "Automation enabled"

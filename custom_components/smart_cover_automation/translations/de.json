@@ -183,6 +183,11 @@
                 "name": "Temperatur: Hitzeschwelle"
             }
         },
+        "number": {
+            "temp_threshold": {
+                "name": "Temperatur: Hitzeschwelle"
+            }
+        },
         "switch": {
             "enabled": {
                 "name": "Automatisierung aktiviert"
