@@ -33,7 +33,6 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
-    COVER_ATTR_COVER_AZIMUTH,
     COVER_POS_FULLY_CLOSED,
     COVER_POS_FULLY_OPEN,
     COVER_SFX_AZIMUTH,
@@ -443,10 +442,10 @@ async def test_numeric_direction_strings_are_processed(numeric_direction: str, e
 
     # Verify numeric string was processed successfully
     assert result is not None, f"Coordinator should return data for numeric direction string ({description})"
-    assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-    cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+    assert MOCK_COVER_ENTITY_ID in result.covers
+    cover_data = result.covers[MOCK_COVER_ENTITY_ID]
 
     if expected_processed:
         # Should have azimuth as float and no error
-        assert COVER_ATTR_COVER_AZIMUTH in cover_data, f"Expected azimuth field for {description}"
-        assert isinstance(cover_data[COVER_ATTR_COVER_AZIMUTH], float), f"Expected float azimuth for {description}"
+        assert cover_data.cover_azimuth is not None, f"Expected azimuth field for {description}"
+        assert isinstance(cover_data.cover_azimuth, float), f"Expected float azimuth for {description}"

@@ -241,8 +241,8 @@ class TempHotBinarySensor(IntegrationBinarySensor):
     @property
     def is_on(self) -> bool:  # pyright: ignore
         """Return True if it's a hot day."""
-        if self.coordinator.data and "temp_hot" in self.coordinator.data:
-            return self.coordinator.data["temp_hot"]
+        if self.coordinator.data and self.coordinator.data.temp_hot is not None:
+            return self.coordinator.data.temp_hot
         else:
             return False
 
@@ -276,8 +276,8 @@ class WeatherSunnyBinarySensor(IntegrationBinarySensor):
     @property
     def is_on(self) -> bool:  # pyright: ignore
         """Return True if the weather is sunny."""
-        if self.coordinator.data and "weather_sunny" in self.coordinator.data:
-            return self.coordinator.data["weather_sunny"]
+        if self.coordinator.data and self.coordinator.data.weather_sunny is not None:
+            return self.coordinator.data.weather_sunny
         else:
             return False
 

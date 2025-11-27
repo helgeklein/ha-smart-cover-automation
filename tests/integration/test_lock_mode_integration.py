@@ -22,10 +22,6 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
-    COVER_ATTR_LOCK_ACTIVE,
-    COVER_ATTR_LOCK_MODE,
-    COVER_ATTR_POS_TARGET_DESIRED,
-    COVER_ATTR_POS_TARGET_FINAL,
     HA_WEATHER_COND_SUNNY,
     LockMode,
 )
@@ -88,11 +84,10 @@ class TestLockModeOverridePriority:
 
         # Verify lock mode forced closure despite cold temperature
         assert result is not None
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data[COVER_ATTR_LOCK_MODE] == LockMode.FORCE_CLOSE
-        assert cover_data[COVER_ATTR_LOCK_ACTIVE] is True
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED
-        assert cover_data[COVER_ATTR_POS_TARGET_FINAL] == TEST_COVER_CLOSED
+        cover_data = result.covers[MOCK_COVER_ENTITY_ID]
+        assert coordinator.lock_mode == LockMode.FORCE_CLOSE
+        assert cover_data.pos_target_desired == TEST_COVER_CLOSED
+        assert cover_data.pos_target_final == TEST_COVER_CLOSED
 
         # Verify service was called to close the cover
         cover_calls = [call for call in hass.services.async_call.call_args_list if call[0][0] == Platform.COVER]
@@ -134,13 +129,12 @@ class TestLockModeOverridePriority:
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Verify lock mode forced opening despite heat protection trigger
+        # Verify lock mode forced opening despite hot temperature
         assert result is not None
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data[COVER_ATTR_LOCK_MODE] == LockMode.FORCE_OPEN
-        assert cover_data[COVER_ATTR_LOCK_ACTIVE] is True
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_OPEN
-        assert cover_data[COVER_ATTR_POS_TARGET_FINAL] == TEST_COVER_OPEN
+        cover_data = result.covers[MOCK_COVER_ENTITY_ID]
+        assert coordinator.lock_mode == LockMode.FORCE_OPEN
+        assert cover_data.pos_target_desired == TEST_COVER_OPEN
+        assert cover_data.pos_target_final == TEST_COVER_OPEN
 
         # Verify service was called to open the cover
         cover_calls = [call for call in hass.services.async_call.call_args_list if call[0][0] == Platform.COVER]
@@ -184,11 +178,10 @@ class TestLockModeOverridePriority:
 
         # Verify lock mode held position (no movement)
         assert result is not None
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data[COVER_ATTR_LOCK_MODE] == LockMode.HOLD_POSITION
-        assert cover_data[COVER_ATTR_LOCK_ACTIVE] is True
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == 75  # Stays at current position
-        assert cover_data[COVER_ATTR_POS_TARGET_FINAL] == 75
+        cover_data = result.covers[MOCK_COVER_ENTITY_ID]
+        assert coordinator.lock_mode == LockMode.HOLD_POSITION
+        assert cover_data.pos_target_desired == 75  # Stays at current position
+        assert cover_data.pos_target_final == 75
 
         # Verify NO service calls were made
         cover_calls = [call for call in hass.services.async_call.call_args_list if call[0][0] == Platform.COVER]
@@ -236,10 +229,9 @@ class TestLockModeStatePersistence:
 
             # Verify lock mode persists and enforces position
             assert result is not None
-            cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-            assert cover_data[COVER_ATTR_LOCK_MODE] == LockMode.FORCE_CLOSE
-            assert cover_data[COVER_ATTR_LOCK_ACTIVE] is True
-            assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED
+            cover_data = result.covers[MOCK_COVER_ENTITY_ID]
+            assert coordinator.lock_mode == LockMode.FORCE_CLOSE
+            assert cover_data.pos_target_desired == TEST_COVER_CLOSED
 
     @pytest.mark.asyncio
     async def test_lock_mode_change_takes_effect_immediately(self, caplog):
@@ -274,9 +266,7 @@ class TestLockModeStatePersistence:
 
         # Start with UNLOCKED (normal automation)
         await coordinator.async_refresh()
-        result1 = coordinator.data
-        assert result1[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID][COVER_ATTR_LOCK_MODE] == LockMode.UNLOCKED
-        assert result1[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID][COVER_ATTR_LOCK_ACTIVE] is False
+        assert coordinator.lock_mode == LockMode.UNLOCKED
 
         # Change to FORCE_CLOSE mid-test by modifying options directly
         coordinator.config_entry.options[ConfKeys.LOCK_MODE.value] = LockMode.FORCE_CLOSE  # type: ignore[index]
@@ -284,9 +274,8 @@ class TestLockModeStatePersistence:
         result2 = coordinator.data
 
         # Verify immediate effect on next refresh
-        assert result2[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID][COVER_ATTR_LOCK_MODE] == LockMode.FORCE_CLOSE
-        assert result2[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID][COVER_ATTR_LOCK_ACTIVE] is True
-        assert result2[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID][COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED
+        assert coordinator.lock_mode == LockMode.FORCE_CLOSE
+        assert result2.covers[MOCK_COVER_ENTITY_ID].pos_target_desired == TEST_COVER_CLOSED
 
 
 class TestMultiCoverLockMode:
@@ -336,11 +325,10 @@ class TestMultiCoverLockMode:
 
         # Verify all covers have same lock mode and are forced open
         assert result is not None
+        assert coordinator.lock_mode == LockMode.FORCE_OPEN
         for cover_id in covers:
-            cover_data = result[ConfKeys.COVERS.value][cover_id]
-            assert cover_data[COVER_ATTR_LOCK_MODE] == LockMode.FORCE_OPEN
-            assert cover_data[COVER_ATTR_LOCK_ACTIVE] is True
-            assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_OPEN
+            cover_data = result.covers[cover_id]
+            assert cover_data.pos_target_desired == TEST_COVER_OPEN
 
 
 class TestLockModeEdgeCases:
@@ -382,9 +370,9 @@ class TestLockModeEdgeCases:
 
         # Verify lock mode works with binary cover
         assert result is not None
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data[COVER_ATTR_LOCK_MODE] == LockMode.FORCE_OPEN
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_OPEN
+        cover_data = result.covers[MOCK_COVER_ENTITY_ID]
+        assert coordinator.lock_mode == LockMode.FORCE_OPEN
+        assert cover_data.pos_target_desired == TEST_COVER_OPEN
 
         # Verify open_cover service was called
         cover_calls = [call for call in hass.services.async_call.call_args_list if call[0][0] == Platform.COVER]
@@ -427,9 +415,9 @@ class TestLockModeEdgeCases:
 
         # Verify moved from 50% to 0%
         assert result is not None
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED
-        assert cover_data[COVER_ATTR_POS_TARGET_FINAL] == TEST_COVER_CLOSED
+        cover_data = result.covers[MOCK_COVER_ENTITY_ID]
+        assert cover_data.pos_target_desired == TEST_COVER_CLOSED
+        assert cover_data.pos_target_final == TEST_COVER_CLOSED
 
     @pytest.mark.asyncio
     async def test_lock_mode_with_unavailable_covers(self, caplog):
@@ -473,13 +461,9 @@ class TestLockModeEdgeCases:
 
         # Verify only available cover was processed
         assert result is not None
-        assert "cover.available" in result[ConfKeys.COVERS.value]
+        assert "cover.available" in result.covers
         # Unavailable cover should be skipped but not cause errors
-        if "cover.unavailable" in result[ConfKeys.COVERS.value]:
-            # If it's in result, it should have minimal data
-            unavail_data = result[ConfKeys.COVERS.value]["cover.unavailable"]
-            assert COVER_ATTR_LOCK_MODE in unavail_data
-            assert COVER_ATTR_LOCK_ACTIVE in unavail_data
+        assert coordinator.lock_mode == LockMode.FORCE_CLOSE
 
 
 class TestLockModeServiceIntegration:
@@ -525,9 +509,9 @@ class TestLockModeServiceIntegration:
         result = coordinator.data
 
         assert result is not None
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data[COVER_ATTR_LOCK_MODE] == LockMode.FORCE_CLOSE
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED
+        cover_data = result.covers[MOCK_COVER_ENTITY_ID]
+        assert coordinator.lock_mode == LockMode.FORCE_CLOSE
+        assert cover_data.pos_target_desired == TEST_COVER_CLOSED
 
     @pytest.mark.asyncio
     async def test_lock_mode_stored_in_config_options(self, caplog):
@@ -575,8 +559,7 @@ class TestLockModeServiceIntegration:
         await coordinator.async_refresh()
         result = coordinator.data
         assert result is not None
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data[COVER_ATTR_LOCK_MODE] == LockMode.FORCE_CLOSE
+        assert coordinator.lock_mode == LockMode.FORCE_CLOSE
 
 
 class TestLockModeUIEntities:
@@ -622,14 +605,9 @@ class TestLockModeUIEntities:
             result = coordinator.data
 
             assert result is not None
-            cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
 
-            # Verify lock mode value in data
-            assert cover_data[COVER_ATTR_LOCK_MODE] == lock_mode
-
-            # Verify lock_active binary state
-            expected_active = lock_mode != LockMode.UNLOCKED
-            assert cover_data[COVER_ATTR_LOCK_ACTIVE] == expected_active
+            # Verify lock mode value
+            assert coordinator.lock_mode == lock_mode
 
     @pytest.mark.asyncio
     async def test_lock_active_tracks_lock_state_correctly(self, caplog):
@@ -661,17 +639,19 @@ class TestLockModeUIEntities:
         set_weather_forecast_temp(float(TEST_HOT_TEMP))
         caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
 
-        # UNLOCKED: lock_active should be False
+        # UNLOCKED: lock should not be active
         coordinator = create_integration_coordinator(lock_mode=LockMode.UNLOCKED)
         hass = cast(MagicMock, coordinator.hass)
         setup_states(hass)
         await coordinator.async_refresh()
-        assert coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID][COVER_ATTR_LOCK_ACTIVE] is False
+        assert coordinator.lock_mode == LockMode.UNLOCKED
+        assert not coordinator.is_locked
 
-        # Any other mode: lock_active should be True
+        # Any other mode: lock should be active
         for lock_mode in [LockMode.HOLD_POSITION, LockMode.FORCE_OPEN, LockMode.FORCE_CLOSE]:
             coordinator = create_integration_coordinator(lock_mode=lock_mode)
             hass = cast(MagicMock, coordinator.hass)
             setup_states(hass)
             await coordinator.async_refresh()
-            assert coordinator.data[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID][COVER_ATTR_LOCK_ACTIVE] is True
+            assert coordinator.lock_mode == lock_mode
+            assert coordinator.is_locked

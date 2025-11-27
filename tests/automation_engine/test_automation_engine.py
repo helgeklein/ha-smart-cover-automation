@@ -366,7 +366,7 @@ class TestRunMethod:
         result = await engine.run({})
 
         # Verify result
-        assert result[ConfKeys.COVERS.value] == {}
+        assert result.covers == {}
 
     async def test_run_with_automation_disabled(self, mock_ha_interface):
         """Test run when automation is disabled."""
@@ -388,7 +388,7 @@ class TestRunMethod:
         result = await engine.run(cover_states)  # type: ignore[arg-type]
 
         # Verify result
-        assert result[ConfKeys.COVERS.value] == {}
+        assert result.covers == {}
 
     async def test_run_with_all_covers_unavailable(self, automation_engine):
         """Test run when all covers are unavailable."""
@@ -397,7 +397,7 @@ class TestRunMethod:
         result = await automation_engine.run(cover_states)
 
         # Verify result
-        assert result[ConfKeys.COVERS.value] == {}
+        assert result.covers == {}
 
     async def test_run_with_sensor_data_unavailable(self, automation_engine, mock_ha_interface):
         """Test run when sensor data is unavailable."""
@@ -411,7 +411,7 @@ class TestRunMethod:
         result = await automation_engine.run(cover_states)  # type: ignore[arg-type]
 
         # Verify result
-        assert result[ConfKeys.COVERS.value] == {}
+        assert result.covers == {}
 
     async def test_run_stores_sensor_data_in_result(self, automation_engine, mock_ha_interface):
         """Test that sensor data is stored in the result."""
@@ -428,20 +428,18 @@ class TestRunMethod:
         result = await automation_engine.run(cover_states)  # type: ignore[arg-type]
 
         # Verify sensor data in result
-        assert "sun_azimuth" in result
-        assert result["sun_azimuth"] == 180.0
-        assert "sun_elevation" in result
-        assert result["sun_elevation"] == 45.0
-        assert "temp_current_max" in result
-        assert result["temp_current_max"] == 25.0
-        assert "temp_hot" in result
-        assert "weather_sunny" in result
+        assert result.sun_azimuth == 180.0
+        assert result.sun_elevation == 45.0
+        assert result.temp_current_max == 25.0
+        assert result.temp_hot is not None
+        assert result.weather_sunny is not None
 
     async def test_run_blocked_by_nighttime(self, mock_ha_interface):
         """Test run when blocked by nighttime condition."""
         # Configure to block at night
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
+            f"cover.test_{const.COVER_SFX_AZIMUTH}": 180.0,
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
         }
@@ -460,15 +458,9 @@ class TestRunMethod:
         cover_states = {"cover.test": cover_state}
         result = await engine.run(cover_states)  # type: ignore[arg-type]
 
-        # Verify automation was blocked but covers still appear with lock data
-        assert "cover.test" in result[ConfKeys.COVERS.value]
-        cover_data = result[ConfKeys.COVERS.value]["cover.test"]
-        # Cover should only have lock data, no automation actions taken
-        assert "cover_lock_mode" in cover_data
-        assert "cover_lock_active" in cover_data
-        # Global lock fields should also be in result
-        assert "lock_mode" in result
-        assert "lock_active" in result
+        # Verify automation was blocked - cover should be in result but with no target position
+        assert "cover.test" in result.covers
+        assert result.covers["cover.test"].pos_target_desired is None
 
 
 class TestLogAutomationResult:

@@ -6,7 +6,7 @@ description: "Configuration guide part 1 for Smart Cover Automation for Home Ass
 permalink: /configuration-wizard/
 ---
 
-# Configuration Guide 1: Wizard
+# Configuration Wizard
 
 The integration's settings are managed via a multi-step wizard. To invoke the configuration wizard:
 
@@ -78,14 +78,28 @@ In the fifth step of the configuration wizard, you can enable lockout protection
 In the sixth step of the configuration wizard, the following settings can be configured:
 
 - **Disable cover opening at night:** The automation opens the covers when they needn't be closed for heat protection. By default, this auto-opening doesn't happen at night (when the sun is below the horizon). You can change that behavior by flipping this setting to disabled.
-- **Blocked time range:**
-  - **Disable automation in time range:** Enable this if you want the automation to be inactive in a certain time range, e.g., when you sleep. Don't forget to also specify the start and end times.
-  - **Disable from:** Start time of the time period in which the automation should be inactive.
-  - **Disable until:** End time of the time period in which the automation should be inactive.
-- **Evening closure:**
-  - **Close covers after sunset:** Enable this if you want a subset of the previously selected covers to close with a certain delay after sunset.
-  - **Time delay:** Specifies how long after sunset the selected subset of covers are closed.
-  - **Covers:** Subset of covers to close after sunset.
+
+### Blocked Time Range
+
+Blocked time range allows you to disable the automation in a certain time range, e.g., when you sleep.
+
+Blocked time range settings:
+
+- **Disable automation in time range:** Enable or disable the blocked time range function.
+- **Disable from:** Start time of the time period in which the automation should be inactive.
+- **Disable until:** End time of the time period in which the automation should be inactive.
+
+### Evening Closure
+
+Evening closure allows you to automatically close a subset of the previously selected covers with a certain delay after sunset.
+
+**Note:** The evening closure function only runs at the configured point in time. If the integration is not active or at the configured time, or another setting prevents it from running, the covers will not be closed and evening closure will try again the following day.
+
+Evening closure settings:
+
+- **Close covers after sunset:** Enable or disable the evening closure function.
+- **Time delay:** Specifies how long after sunset the selected subset of covers are closed.
+- **Covers:** Subset of covers to close after sunset.
 
 ## Next Steps
 

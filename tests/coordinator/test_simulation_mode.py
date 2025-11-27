@@ -23,7 +23,6 @@ import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION
 
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import (
@@ -98,11 +97,11 @@ class TestSimulationMode(TestDataUpdateCoordinatorBase):
         # But verify that the coordinator still processed the automation logic
         result = simulation_coordinator.data
         assert result is not None
-        assert "temp_current_max" in result and result["temp_current_max"] == float(TEST_HOT_TEMP)
+        assert result.temp_current_max == float(TEST_HOT_TEMP)
 
         # The automation should have calculated a desired position even in simulation mode
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED
+        cover_data = result.covers[MOCK_COVER_ENTITY_ID]
+        assert cover_data.pos_target_desired == TEST_COVER_CLOSED
 
     async def test_simulation_mode_logging(
         self,
@@ -159,11 +158,11 @@ class TestSimulationMode(TestDataUpdateCoordinatorBase):
         assert result is not None
 
         # Should have processed the cover and calculated a desired position
-        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
-        cover_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
+        assert MOCK_COVER_ENTITY_ID in result.covers
+        cover_data = result.covers[MOCK_COVER_ENTITY_ID]
 
         # Should have calculated that cover needs to close due to hot temperature
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED
+        assert cover_data.pos_target_desired == TEST_COVER_CLOSED
 
         # Verify simulation mode is active
         resolved = simulation_coordinator._resolved_settings()

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
 from . import const
-from .config import ConfKeys, ResolvedConfig
+from .config import ResolvedConfig
 from .cover_automation import CoverAutomation, SensorData
 from .cover_position_history import CoverPositionHistoryManager
 from .data import CoordinatorData
@@ -58,7 +58,7 @@ class AutomationEngine:
         """
 
         # Prepare empty result
-        result: CoordinatorData = {ConfKeys.COVERS.value: {}}
+        result = CoordinatorData(covers={})
 
         # Check if covers are configured
         covers = tuple(self.resolved.covers)
@@ -92,24 +92,29 @@ class AutomationEngine:
         is_locked = lock_mode != const.LockMode.UNLOCKED
 
         # Store sensor data and lock state in result
-        result["sun_azimuth"] = sensor_data.sun_azimuth
-        result["sun_elevation"] = sensor_data.sun_elevation
-        result["temp_current_max"] = sensor_data.temp_max
-        result["temp_hot"] = sensor_data.temp_hot
-        result["weather_sunny"] = sensor_data.weather_sunny
-        result["lock_mode"] = lock_mode
-        result["lock_active"] = is_locked
+        result.sun_azimuth = sensor_data.sun_azimuth
+        result.sun_elevation = sensor_data.sun_elevation
+        result.temp_current_max = sensor_data.temp_max
+        result.temp_hot = sensor_data.temp_hot
+        result.weather_sunny = sensor_data.weather_sunny
 
         # Log sensor states
-        sensor_states = {k: v for k, v in result.items() if k != ConfKeys.COVERS.value}
+        sensor_states = {
+            "sun_azimuth": result.sun_azimuth,
+            "sun_elevation": result.sun_elevation,
+            "temp_current_max": result.temp_current_max,
+            "temp_hot": result.temp_hot,
+            "weather_sunny": result.weather_sunny,
+        }
         const.LOGGER.info(f"Sensor states: {str(sensor_states)}")
 
         # Log global settings
         global_settings = {
-            "temp_threshold": self.resolved.temp_threshold,
-            "sun_elevation_threshold": self.resolved.sun_elevation_threshold,
-            "sun_azimuth_tolerance": self.resolved.sun_azimuth_tolerance,
+            "lock_mode": lock_mode,
             "covers_min_position_delta": self.resolved.covers_min_position_delta,
+            "sun_azimuth_tolerance": self.resolved.sun_azimuth_tolerance,
+            "sun_elevation_threshold": self.resolved.sun_elevation_threshold,
+            "temp_threshold": self.resolved.temp_threshold,
             "weather_hot_cutover_time": self.resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
         }
         const.LOGGER.info(f"Global settings: {str(global_settings)}")
@@ -132,11 +137,9 @@ class AutomationEngine:
                 config=self.config,
                 cover_pos_history_mgr=self._cover_pos_history_mgr,
                 ha_interface=self._ha_interface,
-                lock_mode=lock_mode,
             )
             cover_attrs = await cover_automation.process(state, sensor_data)
-            if cover_attrs:
-                result[ConfKeys.COVERS.value][entity_id] = cover_attrs
+            result.covers[entity_id] = cover_attrs
 
         return result
 

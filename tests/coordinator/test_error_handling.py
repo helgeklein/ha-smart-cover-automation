@@ -17,7 +17,6 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
-    COVER_ATTR_SUN_HITTING,
     COVER_SFX_AZIMUTH,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
@@ -89,7 +88,7 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert coordinator.data.covers == {}  # Minimal valid state returned
         assert "All covers unavailable; skipping actions" in caplog.text
 
     async def test_service_call_failure(
@@ -141,7 +140,7 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
 
         # Verify - automation still completes despite service failure
         assert result is not None
-        assert MOCK_COVER_ENTITY_ID in result[ConfKeys.COVERS.value]
+        assert MOCK_COVER_ENTITY_ID in result.covers
 
     async def test_cover_without_position_support(
         self,
@@ -215,7 +214,7 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {ConfKeys.COVERS.value: {}}  # Minimal valid state returned
+        assert coordinator.data.covers == {}  # Minimal valid state returned
         assert "No covers configured; skipping actions" in caplog.text
 
     async def test_service_call_error_class_init(self) -> None:
@@ -304,7 +303,7 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
 
         # Verify graceful error handling
         assert coordinator.last_exception is None  # No exception should propagate
-        assert coordinator.data == {"covers": {}}  # Minimal valid state returned
+        assert coordinator.data.covers == {}  # Minimal valid state returned
         assert "Sun elevation unavailable" in caplog.text
 
     async def test_cover_missing_azimuth_configuration(
@@ -359,21 +358,16 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Both covers should appear (cover 2 has lock data even though azimuth is missing)
-        covers_dict = result[ConfKeys.COVERS.value]
+        # Both covers should be present, but cover 2 should have None azimuth (skipped processing)
+        covers_dict = result.covers
         assert MOCK_COVER_ENTITY_ID in covers_dict
         assert MOCK_COVER_ENTITY_ID_2 in covers_dict
+        assert covers_dict[MOCK_COVER_ENTITY_ID_2].cover_azimuth is None
 
         # Cover 1 should have both temperature and sun automation data
-        cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert "temp_hot" in result and result["temp_hot"] is not None
-        assert COVER_ATTR_SUN_HITTING in cover1_data
-
-        # Cover 2 should only have lock data (no sun_hitting due to missing azimuth)
-        cover2_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID_2]
-        assert COVER_ATTR_SUN_HITTING not in cover2_data
-        assert "cover_lock_mode" in cover2_data
-        assert "cover_lock_active" in cover2_data
+        cover1_data = result.covers[MOCK_COVER_ENTITY_ID]
+        assert result.temp_hot is not None
+        assert cover1_data.sun_hitting is not None
 
     async def test_cover_invalid_azimuth_configuration(
         self,
@@ -423,21 +417,16 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Both covers should appear (cover 2 has lock data even though azimuth is invalid)
-        covers_dict = result[ConfKeys.COVERS.value]
+        # Both covers should be present, but cover 2 should have None azimuth (invalid azimuth)
+        covers_dict = result.covers
         assert MOCK_COVER_ENTITY_ID in covers_dict
         assert MOCK_COVER_ENTITY_ID_2 in covers_dict
+        assert covers_dict[MOCK_COVER_ENTITY_ID_2].cover_azimuth is None
 
         # Cover 1 should have both temperature and sun automation data
-        cover1_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID]
-        assert "temp_hot" in result and result["temp_hot"] is not None
-        assert COVER_ATTR_SUN_HITTING in cover1_data
-
-        # Cover 2 should only have lock data (no sun_hitting due to invalid azimuth)
-        cover2_data = result[ConfKeys.COVERS.value][MOCK_COVER_ENTITY_ID_2]
-        assert COVER_ATTR_SUN_HITTING not in cover2_data
-        assert "cover_lock_mode" in cover2_data
-        assert "cover_lock_active" in cover2_data
+        cover1_data = result.covers[MOCK_COVER_ENTITY_ID]
+        assert result.temp_hot is not None
+        assert cover1_data.sun_hitting is not None
 
     async def test_sun_azimuth_unavailable(
         self,
@@ -480,5 +469,5 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         result = coordinator.data
 
         # Verify - should skip actions due to invalid sun azimuth
-        assert result == {ConfKeys.COVERS.value: {}}
+        assert result.covers == {}
         assert "Sun azimuth unavailable" in caplog.text

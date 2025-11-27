@@ -189,7 +189,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         """
 
         # Prepare minimal valid state to keep integration entities available
-        error_result: CoordinatorData = {ConfKeys.COVERS.value: {}}
+        error_result = CoordinatorData(covers={})
 
         try:
             const.LOGGER.info("Starting cover automation update")

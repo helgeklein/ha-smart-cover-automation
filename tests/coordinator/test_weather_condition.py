@@ -13,9 +13,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
 from custom_components.smart_cover_automation.ha_interface import (
     InvalidSensorReadingError,
     WeatherEntityNotFoundError,
@@ -66,7 +65,7 @@ class TestWeatherCondition:
             assert coordinator.last_exception is None  # No critical error should be raised
             # Verify that coordinator data contains the weather unavailable message
             assert coordinator.data is not None
-            assert coordinator.data == {"covers": {}}
+            assert coordinator.data == CoordinatorData(covers={})
             assert "Weather data unavailable, skipping actions" in caplog.text
         else:
             # Mock weather entity with the specified state
@@ -86,7 +85,7 @@ class TestWeatherCondition:
             await coordinator.async_refresh()
             # Should return early with weather unavailable message
             result = coordinator.data
-            assert result == {"covers": {}}
+            assert result == CoordinatorData(covers={})
             assert "Weather data unavailable, skipping actions" in caplog.text
 
     def test_get_weather_condition_direct_call(self) -> None:
@@ -161,8 +160,8 @@ class TestWeatherCondition:
         result = coordinator.data
 
         # Even with hot temperature and sun hitting, cover should stay open due to non-sunny weather
-        cover_data = result["covers"]["cover.test_cover"]
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_position, f"Failed for {test_description}"
+        cover_data = result.covers["cover.test_cover"]
+        assert cover_data.pos_target_desired == expected_position, f"Failed for {test_description}"
 
     @pytest.mark.parametrize(
         "sunny_condition,expected_position,test_description",
@@ -207,5 +206,5 @@ class TestWeatherCondition:
         result = coordinator.data
 
         # With hot temp + sunny weather + sun hitting, cover should close
-        cover_data = result["covers"]["cover.test_cover"]
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_position, f"Failed for {test_description}"
+        cover_data = result.covers["cover.test_cover"]
+        assert cover_data.pos_target_desired == expected_position, f"Failed for {test_description}"

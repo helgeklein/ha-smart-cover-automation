@@ -17,7 +17,7 @@ from custom_components.smart_cover_automation.const import (
     DOMAIN,
     SERVICE_LOGBOOK_ENTRY,
 )
-from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
 from tests.conftest import MOCK_COVER_ENTITY_ID, MockConfigEntry, create_temperature_config
 
 
@@ -98,7 +98,7 @@ class TestServiceHandler:
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
-            mock_coordinator.data = {"covers": {MOCK_COVER_ENTITY_ID: {}}}
+            mock_coordinator.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: {}})
             mock_coordinator_class.return_value = mock_coordinator
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
@@ -252,7 +252,7 @@ class TestServiceHandler:
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
-            mock_coordinator.data = {"covers": {MOCK_COVER_ENTITY_ID: {}}}
+            mock_coordinator.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: {}})
             mock_coordinator_class.return_value = mock_coordinator
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
@@ -274,7 +274,7 @@ class TestServiceHandler:
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
-            mock_coordinator.data = {"covers": {}}  # No matching cover
+            mock_coordinator.data = CoordinatorData(covers={})  # No matching cover
             mock_coordinator_class.return_value = mock_coordinator
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
@@ -327,7 +327,7 @@ class TestServiceHandler:
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
-            mock_coordinator.data = {"covers": {}}
+            mock_coordinator.data = CoordinatorData(covers={})
             mock_coordinator_class.return_value = mock_coordinator
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))

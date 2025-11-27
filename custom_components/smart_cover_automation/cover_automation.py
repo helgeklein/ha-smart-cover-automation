@@ -49,6 +49,33 @@ class SensorData:
     should_close_for_sunset: bool  # True only in the ONE update cycle when covers should close after sunset
 
 
+@dataclass
+class CoverState:
+    """Type-safe container for cover automation state.
+
+    Position history is managed by CoverPositionHistoryManager.
+    """
+
+    # Cover configuration
+    cover_azimuth: float | None = None
+
+    # Cover physical state
+    state: str | None = None
+    supported_features: int | None = None
+    pos_current: int | None = None
+
+    # Automation targets
+    pos_target_desired: int | None = None
+    pos_target_final: int | None = None
+
+    # Sun calculations
+    sun_hitting: bool | None = None
+    sun_azimuth_diff: float | None = None
+
+    # Protection states
+    lockout_protection: bool | None = None
+
+
 class CoverAutomation:
     """Handles automation logic for a single cover."""
 
@@ -62,7 +89,6 @@ class CoverAutomation:
         config: dict[str, Any],
         cover_pos_history_mgr: CoverPositionHistoryManager,
         ha_interface: Any,
-        lock_mode: const.LockMode,
     ) -> None:
         """Initialize cover automation.
 
@@ -72,7 +98,6 @@ class CoverAutomation:
             config: Raw configuration dictionary
             cover_pos_history_mgr: Cover position history manager
             ha_interface: Home Assistant interface for API interactions
-            lock_mode: Current lock mode
         """
 
         self.entity_id = entity_id
@@ -80,12 +105,11 @@ class CoverAutomation:
         self.config = config
         self._cover_pos_history_mgr = cover_pos_history_mgr
         self._ha_interface = ha_interface
-        self._lock_mode = lock_mode
 
     #
     # process
     #
-    async def process(self, state: State | None, sensor_data: SensorData) -> dict[str, Any]:
+    async def process(self, state: State | None, sensor_data: SensorData) -> CoverState:
         """Process automation for this cover.
 
         Args:
@@ -93,63 +117,59 @@ class CoverAutomation:
             sensor_data: Gathered sensor data
 
         Returns:
-            Dictionary of cover attributes
+            CoverState object with automation results
         """
 
-        cover_attrs: dict[str, Any] = {}
-
-        # Add lock state to attributes
-        cover_attrs[const.COVER_ATTR_LOCK_MODE] = self._lock_mode
-        cover_attrs[const.COVER_ATTR_LOCK_ACTIVE] = self._lock_mode != const.LockMode.UNLOCKED
+        cover_state = CoverState()
 
         # Get cover azimuth
         cover_azimuth = self._get_cover_azimuth()
         if cover_azimuth is None:
-            return cover_attrs
+            return cover_state
         else:
-            cover_attrs[const.COVER_ATTR_COVER_AZIMUTH] = cover_azimuth
+            cover_state.cover_azimuth = cover_azimuth
 
         # Validate current cover state
         if not self._validate_cover_state(state):
-            return cover_attrs
+            return cover_state
         else:
             # At this point, we know state is not None due to validation (type narrowing for type checkers)
             assert state is not None
-            cover_attrs[const.COVER_ATTR_STATE] = state.state
+            cover_state.state = state.state
 
         # Check if cover is moving
         if self._is_cover_moving(state):
-            return cover_attrs
+            return cover_state
 
         # Get cover features
         features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
-        cover_attrs[const.COVER_ATTR_SUPPORTED_FEATURES] = features
+        cover_state.supported_features = features
 
         # Get cover position
         success, current_pos = self._get_cover_position(state, features)
         if not success:
-            return cover_attrs
+            return cover_state
         else:
-            cover_attrs[const.COVER_ATTR_POS_CURRENT] = current_pos
+            cover_state.pos_current = current_pos
 
         # Handle lock modes before normal automation logic
-        locked = await self._process_lock_mode(cover_attrs, current_pos, features)
+        locked = await self._process_lock_mode(cover_state, current_pos, features)
         if locked:
-            return cover_attrs
+            return cover_state
 
         # Check for manual override
         if self._check_manual_override(current_pos):
-            return cover_attrs
+            return cover_state
 
         # Calculate sun hitting
         sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
-        cover_attrs[const.COVER_ATTR_SUN_HITTING] = sun_hitting
-        cover_attrs[const.COVER_ATTR_SUN_AZIMUTH_DIFF] = round(sun_azimuth_difference, 1)
+        cover_state.sun_hitting = sun_hitting
+        cover_state.sun_azimuth_diff = round(sun_azimuth_difference, 1)
 
         # Calculate desired position (lockout protection and nighttime block are checked inside _calculate_desired_position)
         desired_pos, movement_reason, lockout_protection = self._calculate_desired_position(sensor_data, sun_hitting, current_pos)
-        cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = desired_pos
-        cover_attrs[const.COVER_ATTR_LOCKOUT_PROTECTION] = lockout_protection
+        cover_state.pos_target_desired = desired_pos
+        cover_state.lockout_protection = lockout_protection
 
         # Move cover if needed (skip if movement_reason is None, e.g., nighttime block active)
         if movement_reason is None:
@@ -164,16 +184,12 @@ class CoverAutomation:
                 self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
             else:
                 # Movement occurred
-                cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = actual_pos
+                cover_state.pos_target_final = actual_pos
 
-        # Include position history in cover attributes
-        position_entries = self._cover_pos_history_mgr.get_entries(self.entity_id)
-        cover_attrs[const.COVER_ATTR_POS_HISTORY] = [entry.position for entry in position_entries]
+        # Log per-cover state
+        const.LOGGER.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}")
 
-        # Log per-cover attributes
-        const.LOGGER.debug(f"[{self.entity_id}] Cover result: {message}. Cover data: {str(cover_attrs)}")
-
-        return cover_attrs
+        return cover_state
 
     #
     # _get_cover_azimuth
@@ -563,7 +579,7 @@ class CoverAutomation:
     #
     # _process_lock_mode
     #
-    async def _process_lock_mode(self, cover_attrs: dict[str, Any], current_pos: int, features: int) -> bool:
+    async def _process_lock_mode(self, cover_state: CoverState, current_pos: int, features: int) -> bool:
         """Process lock modes.
 
         This method enforces the lock mode by:
@@ -573,64 +589,65 @@ class CoverAutomation:
         4. FORCE_CLOSE: Ensure cover is at 0%, move if not
 
         Args:
-            cover_attrs: Cover attributes dict to populate
+            cover_state: Cover state object to populate
             current_pos: Current cover position
             features: Cover supported features
 
         Returns:
-            True if lock mode, False otherwise
+            True if lock mode active (automation should be skipped), False otherwise
         """
 
-        if self._lock_mode == const.LockMode.UNLOCKED:
+        if self.resolved.lock_mode == const.LockMode.UNLOCKED:
             return False
 
-        if self._lock_mode == const.LockMode.HOLD_POSITION:
+        if self.resolved.lock_mode == const.LockMode.HOLD_POSITION:
             # Just block all automation
-            self._log_cover_msg(f"Lock active ({self._lock_mode}), skipping automation", const.LogSeverity.INFO)
-            self._set_lock_attrs(cover_attrs, desired_pos=current_pos, target_pos=current_pos, cover_moved=False)
+            self._log_cover_msg(f"Lock active ({self.resolved.lock_mode}), skipping automation", const.LogSeverity.INFO)
+            self._set_lock_attrs(cover_state, desired_pos=current_pos, target_pos=current_pos, cover_moved=False)
 
-        elif self._lock_mode == const.LockMode.FORCE_OPEN:
+        elif self.resolved.lock_mode == const.LockMode.FORCE_OPEN:
             # Ensure cover is fully open (100%)
             await self._enforce_locked_position(
-                cover_attrs, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_OPEN, features=features
+                cover_state, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_OPEN, features=features
             )
 
-        elif self._lock_mode == const.LockMode.FORCE_CLOSE:
+        elif self.resolved.lock_mode == const.LockMode.FORCE_CLOSE:
             # Ensure cover is fully closed (0%)
             await self._enforce_locked_position(
-                cover_attrs, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_CLOSED, features=features
+                cover_state, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_CLOSED, features=features
             )
 
         else:
             # Have the type checker fail if a new lock mode is added but not handled here
-            assert_never(self._lock_mode)
+            assert_never(self.resolved.lock_mode)
 
         return True
 
     #
     # _set_lock_attrs
     #
-    def _set_lock_attrs(self, cover_attrs: dict[str, Any], desired_pos: int, target_pos: int, cover_moved: bool) -> None:
+    def _set_lock_attrs(self, cover_state: CoverState, desired_pos: int, target_pos: int, cover_moved: bool) -> None:
         """Set lock-related attributes.
 
         Args:
-            cover_attrs: Cover attributes dict to populate
-            position: Current/target position
+            cover_state: Cover state object to populate
+            desired_pos: Desired position
+            target_pos: Target position
             cover_moved: Whether the cover moved
         """
 
-        cover_attrs[const.COVER_ATTR_POS_TARGET_DESIRED] = desired_pos
-        cover_attrs[const.COVER_ATTR_POS_TARGET_FINAL] = target_pos
+        cover_state.pos_target_desired = desired_pos
+        cover_state.pos_target_final = target_pos
         self._cover_pos_history_mgr.add(self.entity_id, new_position=target_pos, cover_moved=cover_moved)
 
     #
     # _enforce_locked_position
     #
-    async def _enforce_locked_position(self, cover_attrs: dict[str, Any], current_pos: int, target_pos: int, features: int) -> None:
+    async def _enforce_locked_position(self, cover_state: CoverState, current_pos: int, target_pos: int, features: int) -> None:
         """Enforce a locked position (FORCE_OPEN or FORCE_CLOSE).
 
         Args:
-            cover_attrs: Cover attributes dict to populate
+            cover_state: Cover state object to populate
             current_pos: Current cover position
             target_pos: Target position to enforce
             features: Cover supported features
@@ -647,8 +664,8 @@ class CoverAutomation:
             new_pos = await self._ha_interface.set_cover_position(self.entity_id, target_pos, features)
 
         # Log and store position
-        self._log_cover_msg(f"Lock active ({self._lock_mode}), {move_msg} ({target_pos}%)", const.LogSeverity.INFO)
-        self._set_lock_attrs(cover_attrs, desired_pos=new_pos, target_pos=new_pos, cover_moved=cover_moved)
+        self._log_cover_msg(f"Lock active ({self.resolved.lock_mode}), {move_msg} ({target_pos}%)", const.LogSeverity.INFO)
+        self._set_lock_attrs(cover_state, desired_pos=new_pos, target_pos=new_pos, cover_moved=cover_moved)
 
     #
     # _log_cover_msg

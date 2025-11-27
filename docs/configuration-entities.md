@@ -6,7 +6,7 @@ description: "Configuration guide part 2 for Smart Cover Automation for Home Ass
 permalink: /ui-configuration-entities/
 ---
 
-# Configuration Guide: UI Config Entities
+# UI Configuration Entities
 
 In addition to the rather static configuration settings managed through the wizard, the integration's behavior can be controlled via switches and other UI configuration entities on the integration card.
 
