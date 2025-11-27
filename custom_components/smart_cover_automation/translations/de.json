@@ -181,6 +181,9 @@
             }
         },
         "number": {
+            "sun_elevation_threshold": {
+                "name": "Sonne: Höhenschwelle"
+            },
             "temp_threshold": {
                 "name": "Temperatur: Hitzeschwelle"
             }

@@ -194,7 +194,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.NIGHTTIME_BLOCK_OPENING: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
-    ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=10.0, converter=_Converters.to_float),
+    ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=10.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=24.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.WEATHER_ENTITY_ID: _ConfSpec(default="", converter=_Converters.to_str),

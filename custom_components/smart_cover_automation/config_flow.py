@@ -161,17 +161,6 @@ class FlowHelper:
         return vol.Schema(
             {
                 vol.Required(
-                    ConfKeys.SUN_ELEVATION_THRESHOLD.value,
-                    default=resolved_settings.sun_elevation_threshold,
-                ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=0,
-                        max=90,
-                        unit_of_measurement="°",
-                        mode=selector.NumberSelectorMode.BOX,
-                    )
-                ),
-                vol.Required(
                     ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
                     default=resolved_settings.sun_azimuth_tolerance,
                 ): selector.NumberSelector(

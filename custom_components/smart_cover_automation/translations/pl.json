@@ -181,6 +181,9 @@
             }
         },
         "number": {
+            "sun_elevation_threshold": {
+                "name": "Słońce: próg wysokości"
+            },
             "temp_threshold": {
                 "name": "Temperatura: próg upału"
             }

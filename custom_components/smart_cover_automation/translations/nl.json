@@ -181,6 +181,9 @@
             }
         },
         "number": {
+            "sun_elevation_threshold": {
+                "name": "Zon: hoogtedrempel"
+            },
             "temp_threshold": {
                 "name": "Temperatuur: hittedrempel"
             }

@@ -84,6 +84,7 @@ SENSOR_KEY_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Key for the curr
 SENSOR_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode sensor entity
 SELECT_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode select entity
 NUMBER_KEY_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Key for the temperature threshold number entity
+NUMBER_KEY_SUN_ELEVATION_THRESHOLD: Final[str] = "sun_elevation_threshold"  # Key for the sun elevation threshold number entity
 
 # Options flow translation keys
 ERROR_INVALID_COVER: Final[str] = "invalid_cover"

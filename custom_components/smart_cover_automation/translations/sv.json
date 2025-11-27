@@ -181,6 +181,9 @@
             }
         },
         "number": {
+            "sun_elevation_threshold": {
+                "name": "Sol: höjdtröskel"
+            },
             "temp_threshold": {
                 "name": "Temperatur: värmetröskel"
             }

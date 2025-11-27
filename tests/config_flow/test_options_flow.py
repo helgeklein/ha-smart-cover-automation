@@ -241,7 +241,7 @@ class TestOptionsFlowStep3:
         schema = result_dict["data_schema"].schema
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.keys()]
 
-        assert ConfKeys.SUN_ELEVATION_THRESHOLD.value in schema_keys
+        # SUN_ELEVATION_THRESHOLD is now a number entity, not in config flow
         assert ConfKeys.SUN_AZIMUTH_TOLERANCE.value in schema_keys
         assert ConfKeys.COVERS_MAX_CLOSURE.value in schema_keys
         assert ConfKeys.COVERS_MIN_CLOSURE.value in schema_keys

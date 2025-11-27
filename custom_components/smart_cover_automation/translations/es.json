@@ -181,6 +181,9 @@
             }
         },
         "number": {
+            "sun_elevation_threshold": {
+                "name": "Sol: umbral de elevación"
+            },
             "temp_threshold": {
                 "name": "Temperatura: umbral de calor"
             }

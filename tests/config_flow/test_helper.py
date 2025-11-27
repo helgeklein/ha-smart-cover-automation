@@ -296,7 +296,7 @@ class TestFlowHelperSchemaBuilding:
         schema = FlowHelper.build_schema_step_3(resolved_settings)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
-        assert ConfKeys.SUN_ELEVATION_THRESHOLD.value in schema_keys
+        # SUN_ELEVATION_THRESHOLD is now a number entity, not in config flow
         assert ConfKeys.SUN_AZIMUTH_TOLERANCE.value in schema_keys
         assert ConfKeys.COVERS_MAX_CLOSURE.value in schema_keys
         assert ConfKeys.COVERS_MIN_CLOSURE.value in schema_keys
@@ -307,7 +307,6 @@ class TestFlowHelperSchemaBuilding:
         from custom_components.smart_cover_automation.config import resolve
 
         custom_config = {
-            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 35,
             ConfKeys.COVERS_MAX_CLOSURE.value: 75,
         }
         resolved_settings = resolve(custom_config)

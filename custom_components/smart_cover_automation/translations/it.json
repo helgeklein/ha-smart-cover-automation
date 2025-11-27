@@ -181,6 +181,9 @@
             }
         },
         "number": {
+            "sun_elevation_threshold": {
+                "name": "Sole: soglia di elevazione"
+            },
             "temp_threshold": {
                 "name": "Temperatura: soglia di calore"
             }
