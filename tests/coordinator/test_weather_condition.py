@@ -13,7 +13,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.smart_cover_automation.const import COVER_ATTR_POS_TARGET_DESIRED
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
 from custom_components.smart_cover_automation.ha_interface import (
@@ -162,7 +161,7 @@ class TestWeatherCondition:
 
         # Even with hot temperature and sun hitting, cover should stay open due to non-sunny weather
         cover_data = result.covers["cover.test_cover"]
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_position, f"Failed for {test_description}"
+        assert cover_data.pos_target_desired == expected_position, f"Failed for {test_description}"
 
     @pytest.mark.parametrize(
         "sunny_condition,expected_position,test_description",
@@ -208,4 +207,4 @@ class TestWeatherCondition:
 
         # With hot temp + sunny weather + sun hitting, cover should close
         cover_data = result.covers["cover.test_cover"]
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_position, f"Failed for {test_description}"
+        assert cover_data.pos_target_desired == expected_position, f"Failed for {test_description}"

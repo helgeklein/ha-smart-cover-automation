@@ -53,8 +53,7 @@ class SensorData:
 class CoverState:
     """Type-safe container for cover automation state.
 
-    Note: Lock state and position history are managed separately
-    as CoverAutomation member variables and added during to_dict().
+    Position history is managed by CoverPositionHistoryManager.
     """
 
     # Cover configuration
@@ -108,56 +107,9 @@ class CoverAutomation:
         self._ha_interface = ha_interface
 
     #
-    # _cover_state_to_dict
-    #
-    def _cover_state_to_dict(self, cover_state: CoverState) -> dict[str, Any]:
-        """Convert CoverState to dictionary, adding data from member variables.
-
-        Only includes fields that have been set (not None) to maintain backward compatibility.
-
-        Args:
-            cover_state: The cover state object
-
-        Returns:
-            Dictionary with all cover attributes for coordinator.data storage
-        """
-
-        result: dict[str, Any] = {}
-
-        # Add fields from CoverState (only if they have values)
-        if cover_state.cover_azimuth is not None:
-            result[const.COVER_ATTR_COVER_AZIMUTH] = cover_state.cover_azimuth
-        if cover_state.state is not None:
-            result[const.COVER_ATTR_STATE] = cover_state.state
-        if cover_state.supported_features is not None:
-            result[const.COVER_ATTR_SUPPORTED_FEATURES] = cover_state.supported_features
-        if cover_state.pos_current is not None:
-            result[const.COVER_ATTR_POS_CURRENT] = cover_state.pos_current
-        if cover_state.pos_target_desired is not None:
-            result[const.COVER_ATTR_POS_TARGET_DESIRED] = cover_state.pos_target_desired
-        if cover_state.pos_target_final is not None:
-            result[const.COVER_ATTR_POS_TARGET_FINAL] = cover_state.pos_target_final
-        if cover_state.sun_hitting is not None:
-            result[const.COVER_ATTR_SUN_HITTING] = cover_state.sun_hitting
-        if cover_state.sun_azimuth_diff is not None:
-            result[const.COVER_ATTR_SUN_AZIMUTH_DIFF] = cover_state.sun_azimuth_diff
-        if cover_state.lockout_protection is not None:
-            result[const.COVER_ATTR_LOCKOUT_PROTECTION] = cover_state.lockout_protection
-
-        # Add position history from position history manager (only if there are entries)
-        position_entries = self._cover_pos_history_mgr.get_entries(self.entity_id)
-        position_list = [entry.position for entry in position_entries]
-        if position_list or cover_state.pos_current is not None:
-            # Include position history if there are entries OR if we have a current position
-            # (which means we successfully processed far enough to know the current position)
-            result[const.COVER_ATTR_POS_HISTORY] = position_list
-
-        return result
-
-    #
     # process
     #
-    async def process(self, state: State | None, sensor_data: SensorData) -> dict[str, Any]:
+    async def process(self, state: State | None, sensor_data: SensorData) -> CoverState:
         """Process automation for this cover.
 
         Args:
@@ -165,7 +117,7 @@ class CoverAutomation:
             sensor_data: Gathered sensor data
 
         Returns:
-            Dictionary of cover attributes
+            CoverState object with automation results
         """
 
         cover_state = CoverState()
@@ -173,13 +125,13 @@ class CoverAutomation:
         # Get cover azimuth
         cover_azimuth = self._get_cover_azimuth()
         if cover_azimuth is None:
-            return self._cover_state_to_dict(cover_state)
+            return cover_state
         else:
             cover_state.cover_azimuth = cover_azimuth
 
         # Validate current cover state
         if not self._validate_cover_state(state):
-            return self._cover_state_to_dict(cover_state)
+            return cover_state
         else:
             # At this point, we know state is not None due to validation (type narrowing for type checkers)
             assert state is not None
@@ -187,7 +139,7 @@ class CoverAutomation:
 
         # Check if cover is moving
         if self._is_cover_moving(state):
-            return self._cover_state_to_dict(cover_state)
+            return cover_state
 
         # Get cover features
         features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
@@ -196,18 +148,18 @@ class CoverAutomation:
         # Get cover position
         success, current_pos = self._get_cover_position(state, features)
         if not success:
-            return self._cover_state_to_dict(cover_state)
+            return cover_state
         else:
             cover_state.pos_current = current_pos
 
         # Handle lock modes before normal automation logic
         locked = await self._process_lock_mode(cover_state, current_pos, features)
         if locked:
-            return self._cover_state_to_dict(cover_state)
+            return cover_state
 
         # Check for manual override
         if self._check_manual_override(current_pos):
-            return self._cover_state_to_dict(cover_state)
+            return cover_state
 
         # Calculate sun hitting
         sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
@@ -234,11 +186,10 @@ class CoverAutomation:
                 # Movement occurred
                 cover_state.pos_target_final = actual_pos
 
-        # Log per-cover attributes
-        result = self._cover_state_to_dict(cover_state)
-        const.LOGGER.debug(f"[{self.entity_id}] Cover result: {message}. Cover data: {str(result)}")
+        # Log per-cover state
+        const.LOGGER.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}")
 
-        return result
+        return cover_state
 
     #
     # _get_cover_azimuth

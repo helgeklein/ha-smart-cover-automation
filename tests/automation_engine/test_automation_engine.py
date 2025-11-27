@@ -439,6 +439,7 @@ class TestRunMethod:
         # Configure to block at night
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
+            f"cover.test_{const.COVER_SFX_AZIMUTH}": 180.0,
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
         }
@@ -457,8 +458,9 @@ class TestRunMethod:
         cover_states = {"cover.test": cover_state}
         result = await engine.run(cover_states)  # type: ignore[arg-type]
 
-        # Verify automation was blocked - covers dict should be empty since nighttime block prevented processing
-        assert "cover.test" not in result.covers
+        # Verify automation was blocked - cover should be in result but with no target position
+        assert "cover.test" in result.covers
+        assert result.covers["cover.test"].pos_target_desired is None
 
 
 class TestLogAutomationResult:

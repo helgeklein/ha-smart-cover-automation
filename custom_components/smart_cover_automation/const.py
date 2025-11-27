@@ -88,20 +88,6 @@ SENSOR_KEY_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Key for the temperat
 SENSOR_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode sensor entity
 SELECT_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode select entity
 
-# Cover attribute keys (exposed on each cover entity)
-COVER_ATTR_COVER_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
-COVER_ATTR_LOCK_ACTIVE: Final[str] = "cover_lock_active"  # Whether lock is active
-COVER_ATTR_LOCK_MODE: Final[str] = "cover_lock_mode"  # Current lock mode
-COVER_ATTR_LOCKOUT_PROTECTION: Final[str] = "cover_lockout_protection"  # Lockout protection status
-COVER_ATTR_POS_CURRENT: Final[str] = "cover_pos_current"  # Current cover position
-COVER_ATTR_POS_HISTORY: Final[str] = "cover_pos_history"  # Position history
-COVER_ATTR_POS_TARGET_DESIRED: Final[str] = "cover_pos_target_desired"  # Desired cover target cover position
-COVER_ATTR_POS_TARGET_FINAL: Final[str] = "cover_pos_target_final"  # Final cover target position after adjustments
-COVER_ATTR_STATE: Final[str] = "cover_state"  # Current state of the cover (e.g., 'open', 'closed', 'opening', 'closing', 'stopped')
-COVER_ATTR_SUN_AZIMUTH_DIFF: Final[str] = "cover_sun_azimuth_diff"  # Difference between sun azimuth and cover azimuth (°)
-COVER_ATTR_SUN_HITTING: Final[str] = "cover_sun_hitting"  # Whether the sun is hitting the window
-COVER_ATTR_SUPPORTED_FEATURES: Final[str] = "cover_supported_features"  # Supported cover features bitmask
-
 # Options flow translation keys
 ERROR_INVALID_COVER: Final[str] = "invalid_cover"
 ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"

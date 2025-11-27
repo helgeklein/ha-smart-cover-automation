@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from homeassistant.loader import Integration
 
     from .coordinator import DataUpdateCoordinator
+    from .cover_automation import CoverState
 
 
 # Type safety: entry.runtime_data will be of type RuntimeData
@@ -31,18 +32,16 @@ class CoordinatorData:
     optional and may be None depending on automation state.
 
     Attributes:
-        covers: Dictionary mapping cover entity IDs to their per-cover attributes (required)
+        covers: Dictionary mapping cover entity IDs to their CoverState objects (required)
         sun_azimuth: Current sun azimuth angle in degrees (0° to 360°)
         sun_elevation: Current sun elevation angle in degrees (-90° to +90°)
         temp_current_max: Current maximum temperature forecast in degrees Celsius
         temp_hot: Whether the temperature is above threshold (hot day indicator)
         weather_sunny: Whether the weather condition is sunny or partly cloudy
-        lock_mode: Current lock mode setting
-        lock_active: Whether any lock mode is active (not unlocked)
     """
 
     # Required field
-    covers: dict[str, Any]
+    covers: dict[str, CoverState]
 
     # Optional fields - may be None depending on automation state
     sun_azimuth: float | None = None

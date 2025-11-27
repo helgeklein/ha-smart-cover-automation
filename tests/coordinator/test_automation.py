@@ -16,7 +16,6 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
-    COVER_ATTR_POS_TARGET_DESIRED,
     COVER_SFX_AZIMUTH,
     HA_WEATHER_COND_PARTCLOUDY,
     HA_WEATHER_COND_SUNNY,
@@ -258,9 +257,9 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         covers_data = coordinator.data.covers
         cover_data = covers_data[MOCK_COVER_ENTITY_ID]
 
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_position, (
+        assert cover_data.pos_target_desired == expected_position, (
             f"Test case: {test_description}\n"
             f"Sun azimuth: {sun_azimuth}°, Temperature: {forecast_temp}°C, Weather: {weather_condition}\n"
             f"Max closure: {max_closure}%, Min closure: {min_closure}%\n"
-            f"Expected position: {expected_position}%, Got: {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}%"
+            f"Expected position: {expected_position}%, Got: {cover_data.pos_target_desired}%"
         )

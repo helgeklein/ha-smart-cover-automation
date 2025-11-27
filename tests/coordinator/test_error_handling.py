@@ -17,7 +17,6 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
-    COVER_ATTR_SUN_HITTING,
     COVER_SFX_AZIMUTH,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
@@ -359,15 +358,16 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Only cover 1 should appear (cover 2 is skipped due to missing azimuth)
+        # Both covers should be present, but cover 2 should have None azimuth (skipped processing)
         covers_dict = result.covers
         assert MOCK_COVER_ENTITY_ID in covers_dict
-        assert MOCK_COVER_ENTITY_ID_2 not in covers_dict
+        assert MOCK_COVER_ENTITY_ID_2 in covers_dict
+        assert covers_dict[MOCK_COVER_ENTITY_ID_2].cover_azimuth is None
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result.covers[MOCK_COVER_ENTITY_ID]
         assert result.temp_hot is not None
-        assert COVER_ATTR_SUN_HITTING in cover1_data
+        assert cover1_data.sun_hitting is not None
 
     async def test_cover_invalid_azimuth_configuration(
         self,
@@ -417,15 +417,16 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Only cover 1 should appear (cover 2 is skipped due to invalid azimuth)
+        # Both covers should be present, but cover 2 should have None azimuth (invalid azimuth)
         covers_dict = result.covers
         assert MOCK_COVER_ENTITY_ID in covers_dict
-        assert MOCK_COVER_ENTITY_ID_2 not in covers_dict
+        assert MOCK_COVER_ENTITY_ID_2 in covers_dict
+        assert covers_dict[MOCK_COVER_ENTITY_ID_2].cover_azimuth is None
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result.covers[MOCK_COVER_ENTITY_ID]
         assert result.temp_hot is not None
-        assert COVER_ATTR_SUN_HITTING in cover1_data
+        assert cover1_data.sun_hitting is not None
 
     async def test_sun_azimuth_unavailable(
         self,

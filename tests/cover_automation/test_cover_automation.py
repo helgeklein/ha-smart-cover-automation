@@ -1095,22 +1095,21 @@ class TestProcessMethod:
         """Test process when cover azimuth is missing."""
         cover_automation.config = {}  # No azimuth configured
         result = await cover_automation.process(mock_state, sensor_data)
-        # Result should be empty when azimuth is missing
-        assert result == {}
+        # Result should be CoverState with no fields set when azimuth is missing
+        assert result.cover_azimuth is None
 
     async def test_process_invalid_state(self, cover_automation, sensor_data, mock_cover_pos_history_mgr):
         """Test process when cover state is invalid."""
         result = await cover_automation.process(None, sensor_data)
-        assert const.COVER_ATTR_COVER_AZIMUTH in result
-        assert len(result) == 1  # Only azimuth
+        assert result.cover_azimuth is not None
+        assert result.state is None  # State validation failed
 
     async def test_process_cover_moving(self, cover_automation, sensor_data, mock_cover_pos_history_mgr):
         """Test process when cover is moving."""
         state = MagicMock()
         state.state = STATE_OPENING
         result = await cover_automation.process(state, sensor_data)
-        assert const.COVER_ATTR_STATE in result
-        assert result[const.COVER_ATTR_STATE] == STATE_OPENING
+        assert result.state == STATE_OPENING
 
     async def test_process_manual_override_active(
         self, cover_automation, mock_state, sensor_data, mock_cover_pos_history_mgr, mock_resolved_config
@@ -1121,8 +1120,9 @@ class TestProcessMethod:
         mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
 
         result = await cover_automation.process(mock_state, sensor_data)
-        assert const.COVER_ATTR_POS_CURRENT in result
+        assert result.pos_current is not None
         # Should not have POS_TARGET_FINAL since manual override prevents movement
+        assert result.pos_target_final is None
 
     async def test_process_successful_automation(
         self, cover_automation, mock_state, sensor_data, mock_cover_pos_history_mgr, mock_ha_interface
@@ -1133,15 +1133,14 @@ class TestProcessMethod:
 
         result = await cover_automation.process(mock_state, sensor_data)
 
-        assert const.COVER_ATTR_COVER_AZIMUTH in result
-        assert const.COVER_ATTR_STATE in result
-        assert const.COVER_ATTR_SUPPORTED_FEATURES in result
-        assert const.COVER_ATTR_POS_CURRENT in result
-        assert const.COVER_ATTR_SUN_HITTING in result
-        assert const.COVER_ATTR_SUN_AZIMUTH_DIFF in result
-        assert const.COVER_ATTR_POS_TARGET_DESIRED in result
-        assert const.COVER_ATTR_LOCKOUT_PROTECTION in result
-        assert const.COVER_ATTR_POS_HISTORY in result
+        assert result.cover_azimuth is not None
+        assert result.state is not None
+        assert result.supported_features is not None
+        assert result.pos_current is not None
+        assert result.sun_hitting is not None
+        assert result.sun_azimuth_diff is not None
+        assert result.pos_target_desired is not None
+        assert result.lockout_protection is not None
 
     async def test_process_lockout_protection_active(
         self, cover_automation, mock_state, sensor_data, mock_cover_pos_history_mgr, mock_ha_interface, basic_config
@@ -1153,10 +1152,9 @@ class TestProcessMethod:
 
         result = await cover_automation.process(mock_state, sensor_data)
 
-        assert const.COVER_ATTR_LOCKOUT_PROTECTION in result
-        assert result[const.COVER_ATTR_LOCKOUT_PROTECTION] is True
+        assert result.lockout_protection is True
         # Should not have POS_TARGET_FINAL since lockout prevents movement
-        assert const.COVER_ATTR_POS_TARGET_FINAL not in result
+        assert result.pos_target_final is None
 
 
 class TestLogCoverMsg:

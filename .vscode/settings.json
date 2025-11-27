@@ -67,6 +67,7 @@
         "who": true,
         "./scripts/lint": true,
         "./scripts/test": true,
+        "./scripts/type-check": true,
         "/^apt-cache (search|show)\\b/": true,
         "/^git\\s+(status|diff|log|show)\\b/": true,
         "/^grep (-A|-E|-i)\\b/": true,

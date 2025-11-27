@@ -139,8 +139,7 @@ class AutomationEngine:
                 ha_interface=self._ha_interface,
             )
             cover_attrs = await cover_automation.process(state, sensor_data)
-            if cover_attrs:
-                result.covers[entity_id] = cover_attrs
+            result.covers[entity_id] = cover_attrs
 
         return result
 

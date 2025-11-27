@@ -15,10 +15,6 @@ from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFea
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
 
 from custom_components.smart_cover_automation.config import ConfKeys
-from custom_components.smart_cover_automation.const import (
-    COVER_ATTR_POS_CURRENT,
-    COVER_ATTR_POS_TARGET_DESIRED,
-)
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.cover_position_history import PositionEntry
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
@@ -80,8 +76,8 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         # Verify current position is recorded but no target position is set
         cover_result = result.covers[MOCK_COVER_ENTITY_ID]
-        assert cover_result[COVER_ATTR_POS_CURRENT] == current_position
-        assert COVER_ATTR_POS_TARGET_DESIRED not in cover_result
+        assert cover_result.pos_current == current_position
+        assert cover_result.pos_target_desired is None
 
     async def test_manual_override_expired_change(self, mock_hass: MagicMock) -> None:
         """Test that manual override expires after the configured duration.
@@ -120,8 +116,8 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         # Verify target position was calculated (hot + sunny + sun hitting = close)
         cover_result = result.covers[MOCK_COVER_ENTITY_ID]
-        assert COVER_ATTR_POS_TARGET_DESIRED in cover_result
-        assert cover_result[COVER_ATTR_POS_TARGET_DESIRED] == 0  # Fully closed
+        assert cover_result.pos_target_desired is not None
+        assert cover_result.pos_target_desired == 0  # Fully closed
 
     async def test_no_manual_override_same_position(self, mock_hass: MagicMock) -> None:
         """Test that no manual override is detected when position hasn't changed.
@@ -159,4 +155,4 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         # Verify automation proceeded normally
         cover_result = result.covers[MOCK_COVER_ENTITY_ID]
-        assert COVER_ATTR_POS_TARGET_DESIRED in cover_result
+        assert cover_result.pos_target_desired is not None

@@ -30,7 +30,6 @@ from homeassistant.components.cover import ATTR_CURRENT_POSITION
 from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
 from custom_components.smart_cover_automation.const import (
-    COVER_ATTR_POS_TARGET_DESIRED,
     HA_WEATHER_COND_SUNNY,
 )
 
@@ -160,8 +159,8 @@ class TestIntegrationScenarios:
 
         # Check that the automation calculated the correct desired position
         cover_data = result.covers[MOCK_COVER_ENTITY_ID]
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_pos, (
-            f"{test_description}: Expected position {expected_pos}, got {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}"
+        assert cover_data.pos_target_desired == expected_pos, (
+            f"{test_description}: Expected position {expected_pos}, got {cover_data.pos_target_desired}"
         )
 
         # Check for cover service calls (ignore weather service calls)
@@ -263,8 +262,8 @@ class TestIntegrationScenarios:
 
         # Verify the automation calculated the correct position based on sun and temperature
         cover_data = result.covers[MOCK_COVER_ENTITY_ID]
-        assert cover_data[COVER_ATTR_POS_TARGET_DESIRED] == expected_pos, (
-            f"{test_description}: Expected {expected_pos}, got {cover_data[COVER_ATTR_POS_TARGET_DESIRED]}"
+        assert cover_data.pos_target_desired == expected_pos, (
+            f"{test_description}: Expected {expected_pos}, got {cover_data.pos_target_desired}"
         )
 
     async def test_error_recovery_scenarios(self, caplog) -> None:
@@ -426,7 +425,7 @@ class TestIntegrationScenarios:
         # Verify all covers should close (position 0) due to hot temperature AND sun hitting
         # Combined logic: both conditions met, so all covers should be closed
         for cover_id in covers:
-            assert result.covers[cover_id][COVER_ATTR_POS_TARGET_DESIRED] == TEST_COVER_CLOSED, (
+            assert result.covers[cover_id].pos_target_desired == TEST_COVER_CLOSED, (
                 f"Cover {cover_id} should close in hot weather with sun hitting"
             )
 
