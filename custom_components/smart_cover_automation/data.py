@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.loader import Integration
 
-    from .const import LockMode
     from .coordinator import DataUpdateCoordinator
 
 
@@ -51,8 +50,6 @@ class CoordinatorData:
     temp_current_max: float | None = None
     temp_hot: bool | None = None
     weather_sunny: bool | None = None
-    lock_mode: LockMode | None = None
-    lock_active: bool | None = None
 
 
 @dataclass

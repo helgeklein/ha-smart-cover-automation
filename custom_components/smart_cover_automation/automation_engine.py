@@ -97,9 +97,6 @@ class AutomationEngine:
         result.temp_current_max = sensor_data.temp_max
         result.temp_hot = sensor_data.temp_hot
         result.weather_sunny = sensor_data.weather_sunny
-        # TODO: lock_mode and lock_active should probabaly be removed
-        result.lock_mode = lock_mode
-        result.lock_active = is_locked
 
         # Log sensor states
         sensor_states = {
@@ -108,8 +105,6 @@ class AutomationEngine:
             "temp_current_max": result.temp_current_max,
             "temp_hot": result.temp_hot,
             "weather_sunny": result.weather_sunny,
-            "lock_mode": result.lock_mode,
-            "lock_active": result.lock_active,
         }
         const.LOGGER.info(f"Sensor states: {str(sensor_states)}")
 
