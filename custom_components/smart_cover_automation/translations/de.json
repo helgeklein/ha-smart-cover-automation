@@ -182,7 +182,7 @@
         },
         "number": {
             "sun_elevation_threshold": {
-                "name": "Sonne: Höhenschwelle"
+                "name": "Minimale Sonnenhöhe:"
             },
             "temp_threshold": {
                 "name": "Temperatur: Hitzeschwelle"

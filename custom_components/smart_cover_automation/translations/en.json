@@ -182,7 +182,7 @@
         },
         "number": {
             "sun_elevation_threshold": {
-                "name": "Sun: elevation threshold"
+                "name": "Minimum sun elevation:"
             },
             "temp_threshold": {
                 "name": "Temperature: heat threshold"

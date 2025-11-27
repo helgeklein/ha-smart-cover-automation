@@ -182,7 +182,7 @@
         },
         "number": {
             "sun_elevation_threshold": {
-                "name": "Sol: limiar de elevação"
+                "name": "Elevação mínima do sol:"
             },
             "temp_threshold": {
                 "name": "Temperatura: limiar de calor"

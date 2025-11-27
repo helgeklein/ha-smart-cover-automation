@@ -182,7 +182,7 @@
         },
         "number": {
             "sun_elevation_threshold": {
-                "name": "Zon: hoogtedrempel"
+                "name": "Minimale zonshoogte:"
             },
             "temp_threshold": {
                 "name": "Temperatuur: hittedrempel"

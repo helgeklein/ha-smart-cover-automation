@@ -182,7 +182,7 @@
         },
         "number": {
             "sun_elevation_threshold": {
-                "name": "Sol: höjdtröskel"
+                "name": "Minsta solhöjd:"
             },
             "temp_threshold": {
                 "name": "Temperatur: värmetröskel"

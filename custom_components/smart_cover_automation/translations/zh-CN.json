@@ -182,7 +182,7 @@
         },
         "number": {
             "sun_elevation_threshold": {
-                "name": "太阳：仰角阈值"
+                "name": "最小太阳仰角："
             },
             "temp_threshold": {
                 "name": "温度：高温阈值"

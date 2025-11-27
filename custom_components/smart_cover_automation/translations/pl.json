@@ -182,7 +182,7 @@
         },
         "number": {
             "sun_elevation_threshold": {
-                "name": "Słońce: próg wysokości"
+                "name": "Minimalna wysokość słońca:"
             },
             "temp_threshold": {
                 "name": "Temperatura: próg upału"
