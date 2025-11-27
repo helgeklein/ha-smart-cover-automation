@@ -35,7 +35,7 @@ class TestLockModeValidation:
     def coordinator(self, mock_hass):
         """Create a coordinator instance for testing."""
         config_entry = MockConfigEntry(create_temperature_config())
-        return DataUpdateCoordinator(mock_hass, config_entry)
+        return DataUpdateCoordinator(mock_hass, config_entry)  # type: ignore[arg-type]
 
     @pytest.mark.parametrize(
         "lock_mode",
