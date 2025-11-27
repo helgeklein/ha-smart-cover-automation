@@ -12,6 +12,7 @@ from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
     NumberEntityDescription,
+    NumberMode,
 )
 from homeassistant.const import EntityCategory, UnitOfTemperature
 
@@ -177,10 +178,11 @@ class TempThresholdNumber(IntegrationNumber):
             translation_key=NUMBER_KEY_TEMP_THRESHOLD,
             entity_category=EntityCategory.CONFIG,
             device_class=NumberDeviceClass.TEMPERATURE,
-            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:thermometer-lines",
             native_min_value=10,
             native_max_value=40,
             native_step=0.5,
-            icon="mdi:thermometer-lines",
+            mode=NumberMode.BOX,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         )
         super().__init__(coordinator, entity_description, ConfKeys.TEMP_THRESHOLD.value)
