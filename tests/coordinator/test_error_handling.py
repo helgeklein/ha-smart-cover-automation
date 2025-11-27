@@ -359,21 +359,15 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Both covers should appear (cover 2 has lock data even though azimuth is missing)
+        # Only cover 1 should appear (cover 2 is skipped due to missing azimuth)
         covers_dict = result.covers
         assert MOCK_COVER_ENTITY_ID in covers_dict
-        assert MOCK_COVER_ENTITY_ID_2 in covers_dict
+        assert MOCK_COVER_ENTITY_ID_2 not in covers_dict
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result.covers[MOCK_COVER_ENTITY_ID]
         assert result.temp_hot is not None
         assert COVER_ATTR_SUN_HITTING in cover1_data
-
-        # Cover 2 should only have lock data (no sun_hitting due to missing azimuth)
-        cover2_data = result.covers[MOCK_COVER_ENTITY_ID_2]
-        assert COVER_ATTR_SUN_HITTING not in cover2_data
-        assert "cover_lock_mode" in cover2_data
-        assert "cover_lock_active" in cover2_data
 
     async def test_cover_invalid_azimuth_configuration(
         self,
@@ -423,21 +417,15 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         await coordinator.async_refresh()
         result = coordinator.data
 
-        # Both covers should appear (cover 2 has lock data even though azimuth is invalid)
+        # Only cover 1 should appear (cover 2 is skipped due to invalid azimuth)
         covers_dict = result.covers
         assert MOCK_COVER_ENTITY_ID in covers_dict
-        assert MOCK_COVER_ENTITY_ID_2 in covers_dict
+        assert MOCK_COVER_ENTITY_ID_2 not in covers_dict
 
         # Cover 1 should have both temperature and sun automation data
         cover1_data = result.covers[MOCK_COVER_ENTITY_ID]
         assert result.temp_hot is not None
         assert COVER_ATTR_SUN_HITTING in cover1_data
-
-        # Cover 2 should only have lock data (no sun_hitting due to invalid azimuth)
-        cover2_data = result.covers[MOCK_COVER_ENTITY_ID_2]
-        assert COVER_ATTR_SUN_HITTING not in cover2_data
-        assert "cover_lock_mode" in cover2_data
-        assert "cover_lock_active" in cover2_data
 
     async def test_sun_azimuth_unavailable(
         self,

@@ -1095,14 +1095,14 @@ class TestProcessMethod:
         """Test process when cover azimuth is missing."""
         cover_automation.config = {}  # No azimuth configured
         result = await cover_automation.process(mock_state, sensor_data)
-        # Result should only contain lock fields when azimuth is missing
-        assert result == {"cover_lock_active": False, "cover_lock_mode": "unlocked"}
+        # Result should be empty when azimuth is missing
+        assert result == {}
 
     async def test_process_invalid_state(self, cover_automation, sensor_data, mock_cover_pos_history_mgr):
         """Test process when cover state is invalid."""
         result = await cover_automation.process(None, sensor_data)
         assert const.COVER_ATTR_COVER_AZIMUTH in result
-        assert len(result) == 3  # Azimuth + lock_mode + lock_active
+        assert len(result) == 1  # Only azimuth
 
     async def test_process_cover_moving(self, cover_automation, sensor_data, mock_cover_pos_history_mgr):
         """Test process when cover is moving."""

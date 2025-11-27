@@ -144,11 +144,6 @@ class CoverAutomation:
         if cover_state.lockout_protection is not None:
             result[const.COVER_ATTR_LOCKOUT_PROTECTION] = cover_state.lockout_protection
 
-        # TODO: remove
-        # Always add lock mode and lock active status from resolved config
-        result[const.COVER_ATTR_LOCK_MODE] = self.resolved.lock_mode
-        result[const.COVER_ATTR_LOCK_ACTIVE] = self.resolved.lock_mode != const.LockMode.UNLOCKED
-
         # Add position history from position history manager (only if there are entries)
         position_entries = self._cover_pos_history_mgr.get_entries(self.entity_id)
         position_list = [entry.position for entry in position_entries]
