@@ -181,6 +181,9 @@
             }
         },
         "number": {
+            "sun_azimuth_tolerance": {
+                "name": "Tolerans för solens azimut:"
+            },
             "sun_elevation_threshold": {
                 "name": "Minsta solhöjd:"
             },

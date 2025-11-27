@@ -78,6 +78,7 @@ SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE: Final[str] = (
 SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY: Final[str] = (
     "close_covers_after_sunset_delay"  # Key for the close covers after sunset delay sensor entity
 )
+NUMBER_KEY_SUN_AZIMUTH_TOLERANCE: Final[str] = "sun_azimuth_tolerance"  # Key for the sun azimuth tolerance number entity
 SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity
 SENSOR_KEY_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Key for the current maximum temperature sensor entity

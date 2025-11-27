@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 from custom_components.smart_cover_automation.number import (
+    SunAzimuthToleranceNumber,
     SunElevationThresholdNumber,
     TempThresholdNumber,
     async_setup_entry,
@@ -50,12 +51,13 @@ async def test_async_setup_entry_creates_all_numbers(mock_coordinator_basic: Dat
     # Get the list of entities that were passed to async_add_entities
     entities_list = mock_add_entities.call_args[0][0]
 
-    # Verify we have exactly 2 entities
-    assert len(entities_list) == 2
+    # Verify we have exactly 3 entities
+    assert len(entities_list) == 3
 
     # Verify the entity types are correct
-    assert isinstance(entities_list[0], SunElevationThresholdNumber)
-    assert isinstance(entities_list[1], TempThresholdNumber)
+    assert isinstance(entities_list[0], SunAzimuthToleranceNumber)
+    assert isinstance(entities_list[1], SunElevationThresholdNumber)
+    assert isinstance(entities_list[2], TempThresholdNumber)
 
 
 async def test_async_setup_entry_entities_use_coordinator(mock_coordinator_basic: DataUpdateCoordinator) -> None:
@@ -126,6 +128,7 @@ async def test_async_setup_entry_with_real_hass_instance(
     )
 
     # Verify we got the expected entities
-    assert len(captured) == 2
-    assert isinstance(captured[0], SunElevationThresholdNumber)
-    assert isinstance(captured[1], TempThresholdNumber)
+    assert len(captured) == 3
+    assert isinstance(captured[0], SunAzimuthToleranceNumber)
+    assert isinstance(captured[1], SunElevationThresholdNumber)
+    assert isinstance(captured[2], TempThresholdNumber)

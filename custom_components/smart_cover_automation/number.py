@@ -17,7 +17,12 @@ from homeassistant.components.number import (
 from homeassistant.const import EntityCategory, UnitOfTemperature
 
 from .config import ConfKeys
-from .const import DOMAIN, NUMBER_KEY_SUN_ELEVATION_THRESHOLD, NUMBER_KEY_TEMP_THRESHOLD
+from .const import (
+    DOMAIN,
+    NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
+    NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
+    NUMBER_KEY_TEMP_THRESHOLD,
+)
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -50,6 +55,7 @@ async def async_setup_entry(
 
     # Create all number entities
     entities = [
+        SunAzimuthToleranceNumber(coordinator),
         SunElevationThresholdNumber(coordinator),
         TempThresholdNumber(coordinator),
     ]
@@ -187,6 +193,33 @@ class TempThresholdNumber(IntegrationNumber):
             native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         )
         super().__init__(coordinator, entity_description, ConfKeys.TEMP_THRESHOLD.value)
+
+
+#
+# SunAzimuthToleranceNumber
+#
+class SunAzimuthToleranceNumber(IntegrationNumber):
+    """Number entity for controlling the sun azimuth tolerance."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sun azimuth tolerance number entity.
+
+        Args:
+            coordinator: The DataUpdateCoordinator that manages automation logic
+                        and provides state management for this number entity
+        """
+        entity_description = NumberEntityDescription(
+            key=NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
+            translation_key=NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:angle-acute",
+            native_min_value=0,
+            native_max_value=180,
+            native_step=1,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement="°",
+        )
+        super().__init__(coordinator, entity_description, ConfKeys.SUN_AZIMUTH_TOLERANCE.value)
 
 
 #

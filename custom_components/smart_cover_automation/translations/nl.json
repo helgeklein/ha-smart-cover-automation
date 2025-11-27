@@ -181,6 +181,9 @@
             }
         },
         "number": {
+            "sun_azimuth_tolerance": {
+                "name": "Tolerantie voor zonazimut:"
+            },
             "sun_elevation_threshold": {
                 "name": "Minimale zonshoogte:"
             },

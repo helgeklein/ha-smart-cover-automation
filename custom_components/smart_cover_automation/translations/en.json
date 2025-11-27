@@ -181,6 +181,9 @@
             }
         },
         "number": {
+            "sun_azimuth_tolerance": {
+                "name": "Sun azimuth tolerance:"
+            },
             "sun_elevation_threshold": {
                 "name": "Minimum sun elevation:"
             },

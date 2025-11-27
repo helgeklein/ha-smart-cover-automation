@@ -57,8 +57,8 @@ async def test_temp_threshold_number_entity_properties(mock_hass_with_spec, mock
         add_entities,
     )
 
-    # Get the temp threshold number entity (it's the second entity now)
-    temp_threshold_number = captured[1]
+    # Get the temp threshold number entity (it's the third entity now)
+    temp_threshold_number = captured[2]
     assert isinstance(temp_threshold_number, TempThresholdNumber)
 
     # Verify entity description properties

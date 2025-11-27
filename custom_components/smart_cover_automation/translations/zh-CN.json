@@ -181,6 +181,9 @@
             }
         },
         "number": {
+            "sun_azimuth_tolerance": {
+                "name": "太阳方位角容差："
+            },
             "sun_elevation_threshold": {
                 "name": "最小太阳仰角："
             },
