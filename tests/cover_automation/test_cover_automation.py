@@ -846,6 +846,157 @@ class TestCalculateDesiredPosition:
         assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET
 
 
+class TestCalculateDesiredPositionLockout:
+    """Test lockout protection logic in _calculate_desired_position method."""
+
+    def test_lockout_protection_heat_protection_active(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
+        """Test lockout protection prevents closing for heat protection."""
+        mock_resolved_config.covers_max_closure = 0
+        basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
+        mock_ha_interface.get_entity_state.return_value = STATE_ON  # Window is open
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            should_close_for_sunset=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
+
+        # Lockout should prevent closing
+        assert lockout_active is True
+        assert position == 50  # Keeps current position
+        assert reason is None  # No movement reason
+
+    def test_lockout_protection_heat_protection_inactive(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
+        """Test heat protection closes when lockout not active."""
+        mock_resolved_config.covers_max_closure = 0
+        basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
+        mock_ha_interface.get_entity_state.return_value = "off"  # Window is closed
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            should_close_for_sunset=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
+
+        # No lockout - should close
+        assert lockout_active is False
+        assert position == 0  # Closes
+        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
+
+    def test_lockout_protection_sunset_closing_active(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
+        """Test lockout protection prevents closing after sunset."""
+        mock_resolved_config.covers_max_closure = 0
+        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+        basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
+        mock_ha_interface.get_entity_state.return_value = STATE_ON  # Window is open
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="clear",
+            weather_sunny=False,
+            should_close_for_sunset=True,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=75)
+
+        # Lockout should prevent sunset closing
+        assert lockout_active is True
+        assert position == 75  # Keeps current position
+        assert reason is None  # No movement reason
+
+    def test_lockout_protection_sunset_closing_inactive(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
+        """Test sunset closing proceeds when lockout not active."""
+        mock_resolved_config.covers_max_closure = 0
+        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+        basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
+        mock_ha_interface.get_entity_state.return_value = "off"  # Window is closed
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="clear",
+            weather_sunny=False,
+            should_close_for_sunset=True,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=75)
+
+        # No lockout - should close for sunset
+        assert lockout_active is False
+        assert position == 0  # Closes
+        assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET
+
+    def test_lockout_protection_not_checked_for_opening(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
+        """Test lockout protection is not checked when opening (let light in)."""
+        mock_resolved_config.covers_min_closure = 100
+        basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
+        mock_ha_interface.get_entity_state.return_value = STATE_ON  # Window is open
+
+        sensor_data = SensorData(
+            sun_azimuth=90.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            should_close_for_sunset=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=20)
+
+        # Lockout doesn't apply to opening
+        assert lockout_active is False
+        assert position == 100  # Opens
+        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+
+    def test_lockout_protection_multiple_sensors_mixed_states(
+        self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface
+    ):
+        """Test lockout activates when any window sensor is open."""
+        mock_resolved_config.covers_max_closure = 0
+        basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1", "binary_sensor.window2", "binary_sensor.window3"]
+
+        # Only one window is open
+        def get_state(entity_id):
+            return STATE_ON if entity_id == "binary_sensor.window2" else "off"
+
+        mock_ha_interface.get_entity_state.side_effect = get_state
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            should_close_for_sunset=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
+
+        # Lockout should activate because one window is open
+        assert lockout_active is True
+        assert position == 50  # Keeps current position
+        assert reason is None
+
+
 class TestIsNighttimeBlockActive:
     """Test _is_nighttime_block_active method."""
 
@@ -1071,6 +1222,30 @@ class TestMaoveCoverIfNeeded:
         assert actual_pos == 80
         assert message == "Moved cover"
         mock_ha_interface.add_logbook_entry.assert_called_once()
+
+    async def test_move_cover_if_needed_closing_after_sunset(self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr):
+        """Test moving cover after sunset."""
+        mock_ha_interface.set_cover_position.return_value = 0
+
+        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
+            current_pos=100,
+            desired_pos=0,
+            features=CoverEntityFeature.SET_POSITION,
+            movement_reason=CoverMovementReason.CLOSING_AFTER_SUNSET,
+        )
+
+        assert movement_needed is True
+        assert actual_pos == 0
+        assert message == "Moved cover"
+        mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 0, CoverEntityFeature.SET_POSITION)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 0, cover_moved=True)
+        # Verify logbook entry was called with correct parameters
+        mock_ha_interface.add_logbook_entry.assert_called_once()
+        call_kwargs = mock_ha_interface.add_logbook_entry.call_args[1]
+        assert call_kwargs["verb_key"] == const.TRANSL_LOGBOOK_VERB_CLOSING
+        assert call_kwargs["reason_key"] == const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+        assert call_kwargs["entity_id"] == "cover.test"
+        assert call_kwargs["target_pos"] == 0
 
     async def test_move_cover_if_needed_error_handling(self, cover_automation, mock_ha_interface):
         """Test error handling during cover movement."""
