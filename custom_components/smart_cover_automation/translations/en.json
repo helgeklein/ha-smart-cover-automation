@@ -187,6 +187,9 @@
             "covers_min_closure": {
                 "name": "Minimum cover position:"
             },
+            "manual_override_duration": {
+                "name": "Manual override duration:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Sun azimuth tolerance:"
             },

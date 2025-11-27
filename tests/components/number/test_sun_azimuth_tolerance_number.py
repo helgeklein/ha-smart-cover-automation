@@ -9,7 +9,7 @@ Coverage target: number.py SunAzimuthToleranceNumber class
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, cast
-from unittest.mock import AsyncMock
+from unittest.mock import Mock
 
 from homeassistant.components.number import NumberMode
 from homeassistant.const import EntityCategory
@@ -54,8 +54,8 @@ async def test_sun_azimuth_tolerance_number_entity_properties(mock_hass_with_spe
         add_entities,
     )
 
-    # Get the sun azimuth tolerance number entity (third in list now)
-    sun_azimuth_tolerance_number = captured[2]
+    # Get the sun azimuth tolerance number entity (fourth in list now)
+    sun_azimuth_tolerance_number = captured[3]
     assert isinstance(sun_azimuth_tolerance_number, SunAzimuthToleranceNumber)
 
     # Verify entity description properties
@@ -130,11 +130,11 @@ async def test_sun_azimuth_tolerance_number_async_set_native_value(mock_hass_wit
     sun_azimuth_tolerance_number = SunAzimuthToleranceNumber(coordinator)
 
     # Mock the hass.config_entries.async_update_entry method
-    mock_update = AsyncMock()
+    mock_update = Mock()
     coordinator.hass.config_entries.async_update_entry = mock_update
 
     # Set a new sun azimuth tolerance value
-    new_value = 60.0
+    new_value = 90.0
     await sun_azimuth_tolerance_number.async_set_native_value(new_value)
 
     # Verify async_update_entry was called
@@ -172,7 +172,7 @@ async def test_sun_azimuth_tolerance_number_async_set_native_value_preserves_oth
     sun_azimuth_tolerance_number = SunAzimuthToleranceNumber(coordinator)
 
     # Mock the hass.config_entries.async_update_entry method
-    mock_update = AsyncMock()
+    mock_update = Mock()
     coordinator.hass.config_entries.async_update_entry = mock_update
 
     # Set a new sun azimuth tolerance value

@@ -187,6 +187,9 @@
             "covers_min_closure": {
                 "name": "Minimale Rollladenposition:"
             },
+            "manual_override_duration": {
+                "name": "Dauer der manuellen Übersteuerung:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Sonnen-Azimut-Toleranz:"
             },

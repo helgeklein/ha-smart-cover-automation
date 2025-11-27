@@ -187,6 +187,9 @@
             "covers_min_closure": {
                 "name": "Minimale positie van het rolluik:"
             },
+            "manual_override_duration": {
+                "name": "Duur van de handmatige override:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolerantie voor zonazimut:"
             },

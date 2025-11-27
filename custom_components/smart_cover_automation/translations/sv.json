@@ -187,6 +187,9 @@
             "covers_min_closure": {
                 "name": "Lägsta läge för persienn:"
             },
+            "manual_override_duration": {
+                "name": "Manuell åsidosättningsvaraktighet:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolerans för solens azimut:"
             },

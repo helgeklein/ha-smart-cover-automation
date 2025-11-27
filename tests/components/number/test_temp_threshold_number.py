@@ -9,7 +9,7 @@ Coverage target: number.py lines 57-189 (IntegrationNumber and TempThresholdNumb
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, cast
-from unittest.mock import AsyncMock
+from unittest.mock import Mock
 
 from homeassistant.components.number import NumberMode
 from homeassistant.const import EntityCategory, UnitOfTemperature
@@ -57,8 +57,8 @@ async def test_temp_threshold_number_entity_properties(mock_hass_with_spec, mock
         add_entities,
     )
 
-    # Get the temp threshold number entity (it's the fifth entity now)
-    temp_threshold_number = captured[4]
+    # Get the temp threshold number entity (it's the sixth entity now)
+    temp_threshold_number = captured[5]
     assert isinstance(temp_threshold_number, TempThresholdNumber)
 
     # Verify device class
@@ -145,7 +145,7 @@ async def test_temp_threshold_number_async_set_native_value(mock_hass_with_spec,
     temp_threshold_number = TempThresholdNumber(coordinator)
 
     # Mock the hass.config_entries.async_update_entry method
-    mock_update = AsyncMock()
+    mock_update = Mock()
     coordinator.hass.config_entries.async_update_entry = mock_update
 
     # Set a new temperature threshold value
@@ -187,7 +187,7 @@ async def test_temp_threshold_number_async_set_native_value_preserves_other_opti
     temp_threshold_number = TempThresholdNumber(coordinator)
 
     # Mock the hass.config_entries.async_update_entry method
-    mock_update = AsyncMock()
+    mock_update = Mock()
     coordinator.hass.config_entries.async_update_entry = mock_update
 
     # Set a new temperature threshold value
@@ -314,7 +314,7 @@ async def test_async_persist_option_triggers_update_listener(mock_hass_with_spec
     temp_threshold_number = TempThresholdNumber(coordinator)
 
     # Mock the hass.config_entries.async_update_entry method
-    mock_update = AsyncMock()
+    mock_update = Mock()
     coordinator.hass.config_entries.async_update_entry = mock_update
 
     # Call _async_persist_option directly

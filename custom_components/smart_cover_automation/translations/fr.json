@@ -187,6 +187,9 @@
             "covers_min_closure": {
                 "name": "Position minimale du volet :"
             },
+            "manual_override_duration": {
+                "name": "Durée de l'override manuel :"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolérance de l'azimut solaire :"
             },

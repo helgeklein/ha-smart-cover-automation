@@ -187,6 +187,9 @@
             "covers_min_closure": {
                 "name": "Minimalna pozycja rolety:"
             },
+            "manual_override_duration": {
+                "name": "Czas trwania ręcznego pominięcia:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolerancja azymutu słońca:"
             },

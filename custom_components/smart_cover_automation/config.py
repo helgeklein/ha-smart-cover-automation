@@ -190,7 +190,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.LOCK_MODE: _ConfSpec(default="unlocked", converter=_Converters.to_str, runtime_configurable=True),
-    ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds),
+    ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds, runtime_configurable=True),
     ConfKeys.NIGHTTIME_BLOCK_OPENING: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int, runtime_configurable=True),

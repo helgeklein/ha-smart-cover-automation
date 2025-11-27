@@ -187,6 +187,9 @@
             "covers_min_closure": {
                 "name": "Posição mínima da persiana:"
             },
+            "manual_override_duration": {
+                "name": "Duração da override manual:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolerância do azimute solar:"
             },

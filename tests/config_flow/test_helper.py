@@ -288,7 +288,7 @@ class TestFlowHelperSchemaBuilding:
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
 
     def test_build_schema_step_3_includes_all_settings(self) -> None:
-        """Test step 3 schema has all final settings fields."""
+        """Test step 3 schema is now empty as all settings moved to entities."""
         from custom_components.smart_cover_automation.config import resolve
 
         resolved_settings = resolve({})
@@ -296,8 +296,9 @@ class TestFlowHelperSchemaBuilding:
         schema = FlowHelper.build_schema_step_3(resolved_settings)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
-        # SUN_ELEVATION_THRESHOLD, SUN_AZIMUTH_TOLERANCE, COVERS_MAX_CLOSURE, and COVERS_MIN_CLOSURE are now number entities, not in config flow
-        assert ConfKeys.MANUAL_OVERRIDE_DURATION.value in schema_keys
+        # All numeric settings (TEMP_THRESHOLD, SUN_ELEVATION_THRESHOLD, SUN_AZIMUTH_TOLERANCE,
+        # COVERS_MAX_CLOSURE, COVERS_MIN_CLOSURE, MANUAL_OVERRIDE_DURATION) are now number entities
+        assert len(schema_keys) == 0
 
     def test_build_schema_step_3_uses_custom_defaults(self) -> None:
         """Test step 3 schema uses custom default values."""
@@ -314,7 +315,7 @@ class TestFlowHelperSchemaBuilding:
         assert schema is not None
 
     def test_build_schema_step_3_converts_duration_correctly(self) -> None:
-        """Test step 3 schema converts duration to hours/minutes/seconds."""
+        """Test step 3 schema is now empty, duration handling moved to number entity."""
         from custom_components.smart_cover_automation.config import resolve
 
         custom_config = {
@@ -324,8 +325,10 @@ class TestFlowHelperSchemaBuilding:
 
         schema = FlowHelper.build_schema_step_3(resolved_settings)
 
-        # Schema should be created (duration converted internally)
+        # Schema should be empty now
         assert schema is not None
+        assert len(schema.schema.keys()) == 0
+        # But the setting should still be resolved correctly
         assert resolved_settings.manual_override_duration == 7380
 
     def test_build_schema_step_4_with_no_per_cover_defaults(self) -> None:

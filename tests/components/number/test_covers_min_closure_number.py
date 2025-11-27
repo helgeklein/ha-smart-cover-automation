@@ -9,7 +9,7 @@ Coverage target: number.py CoversMinClosureNumber class
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, cast
-from unittest.mock import AsyncMock
+from unittest.mock import Mock
 
 from homeassistant.components.number import NumberMode
 from homeassistant.const import EntityCategory
@@ -130,7 +130,7 @@ async def test_covers_min_closure_number_async_set_native_value(mock_hass_with_s
     covers_min_closure_number = CoversMinClosureNumber(coordinator)
 
     # Mock the hass.config_entries.async_update_entry method
-    mock_update = AsyncMock()
+    mock_update = Mock()
     coordinator.hass.config_entries.async_update_entry = mock_update
 
     # Set a new covers min closure value
@@ -172,7 +172,7 @@ async def test_covers_min_closure_number_async_set_native_value_preserves_other_
     covers_min_closure_number = CoversMinClosureNumber(coordinator)
 
     # Mock the hass.config_entries.async_update_entry method
-    mock_update = AsyncMock()
+    mock_update = Mock()
     coordinator.hass.config_entries.async_update_entry = mock_update
 
     # Set a new covers min closure value

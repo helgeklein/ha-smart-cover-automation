@@ -187,6 +187,9 @@
             "covers_min_closure": {
                 "name": "遮阳设备最小位置："
             },
+            "manual_override_duration": {
+                "name": "手动覆盖持续时间："
+            },
             "sun_azimuth_tolerance": {
                 "name": "太阳方位角容差："
             },

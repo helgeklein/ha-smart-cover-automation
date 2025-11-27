@@ -187,6 +187,9 @@
             "covers_min_closure": {
                 "name": "Posizione minima della tapparella:"
             },
+            "manual_override_duration": {
+                "name": "Durata dell'override manuale:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolleranza dell'azimut solare:"
             },

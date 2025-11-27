@@ -9,7 +9,7 @@ Coverage target: number.py SunElevationThresholdNumber class
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, cast
-from unittest.mock import AsyncMock
+from unittest.mock import Mock
 
 from homeassistant.components.number import NumberMode
 from homeassistant.const import EntityCategory
@@ -54,8 +54,8 @@ async def test_sun_elevation_threshold_number_entity_properties(mock_hass_with_s
         add_entities,
     )
 
-    # Get the sun elevation threshold number entity (it's the fourth entity now)
-    sun_elevation_threshold_number = captured[3]
+    # Get the sun elevation threshold number entity (it's the fifth entity now)
+    sun_elevation_threshold_number = captured[4]
     assert isinstance(sun_elevation_threshold_number, SunElevationThresholdNumber)
 
     # Verify entity description properties
@@ -130,11 +130,11 @@ async def test_sun_elevation_threshold_number_async_set_native_value(mock_hass_w
     sun_elevation_threshold_number = SunElevationThresholdNumber(coordinator)
 
     # Mock the hass.config_entries.async_update_entry method
-    mock_update = AsyncMock()
+    mock_update = Mock()
     coordinator.hass.config_entries.async_update_entry = mock_update
 
     # Set a new sun elevation threshold value
-    new_value = 25.0
+    new_value = 15.0
     await sun_elevation_threshold_number.async_set_native_value(new_value)
 
     # Verify async_update_entry was called
@@ -172,7 +172,7 @@ async def test_sun_elevation_threshold_number_async_set_native_value_preserves_o
     sun_elevation_threshold_number = SunElevationThresholdNumber(coordinator)
 
     # Mock the hass.config_entries.async_update_entry method
-    mock_update = AsyncMock()
+    mock_update = Mock()
     coordinator.hass.config_entries.async_update_entry = mock_update
 
     # Set a new sun elevation threshold value
@@ -289,7 +289,7 @@ async def test_sun_elevation_async_persist_option_triggers_update_listener(mock_
     sun_elevation_threshold_number = SunElevationThresholdNumber(coordinator)
 
     # Mock the hass.config_entries.async_update_entry method
-    mock_update = AsyncMock()
+    mock_update = Mock()
     coordinator.hass.config_entries.async_update_entry = mock_update
 
     # Call _async_persist_option directly

@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 from custom_components.smart_cover_automation.number import (
     CoversMaxClosureNumber,
     CoversMinClosureNumber,
+    ManualOverrideDurationNumber,
     SunAzimuthToleranceNumber,
     SunElevationThresholdNumber,
     TempThresholdNumber,
@@ -53,15 +54,16 @@ async def test_async_setup_entry_creates_all_numbers(mock_coordinator_basic: Dat
     # Get the list of entities that were passed to async_add_entities
     entities_list = mock_add_entities.call_args[0][0]
 
-    # Verify we have exactly 5 entities
-    assert len(entities_list) == 5
+    # Verify we have exactly 6 entities
+    assert len(entities_list) == 6
 
     # Verify entity types (alphabetically ordered)
     assert isinstance(entities_list[0], CoversMaxClosureNumber)
     assert isinstance(entities_list[1], CoversMinClosureNumber)
-    assert isinstance(entities_list[2], SunAzimuthToleranceNumber)
-    assert isinstance(entities_list[3], SunElevationThresholdNumber)
-    assert isinstance(entities_list[4], TempThresholdNumber)
+    assert isinstance(entities_list[2], ManualOverrideDurationNumber)
+    assert isinstance(entities_list[3], SunAzimuthToleranceNumber)
+    assert isinstance(entities_list[4], SunElevationThresholdNumber)
+    assert isinstance(entities_list[5], TempThresholdNumber)
 
 
 async def test_async_setup_entry_entities_use_coordinator(mock_coordinator_basic: DataUpdateCoordinator) -> None:
@@ -131,10 +133,11 @@ async def test_async_setup_entry_with_real_hass_instance(
         add_entities,
     )
 
-    # Should have 5 number entities
-    assert len(captured) == 5
+    # Should have 6 number entities
+    assert len(captured) == 6
     assert isinstance(captured[0], CoversMaxClosureNumber)
     assert isinstance(captured[1], CoversMinClosureNumber)
-    assert isinstance(captured[2], SunAzimuthToleranceNumber)
-    assert isinstance(captured[3], SunElevationThresholdNumber)
-    assert isinstance(captured[4], TempThresholdNumber)
+    assert isinstance(captured[2], ManualOverrideDurationNumber)
+    assert isinstance(captured[3], SunAzimuthToleranceNumber)
+    assert isinstance(captured[4], SunElevationThresholdNumber)
+    assert isinstance(captured[5], TempThresholdNumber)

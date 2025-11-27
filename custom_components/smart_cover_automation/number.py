@@ -14,13 +14,14 @@ from homeassistant.components.number import (
     NumberEntityDescription,
     NumberMode,
 )
-from homeassistant.const import EntityCategory, UnitOfTemperature
+from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
 
 from .config import ConfKeys
 from .const import (
     DOMAIN,
     NUMBER_KEY_COVERS_MAX_CLOSURE,
     NUMBER_KEY_COVERS_MIN_CLOSURE,
+    NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
     NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
     NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
     NUMBER_KEY_TEMP_THRESHOLD,
@@ -59,6 +60,7 @@ async def async_setup_entry(
     entities = [
         CoversMaxClosureNumber(coordinator),
         CoversMinClosureNumber(coordinator),
+        ManualOverrideDurationNumber(coordinator),
         SunAzimuthToleranceNumber(coordinator),
         SunElevationThresholdNumber(coordinator),
         TempThresholdNumber(coordinator),
@@ -196,6 +198,58 @@ class CoversMaxClosureNumber(IntegrationNumber):
             native_unit_of_measurement="%",
         )
         super().__init__(coordinator, entity_description, ConfKeys.COVERS_MAX_CLOSURE.value)
+
+
+#
+# ManualOverrideDurationNumber
+#
+class ManualOverrideDurationNumber(IntegrationNumber):
+    """Number entity for manual override duration in minutes.
+
+    Allows users to configure how long the automation should be paused
+    after a cover has been moved manually. Value is stored internally
+    in seconds but displayed/edited in minutes for better UX.
+    """
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the manual override duration number entity.
+
+        Args:
+            coordinator: The DataUpdateCoordinator that manages automation logic
+                        and provides state management for this number entity
+        """
+        entity_description = NumberEntityDescription(
+            key=NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
+            translation_key=NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:timer-outline",
+            native_min_value=0,
+            native_max_value=None,  # Unlimited
+            native_step=1,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement=UnitOfTime.MINUTES,
+        )
+        super().__init__(coordinator, entity_description, ConfKeys.MANUAL_OVERRIDE_DURATION.value)
+
+    @property
+    def native_value(self) -> float:
+        """Return the current value in minutes.
+
+        The internal storage is in seconds, so we convert to minutes
+        for display in the UI.
+        """
+        resolved = self.coordinator._resolved_settings()
+        seconds = resolved.manual_override_duration
+        return float(seconds) / 60.0
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Update the value, converting from minutes to seconds.
+
+        Args:
+            value: Duration in minutes from the UI
+        """
+        seconds = int(value * 60)
+        await self._async_persist_option(ConfKeys.MANUAL_OVERRIDE_DURATION.value, seconds)
 
 
 #

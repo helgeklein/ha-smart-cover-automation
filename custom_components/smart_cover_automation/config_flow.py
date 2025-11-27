@@ -152,20 +152,7 @@ class FlowHelper:
         Returns:
             Schema for step 3 form
         """
-        duration_default = {
-            "hours": resolved_settings.manual_override_duration // 3600,
-            "minutes": (resolved_settings.manual_override_duration % 3600) // 60,
-            "seconds": resolved_settings.manual_override_duration % 60,
-        }
-
-        return vol.Schema(
-            {
-                vol.Required(
-                    ConfKeys.MANUAL_OVERRIDE_DURATION.value,
-                    default=duration_default,
-                ): selector.DurationSelector(),
-            }
-        )
+        return vol.Schema({})
 
     #
     # build_schema_step_4
