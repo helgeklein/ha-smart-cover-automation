@@ -181,6 +181,12 @@
             }
         },
         "number": {
+            "covers_max_closure": {
+                "name": "Posición máxima de la persiana:"
+            },
+            "covers_min_closure": {
+                "name": "Posición mínima de la persiana:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolerancia de azimut solar:"
             },

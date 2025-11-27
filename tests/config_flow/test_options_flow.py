@@ -241,9 +241,7 @@ class TestOptionsFlowStep3:
         schema = result_dict["data_schema"].schema
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.keys()]
 
-        # SUN_ELEVATION_THRESHOLD and SUN_AZIMUTH_TOLERANCE are now number entities, not in config flow
-        assert ConfKeys.COVERS_MAX_CLOSURE.value in schema_keys
-        assert ConfKeys.COVERS_MIN_CLOSURE.value in schema_keys
+        # SUN_ELEVATION_THRESHOLD, SUN_AZIMUTH_TOLERANCE, COVERS_MAX_CLOSURE, and COVERS_MIN_CLOSURE are now number entities, not in config flow
         assert ConfKeys.MANUAL_OVERRIDE_DURATION.value in schema_keys
 
     async def test_step_3_creates_entry_with_updated_config(self, mock_hass_with_covers: MagicMock) -> None:

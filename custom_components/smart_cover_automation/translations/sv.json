@@ -181,6 +181,12 @@
             }
         },
         "number": {
+            "covers_max_closure": {
+                "name": "Högsta läge för persienn:"
+            },
+            "covers_min_closure": {
+                "name": "Lägsta läge för persienn:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolerans för solens azimut:"
             },

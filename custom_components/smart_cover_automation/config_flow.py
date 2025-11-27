@@ -161,28 +161,6 @@ class FlowHelper:
         return vol.Schema(
             {
                 vol.Required(
-                    ConfKeys.COVERS_MAX_CLOSURE.value,
-                    default=resolved_settings.covers_max_closure,
-                ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=0,
-                        max=100,
-                        unit_of_measurement="%",
-                        mode=selector.NumberSelectorMode.BOX,
-                    )
-                ),
-                vol.Required(
-                    ConfKeys.COVERS_MIN_CLOSURE.value,
-                    default=resolved_settings.covers_min_closure,
-                ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=0,
-                        max=100,
-                        unit_of_measurement="%",
-                        mode=selector.NumberSelectorMode.BOX,
-                    )
-                ),
-                vol.Required(
                     ConfKeys.MANUAL_OVERRIDE_DURATION.value,
                     default=duration_default,
                 ): selector.DurationSelector(),

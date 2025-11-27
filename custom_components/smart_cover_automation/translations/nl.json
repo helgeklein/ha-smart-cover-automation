@@ -181,6 +181,12 @@
             }
         },
         "number": {
+            "covers_max_closure": {
+                "name": "Maximale positie van het rolluik:"
+            },
+            "covers_min_closure": {
+                "name": "Minimale positie van het rolluik:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolerantie voor zonazimut:"
             },

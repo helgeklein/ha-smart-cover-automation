@@ -181,6 +181,12 @@
             }
         },
         "number": {
+            "covers_max_closure": {
+                "name": "遮阳设备最大位置："
+            },
+            "covers_min_closure": {
+                "name": "遮阳设备最小位置："
+            },
             "sun_azimuth_tolerance": {
                 "name": "太阳方位角容差："
             },

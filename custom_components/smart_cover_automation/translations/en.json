@@ -181,6 +181,12 @@
             }
         },
         "number": {
+            "covers_max_closure": {
+                "name": "Maximum cover position:"
+            },
+            "covers_min_closure": {
+                "name": "Minimum cover position:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Sun azimuth tolerance:"
             },

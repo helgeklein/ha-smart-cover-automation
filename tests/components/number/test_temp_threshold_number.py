@@ -57,20 +57,20 @@ async def test_temp_threshold_number_entity_properties(mock_hass_with_spec, mock
         add_entities,
     )
 
-    # Get the temp threshold number entity (it's the third entity now)
-    temp_threshold_number = captured[2]
+    # Get the temp threshold number entity (it's the fifth entity now)
+    temp_threshold_number = captured[4]
     assert isinstance(temp_threshold_number, TempThresholdNumber)
+
+    # Verify device class
+    from homeassistant.components.number import NumberDeviceClass
+
+    assert temp_threshold_number.entity_description.device_class == NumberDeviceClass.TEMPERATURE
 
     # Verify entity description properties
     assert temp_threshold_number.entity_description.key == NUMBER_KEY_TEMP_THRESHOLD
     assert temp_threshold_number.entity_description.translation_key == NUMBER_KEY_TEMP_THRESHOLD
     assert temp_threshold_number.entity_description.icon == "mdi:thermometer-lines"
     assert temp_threshold_number.entity_description.entity_category == EntityCategory.CONFIG
-
-    # Verify device class
-    from homeassistant.components.number import NumberDeviceClass
-
-    assert temp_threshold_number.entity_description.device_class == NumberDeviceClass.TEMPERATURE
 
     # Verify unique_id format
     assert temp_threshold_number.unique_id == f"{DOMAIN}_{NUMBER_KEY_TEMP_THRESHOLD}"

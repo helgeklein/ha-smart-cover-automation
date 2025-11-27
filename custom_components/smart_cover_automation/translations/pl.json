@@ -181,6 +181,12 @@
             }
         },
         "number": {
+            "covers_max_closure": {
+                "name": "Maksymalna pozycja rolety:"
+            },
+            "covers_min_closure": {
+                "name": "Minimalna pozycja rolety:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolerancja azymutu słońca:"
             },

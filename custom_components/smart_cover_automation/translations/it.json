@@ -181,6 +181,12 @@
             }
         },
         "number": {
+            "covers_max_closure": {
+                "name": "Posizione massima della tapparella:"
+            },
+            "covers_min_closure": {
+                "name": "Posizione minima della tapparella:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolleranza dell'azimut solare:"
             },

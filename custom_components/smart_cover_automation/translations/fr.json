@@ -181,6 +181,12 @@
             }
         },
         "number": {
+            "covers_max_closure": {
+                "name": "Position maximale du volet :"
+            },
+            "covers_min_closure": {
+                "name": "Position minimale du volet :"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Tolérance de l'azimut solaire :"
             },

@@ -181,6 +181,12 @@
             }
         },
         "number": {
+            "covers_max_closure": {
+                "name": "Maximale Rollladenposition:"
+            },
+            "covers_min_closure": {
+                "name": "Minimale Rollladenposition:"
+            },
             "sun_azimuth_tolerance": {
                 "name": "Sonnen-Azimut-Toleranz:"
             },

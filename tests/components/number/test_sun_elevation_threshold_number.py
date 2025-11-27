@@ -54,8 +54,8 @@ async def test_sun_elevation_threshold_number_entity_properties(mock_hass_with_s
         add_entities,
     )
 
-    # Get the sun elevation threshold number entity (it's the second entity now)
-    sun_elevation_threshold_number = captured[1]
+    # Get the sun elevation threshold number entity (it's the fourth entity now)
+    sun_elevation_threshold_number = captured[3]
     assert isinstance(sun_elevation_threshold_number, SunElevationThresholdNumber)
 
     # Verify entity description properties
