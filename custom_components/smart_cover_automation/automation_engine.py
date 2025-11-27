@@ -142,7 +142,6 @@ class AutomationEngine:
                 config=self.config,
                 cover_pos_history_mgr=self._cover_pos_history_mgr,
                 ha_interface=self._ha_interface,
-                lock_mode=lock_mode,
             )
             cover_attrs = await cover_automation.process(state, sensor_data)
             if cover_attrs:

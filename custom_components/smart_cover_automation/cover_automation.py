@@ -90,7 +90,6 @@ class CoverAutomation:
         config: dict[str, Any],
         cover_pos_history_mgr: CoverPositionHistoryManager,
         ha_interface: Any,
-        lock_mode: const.LockMode,
     ) -> None:
         """Initialize cover automation.
 
@@ -100,7 +99,6 @@ class CoverAutomation:
             config: Raw configuration dictionary
             cover_pos_history_mgr: Cover position history manager
             ha_interface: Home Assistant interface for API interactions
-            lock_mode: Current lock mode
         """
 
         self.entity_id = entity_id
@@ -108,7 +106,6 @@ class CoverAutomation:
         self.config = config
         self._cover_pos_history_mgr = cover_pos_history_mgr
         self._ha_interface = ha_interface
-        self._lock_mode = lock_mode
 
     #
     # _cover_state_to_dict
@@ -147,9 +144,10 @@ class CoverAutomation:
         if cover_state.lockout_protection is not None:
             result[const.COVER_ATTR_LOCKOUT_PROTECTION] = cover_state.lockout_protection
 
-        # Always add lock mode and lock active status from member variables
-        result[const.COVER_ATTR_LOCK_MODE] = self._lock_mode
-        result[const.COVER_ATTR_LOCK_ACTIVE] = self._lock_mode != const.LockMode.UNLOCKED
+        # TODO: remove
+        # Always add lock mode and lock active status from resolved config
+        result[const.COVER_ATTR_LOCK_MODE] = self.resolved.lock_mode
+        result[const.COVER_ATTR_LOCK_ACTIVE] = self.resolved.lock_mode != const.LockMode.UNLOCKED
 
         # Add position history from position history manager (only if there are entries)
         position_entries = self._cover_pos_history_mgr.get_entries(self.entity_id)
@@ -653,21 +651,21 @@ class CoverAutomation:
             True if lock mode active (automation should be skipped), False otherwise
         """
 
-        if self._lock_mode == const.LockMode.UNLOCKED:
+        if self.resolved.lock_mode == const.LockMode.UNLOCKED:
             return False
 
-        if self._lock_mode == const.LockMode.HOLD_POSITION:
+        if self.resolved.lock_mode == const.LockMode.HOLD_POSITION:
             # Just block all automation
-            self._log_cover_msg(f"Lock active ({self._lock_mode}), skipping automation", const.LogSeverity.INFO)
+            self._log_cover_msg(f"Lock active ({self.resolved.lock_mode}), skipping automation", const.LogSeverity.INFO)
             self._set_lock_attrs(cover_state, desired_pos=current_pos, target_pos=current_pos, cover_moved=False)
 
-        elif self._lock_mode == const.LockMode.FORCE_OPEN:
+        elif self.resolved.lock_mode == const.LockMode.FORCE_OPEN:
             # Ensure cover is fully open (100%)
             await self._enforce_locked_position(
                 cover_state, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_OPEN, features=features
             )
 
-        elif self._lock_mode == const.LockMode.FORCE_CLOSE:
+        elif self.resolved.lock_mode == const.LockMode.FORCE_CLOSE:
             # Ensure cover is fully closed (0%)
             await self._enforce_locked_position(
                 cover_state, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_CLOSED, features=features
@@ -675,7 +673,7 @@ class CoverAutomation:
 
         else:
             # Have the type checker fail if a new lock mode is added but not handled here
-            assert_never(self._lock_mode)
+            assert_never(self.resolved.lock_mode)
 
         return True
 
@@ -720,7 +718,7 @@ class CoverAutomation:
             new_pos = await self._ha_interface.set_cover_position(self.entity_id, target_pos, features)
 
         # Log and store position
-        self._log_cover_msg(f"Lock active ({self._lock_mode}), {move_msg} ({target_pos}%)", const.LogSeverity.INFO)
+        self._log_cover_msg(f"Lock active ({self.resolved.lock_mode}), {move_msg} ({target_pos}%)", const.LogSeverity.INFO)
         self._set_lock_attrs(cover_state, desired_pos=new_pos, target_pos=new_pos, cover_moved=cover_moved)
 
     #

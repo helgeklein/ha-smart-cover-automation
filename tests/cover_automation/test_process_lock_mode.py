@@ -66,13 +66,14 @@ def create_cover_automation(
     mock_ha_interface,
 ) -> CoverAutomation:
     """Helper to create CoverAutomation with specific lock mode."""
+    # Set the lock mode on the resolved config
+    mock_resolved_config.lock_mode = lock_mode
     return CoverAutomation(
         entity_id="cover.test",
         resolved=mock_resolved_config,
         config=basic_config,
         cover_pos_history_mgr=mock_cover_pos_history_mgr,
         ha_interface=mock_ha_interface,
-        lock_mode=lock_mode,
     )
 
 

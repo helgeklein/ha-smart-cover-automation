@@ -84,13 +84,14 @@ def basic_config():
 @pytest.fixture
 def cover_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
     """Create a CoverAutomation instance for testing."""
+    # Ensure lock mode is unlocked for these tests
+    mock_resolved_config.lock_mode = LockMode.UNLOCKED
     return CoverAutomation(
         entity_id="cover.test",
         resolved=mock_resolved_config,
         config=basic_config,
         cover_pos_history_mgr=mock_cover_pos_history_mgr,
         ha_interface=mock_ha_interface,
-        lock_mode=LockMode.UNLOCKED,
     )
 
 
@@ -141,7 +142,6 @@ class TestCoverAutomationInitialization:
             config=basic_config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
-            lock_mode=LockMode.UNLOCKED,
         )
 
         assert cover_auto.entity_id == "cover.living_room"
@@ -168,7 +168,6 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
-            lock_mode=LockMode.UNLOCKED,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth is None
@@ -182,7 +181,6 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
-            lock_mode=LockMode.UNLOCKED,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth is None
@@ -196,7 +194,6 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
-            lock_mode=LockMode.UNLOCKED,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth == 0.0
