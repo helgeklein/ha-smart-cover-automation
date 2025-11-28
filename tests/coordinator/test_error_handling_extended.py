@@ -206,6 +206,10 @@ class TestCoordinatorErrorHandling:
         # Set caplog to capture INFO level messages
         caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
 
+        # First refresh clears the first-run flag (warnings suppressed)
+        await coordinator.async_refresh()
+        caplog.clear()
+        # Second refresh should show the actual warning
         await coordinator.async_refresh()
 
         # Verify graceful degradation handling

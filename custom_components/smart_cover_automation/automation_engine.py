@@ -40,6 +40,9 @@ class AutomationEngine:
         self._cover_pos_history_mgr = CoverPositionHistoryManager()
         self._ha_interface = ha_interface
 
+        # First run tracking
+        self._first_run: bool = True  # Track first iteration to suppress startup warnings
+
         # Sunset closing state tracking
         self._sunset_close_scheduled_at: datetime | None = None  # When to trigger cover closing
         self._sunset_covers_closed: bool = False  # Prevent multiple closings per sunset
@@ -59,6 +62,11 @@ class AutomationEngine:
 
         # Prepare empty result
         result = CoordinatorData(covers={})
+
+        # Track if this is first run (capture before clearing flag)
+        is_first_run = self._first_run
+        if self._first_run:
+            self._first_run = False
 
         # Check if covers are configured
         covers = tuple(self.resolved.covers)
@@ -81,10 +89,12 @@ class AutomationEngine:
             return result
 
         # Gather sensor data
-        sensor_data, message = await self._gather_sensor_data()
+        sensor_data, message = await self._gather_sensor_data(is_first_run)
         if sensor_data is None:
             # Critical data unavailable, automation canceled
-            self._log_automation_result(message, const.LogSeverity.WARNING)
+            # Use DEBUG severity on first run to avoid startup warnings
+            severity = const.LogSeverity.DEBUG if is_first_run else const.LogSeverity.WARNING
+            self._log_automation_result(message, severity)
             return result
 
         # Get lock state
@@ -146,8 +156,11 @@ class AutomationEngine:
     #
     # _gather_sensor_data
     #
-    async def _gather_sensor_data(self) -> tuple[SensorData | None, str]:
+    async def _gather_sensor_data(self, is_first_run: bool = False) -> tuple[SensorData | None, str]:
         """Gather all sensor data needed for automation.
+
+        Args:
+            is_first_run: True if this is the first iteration after startup
 
         Returns:
             Tuple of (SensorData object or None if unavailable, error message if failed)
@@ -174,7 +187,12 @@ class AutomationEngine:
             temp_max = await self._ha_interface.get_max_temperature(self.resolved.weather_entity_id)
             weather_condition = self._ha_interface.get_weather_condition(self.resolved.weather_entity_id)
         except (InvalidSensorReadingError, WeatherEntityNotFoundError):
-            return (None, "Weather data unavailable, skipping actions")
+            message = (
+                "Weather data unavailable on startup, skipping first iteration"
+                if is_first_run
+                else "Weather data unavailable, skipping actions"
+            )
+            return (None, message)
         except Exception as err:
             # Unexpected error - log and treat as temporary unavailability
             const.LOGGER.error(f"Unexpected error getting weather data: {err}")

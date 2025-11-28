@@ -299,6 +299,10 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
 
         mock_sun_state.attributes = {"elevation": "invalid", "azimuth": TEST_DIRECT_AZIMUTH}
         mock_hass.states.get.return_value = mock_sun_state
+        # First refresh clears the first-run flag (warnings suppressed)
+        await coordinator.async_refresh()
+        caplog.clear()
+        # Second refresh should show the actual warning
         await coordinator.async_refresh()
 
         # Verify graceful error handling
@@ -464,7 +468,10 @@ class TestErrorHandling(TestDataUpdateCoordinatorBase):
         # Set caplog to capture INFO level messages
         caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
 
-        # Execute
+        # First refresh clears the first-run flag (warnings suppressed)
+        await coordinator.async_refresh()
+        caplog.clear()
+        # Second refresh should show the actual warning
         await coordinator.async_refresh()
         result = coordinator.data
 
