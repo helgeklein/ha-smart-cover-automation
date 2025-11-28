@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Stap 1 van 6",
+                "title": "Smart Cover Automation - Stap 1 van 5",
                 "description": "Selecteer een **weersvoorspellingssensor** en de **rolluiken** die moeten worden geautomatiseerd (verplicht).",
                 "data": {
                     "covers": "Te automatiseren rolluiken:",
@@ -28,32 +28,12 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Stap 2 van 6",
+                "title": "Smart Cover Automation - Stap 2 van 5",
                 "description": "Configureer de **azimut** (richting) voor elk rolluik (verplicht).\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)"
             },
             "3": {
-                "title": "Smart Cover Automation - Stap 3 van 6",
-                "description": "Configureer **aanvullende instellingen** (optioneel).",
-                "data": {
-                    "covers_max_closure": "Maximale positie van het rolluik:",
-                    "covers_min_closure": "Minimale positie van het rolluik:",
-                    "manual_override_duration": "Duur van de handmatige override:",
-                    "sun_azimuth_tolerance": "Tolerantie voor zonazimut:",
-                    "sun_elevation_threshold": "Minimale zonhoogte:",
-                    "temp_threshold": "Hittedrempel:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Sluit nooit verder dan deze waarde zodat er altijd wat licht binnenkomt (0 = volledig gesloten, 100 = volledig open).",
-                    "covers_min_closure": "Open nooit verder dan deze waarde om altijd wat schaduw te behouden (0 = volledig gesloten, 100 = volledig open).",
-                    "manual_override_duration": "Hoe lang een rolluik wordt overgeslagen nadat het handmatig is bediend (0 = niet overslaan).",
-                    "sun_azimuth_tolerance": "Maximale horizontale hoek waarbij de zon als direct op het raam schijnend wordt beschouwd (graden).",
-                    "sun_elevation_threshold": "De automatisering start wanneer de zonhoogte deze drempel overschrijdt (graden boven de horizon).",
-                    "temp_threshold": "Temperatuur waarbij de automatisering de rolluiken sluit om tegen hitte te beschermen (graden Celsius)."
-                }
-            },
-            "4": {
-                "title": "Smart Cover Automation - Stap 4 van 6",
-                "description": "Configureer de **min/max**-posities voor elk rolluik (optioneel). Als er niets is ingesteld, worden de globale waarden uit de vorige stap gebruikt.\n\n(0 = volledig gesloten, 100 = volledig open)",
+                "title": "Smart Cover Automation - Stap 3 van 5",
+                "description": "Configureer de **min/max**-posities voor elk rolluik (optioneel).\n\n(0 = volledig gesloten, 100 = volledig open)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Maximale posities van het rolluik"
@@ -63,8 +43,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Stap 5 van 6",
+            "4": {
+                "title": "Smart Cover Automation - Stap 4 van 5",
                 "description": "Schakel de blokkeerbeveiliging in door **raamsensoren** voor elk rolluik te configureren (optioneel). Als een raamsensor die aan een rolluik is gekoppeld meldt dat het raam openstaat, wordt het rolluik niet gesloten.",
                 "sections": {
                     "section_window_sensors": {
@@ -72,8 +52,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Stap 6 van 6",
+            "5": {
+                "title": "Smart Cover Automation - Stap 5 van 5",
                 "description": "Configureer **tijdinstellingen** voor de automatisering (optioneel).",
                 "data": {
                     "nighttime_block_opening": "Openen van rolluiken 's nachts uitschakelen:"
@@ -178,6 +158,23 @@
             },
             "temp_current_max": {
                 "name": "Temperatuur: maximum van vandaag"
+            }
+        },
+        "number": {
+            "covers_max_closure": {
+                "name": "Maximale positie van het rolluik:"
+            },
+            "covers_min_closure": {
+                "name": "Minimale positie van het rolluik:"
+            },
+            "manual_override_duration": {
+                "name": "Duur van de handmatige override:"
+            },
+            "sun_azimuth_tolerance": {
+                "name": "Tolerantie voor zonazimut:"
+            },
+            "sun_elevation_threshold": {
+                "name": "Minimale zonshoogte:"
             },
             "temp_threshold": {
                 "name": "Temperatuur: hittedrempel"

@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Krok 1 z 6",
+                "title": "Smart Cover Automation - Krok 1 z 5",
                 "description": "Wybierz **czujnik prognozy pogody** oraz **rolety** do automatyzacji (wymagane).",
                 "data": {
                     "covers": "Rolety do automatyzacji:",
@@ -28,32 +28,12 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Krok 2 z 6",
+                "title": "Smart Cover Automation - Krok 2 z 5",
                 "description": "Skonfiguruj **azymut** (kierunek) dla każdej rolety (wymagane).\n\n(0°=Północ, 90°=Wschód, 180°=Południe, 270°=Zachód)"
             },
             "3": {
-                "title": "Smart Cover Automation - Krok 3 z 6",
-                "description": "Skonfiguruj **dodatkowe ustawienia** (opcjonalne).",
-                "data": {
-                    "covers_max_closure": "Maksymalna pozycja rolety:",
-                    "covers_min_closure": "Minimalna pozycja rolety:",
-                    "manual_override_duration": "Czas trwania ręcznego pominięcia:",
-                    "sun_azimuth_tolerance": "Tolerancja azymutu słońca:",
-                    "sun_elevation_threshold": "Minimalna wysokość słońca:",
-                    "temp_threshold": "Próg upału:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Nigdy nie zamykaj dalej niż do tej wartości, aby zawsze wpuszczać odrobinę światła (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
-                    "covers_min_closure": "Nigdy nie otwieraj dalej niż do tej wartości, aby zapewnić minimum cienia (0 = całkowicie zamknięte, 100 = całkowicie otwarte).",
-                    "manual_override_duration": "Jak długo pomijać roletę po jej ręcznym poruszeniu (0 = nie pomijaj).",
-                    "sun_azimuth_tolerance": "Maksymalny kąt poziomy, przy którym uznaje się, że słońce świeci bezpośrednio w okno (stopnie).",
-                    "sun_elevation_threshold": "Automatyzacja zaczyna działać, gdy wysokość słońca przekroczy ten próg (stopnie nad horyzontem).",
-                    "temp_threshold": "Temperatura, przy której automatyzacja zamyka rolety w celu ochrony przed upałem (stopnie Celsjusza)."
-                }
-            },
-            "4": {
-                "title": "Smart Cover Automation - Krok 4 z 6",
-                "description": "Skonfiguruj pozycje **min/max** dla każdej rolety (opcjonalne). Jeśli nic nie ustawisz, zostaną użyte wartości globalne skonfigurowane w poprzednim kroku.\n\n(0 = całkowicie zamknięte, 100 = całkowicie otwarte)",
+                "title": "Smart Cover Automation - Krok 3 z 5",
+                "description": "Skonfiguruj pozycje **min/max** dla każdej rolety (opcjonalne).\n\n(0 = całkowicie zamknięte, 100 = całkowicie otwarte)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Maksymalne pozycje rolet"
@@ -63,8 +43,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Krok 5 z 6",
+            "4": {
+                "title": "Smart Cover Automation - Krok 4 z 5",
                 "description": "Włącz ochronę przed zablokowaniem, konfigurując **czujniki okienne** dla każdej rolety (opcjonalne). Jeśli którykolwiek czujnik okna powiązany z roletą zgłosi, że okno jest otwarte, roleta nie zostanie zamknięta.",
                 "sections": {
                     "section_window_sensors": {
@@ -72,8 +52,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Krok 6 z 6",
+            "5": {
+                "title": "Smart Cover Automation - Krok 5 z 5",
                 "description": "Skonfiguruj **ustawienia czasowe** automatyzacji (opcjonalne).",
                 "data": {
                     "nighttime_block_opening": "Wyłącz otwieranie rolet w nocy:"
@@ -178,6 +158,23 @@
             },
             "temp_current_max": {
                 "name": "Temperatura: dzisiejsze maksimum"
+            }
+        },
+        "number": {
+            "covers_max_closure": {
+                "name": "Maksymalna pozycja rolety:"
+            },
+            "covers_min_closure": {
+                "name": "Minimalna pozycja rolety:"
+            },
+            "manual_override_duration": {
+                "name": "Czas trwania ręcznego pominięcia:"
+            },
+            "sun_azimuth_tolerance": {
+                "name": "Tolerancja azymutu słońca:"
+            },
+            "sun_elevation_threshold": {
+                "name": "Minimalna wysokość słońca:"
             },
             "temp_threshold": {
                 "name": "Temperatura: próg upału"

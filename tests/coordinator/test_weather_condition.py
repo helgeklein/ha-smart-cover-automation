@@ -61,6 +61,10 @@ class TestWeatherCondition:
             # Set caplog to capture INFO level messages
             caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
 
+            # First refresh clears the first-run flag (warnings suppressed)
+            await coordinator.async_refresh()
+            caplog.clear()
+            # Second refresh should show the actual warning
             await coordinator.async_refresh()
             assert coordinator.last_exception is None  # No critical error should be raised
             # Verify that coordinator data contains the weather unavailable message
@@ -82,6 +86,10 @@ class TestWeatherCondition:
             # Set caplog to capture INFO level messages
             caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
 
+            # First refresh clears the first-run flag (warnings suppressed)
+            await coordinator.async_refresh()
+            caplog.clear()
+            # Second refresh should show the actual warning
             await coordinator.async_refresh()
             # Should return early with weather unavailable message
             result = coordinator.data

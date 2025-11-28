@@ -1,4 +1,8 @@
-"""Select platform for smart_cover_automation."""
+"""Select platform for smart_cover_automation.
+
+This module provides select entities that allow users to configure various
+option/select settings of the Smart Cover Automation integration.
+"""
 
 from __future__ import annotations
 
@@ -8,10 +12,7 @@ from homeassistant.components.select import SelectEntity, SelectEntityDescriptio
 from homeassistant.const import EntityCategory
 
 from . import const
-from .const import (
-    DOMAIN,
-    SELECT_KEY_LOCK_MODE,
-)
+from .const import DOMAIN, SELECT_KEY_LOCK_MODE
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -30,10 +31,19 @@ async def async_setup_entry(
     entry: IntegrationConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the select platform."""
+    """Set up the select platform.
 
+    This function is called by Home Assistant when the integration is loaded.
+    It creates and registers all number entities for the integration.
+
+    Args:
+        hass: The Home Assistant instance (unused but required by interface)
+        entry: The config entry containing integration configuration and runtime data
+        async_add_entities: Callback to register new entities with Home Assistant
+    """
     coordinator = entry.runtime_data.coordinator
 
+    # Create all select entities
     entities = [
         LockModeSelect(coordinator),
     ]
@@ -45,7 +55,19 @@ async def async_setup_entry(
 # IntegrationSelect
 #
 class IntegrationSelect(IntegrationEntity, SelectEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
-    """Base select entity."""
+    """Base select entity for Smart Cover Automation integration.
+
+    This abstract base class provides common functionality for all number
+    entities in the integration. It handles the basic entity setup and provides
+    a foundation for specific select implementations.
+
+    The class provides:
+    - Integration with the coordinator for data updates
+    - Automatic availability tracking based on coordinator status
+    - Consistent entity naming and identification patterns
+    - Integration with Home Assistant's select platform
+    - Base methods for persisting select value changes in config options
+    """
 
     #
     # __init__

@@ -15,7 +15,7 @@ from homeassistant.core import ServiceCall
 from homeassistant.loader import async_get_loaded_integration
 
 from . import const
-from .config import ConfKeys
+from .config import get_runtime_configurable_keys
 from .config_flow import OptionsFlowHandler
 from .const import (
     DATA_COORDINATORS,
@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 # List of platforms provided by this integration
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.NUMBER,
     Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,
@@ -314,13 +315,9 @@ async def async_reload_entry(
     we only need to refresh the coordinator. For structural changes, we need a full reload.
     """
     # These keys can be changed at runtime via their corresponding entities
-    # without requiring a full reload
-    runtime_configurable_keys = {
-        ConfKeys.ENABLED.value,
-        ConfKeys.LOCK_MODE.value,
-        ConfKeys.SIMULATION_MODE.value,
-        ConfKeys.VERBOSE_LOGGING.value,
-    }
+    # without requiring a full reload. The list is centrally defined in config.py
+    # based on the runtime_configurable flag in CONF_SPECS.
+    runtime_configurable_keys = get_runtime_configurable_keys()
 
     if hasattr(entry, "runtime_data") and entry.runtime_data:
         coordinator = entry.runtime_data.coordinator

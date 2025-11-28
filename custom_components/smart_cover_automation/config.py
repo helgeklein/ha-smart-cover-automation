@@ -24,10 +24,14 @@ class _ConfSpec(Generic[T]):
     Attributes:
     - default: The default value for the setting.
     - converter: A callable that converts a raw value to the desired type T.
+    - runtime_configurable: Whether this setting can be changed at runtime via an entity
+                           (switch, number, select) without requiring a full integration reload.
+                           Settings with corresponding control entities should be True.
     """
 
     default: T
     converter: Callable[[Any], T]
+    runtime_configurable: bool = False
 
     def __post_init__(self) -> None:
         # Disallow None default values to ensure ResolvedConfig fields are always concrete.
@@ -181,18 +185,18 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY: _ConfSpec(default=900, converter=_Converters.to_duration_seconds),
     ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
-    ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int),
-    ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int),
+    ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
+    ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
-    ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
-    ConfKeys.LOCK_MODE: _ConfSpec(default="unlocked", converter=_Converters.to_str),
-    ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds),
+    ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool, runtime_configurable=True),
+    ConfKeys.LOCK_MODE: _ConfSpec(default="unlocked", converter=_Converters.to_str, runtime_configurable=True),
+    ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds, runtime_configurable=True),
     ConfKeys.NIGHTTIME_BLOCK_OPENING: _ConfSpec(default=True, converter=_Converters.to_bool),
-    ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool),
-    ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int),
-    ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=10.0, converter=_Converters.to_float),
-    ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=24.0, converter=_Converters.to_float),
-    ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
+    ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int, runtime_configurable=True),
+    ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=10.0, converter=_Converters.to_float, runtime_configurable=True),
+    ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=24.0, converter=_Converters.to_float, runtime_configurable=True),
+    ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.WEATHER_ENTITY_ID: _ConfSpec(default="", converter=_Converters.to_str),
     ConfKeys.WEATHER_HOT_CUTOVER_TIME: _ConfSpec(default=time(16, 0, 0), converter=_Converters.to_time),
 }
@@ -202,12 +206,30 @@ __all__ = [
     "ConfKeys",
     "CONF_SPECS",
     "ResolvedConfig",
+    "get_runtime_configurable_keys",
     "resolve",
     "resolve_entry",
 ]
 
 
-# Simple, explicit settings structure resolved from options → defaults.
+#
+# get_runtime_configurable_keys
+#
+def get_runtime_configurable_keys() -> set[str]:
+    """Return the set of configuration keys that can be changed at runtime.
+
+    These keys have corresponding entities (switches, numbers, selects) and
+    changes to them only require a coordinator refresh, not a full reload.
+
+    Returns:
+        Set of configuration key strings that are runtime configurable
+    """
+    return {key.value for key, spec in CONF_SPECS.items() if spec.runtime_configurable}
+
+
+#
+# ResolvedConfig
+#
 @dataclass(frozen=True, slots=True)
 class ResolvedConfig:
     automation_disabled_time_range: bool

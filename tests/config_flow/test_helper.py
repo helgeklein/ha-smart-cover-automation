@@ -287,53 +287,8 @@ class TestFlowHelperSchemaBuilding:
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
 
-    def test_build_schema_step_3_includes_all_settings(self) -> None:
-        """Test step 3 schema has all final settings fields."""
-        from custom_components.smart_cover_automation.config import resolve
-
-        resolved_settings = resolve({})
-
-        schema = FlowHelper.build_schema_step_3(resolved_settings)
-
-        schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
-        assert ConfKeys.SUN_ELEVATION_THRESHOLD.value in schema_keys
-        assert ConfKeys.SUN_AZIMUTH_TOLERANCE.value in schema_keys
-        assert ConfKeys.COVERS_MAX_CLOSURE.value in schema_keys
-        assert ConfKeys.COVERS_MIN_CLOSURE.value in schema_keys
-        assert ConfKeys.MANUAL_OVERRIDE_DURATION.value in schema_keys
-
-    def test_build_schema_step_3_uses_custom_defaults(self) -> None:
-        """Test step 3 schema uses custom default values."""
-        from custom_components.smart_cover_automation.config import resolve
-
-        custom_config = {
-            ConfKeys.SUN_ELEVATION_THRESHOLD.value: 35,
-            ConfKeys.COVERS_MAX_CLOSURE.value: 75,
-        }
-        resolved_settings = resolve(custom_config)
-
-        schema = FlowHelper.build_schema_step_3(resolved_settings)
-
-        # Schema should be created with custom defaults
-        assert schema is not None
-
-    def test_build_schema_step_3_converts_duration_correctly(self) -> None:
-        """Test step 3 schema converts duration to hours/minutes/seconds."""
-        from custom_components.smart_cover_automation.config import resolve
-
-        custom_config = {
-            ConfKeys.MANUAL_OVERRIDE_DURATION.value: 7380,  # 2 hours, 3 minutes
-        }
-        resolved_settings = resolve(custom_config)
-
-        schema = FlowHelper.build_schema_step_3(resolved_settings)
-
-        # Schema should be created (duration converted internally)
-        assert schema is not None
-        assert resolved_settings.manual_override_duration == 7380
-
-    def test_build_schema_step_4_with_no_per_cover_defaults(self) -> None:
-        """Test step 4 schema when covers have no per-cover min/max closure defaults.
+    def test_build_schema_step_3_with_no_per_cover_defaults(self) -> None:
+        """Test step 3 schema when covers have no per-cover min/max closure defaults.
 
         This exercises the else branch in _build_schema_cover_positions where
         default_value is None (lines 294, 306-309).
@@ -341,7 +296,7 @@ class TestFlowHelperSchemaBuilding:
         covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
         defaults = {}  # No per-cover defaults
 
-        schema = FlowHelper.build_schema_step_4(covers, defaults)
+        schema = FlowHelper.build_schema_step_3(covers, defaults)
 
         # Verify schema was created
         assert schema is not None
@@ -360,15 +315,15 @@ class TestFlowHelperSchemaBuilding:
         # (The actual structure is nested, but we're checking the schema was created)
         assert len(sections) >= 2
 
-    def test_build_schema_step_4_with_per_cover_defaults(self) -> None:
-        """Test step 4 schema when covers have per-cover min/max closure defaults."""
+    def test_build_schema_step_3_with_per_cover_defaults(self) -> None:
+        """Test step 3 schema when covers have per-cover min/max closure defaults."""
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}": 20,
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}": 80,
         }
 
-        schema = FlowHelper.build_schema_step_4(covers, defaults)
+        schema = FlowHelper.build_schema_step_3(covers, defaults)
 
         # Verify schema was created
         assert schema is not None

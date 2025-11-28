@@ -117,18 +117,12 @@ def test_translation_has_required_keys(language_code: str) -> None:
 
     # Test 1: Required options-step labels for runtime configuration
     # These labels appear when users modify settings through the options flow
-    # Note: With sequential flow, data fields are split across init, 2, and 3
+    # Note: With sequential flow, data fields are split across init and 2
     init_form_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("init", {}).get("data", {})
     step2_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("2", {}).get("data", {})
-    step3_data = data.get(const.HA_OPTIONS, {}).get("step", {}).get("3", {}).get("data", {})
-    options_data = {**init_form_data, **step2_data, **step3_data}
+    options_data = {**init_form_data, **step2_data}
     expected_options_fields = {
         ConfKeys.COVERS.value,
-        ConfKeys.COVERS_MAX_CLOSURE.value,
-        ConfKeys.COVERS_MIN_CLOSURE.value,
-        ConfKeys.MANUAL_OVERRIDE_DURATION.value,
-        ConfKeys.SUN_AZIMUTH_TOLERANCE.value,
-        ConfKeys.SUN_ELEVATION_THRESHOLD.value,
         ConfKeys.WEATHER_ENTITY_ID.value,
     }
     missing_options = expected_options_fields - set(options_data.keys())

@@ -71,7 +71,7 @@
         "/^apt-cache (search|show)\\b/": true,
         "/^git\\s+(status|diff|log|show)\\b/": true,
         "/^grep (-A|-E|-i)\\b/": true,
-        "/^python(3)? -m (mypy|pytest|ruff)\\b/": true,
+        "/^python(3)? -m (mypy|py_compile|pytest|ruff)\\b/": true,
         "/^time\\b/": true,
         "rm": false,
         "rmdir": false,

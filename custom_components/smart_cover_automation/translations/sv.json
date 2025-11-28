@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Steg 1 av 6",
+                "title": "Smart Cover Automation - Steg 1 av 5",
                 "description": "Välj en **väderprognossensor** och de **persienner** som ska automatiseras (obligatoriskt).",
                 "data": {
                     "covers": "Persienner att automatisera:",
@@ -28,32 +28,12 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Steg 2 av 6",
+                "title": "Smart Cover Automation - Steg 2 av 5",
                 "description": "Konfigurera **azimut** (riktning) för varje persienn (obligatoriskt).\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)"
             },
             "3": {
-                "title": "Smart Cover Automation - Steg 3 av 6",
-                "description": "Konfigurera **ytterligare inställningar** (valfritt).",
-                "data": {
-                    "covers_max_closure": "Högsta läge för persienn:",
-                    "covers_min_closure": "Lägsta läge för persienn:",
-                    "manual_override_duration": "Varaktighet för manuell överstyrning:",
-                    "sun_azimuth_tolerance": "Tolerans för solens azimut:",
-                    "sun_elevation_threshold": "Minimal solhöjd:",
-                    "temp_threshold": "Värmetröskel:"
-                },
-                "data_description": {
-                    "covers_max_closure": "Stäng aldrig mer än detta värde så att lite ljus alltid släpps in (0 = helt stängd, 100 = helt öppen).",
-                    "covers_min_closure": "Öppna aldrig mer än detta värde för att alltid behålla lite skugga (0 = helt stängd, 100 = helt öppen).",
-                    "manual_override_duration": "Hur länge en persienn ska hoppas över efter manuell manövrering (0 = hoppa inte över).",
-                    "sun_azimuth_tolerance": "Maximal horisontell vinkel där solen anses lysa direkt på fönstret (grader).",
-                    "sun_elevation_threshold": "Automationen börjar arbeta när solhöjden överstiger denna tröskel (grader över horisonten).",
-                    "temp_threshold": "Temperatur vid vilken automationen stänger persiennerna för att skydda mot värme (grader Celsius)."
-                }
-            },
-            "4": {
-                "title": "Smart Cover Automation - Steg 4 av 6",
-                "description": "Konfigurera **min/max**-lägena för varje persienn (valfritt). Om inget anges används de globala värdena från föregående steg.\n\n(0 = helt stängd, 100 = helt öppen)",
+                "title": "Smart Cover Automation - Steg 3 av 5",
+                "description": "Konfigurera **min/max**-lägena för varje persienn (valfritt).\n\n(0 = helt stängd, 100 = helt öppen)",
                 "sections": {
                     "section_max_closure": {
                         "name": "Högsta persiennlägen"
@@ -63,8 +43,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Steg 5 av 6",
+            "4": {
+                "title": "Smart Cover Automation - Steg 4 av 5",
                 "description": "Aktivera klämskydd genom att konfigurera **fönstersensorer** för varje persienn (valfritt). Om någon fönstersensor som är kopplad till en persienn rapporterar att fönstret är öppet stängs persiennen inte.",
                 "sections": {
                     "section_window_sensors": {
@@ -72,8 +52,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Steg 6 av 6",
+            "5": {
+                "title": "Smart Cover Automation - Steg 5 av 5",
                 "description": "Konfigurera **tidsinställningar** för automationen (valfritt).",
                 "data": {
                     "nighttime_block_opening": "Inaktivera öppning av persienner på natten:"
@@ -178,6 +158,23 @@
             },
             "temp_current_max": {
                 "name": "Temperatur: dagens högsta"
+            }
+        },
+        "number": {
+            "covers_max_closure": {
+                "name": "Högsta läge för persienn:"
+            },
+            "covers_min_closure": {
+                "name": "Lägsta läge för persienn:"
+            },
+            "manual_override_duration": {
+                "name": "Manuell åsidosättningsvaraktighet:"
+            },
+            "sun_azimuth_tolerance": {
+                "name": "Tolerans för solens azimut:"
+            },
+            "sun_elevation_threshold": {
+                "name": "Minsta solhöjd:"
             },
             "temp_threshold": {
                 "name": "Temperatur: värmetröskel"

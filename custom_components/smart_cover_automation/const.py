@@ -78,23 +78,28 @@ SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE: Final[str] = (
 SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY: Final[str] = (
     "close_covers_after_sunset_delay"  # Key for the close covers after sunset delay sensor entity
 )
+NUMBER_KEY_SUN_AZIMUTH_TOLERANCE: Final[str] = "sun_azimuth_tolerance"  # Key for the sun azimuth tolerance number entity
+NUMBER_KEY_COVERS_MAX_CLOSURE: Final[str] = "covers_max_closure"  # Key for the covers maximum closure number entity
+NUMBER_KEY_COVERS_MIN_CLOSURE: Final[str] = "covers_min_closure"  # Key for the covers minimum closure number entity
+NUMBER_KEY_MANUAL_OVERRIDE_DURATION: Final[str] = "manual_override_duration"  # Key for the manual override duration number entity
 SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity
 SENSOR_KEY_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Key for the current maximum temperature sensor entity
-SENSOR_KEY_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Key for the temperature threshold sensor entity
 SENSOR_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode sensor entity
 SELECT_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode select entity
+NUMBER_KEY_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Key for the temperature threshold number entity
+NUMBER_KEY_SUN_ELEVATION_THRESHOLD: Final[str] = "sun_elevation_threshold"  # Key for the sun elevation threshold number entity
 
 # Options flow translation keys
 ERROR_INVALID_COVER: Final[str] = "invalid_cover"
 ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"
 ERROR_NO_COVERS: Final[str] = "no_covers"
 ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"
-STEP_4_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
-STEP_4_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
-STEP_5_SECTION_WINDOW_SENSORS: Final[str] = "section_window_sensors"
-STEP_6_SECTION_TIME_RANGE: Final[str] = "section_time_range"
-STEP_6_SECTION_CLOSE_AFTER_SUNSET: Final[str] = "section_close_after_sunset"
+STEP_3_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
+STEP_3_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
+STEP_4_SECTION_WINDOW_SENSORS: Final[str] = "section_window_sensors"
+STEP_5_SECTION_TIME_RANGE: Final[str] = "section_time_range"
+STEP_5_SECTION_CLOSE_AFTER_SUNSET: Final[str] = "section_close_after_sunset"
 
 # Home Assistant string literals
 HA_OPTIONS: Final[str] = "options"

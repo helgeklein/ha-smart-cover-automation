@@ -70,11 +70,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         self._ha_interface = HomeAssistantInterface(hass, self._resolved_settings)
 
         # Initialize the automation engine (persists across runs)
-        self._automation_engine = AutomationEngine(
-            resolved=resolved,
-            config=config,
-            ha_interface=self._ha_interface,
-        )
+        self._automation_engine = AutomationEngine(resolved=resolved, config=config, ha_interface=self._ha_interface)
 
         # Adjust log level if verbose logging is enabled
         try:
