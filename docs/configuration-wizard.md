@@ -54,28 +54,17 @@ In the second step of the configuration wizard, specify each cover's azimuth, ak
 
 There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). [This website](https://doc.forecast.solar/find_your_azimuth) has instructions for both.
 
-## Step 3: Additional Settings (Optional)
+## Step 3: Per-Cover Max/Min Positions (Optional)
 
-In the third step of the configuration wizard, the following settings can be configured:
+In the third step of the configuration wizard, you can specify maximum and minimum positions per cover. If configured, these per-cover settings override the global max/min positions which can be configured in the previous step.
 
-- **Maximum cover position:** Never close more than this to always let some light in (0 = fully closed, 100 = fully open).
-- **Minimum cover position:** Never open more than this to always provide a minimum of shade (0 = fully closed, 100 = fully open).
-- **Manual override duration:** How long to skip a cover after it has been moved manually (0 = no skipping).
-- **Sun azimuth tolerance:** Maximum horizontal angle at which the sun is considered to be shining on the window (degrees).
-- **Minimal sun elevation:** The automation starts operating when the sun's elevation is above this threshold (degrees above the horizon).
-- **Heat threshold:** Temperature at which the automation starts closing covers to protect from heat (degrees Celsius).
+## Step 4: Window Sensors for Lockout Protection (Optional)
 
-## Step 4: Per-Cover Max/Min Positions (Optional)
+In the fourth step of the configuration wizard, you can enable lockout protection by configuring window sensors for each cover. If any window sensor associated with a cover reports that the window is open, the cover won't be closed. This is especially useful for patio or terrace doors with a cover that would block you from re-entering the building if closed.
 
-In the fourth step of the configuration wizard, you can specify maximum and minimum positions per cover. If configured, these per-cover settings override the global max/min positions which can be configured in the previous step.
+## Step 5: Time Settings (Optional)
 
-## Step 5: Window Sensors for Lockout Protection (Optional)
-
-In the fifth step of the configuration wizard, you can enable lockout protection by configuring window sensors for each cover. If any window sensor associated with a cover reports that the window is open, the cover won't be closed. This is especially useful for patio or terrace doors with a cover that would block you from re-entering the building if closed.
-
-## Step 6: Time Settings (Optional)
-
-In the sixth step of the configuration wizard, the following settings can be configured:
+In the fifth step of the configuration wizard, the following settings can be configured:
 
 - **Disable cover opening at night:** The automation opens the covers when they needn't be closed for heat protection. By default, this auto-opening doesn't happen at night (when the sun is below the horizon). You can change that behavior by flipping this setting to disabled.
 
