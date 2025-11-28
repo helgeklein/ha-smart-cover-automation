@@ -212,7 +212,7 @@ async def test_data_based_sensor_with_missing_data(
     missing data scenarios by returning None.
     """
     # Set coordinator data (or None)
-    mock_coordinator_basic.data = coordinator_data
+    mock_coordinator_basic.data = coordinator_data  # type: ignore[assignment]
 
     # Create sensor instance
     sensor = config["sensor_class"](mock_coordinator_basic)
