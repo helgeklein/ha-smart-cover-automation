@@ -37,6 +37,9 @@ aux_links_new_tab: true
 # Color scheme - custom helgeklein.com inspired theme
 color_scheme: helgeklein
 
+# Just the Docs theme settings
+code_copy: true
+
 # Heading anchor links
 heading_anchors: true
 

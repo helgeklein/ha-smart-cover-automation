@@ -127,3 +127,19 @@ a:active,
 .aux-nav-list-item a:active {
     color: $hk-link !important;
 }
+// Rouge syntax highlighting colors
+.highlight {
+    background-color: $hk-code-bg;
+    .c { color: #999988; font-style: italic; } // Comment
+    .k { color: #000000; font-weight: bold; } // Keyword
+    .o { color: #000000; font-weight: bold; } // Operator
+    .kt { color: #445588; font-weight: bold; } // Keyword.Type
+    .m { color: #009999; } // Literal.Number
+    .s { color: #d01040; } // Literal.String
+    .na { color: #008080; } // Name.Attribute
+    .nb { color: #0086B3; } // Name.Builtin
+    .nc { color: #445588; font-weight: bold; } // Name.Class
+    .nf { color: #990000; font-weight: bold; } // Name.Function
+    .nt { color: #000080; } // Name.Tag
+    .nv { color: #008080; } // Name.Variable
+}

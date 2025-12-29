@@ -1,13 +1,20 @@
 {
     "name": "smart_cover_automation",
     "image": "mcr.microsoft.com/devcontainers/python:3.13",
+    // Install Ruby for Jekyll documentation
+    "onCreateCommand": "sudo apt-get update && sudo apt-get install -y ruby-full build-essential zlib1g-dev",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [
-        8123
+        8123,
+        4000
     ],
     "portsAttributes": {
         "8123": {
             "label": "Home Assistant",
+            "onAutoForward": "notify"
+        },
+        "4000": {
+            "label": "Jekyll Documentation",
             "onAutoForward": "notify"
         }
     },
