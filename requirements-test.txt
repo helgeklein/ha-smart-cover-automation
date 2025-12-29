@@ -13,8 +13,8 @@ pytest-homeassistant-custom-component==0.13.271
 mypy>=1.0.0
 
 # Fix for pycares/aiodns compatibility issue
-# Home Assistant 2025.8.2 requires aiodns==3.5.0
+# Home Assistant 2025.8.2 requires aiodns==3.6.1
 # pycares 4.11.0+ has breaking changes with aiodns 3.5.0
 # Pin both to ensure compatibility
-aiodns==3.5.0
+aiodns==3.6.1
 pycares>=4.9.0,<4.11.0
