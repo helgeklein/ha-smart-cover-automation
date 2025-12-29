@@ -6,19 +6,20 @@ set -e
 cd "$(dirname "$0")/../docs"
 
 # Ensure Ruby gems path is in PATH
-export PATH="$PATH:/home/vscode/.local/share/gem/ruby/3.3.0/bin"
+RUBY_VERSION=$(ruby -e 'puts "#{RUBY_VERSION[0..2]}.0"')
+export PATH="$PATH:/home/vscode/.local/share/gem/ruby/${RUBY_VERSION}/bin"
+export GEM_HOME="/home/vscode/.local/share/gem/ruby/${RUBY_VERSION}"
+export GEM_PATH="$GEM_HOME"
 
 # Check if bundle is available
 if ! command -v bundle &> /dev/null; then
     echo "Bundle not found. Installing bundler..."
-    gem install bundler
+    gem install bundler --user-install
 fi
 
-# Install/update dependencies if needed
-if [[ ! -f "Gemfile.lock" ]] || [[ "Gemfile" -nt "Gemfile.lock" ]]; then
-    echo "Installing/updating dependencies..."
-    bundle install
-fi
+# Always ensure dependencies are installed
+echo "Checking/installing Jekyll dependencies..."
+bundle install --quiet
 
 echo "Starting Jekyll server for documentation preview..."
 echo "Site will be available at: http://localhost:4000/ha-smart-cover-automation/"
