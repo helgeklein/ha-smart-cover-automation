@@ -17,4 +17,4 @@ mypy>=1.0.0
 # pycares 4.11.0+ has breaking changes with aiodns 3.5.0
 # Pin both to ensure compatibility
 aiodns==3.5.0
-pycares>=4.9.0,<4.11.0
+pycares>=4.9.0,<5.1.0
