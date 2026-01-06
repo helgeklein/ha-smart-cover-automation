@@ -42,7 +42,7 @@ A Home Assistant integration to automate the control of your smart home's window
 
 Need of sunlight and desire for shade are individually very different. The integration allows you to tailor the way your covers move according to your needs. Extensive configuration options should make it possible to implement most scenarios easily.
 
-### Try Before You Buy
+### Easy to Try
 
 Enable **simulation mode**, which shows exactly what the integration would do without actually moving the covers.
 

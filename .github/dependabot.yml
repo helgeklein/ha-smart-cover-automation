@@ -23,6 +23,11 @@ updates:
       # Ignore pytest-homeassistant-custom-component as it depends on the Home Assistant version
       - dependency-name: "pytest-homeassistant-custom-component"
         update-types: ["version-update:semver-patch", "version-update:semver-minor", "version-update:semver-major"]
+      # pycares 4.11.0+ has breaking changes incompatible with aiodns 3.5.0
+      - dependency-name: "pycares"
+        versions: [">=4.11.0"]
+      # aiodns pinned to 3.5.0 for compatibility with Home Assistant
+      - dependency-name: "aiodns"
     groups:
       minor-and-patch:
         update-types:
