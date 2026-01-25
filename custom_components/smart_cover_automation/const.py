@@ -122,6 +122,7 @@ COVER_POS_FULLY_CLOSED: Final = 0
 
 # Coordinator
 UPDATE_INTERVAL: Final = timedelta(seconds=60)
+SUNSET_CLOSING_WINDOW_MINUTES: Final[int] = 10  # Duration of the evening closure window
 
 # Logbook service/translation keys
 SERVICE_LOGBOOK_ENTRY: Final[str] = "logbook_entry"

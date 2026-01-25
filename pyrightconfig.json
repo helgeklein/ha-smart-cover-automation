@@ -12,5 +12,9 @@
     ],
     "useLibraryCodeForTypes": false,
     "autoImportCompletions": false,
-    "indexing": true
+    "indexing": true,
+    "reportMissingModuleSource": false,
+    "ignore": [
+        "**/homeassistant/**"
+    ]
 }

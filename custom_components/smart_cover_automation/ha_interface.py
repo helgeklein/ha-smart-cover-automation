@@ -92,7 +92,6 @@ class HomeAssistantInterface:
         self.hass = hass
         self._resolved_settings_callback = resolved_settings_callback
         self.status_sensor_unique_id: str | None = None
-        self._previous_sun_state: str | None = None
 
     #
     # set_cover_position
@@ -253,43 +252,6 @@ class HomeAssistantInterface:
             return None
 
         return sun_entity.state
-
-    #
-    # is_sunset
-    #
-    def is_sunset(self) -> bool:
-        """Check if sunset just occurred (sun transitioned from above to below horizon).
-
-        This method detects the sunset transition by comparing the current sun state
-        with the state from the last update interval. It returns True when the sun
-        moves from above the horizon to below the horizon.
-
-        Returns:
-            True if sunset just occurred (transition from above to below horizon),
-            False otherwise
-
-        Note:
-            The current sun state is stored after each call for comparison in the
-            next update interval.
-        """
-        current_state = self.get_sun_state()
-
-        # Can't determine sunset if sun state is unavailable
-        if current_state is None:
-            return False
-
-        # Check if this is a sunset transition:
-        # Previous state was NOT below_horizon AND current state IS below_horizon
-        is_sunset_transition = (
-            self._previous_sun_state is not None
-            and self._previous_sun_state != const.HA_SUN_STATE_BELOW_HORIZON
-            and current_state == const.HA_SUN_STATE_BELOW_HORIZON
-        )
-
-        # Store current state for next update interval
-        self._previous_sun_state = current_state
-
-        return is_sunset_transition
 
     #
     # get_entity_state

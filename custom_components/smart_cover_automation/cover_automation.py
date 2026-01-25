@@ -258,7 +258,7 @@ class CoverAutomation:
         """Check if lockout protection should be enforced for this cover.
 
         Lockout protection prevents cover closing when associated window sensors indicate
-        that a window is open. This applies to both heat protection and sunset closing.
+        that a window is open. This applies to both heat protection and evening closure.
 
         Args:
             movement_reason: The reason for the potential cover movement
