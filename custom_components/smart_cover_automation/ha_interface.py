@@ -12,12 +12,14 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.cover import ATTR_POSITION, CoverEntityFeature
 from homeassistant.components.logbook import async_log_entry
 from homeassistant.components.weather import SERVICE_GET_FORECASTS
+from homeassistant.components.weather.const import ATTR_WEATHER_TEMPERATURE_UNIT
 from homeassistant.const import (
     ATTR_ENTITY_ID,
     SERVICE_CLOSE_COVER,
     SERVICE_OPEN_COVER,
     SERVICE_SET_COVER_POSITION,
     Platform,
+    UnitOfTemperature,
 )
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as ha_entity_registry
@@ -294,6 +296,13 @@ class HomeAssistantInterface:
 
         forecast_temp = await self._get_forecast_max_temp(entity_id)
         if forecast_temp is not None:
+            # Convert Fahrenheit to Celsius if necessary
+            # The integration logic expects Celsius
+            unit = state.attributes.get(ATTR_WEATHER_TEMPERATURE_UNIT)
+            if unit == UnitOfTemperature.FAHRENHEIT:
+                celsius_temp = (forecast_temp - 32) * 5.0 / 9.0
+                const.LOGGER.debug(f"Converted forecast temperature from {forecast_temp}° Fahrenheit to {celsius_temp}° Celsius")
+                return celsius_temp
             return forecast_temp
 
         # If forecast is not available, raise an error
