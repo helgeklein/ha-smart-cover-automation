@@ -7,6 +7,7 @@ https://github.com/helgeklein/ha-smart_cover_automation
 
 from __future__ import annotations
 
+import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -16,7 +17,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import async_get_loaded_integration
 
 from . import const
-from .config import get_runtime_configurable_keys
+from .config import ConfKeys, get_runtime_configurable_keys
 from .config_flow import OptionsFlowHandler
 from .const import (
     DATA_COORDINATORS,
@@ -290,6 +291,12 @@ async def async_setup_entry(
     - Sets up platforms
     - Sets up the reload listener
     """
+    # Configure logging level early to capture setup/migration logs
+    options = dict(getattr(entry, HA_OPTIONS, {}) or {})
+    if options.get(ConfKeys.VERBOSE_LOGGING.value, False):
+        LOGGER.setLevel(logging.DEBUG)
+        LOGGER.debug("Verbose logging enabled by configuration (early setup)")
+
     LOGGER.info("Starting integration setup")
 
     # Migrate unique IDs if needed
