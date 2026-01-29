@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Witamy w Smart Cover Automation",
-                "description": "Ta integracja jest instalowana z domyślnymi ustawieniami.\n\nSkonfiguruj rolety, encję pogodową i ustawienia automatyzacji później, klikając **ikonę koła zębatego** (przycisk konfiguracji) na karcie integracji.\n\nDokumentacja: https://ha-smart-cover-automation.helgeklein.com/"
+                "description": "Ta integracja jest instalowana z domyślnymi ustawieniami.\n\nSkonfiguruj rolety, encję pogodową i ustawienia automatyzacji później, klikając **ikonę koła zębatego** (przycisk konfiguracji) na karcie integracji.\n\n[Dokumentacja]({docs_url})"
             }
         }
     },
