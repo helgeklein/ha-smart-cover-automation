@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Welcome to Smart Cover Automation",
-                "description": "This integration is installed with default settings.\n\nPlease configure covers, weather entity, and automation settings later by clicking the **gear icon** (configure button) on the integration card.\n\nDocumentation: https://ha-smart-cover-automation.helgeklein.com/"
+                "description": "This integration is installed with default settings.\n\nPlease configure covers, weather entity, and automation settings later by clicking the **gear icon** (configure button) on the integration card.\n\n[Documentation]({docs_url})"
             }
         }
     },
