@@ -682,7 +682,7 @@ class TestCalculateDesiredPosition:
     # test_calculate_desired_position_sunset_closing_in_list
     #
     def test_calculate_desired_position_sunset_closing_in_list(self, cover_automation, mock_resolved_config):
-        """Test sunset closing takes priority when cover is in list and respects max closure limit."""
+        """Test evening closure takes priority when cover is in list and respects max closure limit."""
 
         mock_resolved_config.covers_max_closure = 0
         mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
@@ -753,7 +753,7 @@ class TestCalculateDesiredPosition:
     # test_calculate_desired_position_sunset_priority_over_opening
     #
     def test_calculate_desired_position_sunset_priority_over_opening(self, cover_automation, mock_resolved_config):
-        """Test sunset closing prevents opening for light and respects max closure limit."""
+        """Test evening closure prevents opening for light and respects max closure limit."""
 
         mock_resolved_config.covers_max_closure = 15  # Set max closure limit
         mock_resolved_config.covers_min_closure = 100
@@ -802,7 +802,7 @@ class TestCalculateDesiredPosition:
     # test_calculate_desired_position_sunset_closes_fully
     #
     def test_calculate_desired_position_sunset_closes_fully(self, cover_automation, mock_resolved_config):
-        """Test sunset closing respects max closure limit (global config)."""
+        """Test evening closure respects max closure limit (global config)."""
 
         mock_resolved_config.covers_max_closure = 30
         mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
@@ -825,7 +825,7 @@ class TestCalculateDesiredPosition:
     # test_calculate_desired_position_sunset_with_per_cover_closure_limit
     #
     def test_calculate_desired_position_sunset_with_per_cover_closure_limit(self, cover_automation, mock_resolved_config, basic_config):
-        """Test sunset closing respects per-cover max closure limit override."""
+        """Test evening closure respects per-cover max closure limit override."""
 
         mock_resolved_config.covers_max_closure = 30  # Global limit
         mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
@@ -914,13 +914,13 @@ class TestCalculateDesiredPositionLockout:
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=75)
 
-        # Lockout should prevent sunset closing
+        # Lockout should prevent evening closure
         assert lockout_active is True
         assert position == 75  # Keeps current position
         assert reason is None  # No movement reason
 
     def test_lockout_protection_sunset_closing_inactive(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
-        """Test sunset closing proceeds when lockout not active."""
+        """Test evening closure proceeds when lockout not active."""
         mock_resolved_config.covers_max_closure = 0
         mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
@@ -1153,7 +1153,7 @@ class TestIsLockoutActive:
         assert result is True
 
     def test_is_lockout_active_sunset_closing(self, cover_automation, basic_config, mock_ha_interface):
-        """Test lockout applies to sunset closing as well."""
+        """Test lockout applies to evening closure as well."""
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = STATE_ON
 

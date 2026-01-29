@@ -14,6 +14,7 @@ from datetime import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from homeassistant.util import dt as dt_util
 
 from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.automation_engine import AutomationEngine
@@ -485,7 +486,14 @@ class TestLogAutomationResult:
 
 
 class TestCheckSunsetClosing:
-    """Test _check_sunset_closing method for evening closure feature."""
+    """Test _check_sunset_closing method for evening closure feature.
+
+    The evening closure uses a window-based approach for reliability:
+    - Window starts at: sunset + configured delay
+    - Window ends at: window_start + SUNSET_CLOSING_WINDOW_MINUTES (10 min)
+    - Covers close once when first entering the window
+    - State resets after window ends
+    """
 
     #
     # test_check_sunset_closing_feature_disabled
@@ -504,17 +512,14 @@ class TestCheckSunsetClosing:
         result = engine._check_sunset_closing()
 
         assert result is False
-        # is_sunset should not be called when feature is disabled
-        mock_ha_interface.is_sunset.assert_not_called()
 
     #
-    # test_check_sunset_closing_sunset_detected_schedules_closing
+    # test_check_sunset_closing_before_window
     #
-    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
-    def test_check_sunset_closing_sunset_detected_schedules_closing(self, mock_datetime, mock_ha_interface):
-        """Test that sunset detection schedules cover closing after delay."""
-        from datetime import datetime as real_datetime
-        from datetime import timedelta, timezone
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_check_sunset_closing_before_window(self, mock_get_astral, mock_ha_interface, freezer):
+        """Test that method returns False when current time is before the closing window."""
+        from datetime import datetime
 
         # Setup: feature enabled with 15 minute delay
         config = {
@@ -527,36 +532,27 @@ class TestCheckSunsetClosing:
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
 
-        # Mock current time
-        fake_now = real_datetime(2025, 11, 4, 18, 30, 0, tzinfo=timezone.utc)
-        mock_datetime.now.return_value = fake_now
-        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
+        # Freeze time to 18:00 (before sunset + delay window)
+        freezer.move_to("2025-11-04 18:00:00")
 
-        # Mock sunset detection
-        mock_ha_interface.is_sunset.return_value = True
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+        # Mock sunset at 18:30 - window starts at 18:45 (sunset + 15 min delay)
+        sunset_time = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
+        mock_get_astral.return_value = sunset_time
 
-        # Call method
         result = engine._check_sunset_closing()
 
-        # Should not return True yet (just scheduled)
         assert result is False
-
-        # Verify scheduled time was set (15 minutes = 900 seconds later)
-        expected_time = fake_now + timedelta(seconds=900)
-        assert engine._sunset_close_scheduled_at == expected_time
         assert engine._sunset_covers_closed is False
 
     #
-    # test_check_sunset_closing_time_reached_returns_true_once
+    # test_check_sunset_closing_inside_window_first_time
     #
-    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
-    def test_check_sunset_closing_time_reached_returns_true_once(self, mock_datetime, mock_ha_interface):
-        """Test that method returns True once when scheduled time is reached."""
-        from datetime import datetime as real_datetime
-        from datetime import timedelta, timezone
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_check_sunset_closing_inside_window_first_time(self, mock_get_astral, mock_ha_interface, freezer):
+        """Test that method returns True once when entering the closing window."""
+        from datetime import datetime
 
-        # Setup
+        # Setup: feature enabled with 15 minute delay
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
@@ -567,16 +563,12 @@ class TestCheckSunsetClosing:
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
 
-        # Pre-schedule a closing time in the past
-        fake_now = real_datetime(2025, 11, 4, 18, 45, 0, tzinfo=timezone.utc)
-        scheduled_time = fake_now - timedelta(minutes=5)  # 5 minutes ago
-        engine._sunset_close_scheduled_at = scheduled_time
-        engine._sunset_covers_closed = False
+        # Freeze time to 18:47 (inside window: 18:45 to 18:55)
+        freezer.move_to("2025-11-04 18:47:00")
 
-        mock_datetime.now.return_value = fake_now
-        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
-        mock_ha_interface.is_sunset.return_value = False
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+        # Mock sunset at 18:30 - window starts at 18:45 (sunset + 15 min delay)
+        sunset_time = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
+        mock_get_astral.return_value = sunset_time
 
         # First call: should return True
         result = engine._check_sunset_closing()
@@ -587,18 +579,13 @@ class TestCheckSunsetClosing:
         result = engine._check_sunset_closing()
         assert result is False
 
-        # Third call: should still return False
-        result = engine._check_sunset_closing()
-        assert result is False
-
     #
-    # test_check_sunset_closing_not_yet_time
+    # test_check_sunset_closing_inside_window_already_closed
     #
-    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
-    def test_check_sunset_closing_not_yet_time(self, mock_datetime, mock_ha_interface):
-        """Test that method returns False when scheduled time hasn't arrived yet."""
-        from datetime import datetime as real_datetime
-        from datetime import timedelta, timezone
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_check_sunset_closing_inside_window_already_closed(self, mock_get_astral, mock_ha_interface, freezer):
+        """Test that method returns False if already closed within the window."""
+        from datetime import datetime
 
         # Setup
         config = {
@@ -611,70 +598,26 @@ class TestCheckSunsetClosing:
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
 
-        # Schedule closing time in the future
-        fake_now = real_datetime(2025, 11, 4, 18, 30, 0, tzinfo=timezone.utc)
-        scheduled_time = fake_now + timedelta(minutes=10)  # 10 minutes from now
-        engine._sunset_close_scheduled_at = scheduled_time
-        engine._sunset_covers_closed = False
-
-        mock_datetime.now.return_value = fake_now
-        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
-        mock_ha_interface.is_sunset.return_value = False
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
-
-        # Should return False (not time yet)
-        result = engine._check_sunset_closing()
-        assert result is False
-        assert engine._sunset_covers_closed is False
-
-    #
-    # test_check_sunset_closing_resets_at_sunrise
-    #
-    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
-    def test_check_sunset_closing_resets_at_sunrise(self, mock_datetime, mock_ha_interface):
-        """Test that state resets when sun goes above horizon."""
-        from datetime import datetime as real_datetime
-        from datetime import timezone
-
-        # Setup with already closed state
-        config = {
-            ConfKeys.COVERS.value: ["cover.test"],
-            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
-        }
-        resolved = resolve(config)
-        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
-
-        # Set state to "already closed after sunset"
-        fake_now = real_datetime(2025, 11, 4, 19, 0, 0, tzinfo=timezone.utc)
-        engine._sunset_close_scheduled_at = fake_now
+        # Pre-set already closed
         engine._sunset_covers_closed = True
 
-        mock_datetime.now.return_value = fake_now
-        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
-        mock_ha_interface.is_sunset.return_value = False
+        # Freeze time inside window
+        freezer.move_to("2025-11-04 18:50:00")
 
-        # Sun goes above horizon (sunrise)
-        mock_ha_interface.get_sun_state.return_value = "above_horizon"
+        # Mock sunset
+        sunset_time = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
+        mock_get_astral.return_value = sunset_time
 
-        # Call method
         result = engine._check_sunset_closing()
-
-        # Should reset state
         assert result is False
-        assert engine._sunset_close_scheduled_at is None
-        assert engine._sunset_covers_closed is False
 
     #
-    # test_check_sunset_closing_multiple_sunset_cycles
+    # test_check_sunset_closing_after_window_resets_state
     #
-    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
-    def test_check_sunset_closing_multiple_sunset_cycles(self, mock_datetime, mock_ha_interface):
-        """Test that feature works correctly across multiple day/night cycles."""
-        from datetime import datetime as real_datetime
-        from datetime import timedelta, timezone
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_check_sunset_closing_after_window_resets_state(self, mock_get_astral, mock_ha_interface, freezer):
+        """Test that state resets after the closing window ends."""
+        from datetime import datetime
 
         # Setup
         config = {
@@ -687,60 +630,28 @@ class TestCheckSunsetClosing:
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
 
-        # Day 1: Sunset detected
-        day1_sunset = real_datetime(2025, 11, 4, 18, 30, 0, tzinfo=timezone.utc)
-        mock_datetime.now.return_value = day1_sunset
-        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
-        mock_ha_interface.is_sunset.return_value = True
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+        # Pre-set state as already closed
+        engine._sunset_covers_closed = True
+
+        # Freeze time to after window ends (window was 18:45-18:55, now it's 19:00)
+        freezer.move_to("2025-11-04 19:00:00")
+
+        # Mock sunset at 18:30
+        sunset_time = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
+        mock_get_astral.return_value = sunset_time
 
         result = engine._check_sunset_closing()
-        assert result is False  # Just scheduled
 
-        # Day 1: Time reached
-        day1_close_time = day1_sunset + timedelta(minutes=15)
-        mock_datetime.now.return_value = day1_close_time
-        mock_ha_interface.is_sunset.return_value = False
-
-        result = engine._check_sunset_closing()
-        assert result is True  # First closing
-        assert engine._sunset_covers_closed is True
-
-        # Day 2: Sunrise resets
-        day2_sunrise = day1_close_time + timedelta(hours=12)
-        mock_datetime.now.return_value = day2_sunrise
-        mock_ha_interface.get_sun_state.return_value = "above_horizon"
-
-        result = engine._check_sunset_closing()
         assert result is False
-        assert engine._sunset_close_scheduled_at is None
-        assert engine._sunset_covers_closed is False
-
-        # Day 2: Another sunset
-        day2_sunset = day2_sunrise + timedelta(hours=8)
-        mock_datetime.now.return_value = day2_sunset
-        mock_ha_interface.is_sunset.return_value = True
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
-
-        result = engine._check_sunset_closing()
-        assert result is False  # Scheduled again
-
-        # Day 2: Time reached again
-        day2_close_time = day2_sunset + timedelta(minutes=15)
-        mock_datetime.now.return_value = day2_close_time
-        mock_ha_interface.is_sunset.return_value = False
-
-        result = engine._check_sunset_closing()
-        assert result is True  # Second closing works!
+        assert engine._sunset_covers_closed is False  # State reset
 
     #
     # test_check_sunset_closing_zero_delay
     #
-    @patch("custom_components.smart_cover_automation.automation_engine.datetime")
-    def test_check_sunset_closing_zero_delay(self, mock_datetime, mock_ha_interface):
-        """Test that zero delay triggers immediately on sunset."""
-        from datetime import datetime as real_datetime
-        from datetime import timezone
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_check_sunset_closing_zero_delay(self, mock_get_astral, mock_ha_interface, freezer):
+        """Test that zero delay triggers at sunset time."""
+        from datetime import datetime
 
         # Setup with zero delay
         config = {
@@ -753,21 +664,79 @@ class TestCheckSunsetClosing:
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
 
-        # Mock time
-        fake_now = real_datetime(2025, 11, 4, 18, 30, 0, tzinfo=timezone.utc)
-        mock_datetime.now.return_value = fake_now
-        mock_datetime.side_effect = lambda *args, **kw: real_datetime(*args, **kw)
+        # Freeze time to exactly sunset + 1 minute (inside window: 18:30 to 18:40)
+        freezer.move_to("2025-11-04 18:31:00")
 
-        # Sunset detected
-        mock_ha_interface.is_sunset.return_value = True
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+        # Mock sunset at 18:30
+        sunset_time = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
+        mock_get_astral.return_value = sunset_time
 
-        # With zero delay, should trigger immediately when sunset detected
         result = engine._check_sunset_closing()
-        assert result is True  # Triggers immediately with zero delay
+        assert result is True
 
-        # Second call should return False (already closed)
-        mock_ha_interface.is_sunset.return_value = False
+    #
+    # test_check_sunset_closing_sunset_unavailable
+    #
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_check_sunset_closing_sunset_unavailable(self, mock_get_astral, mock_ha_interface, freezer):
+        """Test that method returns False when sunset time is unavailable."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+
+        freezer.move_to("2025-11-04 18:45:00")
+
+        # Mock sunset unavailable
+        mock_get_astral.return_value = None
 
         result = engine._check_sunset_closing()
         assert result is False
+
+    #
+    # test_check_sunset_closing_multiple_day_cycles
+    #
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_check_sunset_closing_multiple_day_cycles(self, mock_get_astral, mock_ha_interface, freezer):
+        """Test that feature works correctly across multiple days."""
+        from datetime import datetime
+
+        # Setup
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+
+        # Day 1: Inside window - should close
+        freezer.move_to("2025-11-04 18:46:00")
+        sunset_day1 = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
+        mock_get_astral.return_value = sunset_day1
+
+        result = engine._check_sunset_closing()
+        assert result is True
+        assert engine._sunset_covers_closed is True
+
+        # Day 1: After window - should reset
+        freezer.move_to("2025-11-04 19:00:00")
+        result = engine._check_sunset_closing()
+        assert result is False
+        assert engine._sunset_covers_closed is False
+
+        # Day 2: Inside new window - should close again
+        freezer.move_to("2025-11-05 18:47:00")
+        sunset_day2 = datetime(2025, 11, 5, 18, 31, 0, tzinfo=dt_util.get_default_time_zone())
+        mock_get_astral.return_value = sunset_day2
+
+        result = engine._check_sunset_closing()
+        assert result is True
