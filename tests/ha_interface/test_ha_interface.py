@@ -636,6 +636,37 @@ class TestGetMaxTemperature:
         with pytest.raises(InvalidSensorReadingError, match="Forecast temperature unavailable"):
             await ha_interface.get_max_temperature(MOCK_WEATHER_ENTITY_ID)
 
+    #
+    # test_get_max_temperature_fahrenheit
+    #
+    async def test_get_max_temperature_fahrenheit(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test successfully retrieving maximum temperature from Fahrenheit forecast."""
+        from homeassistant.components.weather.const import ATTR_WEATHER_TEMPERATURE_UNIT
+        from homeassistant.const import UnitOfTemperature
+
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {ATTR_WEATHER_TEMPERATURE_UNIT: UnitOfTemperature.FAHRENHEIT}
+        mock_hass.states.get.return_value = mock_weather_state
+
+        # Get applicable date for forecast (use today before cutover time)
+        now = datetime.now(timezone.utc)
+        today = now.date()
+        forecast_datetime = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
+
+        # Mock the weather service response with Fahrenheit value (80.6 F ~ 27 C)
+        mock_hass.services.async_call.return_value = {
+            MOCK_WEATHER_ENTITY_ID: {"forecast": [{"datetime": forecast_datetime.isoformat(), "native_temperature": 80.6}]}
+        }
+
+        with patch("homeassistant.util.dt.now") as mock_now:
+            # Mock time before cutover (10:00 AM) to use today's forecast
+            mock_now.return_value = datetime.combine(today, time(10, 0), tzinfo=timezone.utc)
+
+            result = await ha_interface.get_max_temperature(MOCK_WEATHER_ENTITY_ID)
+
+        # Expect conversion to Celsius: (80.6 - 32) * 5/9 = 27.0
+        assert result == pytest.approx(27.0)
+
 
 #
 # TestFindDayForecast
