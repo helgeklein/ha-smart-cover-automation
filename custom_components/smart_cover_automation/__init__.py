@@ -96,6 +96,12 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
 
             collision_resolved = False
             if existing_entity_id:
+                LOGGER.warning(
+                    "Collision detected while migrating %s to %s. Existing owner: %s",
+                    entity.entity_id,
+                    new_unique_id,
+                    existing_entity_id,
+                )
                 existing_entry = registry.async_get(existing_entity_id)
                 # If the blocking entity has no config entry connected, it's an orphan/zombie
                 if existing_entry and existing_entry.config_entry_id is None:
@@ -112,10 +118,16 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
                         collision_resolved = True
                     except ValueError as retry_err:
                         LOGGER.error("Migration retry failed for %s: %s", entity.entity_id, retry_err)
+            else:
+                LOGGER.warning(
+                    f"Collaboration collision detected for {entity.entity_id} but no blocking entity found in registry query: {err}"
+                )
 
             if not collision_resolved:
                 # If we get here, it's a real conflict we can't auto-resolve
                 LOGGER.warning(f"Error migrating unique_id for {entity.entity_id}: {err}")
+        except Exception as err:
+            LOGGER.error(f"Unexpected error migrating {entity.entity_id}: {err}")
 
     LOGGER.info(f"Finished unique ID migration. Migrated {migrated_count} entities.")
 

@@ -5,7 +5,6 @@ Smart Cover Automation integration. The sensors provide real-time
 information about the automation system's operation.
 
 The sensors that appear in Home Assistant are:
-- Entity: sensor.smart_cover_automation_last_movement_timestamp - Timestamp of last cover movement
 """
 
 from __future__ import annotations
