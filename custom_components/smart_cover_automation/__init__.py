@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
 from homeassistant.core import ServiceCall
+from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import async_get_loaded_integration
 
 from . import const
@@ -45,6 +46,42 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.SWITCH,
 ]
+
+
+#
+# _async_migrate_unique_ids
+#
+async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfigEntry) -> None:
+    """Migrate legacy unique IDs to the new format (entry_id based).
+
+    Old format: {DOMAIN}_{key} (e.g. smart_cover_automation_status)
+    New format: {entry_id}_{key} (e.g. 1a2b3c4d_status)
+
+    This preserves the user-facing entity_id while allowing multiple instances.
+    """
+    registry = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(registry, entry.entry_id)
+
+    LOGGER.info(f"Starting unique ID migration for integration instance with entry ID: {entry.entry_id}")
+
+    migrated_count = 0
+    for entity in entries:
+        # Check if this entity uses the legacy ID format
+        if entity.unique_id.startswith(f"{const.DOMAIN}_"):
+            old_unique_id = entity.unique_id
+            # Extract key part
+            key = old_unique_id.replace(f"{const.DOMAIN}_", "", 1)
+            new_unique_id = f"{entry.entry_id}_{key}"
+
+            LOGGER.info(f"Migrating entity {entity.entity_id} unique_id from {old_unique_id} to {new_unique_id}")
+            try:
+                registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
+                migrated_count += 1
+            except ValueError as err:
+                # This can happen if the new unique_id already exists
+                LOGGER.warning(f"Error migrating unique_id for {entity.entity_id}: {err}")
+
+    LOGGER.info(f"Finished unique ID migration. Migrated {migrated_count} entities.")
 
 
 #
@@ -192,6 +229,9 @@ async def async_setup_entry(
     - Sets up the reload listener
     """
     LOGGER.info("Starting integration setup")
+
+    # Migrate unique IDs if needed
+    await _async_migrate_unique_ids(hass, entry)
 
     try:
         # Create the coordinator

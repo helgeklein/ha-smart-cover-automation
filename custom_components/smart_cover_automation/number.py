@@ -116,7 +116,7 @@ class IntegrationNumber(IntegrationEntity, NumberEntity):  # pyright: ignore[rep
 
         # Set unique ID to ensure proper device grouping and entity identification
         # This will result in entity_id: number.smart_cover_automation_{translation_key}
-        self._attr_unique_id = f"{DOMAIN}_{entity_description.key}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{entity_description.key}"
 
     # Note: We inherit the 'available' property from IntegrationEntity/CoordinatorEntity
     # which provides the correct coordinator-based availability logic.
