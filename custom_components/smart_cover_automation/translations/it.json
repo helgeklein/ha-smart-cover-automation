@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Benvenuti in Smart Cover Automation",
-                "description": "Questa integrazione viene installata con le impostazioni predefinite.\n\nConfigura le tapparelle, l'entità meteo e le impostazioni di automazione in seguito facendo clic sull'**icona dell'ingranaggio** (pulsante di configurazione) sulla scheda di integrazione.\n\nDocumentazione: https://ha-smart-cover-automation.helgeklein.com/"
+                "description": "Questa integrazione viene installata con le impostazioni predefinite.\n\nConfigura le tapparelle, l'entità meteo e le impostazioni di automazione in seguito facendo clic sull'**icona dell'ingranaggio** (pulsante di configurazione) sulla scheda di integrazione.\n\n[Documentazione]({docs_url})"
             }
         }
     },

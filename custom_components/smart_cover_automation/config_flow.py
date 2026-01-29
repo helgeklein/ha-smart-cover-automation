@@ -464,6 +464,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
             return self.async_show_form(
                 step_id="user",
                 data_schema=vol.Schema({}),
+                description_placeholders={"docs_url": "https://ha-smart-cover-automation.helgeklein.com/"},
             )
         else:
             # User clicked submit - create entry with empty config
