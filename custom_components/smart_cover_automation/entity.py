@@ -58,7 +58,7 @@ class IntegrationEntity(CoordinatorEntity[DataUpdateCoordinator]):
         return DeviceInfo(
             # Unique identifier for the device - use the config entry ID (a UUID)
             identifiers={(const.DOMAIN, self.coordinator.config_entry.entry_id)},
-            name=const.INTEGRATION_NAME,
+            name=self.coordinator.config_entry.title,
             model=const.INTEGRATION_NAME,
             entry_type=DeviceEntryType.SERVICE,
         )
