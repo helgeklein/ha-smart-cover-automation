@@ -62,23 +62,58 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
     registry = er.async_get(hass)
     entries = er.async_entries_for_config_entry(registry, entry.entry_id)
 
-    LOGGER.info(f"Starting unique ID migration for integration instance with entry ID: {entry.entry_id}")
+    # Filter for entities that need migration to avoid unnecessary logging on every boot
+    legacy_candidates = [entity for entity in entries if entity.unique_id.startswith(f"{const.DOMAIN}_")]
+
+    if not legacy_candidates:
+        return
+
+    LOGGER.info(
+        "Starting unique ID migration for entry %s. Found %d entities to migrate.",
+        entry.entry_id,
+        len(legacy_candidates),
+    )
 
     migrated_count = 0
-    for entity in entries:
-        # Check if this entity uses the legacy ID format
-        if entity.unique_id.startswith(f"{const.DOMAIN}_"):
-            old_unique_id = entity.unique_id
-            # Extract key part
-            key = old_unique_id.replace(f"{const.DOMAIN}_", "", 1)
-            new_unique_id = f"{entry.entry_id}_{key}"
+    for entity in legacy_candidates:
+        old_unique_id = entity.unique_id
+        # Extract key part
+        key = old_unique_id.replace(f"{const.DOMAIN}_", "", 1)
+        new_unique_id = f"{entry.entry_id}_{key}"
 
-            LOGGER.info(f"Migrating entity {entity.entity_id} unique_id from {old_unique_id} to {new_unique_id}")
-            try:
-                registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
-                migrated_count += 1
-            except ValueError as err:
-                # This can happen if the new unique_id already exists
+        LOGGER.info(f"Migrating entity {entity.entity_id} unique_id from {old_unique_id} to {new_unique_id}")
+        try:
+            registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
+            migrated_count += 1
+        except ValueError as err:
+            # Collision detected. The new ID might be taken by an orphaned entity.
+            # Derive domain from entity_id (safe way)
+            entity_domain = entity.entity_id.split(".", 1)[0]
+
+            # Check who owns the new unique_id
+            existing_entity_id = registry.async_get_entity_id(entity_domain, entity.platform, new_unique_id)
+
+            collision_resolved = False
+            if existing_entity_id:
+                existing_entry = registry.async_get(existing_entity_id)
+                # If the blocking entity has no config entry connected, it's an orphan/zombie
+                if existing_entry and existing_entry.config_entry_id is None:
+                    LOGGER.warning(
+                        "Found orphaned entity %s blocking migration to %s. Removing it.",
+                        existing_entity_id,
+                        new_unique_id,
+                    )
+                    registry.async_remove(existing_entity_id)
+                    # Retry migration
+                    try:
+                        registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
+                        migrated_count += 1
+                        collision_resolved = True
+                    except ValueError as retry_err:
+                        LOGGER.error("Migration retry failed for %s: %s", entity.entity_id, retry_err)
+
+            if not collision_resolved:
+                # If we get here, it's a real conflict we can't auto-resolve
                 LOGGER.warning(f"Error migrating unique_id for {entity.entity_id}: {err}")
 
     LOGGER.info(f"Finished unique ID migration. Migrated {migrated_count} entities.")
