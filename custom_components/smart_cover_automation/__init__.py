@@ -87,15 +87,15 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
 #
 # _async_register_lock_service
 #
-async def _async_register_lock_service(hass: HomeAssistant, coordinator: DataUpdateCoordinator) -> None:
+async def _async_register_lock_service(hass: HomeAssistant) -> None:
     """Register the set_lock service.
 
     Args:
         hass: Home Assistant instance
-        coordinator: The coordinator instance
     """
     import voluptuous as vol
     from homeassistant.helpers import config_validation as cv
+    from homeassistant.helpers import service
 
     #
     # async_handle_set_lock
@@ -108,7 +108,10 @@ async def _async_register_lock_service(hass: HomeAssistant, coordinator: DataUpd
         """
         lock_mode = call.data[SERVICE_FIELD_LOCK_MODE]
 
-        LOGGER.info(f"Service call: set_lock(lock_mode={lock_mode})")
+        # Extract target config entry IDs from the service call (if any)
+        target_entry_ids = await service.async_extract_config_entry_ids(hass, call)
+
+        LOGGER.info(f"Service call: set_lock(lock_mode={lock_mode}, targets={len(target_entry_ids)})")
 
         # Validate lock mode
         valid_modes = [mode.value for mode in const.LockMode]
@@ -117,8 +120,32 @@ async def _async_register_lock_service(hass: HomeAssistant, coordinator: DataUpd
             LOGGER.error(f"Invalid lock mode: {lock_mode}. Valid modes: {valid_modes}")
             raise ValueError(f"Invalid lock mode: {lock_mode}")
 
-        # Apply lock mode via coordinator
-        await coordinator.async_set_lock_mode(lock_mode)
+        # Resolve coordinators
+        domain_data = hass.data.get(DOMAIN, {})
+        coordinators = domain_data.get(DATA_COORDINATORS, {})
+
+        if not coordinators:
+            LOGGER.warning("Set lock service called but no coordinators are registered")
+            return
+
+        # Determine which coordinators to update
+        if target_entry_ids:
+            # Apply only to targeted instances
+            target_coordinators = [coordinators[entry_id] for entry_id in target_entry_ids if entry_id in coordinators]
+        else:
+            # No target specified -> Apply to ALL instances (global broadcast)
+            target_coordinators = list(coordinators.values())
+
+        if not target_coordinators:
+            LOGGER.warning(
+                "Set lock service: No matching coordinators found for targets: %s",
+                target_entry_ids,
+            )
+            return
+
+        # Apply lock mode to all targeted coordinators
+        for coordinator in target_coordinators:
+            await coordinator.async_set_lock_mode(lock_mode)
 
     # Define service schema
     set_lock_schema = vol.Schema(
@@ -264,7 +291,7 @@ async def async_setup_entry(
             )
 
         # Register lock service
-        await _async_register_lock_service(hass, coordinator)
+        await _async_register_lock_service(hass)
 
         # Call each platform's async_setup_entry()
         LOGGER.debug(f"Setting up platforms: {PLATFORMS}")
