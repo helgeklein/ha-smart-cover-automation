@@ -18,7 +18,6 @@ from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
-    DOMAIN,
     NUMBER_KEY_COVERS_MAX_CLOSURE,
     NUMBER_KEY_COVERS_MIN_CLOSURE,
     NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
@@ -226,7 +225,7 @@ async def test_number_entity_properties(mock_hass_with_spec, mock_config_entry_b
         assert entity.entity_description.device_class == entity_config["device_class"]
 
     # Verify unique_id format
-    assert entity.unique_id == f"{DOMAIN}_{entity_config['key']}"
+    assert entity.unique_id == f"{mock_config_entry_basic.entry_id}_{entity_config['key']}"
 
     # Verify numeric properties
     assert entity.entity_description.native_min_value == entity_config["min_value"]

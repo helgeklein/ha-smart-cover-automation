@@ -18,7 +18,6 @@ from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
 
 from .config import ConfKeys
 from .const import (
-    DOMAIN,
     NUMBER_KEY_COVERS_MAX_CLOSURE,
     NUMBER_KEY_COVERS_MIN_CLOSURE,
     NUMBER_KEY_MANUAL_OVERRIDE_DURATION,

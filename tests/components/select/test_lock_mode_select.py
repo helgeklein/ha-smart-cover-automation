@@ -15,7 +15,6 @@ import pytest
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.const import (
-    DOMAIN,
     SELECT_KEY_LOCK_MODE,
     LockMode,
 )
@@ -73,7 +72,7 @@ async def test_lock_mode_select_entity_properties(mock_hass_with_spec, mock_conf
     assert lock_mode_select.entity_description.entity_category == EntityCategory.CONFIG
 
     # Verify unique_id format
-    assert lock_mode_select.unique_id == f"{DOMAIN}_{SELECT_KEY_LOCK_MODE}"
+    assert lock_mode_select.unique_id == f"{mock_config_entry_basic.entry_id}_{SELECT_KEY_LOCK_MODE}"
 
     # Verify options list contains all lock modes
     expected_options = [mode.value for mode in LockMode]

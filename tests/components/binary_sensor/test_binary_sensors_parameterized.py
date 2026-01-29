@@ -33,7 +33,6 @@ from custom_components.smart_cover_automation.const import (
     BINARY_SENSOR_KEY_STATUS,
     BINARY_SENSOR_KEY_TEMP_HOT,
     BINARY_SENSOR_KEY_WEATHER_SUNNY,
-    DOMAIN,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
@@ -202,7 +201,7 @@ async def test_binary_sensor_entity_properties(mock_hass_with_spec, mock_config_
         assert entity.entity_description.icon == sensor_config["icon"]
 
     # Verify unique_id format
-    assert entity.unique_id == f"{DOMAIN}_{sensor_config['key']}"
+    assert entity.unique_id == f"{mock_config_entry_basic.entry_id}_{sensor_config['key']}"
 
 
 #
@@ -574,4 +573,4 @@ async def test_status_sensor_stores_unique_id_in_coordinator(mock_hass_with_spec
 
     # Verify that the coordinator has the status sensor unique_id stored
     assert hasattr(coordinator, "status_sensor_unique_id")
-    assert coordinator.status_sensor_unique_id == f"{DOMAIN}_{BINARY_SENSOR_KEY_STATUS}"
+    assert coordinator.status_sensor_unique_id == f"{mock_config_entry_basic.entry_id}_{BINARY_SENSOR_KEY_STATUS}"

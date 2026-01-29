@@ -54,6 +54,6 @@ async def test_switch_entity_properties(mock_coordinator_basic) -> None:
     assert verbose_switch is not None
 
     # Verify unique IDs are set correctly
-    assert enabled_switch.unique_id == "smart_cover_automation_enabled"
-    assert simulation_switch.unique_id == "smart_cover_automation_simulation_mode"
-    assert verbose_switch.unique_id == "smart_cover_automation_verbose_logging"
+    assert enabled_switch.unique_id == f"{entry.entry_id}_enabled"
+    assert simulation_switch.unique_id == f"{entry.entry_id}_simulation_mode"
+    assert verbose_switch.unique_id == f"{entry.entry_id}_verbose_logging"

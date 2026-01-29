@@ -18,7 +18,6 @@ from homeassistant.components.switch import SwitchEntity, SwitchEntityDescriptio
 from homeassistant.const import EntityCategory
 
 from .config import ConfKeys, resolve_entry
-from .const import DOMAIN
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:

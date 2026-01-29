@@ -483,7 +483,7 @@ class TestSetLockServiceHandler:
             await service_handler(call)
 
             # Verify INFO log contains lock mode
-            assert "Service call: set_lock(lock_mode=hold_position)" in caplog.text
+            assert "Service call: set_lock(lock_mode=hold_position, targets=0)" in caplog.text
 
     async def test_set_lock_logs_error_for_invalid_mode(self, mock_hass_with_spec, caplog) -> None:
         """Test set_lock logs ERROR for invalid lock mode."""

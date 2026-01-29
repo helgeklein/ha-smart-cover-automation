@@ -27,7 +27,6 @@ from .const import (
     BINARY_SENSOR_KEY_STATUS,
     BINARY_SENSOR_KEY_TEMP_HOT,
     BINARY_SENSOR_KEY_WEATHER_SUNNY,
-    DOMAIN,
 )
 from .entity import IntegrationEntity
 

@@ -16,7 +16,6 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, Sen
 from homeassistant.const import EntityCategory, UnitOfTemperature
 
 from .const import (
-    DOMAIN,
     SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
     SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY,
     SENSOR_KEY_SUN_AZIMUTH,

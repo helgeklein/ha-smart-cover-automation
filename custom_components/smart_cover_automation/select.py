@@ -12,7 +12,7 @@ from homeassistant.components.select import SelectEntity, SelectEntityDescriptio
 from homeassistant.const import EntityCategory
 
 from . import const
-from .const import DOMAIN, SELECT_KEY_LOCK_MODE
+from .const import SELECT_KEY_LOCK_MODE
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
