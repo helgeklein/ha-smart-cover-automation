@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Bienvenue dans Smart Cover Automation",
-                "description": "Cette intégration est installée avec les paramètres par défaut.\n\nVeuillez configurer les volets, l'entité météo et les paramètres d'automatisation plus tard en cliquant sur l'**icône d'engrenage** (bouton de configuration) sur la carte d'intégration.\n\nDocumentation: https://ha-smart-cover-automation.helgeklein.com/"
+                "description": "Cette intégration est installée avec les paramètres par défaut.\n\nVeuillez configurer les volets, l'entité météo et les paramètres d'automatisation plus tard en cliquant sur l'**icône d'engrenage** (bouton de configuration) sur la carte d'intégration.\n\n[Documentation]({docs_url})"
             }
         }
     },
