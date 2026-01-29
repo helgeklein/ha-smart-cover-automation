@@ -80,5 +80,25 @@
         "chmod": false,
         "chown": false,
         "/^git\\s+(push|reset|revert|clean)\\b/": false
-    }
+    },
+    "workbench.colorCustomizations": {
+        "activityBar.activeBackground": "#41bcc3",
+        "activityBar.background": "#41bcc3",
+        "activityBar.foreground": "#15202b",
+        "activityBar.inactiveForeground": "#15202b99",
+        "activityBarBadge.background": "#aa36a3",
+        "activityBarBadge.foreground": "#e7e7e7",
+        "commandCenter.border": "#e7e7e799",
+        "sash.hoverBorder": "#41bcc3",
+        "statusBar.background": "#32999f",
+        "statusBar.foreground": "#e7e7e7",
+        "statusBarItem.hoverBackground": "#41bcc3",
+        "statusBarItem.remoteBackground": "#32999f",
+        "statusBarItem.remoteForeground": "#e7e7e7",
+        "titleBar.activeBackground": "#32999f",
+        "titleBar.activeForeground": "#e7e7e7",
+        "titleBar.inactiveBackground": "#32999f99",
+        "titleBar.inactiveForeground": "#e7e7e799"
+    },
+    "peacock.remoteColor": "#32999f"
 }
