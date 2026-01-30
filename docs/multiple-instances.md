@@ -24,6 +24,12 @@ The names of an instance's entity IDs are constructed by Home Assistant from the
 
 The example above would result in the entity ID: `binary_sensor.sca_north_windows_status`.
 
+## Notes
+
+### Adding Covers to Multiple Instances
+
+The integration won't prevent you from adding a cover to multiple instances. This is by design to allow for maximum flexibility.
+
 ## Use Case Examples
 
 ### North and South Covers
@@ -37,7 +43,7 @@ Let's assume you have covers on the south and the north side of the building. Yo
 
 #### Configuration
 
-On the integration page, rename the default integration entry (the one you get after installing the integration) from `Smart Cover Automation` to `South Covers`.
-
-Also on the integration page, click **Add entry** to create a second instance of the integration.
+1. On the integration page, rename the default integration entry (the one you get after installing the integration) from `Smart Cover Automation` to `South Covers`.
+2. Create a second instance of the integration named `North Covers`.
+3. You now have two independent instances that can be configured as required.
 
