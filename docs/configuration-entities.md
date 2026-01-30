@@ -8,7 +8,7 @@ permalink: /ui-configuration-entities/
 
 # UI Configuration Entities
 
-In addition to the rather static configuration settings managed through the wizard, the integration's behavior can be controlled via switches and other UI configuration entities on the integration card.
+In addition to the rather static configuration settings managed through the wizard, the integration's behavior can be controlled via switches and other UI configuration entities on the device page of the integration instance.
 
 ## Integration Settings
 
