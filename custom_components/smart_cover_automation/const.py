@@ -42,7 +42,11 @@ def _init_logger() -> None:
     """Initialize the module-level LOGGER. Called once at module load time."""
 
     global LOGGER  # noqa: PLW0603
-    from .log import Log
+    try:
+        from .log import Log
+    except ImportError:
+        # Fallback for when module is loaded outside package context (e.g., CI tests)
+        from custom_components.smart_cover_automation.log import Log
 
     LOGGER = Log()
 
