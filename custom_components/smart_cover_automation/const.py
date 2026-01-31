@@ -15,11 +15,25 @@ logger:
     custom_components.smart_cover_automation: debug
 """
 
+from __future__ import annotations
+
 from datetime import timedelta
 from enum import Enum, StrEnum
 from logging import getLogger
 from typing import Final
 
+# Module-level logger for the integration.
+# __package__ is a special Python variable that contains the dotted package name of the current module. For this file located at:
+#   custom_components/smart_cover_automation/const.py
+# __package__ resolves to: "custom_components.smart_cover_automation"
+#
+# This creates a logger named "custom_components.smart_cover_automation" which:
+# - Inherits log level settings from parent loggers in the hierarchy
+# - Can be configured in Home Assistant's configuration.yaml under logger:
+#     logger:
+#       logs:
+#         custom_components.smart_cover_automation: debug
+# - Allows all modules in this package to share the same logger namespace
 LOGGER: Final = getLogger(__package__)
 
 
