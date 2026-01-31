@@ -44,11 +44,22 @@ def _init_logger() -> None:
     global LOGGER  # noqa: PLW0603
     try:
         from .log import Log
+
+        LOGGER = Log()
     except ImportError:
         # Fallback for when module is loaded outside package context (e.g., CI tests)
-        from custom_components.smart_cover_automation.log import Log
+        # Import log.py directly to avoid triggering __init__.py which needs homeassistant
+        import importlib.util
+        from pathlib import Path
 
-    LOGGER = Log()
+        log_path = Path(__file__).parent / "log.py"
+        spec = importlib.util.spec_from_file_location("log", log_path)
+        if spec and spec.loader:
+            log_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(log_module)
+            LOGGER = log_module.Log()
+        else:
+            raise ImportError("Could not load log.py")
 
 
 #
