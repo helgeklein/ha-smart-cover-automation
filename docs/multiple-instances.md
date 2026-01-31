@@ -18,9 +18,9 @@ After the initial installation, additional integration instances can be created 
 
 The names of an instance's entity IDs are constructed by Home Assistant from the following components:
 
-- Entity type (e.g., binary sensor)
-- Device name (e.g., SCA North Windows)
-- Entity name (e.g., Status)
+- Entity type (e.g., `binary sensor`)
+- Device name (e.g., `SCA North Windows`)
+- Entity name (e.g., `Status`)
 
 The example above would result in the entity ID: `binary_sensor.sca_north_windows_status`.
 
