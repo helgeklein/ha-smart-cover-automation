@@ -27,6 +27,7 @@ from homeassistant.helpers import translation
 from homeassistant.util import dt as dt_util
 
 from . import const
+from .log import Log
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -83,16 +84,23 @@ class HomeAssistantInterface:
     #
     # __init__
     #
-    def __init__(self, hass: HomeAssistant, resolved_settings_callback: Callable[[], ResolvedConfig]) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        resolved_settings_callback: Callable[[], ResolvedConfig],
+        logger: Log,
+    ) -> None:
         """Initialize the HA interface.
 
         Args:
             hass: Home Assistant instance
             resolved_settings_callback: Callback to get current resolved configuration
+            logger: Instance-specific logger with entry_id prefix
         """
 
         self.hass = hass
         self._resolved_settings_callback = resolved_settings_callback
+        self._logger = logger
         self.status_sensor_unique_id: str | None = None
 
     #
@@ -130,24 +138,24 @@ class HomeAssistantInterface:
                 service = SERVICE_SET_COVER_POSITION
                 service_data = {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos}
                 actual_position = desired_pos  # For position-supporting covers, actual equals desired
-                const.LOGGER.debug(f"[{entity_id}] Moving to {desired_pos}% via set_position service")
+                self._logger.debug(f"[{entity_id}] Moving to {desired_pos}% via set_position service")
             else:
                 # Fallback to open/close - determine actual position based on service used
                 if desired_pos > const.COVER_POS_FULLY_OPEN / 2:
                     service = SERVICE_OPEN_COVER
                     service_data = {ATTR_ENTITY_ID: entity_id}
                     actual_position = const.COVER_POS_FULLY_OPEN  # Binary covers go to fully open
-                    const.LOGGER.debug(f"[{entity_id}] Opening fully via open_cover service (no position support)")
+                    self._logger.debug(f"[{entity_id}] Opening fully via open_cover service (no position support)")
                 else:
                     service = SERVICE_CLOSE_COVER
                     service_data = {ATTR_ENTITY_ID: entity_id}
                     actual_position = const.COVER_POS_FULLY_CLOSED  # Binary covers go to fully closed
-                    const.LOGGER.debug(f"[{entity_id}] Closing fully via close_cover service (no position support)")
+                    self._logger.debug(f"[{entity_id}] Closing fully via close_cover service (no position support)")
 
             resolved = self._resolved_settings_callback()
             if resolved.simulation_mode:
                 # If simulation mode is enabled, skip the actual service call
-                const.LOGGER.info(
+                self._logger.info(
                     f"[{entity_id}] Simulation mode enabled; skipping actual {service} call; would have moved to {actual_position}%"
                 )
             else:
@@ -160,19 +168,19 @@ class HomeAssistantInterface:
         except (OSError, ConnectionError, TimeoutError) as err:
             # Network/communication errors
             error_msg = f"Communication error while controlling cover: {err}"
-            const.LOGGER.error(f"[{entity_id}] {error_msg}")
+            self._logger.error(f"[{entity_id}] {error_msg}")
             raise ServiceCallError(service, entity_id, str(err)) from err
 
         except (ValueError, TypeError) as err:
             # Invalid parameters or data type issues
             error_msg = f"Invalid parameters for cover control: {err}"
-            const.LOGGER.error(f"[{entity_id}] {error_msg}")
+            self._logger.error(f"[{entity_id}] {error_msg}")
             raise ServiceCallError(service, entity_id, str(err)) from err
 
         except Exception as err:
             # Catch-all for unexpected errors
             error_msg = f"Unexpected error during cover control: {err}"
-            const.LOGGER.error(f"[{entity_id}] {error_msg}")
+            self._logger.error(f"[{entity_id}] {error_msg}")
             raise ServiceCallError(service, entity_id, str(err)) from err
 
     #
@@ -200,7 +208,7 @@ class HomeAssistantInterface:
             raise InvalidSensorReadingError(entity_id, f"Weather entity {entity_id}: state is unavailable")
 
         condition = state.state
-        const.LOGGER.debug(f"Current weather condition: {condition}")
+        self._logger.debug(f"Current weather condition: {condition}")
         return condition
 
     #
@@ -301,7 +309,7 @@ class HomeAssistantInterface:
             unit = state.attributes.get(ATTR_WEATHER_TEMPERATURE_UNIT)
             if unit == UnitOfTemperature.FAHRENHEIT:
                 celsius_temp = (forecast_temp - 32) * 5.0 / 9.0
-                const.LOGGER.debug(f"Converted forecast temperature from {forecast_temp}° Fahrenheit to {celsius_temp}° Celsius")
+                self._logger.debug(f"Converted forecast temperature from {forecast_temp}° Fahrenheit to {celsius_temp}° Celsius")
                 return celsius_temp
             return forecast_temp
 
@@ -322,23 +330,23 @@ class HomeAssistantInterface:
             )
 
             # Debug logging to understand the response structure
-            const.LOGGER.debug(f"Weather forecast service response for {entity_id}: {response}")
+            self._logger.debug(f"Weather forecast service response for {entity_id}: {response}")
 
             # Extract today's forecast data with proper type checking
             if not (response and isinstance(response, dict) and entity_id in response):
-                const.LOGGER.warning(f"Invalid or empty forecast response for {entity_id}: {response}")
+                self._logger.warning(f"Invalid or empty forecast response for {entity_id}: {response}")
                 return None
 
             entity_data = response[entity_id]
             if not (isinstance(entity_data, dict) and "forecast" in entity_data):
-                const.LOGGER.warning(
+                self._logger.warning(
                     f"Forecast data missing in response for {entity_id}. Available keys: {list(entity_data.keys()) if isinstance(entity_data, dict) else 'Not a dict'}"
                 )
                 return None
 
             forecast_list = entity_data["forecast"]
             if not (isinstance(forecast_list, list) and forecast_list):
-                const.LOGGER.warning(
+                self._logger.warning(
                     f"Forecast list is empty or not a list for {entity_id}: {type(forecast_list)} with length {len(forecast_list) if isinstance(forecast_list, list) else 'N/A'}"
                 )
                 return None
@@ -352,15 +360,15 @@ class HomeAssistantInterface:
 
             max_temp = self._extract_max_temperature(day_forecast)
             if max_temp is not None:
-                const.LOGGER.debug(f"Forecast max temperature: {max_temp} °C for {applicable_day}")
+                self._logger.debug(f"Forecast max temperature: {max_temp} °C for {applicable_day}")
                 return max_temp
             else:
-                const.LOGGER.warning(f"Could not extract max temperature from today's forecast for {entity_id}")
+                self._logger.warning(f"Could not extract max temperature from today's forecast for {entity_id}")
 
         except HomeAssistantError as err:
-            const.LOGGER.warning(f"Failed to call weather forecast service for {entity_id}: {err}")
+            self._logger.warning(f"Failed to call weather forecast service for {entity_id}: {err}")
         except Exception as err:
-            const.LOGGER.warning(f"Unexpected error getting weather forecast from {entity_id}: {err}")
+            self._logger.warning(f"Unexpected error getting weather forecast from {entity_id}: {err}")
 
         return None
 
@@ -378,7 +386,7 @@ class HomeAssistantInterface:
         """
 
         if not forecast_list:
-            const.LOGGER.warning("Forecast list is empty")
+            self._logger.warning("Forecast list is empty")
             return None
 
         # Get the cutover time from configuration
@@ -421,11 +429,11 @@ class HomeAssistantInterface:
                     return (applicable_day_friendly, forecast)
 
             except (ValueError, TypeError, AttributeError) as err:
-                const.LOGGER.debug(f"Could not parse forecast datetime '{datetime_field}': {err}")
+                self._logger.debug(f"Could not parse forecast datetime '{datetime_field}': {err}")
                 continue
 
         # Fallback: could not find forecast by date
-        const.LOGGER.warning("Could not find weather forecast by date")
+        self._logger.warning("Could not find weather forecast by date")
         return None
 
     #
@@ -461,9 +469,9 @@ class HomeAssistantInterface:
                 if isinstance(temp_value, (int, float)):
                     return float(temp_value)
                 else:
-                    const.LOGGER.debug(f"Field '{field_name}' is not a number: {temp_value}")
+                    self._logger.debug(f"Field '{field_name}' is not a number: {temp_value}")
 
-        const.LOGGER.warning(f"No temperature fields found in forecast. Available fields: {list(forecast.keys())}")
+        self._logger.warning(f"No temperature fields found in forecast. Available fields: {list(forecast.keys())}")
         return None
 
     #
@@ -498,7 +506,7 @@ class HomeAssistantInterface:
                     break
 
             if integration_entity_id is None:
-                const.LOGGER.warning(f"Could not find integration entity for logbook entry by its unique_id: {unique_id}")
+                self._logger.warning(f"Could not find integration entity for logbook entry by its unique_id: {unique_id}")
                 return
 
             # Get translations for the current language
@@ -522,7 +530,7 @@ class HomeAssistantInterface:
             translated_reason = translations.get(reason_key)
             translated_template = translations.get(template_key)
             if translated_verb is None or translated_reason is None or translated_template is None:
-                const.LOGGER.warning(
+                self._logger.warning(
                     f"Missing translations for logbook entry: verb='{verb_key}', reason='{reason_key}', template='{template_key}'"
                 )
                 return
@@ -545,4 +553,4 @@ class HomeAssistantInterface:
             )
         except Exception as err:
             # Don't fail the entire automation if logbook entry fails
-            const.LOGGER.debug(f"[{entity_id}] Failed to add logbook entry: {err}")
+            self._logger.debug(f"[{entity_id}] Failed to add logbook entry: {err}")

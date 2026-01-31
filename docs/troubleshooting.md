@@ -16,7 +16,7 @@ This guide helps resolve issues with the Smart Cover Automation integration.
 
 All cover movements are logged in Home Assistant's [activity logbook](https://www.home-assistant.io/integrations/logbook/). Fully translated, of course.
 
-Filter the logbook for this integration's entries by selecting `Smart Cover Automation` as device.
+Filter the logbook for entries from this integration's instances by selecting `Smart Cover Automation` as device (or whatever name you chose for your instances).
 
 ### Sensors
 
@@ -40,11 +40,24 @@ The integration comes with the following sensors that help you understand the in
 
 ### Enable Verbose Logging
 
-Make sure to enable verbose (debug) logging when analyzing a problem. This can be done via the UI (see the [Configuration Guide]({{ '/configuration-wizard/' | relative_url }}))
+Make sure to enable verbose (debug) logging when analyzing a problem. This can be done via the UI (see the [Configuration Guide]({{ '/configuration-wizard/' | relative_url }})).
+
+Note that verbose logging is enabled per integration instance. This facilitates troubleshooting in a multi-instance setup as you'll only see verbose messages from the instance(s) you're interested in.
 
 ### Log File Location
 
 You can find the **Home Assistant Core** log at **Settings** → **Systems** → **Logs**.
+
+### Log Message Format
+
+- **Timestamp:** e.g., `2026-01-31 17:20:22.174`
+- **Severity:** e.g., `DEBUG`
+- **HA thread name:** e.g., `(MainThread)`
+- **Integration instance:** e.g., `[custom_components.smart_cover_automation.ABC12]`
+- **Cover entity:** e.g., `[cover.kitchen]` (logged only when the message pertains to a cover)
+- **Log message:** the actual log message, e.g., `Current weather condition: partlycloudy`
+
+As you can see above, the integration instance field contains the last five characters of the instance's entry ID that logged the message (`ABC12` in the example). This makes it easy to distinguish between messages from multiple instances.
 
 ## Getting Help
 

@@ -22,6 +22,7 @@ from homeassistant.const import (
 from . import const
 from .config import ResolvedConfig
 from .cover_position_history import CoverPositionHistoryManager
+from .log import Log
 from .util import to_float_or_none, to_int_or_none
 
 if TYPE_CHECKING:
@@ -89,6 +90,7 @@ class CoverAutomation:
         config: dict[str, Any],
         cover_pos_history_mgr: CoverPositionHistoryManager,
         ha_interface: Any,
+        logger: Log,
     ) -> None:
         """Initialize cover automation.
 
@@ -98,6 +100,7 @@ class CoverAutomation:
             config: Raw configuration dictionary
             cover_pos_history_mgr: Cover position history manager
             ha_interface: Home Assistant interface for API interactions
+            logger: Instance-specific logger with entry_id prefix
         """
 
         self.entity_id = entity_id
@@ -105,6 +108,7 @@ class CoverAutomation:
         self.config = config
         self._cover_pos_history_mgr = cover_pos_history_mgr
         self._ha_interface = ha_interface
+        self._logger = logger
 
     #
     # process
@@ -187,7 +191,7 @@ class CoverAutomation:
                 cover_state.pos_target_final = actual_pos
 
         # Log per-cover state
-        const.LOGGER.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}")
+        self._logger.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}")
 
         return cover_state
 
@@ -546,7 +550,7 @@ class CoverAutomation:
         try:
             # Move the cover
             actual_pos = await self._ha_interface.set_cover_position(self.entity_id, desired_pos, features)
-            const.LOGGER.debug(f"[{self.entity_id}] Actual position: {actual_pos}%")
+            self._logger.debug(f"[{self.entity_id}] Actual position: {actual_pos}%")
 
             # Add the new position to the history
             self._cover_pos_history_mgr.add(self.entity_id, actual_pos, cover_moved=True)
@@ -573,7 +577,7 @@ class CoverAutomation:
 
         except Exception as err:
             # Log the error but continue with other covers
-            const.LOGGER.error(f"[{self.entity_id}] Failed to control cover: {err}")
+            self._logger.error(f"[{self.entity_id}] Failed to control cover: {err}")
             return False, None, f"Error: {err}"
 
     #
@@ -683,10 +687,10 @@ class CoverAutomation:
 
         # Log the message
         if severity == const.LogSeverity.DEBUG:
-            const.LOGGER.debug(message)
+            self._logger.debug(message)
         elif severity == const.LogSeverity.INFO:
-            const.LOGGER.info(message)
+            self._logger.info(message)
         elif severity == const.LogSeverity.WARNING:
-            const.LOGGER.warning(message)
+            self._logger.warning(message)
         else:
-            const.LOGGER.error(message)
+            self._logger.error(message)

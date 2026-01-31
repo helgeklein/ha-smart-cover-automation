@@ -12,8 +12,9 @@ from homeassistant.components.select import SelectEntity, SelectEntityDescriptio
 from homeassistant.const import EntityCategory
 
 from . import const
-from .const import DOMAIN, SELECT_KEY_LOCK_MODE
+from .const import SELECT_KEY_LOCK_MODE
 from .entity import IntegrationEntity
+from .log import Log
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -94,7 +95,7 @@ class IntegrationSelect(IntegrationEntity, SelectEntity):  # pyright: ignore[rep
         # Override the unique ID or HA uses the device class instead of the key.
         # Expected resulting entity_id pattern:
         #   sensor.smart_cover_automation_{translated_key}
-        self._attr_unique_id = f"{DOMAIN}_{entity_description.key}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{entity_description.key}"
 
 
 #
@@ -118,6 +119,7 @@ class LockModeSelect(IntegrationSelect):
         )
 
         self._attr_options = [mode.value for mode in const.LockMode]
+        self._logger = Log(entry_id=coordinator.config_entry.entry_id)
 
     #
     # current_option
@@ -138,7 +140,7 @@ class LockModeSelect(IntegrationSelect):
         try:
             lock_mode = const.LockMode(option)
         except ValueError:
-            const.LOGGER.error(f"Invalid lock mode value: {option}")
+            self._logger.error(f"Invalid lock mode value: {option}")
             return
 
         await self.coordinator.async_set_lock_mode(lock_mode)

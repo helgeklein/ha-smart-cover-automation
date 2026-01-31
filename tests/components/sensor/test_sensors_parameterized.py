@@ -109,7 +109,7 @@ async def test_sensor_unique_id(mock_coordinator_basic: DataUpdateCoordinator, c
     """Test that sensor has correct unique_id format."""
     sensor = config["sensor_class"](mock_coordinator_basic)
 
-    expected_unique_id = f"smart_cover_automation_{config['key']}"
+    expected_unique_id = f"{mock_coordinator_basic.config_entry.entry_id}_{config['key']}"
     assert sensor.unique_id == expected_unique_id
 
 

@@ -20,41 +20,44 @@ from ..conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2, MOCK_WEATHE
 class TestFlowHelperValidation:
     """Test validate_user_input_step_1 method."""
 
-    def test_validation_succeeds_with_valid_input(self, mock_hass_with_covers: MagicMock) -> None:
+    def test_validation_succeeds_with_valid_input(self, mock_hass_with_covers: MagicMock, mock_logger: MagicMock) -> None:
         """Test validation passes with valid covers and weather entity."""
+
         user_input = {
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input, mock_logger)
 
         assert errors == {}
 
-    def test_validation_error_no_covers(self, mock_hass_with_covers: MagicMock) -> None:
+    def test_validation_error_no_covers(self, mock_hass_with_covers: MagicMock, mock_logger: MagicMock) -> None:
         """Test validation fails when no covers selected."""
+
         user_input = {
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             ConfKeys.COVERS.value: [],
         }
 
-        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input, mock_logger)
 
         assert ConfKeys.COVERS.value in errors
         assert errors[ConfKeys.COVERS.value] == const.ERROR_NO_COVERS
 
-    def test_validation_error_missing_covers_key(self, mock_hass_with_covers: MagicMock) -> None:
+    def test_validation_error_missing_covers_key(self, mock_hass_with_covers: MagicMock, mock_logger: MagicMock) -> None:
         """Test validation fails when covers key is missing."""
+
         user_input = {
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
         }
 
-        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input, mock_logger)
 
         assert ConfKeys.COVERS.value in errors
         assert errors[ConfKeys.COVERS.value] == const.ERROR_NO_COVERS
 
-    def test_validation_error_invalid_cover(self, mock_hass_with_covers: MagicMock) -> None:
+    def test_validation_error_invalid_cover(self, mock_hass_with_covers: MagicMock, mock_logger: MagicMock) -> None:
         """Test validation fails when cover entity doesn't exist."""
 
         # Override the mock to return None for the non-existent cover
@@ -76,13 +79,14 @@ class TestFlowHelperValidation:
             ConfKeys.COVERS.value: ["cover.nonexistent"],
         }
 
-        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input, mock_logger)
 
         assert ConfKeys.COVERS.value in errors
         assert errors[ConfKeys.COVERS.value] == const.ERROR_INVALID_COVER
 
-    def test_validation_allows_unavailable_cover(self, mock_hass_with_covers: MagicMock) -> None:
+    def test_validation_allows_unavailable_cover(self, mock_hass_with_covers: MagicMock, mock_logger: MagicMock) -> None:
         """Test validation passes for unavailable cover (warns but doesn't error)."""
+
         from homeassistant.const import STATE_UNAVAILABLE
 
         # Mock unavailable cover but valid weather entity
@@ -106,37 +110,40 @@ class TestFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input, mock_logger)
 
         # Should not error, just warn
         assert ConfKeys.COVERS.value not in errors
         assert ConfKeys.WEATHER_ENTITY_ID.value not in errors
 
-    def test_validation_error_no_weather_entity(self, mock_hass_with_covers: MagicMock) -> None:
+    def test_validation_error_no_weather_entity(self, mock_hass_with_covers: MagicMock, mock_logger: MagicMock) -> None:
         """Test validation fails when weather entity is missing."""
+
         user_input = {
             ConfKeys.WEATHER_ENTITY_ID.value: "",
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input, mock_logger)
 
         assert ConfKeys.WEATHER_ENTITY_ID.value in errors
         assert errors[ConfKeys.WEATHER_ENTITY_ID.value] == const.ERROR_NO_WEATHER_ENTITY
 
-    def test_validation_error_missing_weather_key(self, mock_hass_with_covers: MagicMock) -> None:
+    def test_validation_error_missing_weather_key(self, mock_hass_with_covers: MagicMock, mock_logger: MagicMock) -> None:
         """Test validation fails when weather entity key is missing."""
+
         user_input = {
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input, mock_logger)
 
         assert ConfKeys.WEATHER_ENTITY_ID.value in errors
         assert errors[ConfKeys.WEATHER_ENTITY_ID.value] == const.ERROR_NO_WEATHER_ENTITY
 
-    def test_validation_error_weather_no_daily_forecast(self, mock_hass_with_covers: MagicMock) -> None:
+    def test_validation_error_weather_no_daily_forecast(self, mock_hass_with_covers: MagicMock, mock_logger: MagicMock) -> None:
         """Test validation fails when weather doesn't support daily forecast."""
+
         # Mock weather entity without daily forecast support
         weather_state = MagicMock()
         weather_state.attributes = {"supported_features": 0}
@@ -153,12 +160,12 @@ class TestFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input, mock_logger)
 
         assert ConfKeys.WEATHER_ENTITY_ID.value in errors
         assert errors[ConfKeys.WEATHER_ENTITY_ID.value] == const.ERROR_INVALID_WEATHER_ENTITY
 
-    def test_validation_error_weather_entity_no_state(self, mock_hass_with_covers: MagicMock) -> None:
+    def test_validation_error_weather_entity_no_state(self, mock_hass_with_covers: MagicMock, mock_logger: MagicMock) -> None:
         """Test validation fails when weather entity has no state."""
 
         def mock_get_state(entity_id: str) -> Any:
@@ -173,13 +180,14 @@ class TestFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input, mock_logger)
 
         assert ConfKeys.WEATHER_ENTITY_ID.value in errors
         assert errors[ConfKeys.WEATHER_ENTITY_ID.value] == const.ERROR_INVALID_WEATHER_ENTITY
 
-    def test_validation_succeeds_with_daily_forecast_support(self, mock_hass_with_covers: MagicMock) -> None:
+    def test_validation_succeeds_with_daily_forecast_support(self, mock_hass_with_covers: MagicMock, mock_logger: MagicMock) -> None:
         """Test validation passes when weather supports daily forecast."""
+
         # Mock weather entity with daily forecast support
         weather_state = MagicMock()
         weather_state.attributes = {"supported_features": WeatherEntityFeature.FORECAST_DAILY}
@@ -196,18 +204,19 @@ class TestFlowHelperValidation:
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input)
+        errors = FlowHelper.validate_user_input_step_1(mock_hass_with_covers, user_input, mock_logger)
 
         assert errors == {}
 
-    def test_validation_without_hass(self) -> None:
+    def test_validation_without_hass(self, mock_logger: MagicMock) -> None:
         """Test validation works without hass instance (minimal validation)."""
+
         user_input = {
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
         }
 
-        errors = FlowHelper.validate_user_input_step_1(None, user_input)
+        errors = FlowHelper.validate_user_input_step_1(None, user_input, mock_logger)
 
         # Without hass, we can't validate entity existence, but basic checks should pass
         assert errors == {}

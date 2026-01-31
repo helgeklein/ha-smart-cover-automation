@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timezone
 from typing import TYPE_CHECKING, Any, cast
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
@@ -156,6 +156,27 @@ def create_forecast_with_applicable_date(temp: float, cutover_time: time | None 
         "datetime": forecast_datetime.isoformat(),
         "native_temperature": temp,
     }
+
+
+@pytest.fixture
+def mock_logger() -> MagicMock:
+    """Create a mock Log instance for testing.
+
+    Provides a mock logger that captures all log calls without producing output.
+    This is used when testing components that require a logger parameter.
+    """
+
+    logger = MagicMock()
+    logger.debug = MagicMock()
+    logger.info = MagicMock()
+    logger.warning = MagicMock()
+    logger.error = MagicMock()
+    logger.exception = MagicMock()
+    logger.setLevel = MagicMock()
+    logger.isEnabledFor = MagicMock(return_value=True)
+    logger.underlying_logger = MagicMock()
+    logger.prefix = ""
+    return logger
 
 
 @pytest.fixture
@@ -479,6 +500,7 @@ class MockConfigEntry:
         """
         self.domain = DOMAIN
         self.entry_id = "test_entry"
+        self.title = "Test Entry"
         # Config entry data is empty (only marks integration as installed)
         self.data = {}
         # All user settings are in options
@@ -1127,6 +1149,10 @@ def mock_hass_with_spec() -> MagicMock:
     hass.config_entries = MagicMock()
     hass.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
     hass.config_entries.async_reload = AsyncMock()
+    hass.config = MagicMock()
+    hass.bus = MagicMock()
+
+    hass.config.config_dir = "/tmp"  # Generic path for testing
     hass.data = {}
     hass.services = MagicMock()
     hass.services.has_service = MagicMock(return_value=False)
@@ -1185,3 +1211,10 @@ def mock_coordinator_with_empty_data(mock_coordinator_basic) -> DataUpdateCoordi
     """
     mock_coordinator_basic.data = {}
     return mock_coordinator_basic
+
+
+@pytest.fixture(autouse=True)
+def mock_migrate_unique_ids():
+    """Mock the unique ID migration function globally to avoid EntityRegistry errors."""
+    with patch("custom_components.smart_cover_automation._async_migrate_unique_ids") as mock:
+        yield mock

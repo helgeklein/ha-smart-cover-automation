@@ -186,7 +186,7 @@ async def test_switch_unique_id(mock_coordinator_basic: DataUpdateCoordinator, c
     switch = next(entity for entity in captured if isinstance(entity, config["switch_class"]))
 
     # Verify unique ID
-    assert switch.unique_id == config["unique_id"]
+    assert switch.unique_id == f"{mock_coordinator_basic.config_entry.entry_id}_{config['config_key']}"
 
 
 #

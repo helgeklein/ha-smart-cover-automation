@@ -5,7 +5,6 @@ Smart Cover Automation integration. The sensors provide real-time
 information about the automation system's operation.
 
 The sensors that appear in Home Assistant are:
-- Entity: sensor.smart_cover_automation_last_movement_timestamp - Timestamp of last cover movement
 """
 
 from __future__ import annotations
@@ -16,7 +15,6 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, Sen
 from homeassistant.const import EntityCategory, UnitOfTemperature
 
 from .const import (
-    DOMAIN,
     SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
     SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY,
     SENSOR_KEY_SUN_AZIMUTH,
@@ -107,7 +105,7 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):  # pyright: ignore[rep
         # Override the unique ID or HA uses the device class instead of the key.
         # Expected resulting entity_id pattern:
         #   sensor.smart_cover_automation_{translated_key}
-        self._attr_unique_id = f"{DOMAIN}_{entity_description.key}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{entity_description.key}"
 
     # Note: Multiple inheritance from IntegrationEntity (CoordinatorEntity) and
     # SensorEntity causes a Pylance conflict on the 'available' property.

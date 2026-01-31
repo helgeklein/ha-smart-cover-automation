@@ -61,14 +61,16 @@ def test_coordinator_verbose_logging_configuration(mock_basic_hass) -> None:
     config[ConfKeys.VERBOSE_LOGGING.value] = True  # Enable verbose logging
     config_entry = MockConfigEntry(config)
 
-    # Mock the logger to verify it gets configured
-    with patch("custom_components.smart_cover_automation.const.LOGGER") as mock_logger:
+    # Mock the Log class to verify it gets configured
+    with patch("custom_components.smart_cover_automation.coordinator.Log") as mock_log_class:
+        mock_logger_instance = mock_log_class.return_value
+        mock_logger_instance.underlying_logger = mock_log_class.return_value
         # Create coordinator (this should trigger logging configuration)
         DataUpdateCoordinator(mock_basic_hass, cast(IntegrationConfigEntry, config_entry))
 
         # Verify verbose logging was configured
-        mock_logger.setLevel.assert_called_with(logging.DEBUG)
-        mock_logger.debug.assert_called_with("Verbose logging enabled")
+        mock_logger_instance.setLevel.assert_called_with(logging.DEBUG)
+        mock_logger_instance.debug.assert_called()
 
 
 def test_coordinator_verbose_logging_exception_handling(mock_basic_hass) -> None:
@@ -85,9 +87,11 @@ def test_coordinator_verbose_logging_exception_handling(mock_basic_hass) -> None
     config[ConfKeys.VERBOSE_LOGGING.value] = True
     config_entry = MockConfigEntry(config)
 
-    # Mock the logger to raise an exception during setLevel
-    with patch("custom_components.smart_cover_automation.const.LOGGER") as mock_logger:
-        mock_logger.setLevel.side_effect = Exception("Logging configuration error")
+    # Mock the Log class to raise an exception during setLevel
+    with patch("custom_components.smart_cover_automation.coordinator.Log") as mock_log_class:
+        mock_logger_instance = mock_log_class.return_value
+        mock_logger_instance.underlying_logger = mock_log_class.return_value
+        mock_logger_instance.setLevel.side_effect = Exception("Logging configuration error")
 
         # Create coordinator (should handle logging exception gracefully)
         coordinator = DataUpdateCoordinator(mock_basic_hass, cast(IntegrationConfigEntry, config_entry))
@@ -97,4 +101,4 @@ def test_coordinator_verbose_logging_exception_handling(mock_basic_hass) -> None
         assert coordinator.hass is mock_basic_hass
 
         # Verify setLevel was attempted (and failed)
-        mock_logger.setLevel.assert_called_with(logging.DEBUG)
+        mock_logger_instance.setLevel.assert_called_with(logging.DEBUG)

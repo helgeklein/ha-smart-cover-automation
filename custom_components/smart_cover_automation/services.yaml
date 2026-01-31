@@ -63,6 +63,9 @@ set_lock:
   description: >
     Lock all covers in a specific state to prevent automation from moving them.
     Useful for weather emergencies (hail, storms) or manual override scenarios.
+  target:
+    entity:
+      integration: smart_cover_automation
   fields:
     lock_mode:
       name: Lock Mode

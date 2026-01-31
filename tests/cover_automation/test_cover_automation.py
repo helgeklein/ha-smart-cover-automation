@@ -16,7 +16,7 @@ This module tests CoverAutomation in isolation, focusing on:
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
@@ -82,7 +82,7 @@ def basic_config():
 
 
 @pytest.fixture
-def cover_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+def cover_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger):
     """Create a CoverAutomation instance for testing."""
     # Ensure lock mode is unlocked for these tests
     mock_resolved_config.lock_mode = LockMode.UNLOCKED
@@ -92,6 +92,7 @@ def cover_automation(mock_resolved_config, basic_config, mock_cover_pos_history_
         config=basic_config,
         cover_pos_history_mgr=mock_cover_pos_history_mgr,
         ha_interface=mock_ha_interface,
+        logger=mock_logger,
     )
 
 
@@ -133,7 +134,7 @@ class TestCoverAutomationInitialization:
         assert cover_automation._ha_interface is not None
 
     def test_initialization_stores_all_dependencies(
-        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
     ):
         """Test that all dependencies are stored correctly."""
         cover_auto = CoverAutomation(
@@ -142,6 +143,7 @@ class TestCoverAutomationInitialization:
             config=basic_config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
 
         assert cover_auto.entity_id == "cover.living_room"
@@ -159,7 +161,7 @@ class TestGetCoverAzimuth:
         azimuth = cover_automation._get_cover_azimuth()
         assert azimuth == 180.0
 
-    def test_get_cover_azimuth_missing(self, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    def test_get_cover_azimuth_missing(self, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger):
         """Test handling missing cover azimuth."""
         config = {}  # No azimuth configured
         cover_auto = CoverAutomation(
@@ -168,11 +170,12 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth is None
 
-    def test_get_cover_azimuth_invalid_type(self, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    def test_get_cover_azimuth_invalid_type(self, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger):
         """Test handling invalid cover azimuth type."""
         config = {"cover.test_cover_azimuth": "invalid"}
         cover_auto = CoverAutomation(
@@ -181,11 +184,12 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth is None
 
-    def test_get_cover_azimuth_zero(self, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    def test_get_cover_azimuth_zero(self, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger):
         """Test cover azimuth of zero (North)."""
         config = {"cover.test_cover_azimuth": 0.0}
         cover_auto = CoverAutomation(
@@ -194,6 +198,7 @@ class TestGetCoverAzimuth:
             config=config,
             cover_pos_history_mgr=mock_cover_pos_history_mgr,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
         azimuth = cover_auto._get_cover_azimuth()
         assert azimuth == 0.0
@@ -1335,28 +1340,28 @@ class TestProcessMethod:
 class TestLogCoverMsg:
     """Test _log_cover_msg method."""
 
-    def test_log_cover_msg_debug(self, cover_automation):
+    def test_log_cover_msg_debug(self, cover_automation, mock_logger):
         """Test logging debug message."""
-        with patch.object(const.LOGGER, "debug") as mock_debug:
-            cover_automation._log_cover_msg("Test message", const.LogSeverity.DEBUG)
-            mock_debug.assert_called_once()
-            assert "cover.test" in mock_debug.call_args[0][0]
-            assert "Test message" in mock_debug.call_args[0][0]
 
-    def test_log_cover_msg_info(self, cover_automation):
+        cover_automation._log_cover_msg("Test message", const.LogSeverity.DEBUG)
+        mock_logger.debug.assert_called_once()
+        assert "cover.test" in mock_logger.debug.call_args[0][0]
+        assert "Test message" in mock_logger.debug.call_args[0][0]
+
+    def test_log_cover_msg_info(self, cover_automation, mock_logger):
         """Test logging info message."""
-        with patch.object(const.LOGGER, "info") as mock_info:
-            cover_automation._log_cover_msg("Test message", const.LogSeverity.INFO)
-            mock_info.assert_called_once()
 
-    def test_log_cover_msg_warning(self, cover_automation):
+        cover_automation._log_cover_msg("Test message", const.LogSeverity.INFO)
+        mock_logger.info.assert_called_once()
+
+    def test_log_cover_msg_warning(self, cover_automation, mock_logger):
         """Test logging warning message."""
-        with patch.object(const.LOGGER, "warning") as mock_warning:
-            cover_automation._log_cover_msg("Test message", const.LogSeverity.WARNING)
-            mock_warning.assert_called_once()
 
-    def test_log_cover_msg_error(self, cover_automation):
+        cover_automation._log_cover_msg("Test message", const.LogSeverity.WARNING)
+        mock_logger.warning.assert_called_once()
+
+    def test_log_cover_msg_error(self, cover_automation, mock_logger):
         """Test logging error message."""
-        with patch.object(const.LOGGER, "error") as mock_error:
-            cover_automation._log_cover_msg("Test message", const.LogSeverity.ERROR)
-            mock_error.assert_called_once()
+
+        cover_automation._log_cover_msg("Test message", const.LogSeverity.ERROR)
+        mock_logger.error.assert_called_once()

@@ -64,8 +64,10 @@ def create_cover_automation(
     basic_config,
     mock_cover_pos_history_mgr,
     mock_ha_interface,
+    mock_logger,
 ) -> CoverAutomation:
     """Helper to create CoverAutomation with specific lock mode."""
+
     # Set the lock mode on the resolved config
     mock_resolved_config.lock_mode = lock_mode
     return CoverAutomation(
@@ -74,6 +76,7 @@ def create_cover_automation(
         config=basic_config,
         cover_pos_history_mgr=mock_cover_pos_history_mgr,
         ha_interface=mock_ha_interface,
+        logger=mock_logger,
     )
 
 
@@ -81,10 +84,12 @@ class TestProcessLockModeUnlocked:
     """Test _process_lock_mode with UNLOCKED mode."""
 
     @pytest.mark.asyncio
-    async def test_unlocked_returns_false(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    async def test_unlocked_returns_false(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
         """Test that UNLOCKED mode returns False (not locked)."""
         cover_auto = create_cover_automation(
-            LockMode.UNLOCKED, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.UNLOCKED, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -101,10 +106,12 @@ class TestProcessLockModeHoldPosition:
     """Test _process_lock_mode with HOLD_POSITION mode."""
 
     @pytest.mark.asyncio
-    async def test_hold_position_blocks_automation(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    async def test_hold_position_blocks_automation(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
         """Test that HOLD_POSITION blocks automation and returns True."""
         cover_auto = create_cover_automation(
-            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -117,10 +124,12 @@ class TestProcessLockModeHoldPosition:
         mock_ha_interface.set_cover_position.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_hold_position_at_zero(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    async def test_hold_position_at_zero(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
         """Test HOLD_POSITION at fully closed position."""
         cover_auto = create_cover_automation(
-            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -132,10 +141,12 @@ class TestProcessLockModeHoldPosition:
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=False)
 
     @pytest.mark.asyncio
-    async def test_hold_position_at_hundred(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    async def test_hold_position_at_hundred(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
         """Test HOLD_POSITION at fully open position."""
         cover_auto = create_cover_automation(
-            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -151,10 +162,12 @@ class TestProcessLockModeForceOpen:
     """Test _process_lock_mode with FORCE_OPEN mode."""
 
     @pytest.mark.asyncio
-    async def test_force_open_already_at_target(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    async def test_force_open_already_at_target(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
         """Test FORCE_OPEN when cover is already fully open."""
         cover_auto = create_cover_automation(
-            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -168,12 +181,12 @@ class TestProcessLockModeForceOpen:
 
     @pytest.mark.asyncio
     async def test_force_open_needs_movement_from_closed(
-        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
     ):
         """Test FORCE_OPEN when cover needs to move from closed."""
         mock_ha_interface.set_cover_position = AsyncMock(return_value=100)
         cover_auto = create_cover_automation(
-            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -187,12 +200,12 @@ class TestProcessLockModeForceOpen:
 
     @pytest.mark.asyncio
     async def test_force_open_needs_movement_from_partial(
-        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
     ):
         """Test FORCE_OPEN when cover needs to move from partial position."""
         mock_ha_interface.set_cover_position = AsyncMock(return_value=100)
         cover_auto = create_cover_automation(
-            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -205,11 +218,13 @@ class TestProcessLockModeForceOpen:
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=True)
 
     @pytest.mark.asyncio
-    async def test_force_open_with_features(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    async def test_force_open_with_features(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
         """Test FORCE_OPEN passes features correctly."""
         mock_ha_interface.set_cover_position = AsyncMock(return_value=100)
         cover_auto = create_cover_automation(
-            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -224,10 +239,12 @@ class TestProcessLockModeForceClose:
     """Test _process_lock_mode with FORCE_CLOSE mode."""
 
     @pytest.mark.asyncio
-    async def test_force_close_already_at_target(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    async def test_force_close_already_at_target(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
         """Test FORCE_CLOSE when cover is already fully closed."""
         cover_auto = create_cover_automation(
-            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -241,12 +258,12 @@ class TestProcessLockModeForceClose:
 
     @pytest.mark.asyncio
     async def test_force_close_needs_movement_from_open(
-        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
     ):
         """Test FORCE_CLOSE when cover needs to move from open."""
         mock_ha_interface.set_cover_position = AsyncMock(return_value=0)
         cover_auto = create_cover_automation(
-            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -260,12 +277,12 @@ class TestProcessLockModeForceClose:
 
     @pytest.mark.asyncio
     async def test_force_close_needs_movement_from_partial(
-        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
     ):
         """Test FORCE_CLOSE when cover needs to move from partial position."""
         mock_ha_interface.set_cover_position = AsyncMock(return_value=0)
         cover_auto = create_cover_automation(
-            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -278,11 +295,13 @@ class TestProcessLockModeForceClose:
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=True)
 
     @pytest.mark.asyncio
-    async def test_force_close_with_features(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    async def test_force_close_with_features(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
         """Test FORCE_CLOSE passes features correctly."""
         mock_ha_interface.set_cover_position = AsyncMock(return_value=0)
         cover_auto = create_cover_automation(
-            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -298,13 +317,13 @@ class TestProcessLockModeEdgeCases:
 
     @pytest.mark.asyncio
     async def test_force_open_actual_position_differs(
-        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
     ):
         """Test FORCE_OPEN when actual position differs from target (e.g., partial movement)."""
         # Simulate cover only reaching 95% instead of 100%
         mock_ha_interface.set_cover_position = AsyncMock(return_value=95)
         cover_auto = create_cover_automation(
-            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -317,13 +336,13 @@ class TestProcessLockModeEdgeCases:
 
     @pytest.mark.asyncio
     async def test_force_close_actual_position_differs(
-        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
     ):
         """Test FORCE_CLOSE when actual position differs from target."""
         # Simulate cover only reaching 5% instead of 0%
         mock_ha_interface.set_cover_position = AsyncMock(return_value=5)
         cover_auto = create_cover_automation(
-            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -335,10 +354,12 @@ class TestProcessLockModeEdgeCases:
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=5, cover_moved=True)
 
     @pytest.mark.asyncio
-    async def test_empty_cover_attrs_dict(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    async def test_empty_cover_attrs_dict(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
         """Test that method works with initially empty CoverState."""
         cover_auto = create_cover_automation(
-            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState()
@@ -349,10 +370,12 @@ class TestProcessLockModeEdgeCases:
         assert cover_state.pos_target_final == 50
 
     @pytest.mark.asyncio
-    async def test_cover_attrs_with_existing_data(self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface):
+    async def test_cover_attrs_with_existing_data(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
         """Test that method preserves existing CoverState data."""
         cover_auto = create_cover_automation(
-            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface
+            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
         )
 
         cover_state = CoverState(cover_azimuth=180.0, state="open")

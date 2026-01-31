@@ -483,7 +483,7 @@ class TestSetLockServiceHandler:
             await service_handler(call)
 
             # Verify INFO log contains lock mode
-            assert "Service call: set_lock(lock_mode=hold_position)" in caplog.text
+            assert "Service call: set_lock(lock_mode=hold_position, targets=0)" in caplog.text
 
     async def test_set_lock_logs_error_for_invalid_mode(self, mock_hass_with_spec, caplog) -> None:
         """Test set_lock logs ERROR for invalid lock mode."""
@@ -546,3 +546,187 @@ class TestSetLockServiceHandler:
             # Extra fields should be rejected
             with pytest.raises(vol.error.MultipleInvalid):
                 schema({"lock_mode": "unlocked", "extra_field": "value"})
+
+    async def test_set_lock_no_coordinators_registered(self, mock_hass_with_spec, caplog) -> None:
+        """Test set_lock logs warning when no coordinators are registered."""
+
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+            caplog.at_level("WARNING", logger="custom_components.smart_cover_automation"),
+        ):
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.async_set_lock_mode = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            # Clear coordinators to simulate no coordinators registered
+            mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS] = {}
+
+            call = MagicMock()
+            call.data = {"lock_mode": "force_close"}
+
+            await service_handler(call)
+
+            # Verify warning was logged
+            assert "no coordinators are registered" in caplog.text
+
+            # Verify coordinator method was NOT called
+            mock_coordinator.async_set_lock_mode.assert_not_called()
+
+    async def test_set_lock_no_matching_coordinators_for_targets(self, mock_hass_with_spec, caplog) -> None:
+        """Test set_lock logs warning when targeted entry_ids don't match any coordinators."""
+
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+            patch("homeassistant.helpers.service.async_extract_config_entry_ids") as mock_extract,
+            caplog.at_level("WARNING", logger="custom_components.smart_cover_automation"),
+        ):
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator.async_set_lock_mode = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            # Simulate targeting non-existent entry IDs
+            mock_extract.return_value = {"nonexistent_entry_1", "nonexistent_entry_2"}
+
+            call = MagicMock()
+            call.data = {"lock_mode": "force_close"}
+
+            await service_handler(call)
+
+            # Verify warning was logged about no matching coordinators
+            assert "No matching coordinators found for targets" in caplog.text
+
+            # Verify coordinator method was NOT called
+            mock_coordinator.async_set_lock_mode.assert_not_called()
+
+    async def test_set_lock_targets_specific_entry_ids(self, mock_hass_with_spec) -> None:
+        """Test set_lock only applies to targeted entry IDs when specified."""
+
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+            patch("homeassistant.helpers.service.async_extract_config_entry_ids") as mock_extract,
+        ):
+            mock_coordinator1 = MagicMock()
+            mock_coordinator1.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator1.async_set_lock_mode = AsyncMock()
+
+            mock_coordinator2 = MagicMock()
+            mock_coordinator2.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator2.async_set_lock_mode = AsyncMock()
+
+            mock_coordinator_class.return_value = mock_coordinator1
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            # Add a second coordinator manually
+            mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS]["second_entry_id"] = mock_coordinator2
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            # Target only the second coordinator
+            mock_extract.return_value = {"second_entry_id"}
+
+            call = MagicMock()
+            call.data = {"lock_mode": "hold_position"}
+
+            await service_handler(call)
+
+            # Verify only the targeted coordinator was called
+            mock_coordinator1.async_set_lock_mode.assert_not_called()
+            mock_coordinator2.async_set_lock_mode.assert_called_once_with("hold_position")
+
+    async def test_set_lock_broadcasts_to_all_when_no_target(self, mock_hass_with_spec) -> None:
+        """Test set_lock applies to all coordinators when no target specified."""
+
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+            patch("homeassistant.helpers.service.async_extract_config_entry_ids") as mock_extract,
+        ):
+            mock_coordinator1 = MagicMock()
+            mock_coordinator1.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator1.async_set_lock_mode = AsyncMock()
+
+            mock_coordinator2 = MagicMock()
+            mock_coordinator2.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator2.async_set_lock_mode = AsyncMock()
+
+            mock_coordinator_class.return_value = mock_coordinator1
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            # Add a second coordinator manually
+            mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS]["second_entry_id"] = mock_coordinator2
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            # No targets - should broadcast to all
+            mock_extract.return_value = set()
+
+            call = MagicMock()
+            call.data = {"lock_mode": "force_open"}
+
+            await service_handler(call)
+
+            # Verify ALL coordinators were called
+            mock_coordinator1.async_set_lock_mode.assert_called_once_with("force_open")
+            mock_coordinator2.async_set_lock_mode.assert_called_once_with("force_open")
+
+    async def test_set_lock_partial_target_match(self, mock_hass_with_spec) -> None:
+        """Test set_lock only applies to matching coordinators when some targets don't exist."""
+
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+            patch("homeassistant.helpers.service.async_extract_config_entry_ids") as mock_extract,
+        ):
+            mock_coordinator1 = MagicMock()
+            mock_coordinator1.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator1.async_set_lock_mode = AsyncMock()
+
+            mock_coordinator2 = MagicMock()
+            mock_coordinator2.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator2.async_set_lock_mode = AsyncMock()
+
+            mock_coordinator_class.return_value = mock_coordinator1
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            # Add a second coordinator manually
+            mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS]["second_entry_id"] = mock_coordinator2
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            # Target one existing and one non-existing entry
+            mock_extract.return_value = {"second_entry_id", "nonexistent_entry"}
+
+            call = MagicMock()
+            call.data = {"lock_mode": "force_close"}
+
+            await service_handler(call)
+
+            # Verify only the existing targeted coordinator was called
+            mock_coordinator1.async_set_lock_mode.assert_not_called()
+            mock_coordinator2.async_set_lock_mode.assert_called_once_with("force_close")

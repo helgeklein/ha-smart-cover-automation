@@ -9,13 +9,12 @@ Coverage target: select.py lines 88-122 (LockModeSelect class)
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, cast
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.const import (
-    DOMAIN,
     SELECT_KEY_LOCK_MODE,
     LockMode,
 )
@@ -73,7 +72,7 @@ async def test_lock_mode_select_entity_properties(mock_hass_with_spec, mock_conf
     assert lock_mode_select.entity_description.entity_category == EntityCategory.CONFIG
 
     # Verify unique_id format
-    assert lock_mode_select.unique_id == f"{DOMAIN}_{SELECT_KEY_LOCK_MODE}"
+    assert lock_mode_select.unique_id == f"{mock_config_entry_basic.entry_id}_{SELECT_KEY_LOCK_MODE}"
 
     # Verify options list contains all lock modes
     expected_options = [mode.value for mode in LockMode]
@@ -197,11 +196,14 @@ async def test_lock_mode_select_async_select_option_invalid(mock_hass_with_spec,
     coordinator.async_set_lock_mode = AsyncMock()
     mock_config_entry_basic.runtime_data.coordinator = coordinator
 
-    # Create entity
-    lock_mode_select = LockModeSelect(coordinator)
+    # Patch the Log class before entity creation (logger is instantiated in __init__)
+    with patch("custom_components.smart_cover_automation.select.Log") as mock_log_class:
+        mock_logger = MagicMock()
+        mock_log_class.return_value = mock_logger
 
-    # Patch the logger to verify error logging
-    with patch("custom_components.smart_cover_automation.const.LOGGER") as mock_logger:
+        # Create entity
+        lock_mode_select = LockModeSelect(coordinator)
+
         # Try to select an invalid lock mode
         invalid_option = "invalid_lock_mode"
         await lock_mode_select.async_select_option(invalid_option)
@@ -227,9 +229,13 @@ async def test_lock_mode_select_async_select_option_empty_string(mock_hass_with_
     coordinator.async_set_lock_mode = AsyncMock()
     mock_config_entry_basic.runtime_data.coordinator = coordinator
 
-    lock_mode_select = LockModeSelect(coordinator)
+    # Patch the Log class before entity creation (logger is instantiated in __init__)
+    with patch("custom_components.smart_cover_automation.select.Log") as mock_log_class:
+        mock_logger = MagicMock()
+        mock_log_class.return_value = mock_logger
 
-    with patch("custom_components.smart_cover_automation.const.LOGGER") as mock_logger:
+        lock_mode_select = LockModeSelect(coordinator)
+
         await lock_mode_select.async_select_option("")
 
         # Should log error
@@ -249,9 +255,13 @@ async def test_lock_mode_select_async_select_option_none_value(mock_hass_with_sp
     coordinator.async_set_lock_mode = AsyncMock()
     mock_config_entry_basic.runtime_data.coordinator = coordinator
 
-    lock_mode_select = LockModeSelect(coordinator)
+    # Patch the Log class before entity creation (logger is instantiated in __init__)
+    with patch("custom_components.smart_cover_automation.select.Log") as mock_log_class:
+        mock_logger = MagicMock()
+        mock_log_class.return_value = mock_logger
 
-    with patch("custom_components.smart_cover_automation.const.LOGGER") as mock_logger:
+        lock_mode_select = LockModeSelect(coordinator)
+
         # Try to select None (edge case)
         await lock_mode_select.async_select_option(None)  # type: ignore[arg-type]
 

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Cover Protection (Wind, Hail)
-nav_order: 8
+nav_order: 9
 description: "Cover Protection from Wind and Hail with Smart Cover Automation for Home Assistant."
 permalink: /cover-protection/
 ---

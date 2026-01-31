@@ -15,14 +15,56 @@ logger:
     custom_components.smart_cover_automation: debug
 """
 
+from __future__ import annotations
+
 from datetime import timedelta
 from enum import Enum, StrEnum
-from logging import getLogger
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
-LOGGER: Final = getLogger(__package__)
+# For static type checking only
+if TYPE_CHECKING:
+    from .log import Log
+
+# Module-level logger for the integration.
+# This is an instance of the custom Log class which wraps Python's standard logger.
+# Without an entry_id, log messages have no prefix.
+# With an entry_id, messages are prefixed with [xxxxx] to identify the instance.
+#
+# Note: Imported lazily to avoid circular imports.
+#       Instantiated at module load time by _init_logger().
+LOGGER: Log
 
 
+#
+# _init_logger
+#
+def _init_logger() -> None:
+    """Initialize the module-level LOGGER. Called once at module load time."""
+
+    global LOGGER  # noqa: PLW0603
+    try:
+        from .log import Log
+
+        LOGGER = Log()
+    except ImportError:
+        # Fallback for when module is loaded outside package context (e.g., CI tests)
+        # Import log.py directly to avoid triggering __init__.py which needs homeassistant
+        import importlib.util
+        from pathlib import Path
+
+        log_path = Path(__file__).parent / "log.py"
+        spec = importlib.util.spec_from_file_location("log", log_path)
+        if spec and spec.loader:
+            log_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(log_module)
+            LOGGER = log_module.Log()
+        else:
+            raise ImportError("Could not load log.py")
+
+
+#
+# LogSeverity
+#
 class LogSeverity(Enum):
     """Log severity levels for structured logging."""
 
@@ -138,3 +180,6 @@ TRANSL_KEY_FIELDS: Final[str] = "fields"
 
 # hass.data keys
 DATA_COORDINATORS: Final[str] = "coordinators"
+
+# Initialize the module-level logger
+_init_logger()

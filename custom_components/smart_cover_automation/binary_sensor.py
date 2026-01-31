@@ -27,7 +27,6 @@ from .const import (
     BINARY_SENSOR_KEY_STATUS,
     BINARY_SENSOR_KEY_TEMP_HOT,
     BINARY_SENSOR_KEY_WEATHER_SUNNY,
-    DOMAIN,
 )
 from .entity import IntegrationEntity
 
@@ -112,7 +111,7 @@ class IntegrationBinarySensor(IntegrationEntity, BinarySensorEntity):  # pyright
         # Override the unique ID or HA uses the device class instead of the key.
         # Expected resulting entity_id pattern:
         #   binary_sensor.smart_cover_automation_{translated_key}
-        self._attr_unique_id = f"{DOMAIN}_{entity_description.key}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{entity_description.key}"
 
 
 #
