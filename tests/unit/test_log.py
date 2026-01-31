@@ -52,6 +52,22 @@ class TestLog:
         assert log.underlying_logger.name == "custom_components.smart_cover_automation"
 
     #
+    # test_name_property_returns_logger_name
+    #
+    def test_name_property_returns_logger_name(self) -> None:
+        """Test that the name property returns the logger name."""
+
+        # With entry_id
+        entry_id = "1a2b3c4d-5e6f-7890-abcd-ef1234567890"
+        log = Log(entry_id)
+        expected_suffix = entry_id[-INSTANCE_ID_LENGTH:]
+        assert log.name == f"{_BASE_LOGGER_NAME}.{expected_suffix}"
+
+        # Without entry_id
+        log_base = Log()
+        assert log_base.name == _BASE_LOGGER_NAME
+
+    #
     # test_debug_logs_message
     #
     def test_debug_logs_message(self, caplog: object) -> None:
