@@ -50,7 +50,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
     def __init__(self, hass: HomeAssistant, config_entry: IntegrationConfigEntry) -> None:
         super().__init__(
             hass,
-            const.LOGGER,
+            const.LOGGER.underlying_logger,
             name=const.DOMAIN,
             update_interval=const.UPDATE_INTERVAL,
             config_entry=config_entry,

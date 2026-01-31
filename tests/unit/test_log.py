@@ -1,18 +1,18 @@
-"""Tests for the InstanceLogger class."""
+"""Tests for the Log class."""
 
 from __future__ import annotations
 
 import logging
 from unittest.mock import MagicMock
 
-from custom_components.smart_cover_automation.instance_logger import (
+from custom_components.smart_cover_automation.log import (
     INSTANCE_ID_LENGTH,
-    InstanceLogger,
+    Log,
 )
 
 
-class TestInstanceLogger:
-    """Tests for InstanceLogger."""
+class TestLog:
+    """Tests for Log."""
 
     #
     # test_prefix_is_short_instance_id
@@ -21,11 +21,11 @@ class TestInstanceLogger:
         """Test that prefix uses first N characters of entry_id."""
 
         entry_id = "1a2b3c4d-5e6f-7890-abcd-ef1234567890"
-        logger = InstanceLogger(entry_id)
+        log = Log(entry_id)
 
         expected_prefix = f"[{entry_id[:INSTANCE_ID_LENGTH]}] "
-        assert logger.prefix == expected_prefix
-        assert logger.prefix == "[1a2b3c] "
+        assert log.prefix == expected_prefix
+        assert log.prefix == "[1a2b3] "
 
     #
     # test_prefix_with_short_entry_id
@@ -34,9 +34,32 @@ class TestInstanceLogger:
         """Test that prefix works with entry_id shorter than INSTANCE_ID_LENGTH."""
 
         entry_id = "abc"
-        logger = InstanceLogger(entry_id)
+        log = Log(entry_id)
 
-        assert logger.prefix == "[abc] "
+        assert log.prefix == "[abc] "
+
+    #
+    # test_no_prefix_when_no_entry_id
+    #
+    def test_no_prefix_when_no_entry_id(self) -> None:
+        """Test that no prefix is added when entry_id is None."""
+
+        log = Log()
+
+        assert log.prefix == ""
+
+    #
+    # test_no_prefix_message_unchanged
+    #
+    def test_no_prefix_message_unchanged(self) -> None:
+        """Test that messages are unchanged when no entry_id is provided."""
+
+        mock_logger = MagicMock(spec=logging.Logger)
+        log = Log(base_logger=mock_logger)
+
+        log.info("Test message")
+
+        mock_logger.info.assert_called_once_with("Test message")
 
     #
     # test_debug_prefixes_message
@@ -45,11 +68,11 @@ class TestInstanceLogger:
         """Test that debug() prefixes the message."""
 
         mock_logger = MagicMock(spec=logging.Logger)
-        logger = InstanceLogger("test123456", mock_logger)
+        log = Log("test123456", mock_logger)
 
-        logger.debug("Test message")
+        log.debug("Test message")
 
-        mock_logger.debug.assert_called_once_with("[test12] Test message")
+        mock_logger.debug.assert_called_once_with("[test1] Test message")
 
     #
     # test_info_prefixes_message
@@ -58,11 +81,11 @@ class TestInstanceLogger:
         """Test that info() prefixes the message."""
 
         mock_logger = MagicMock(spec=logging.Logger)
-        logger = InstanceLogger("test123456", mock_logger)
+        log = Log("test123456", mock_logger)
 
-        logger.info("Test message")
+        log.info("Test message")
 
-        mock_logger.info.assert_called_once_with("[test12] Test message")
+        mock_logger.info.assert_called_once_with("[test1] Test message")
 
     #
     # test_warning_prefixes_message
@@ -71,11 +94,11 @@ class TestInstanceLogger:
         """Test that warning() prefixes the message."""
 
         mock_logger = MagicMock(spec=logging.Logger)
-        logger = InstanceLogger("test123456", mock_logger)
+        log = Log("test123456", mock_logger)
 
-        logger.warning("Test message")
+        log.warning("Test message")
 
-        mock_logger.warning.assert_called_once_with("[test12] Test message")
+        mock_logger.warning.assert_called_once_with("[test1] Test message")
 
     #
     # test_error_prefixes_message
@@ -84,11 +107,11 @@ class TestInstanceLogger:
         """Test that error() prefixes the message."""
 
         mock_logger = MagicMock(spec=logging.Logger)
-        logger = InstanceLogger("test123456", mock_logger)
+        log = Log("test123456", mock_logger)
 
-        logger.error("Test message")
+        log.error("Test message")
 
-        mock_logger.error.assert_called_once_with("[test12] Test message")
+        mock_logger.error.assert_called_once_with("[test1] Test message")
 
     #
     # test_exception_prefixes_message
@@ -97,11 +120,11 @@ class TestInstanceLogger:
         """Test that exception() prefixes the message."""
 
         mock_logger = MagicMock(spec=logging.Logger)
-        logger = InstanceLogger("test123456", mock_logger)
+        log = Log("test123456", mock_logger)
 
-        logger.exception("Test message")
+        log.exception("Test message")
 
-        mock_logger.exception.assert_called_once_with("[test12] Test message")
+        mock_logger.exception.assert_called_once_with("[test1] Test message")
 
     #
     # test_passes_args_to_underlying_logger
@@ -110,11 +133,11 @@ class TestInstanceLogger:
         """Test that positional args are passed through."""
 
         mock_logger = MagicMock(spec=logging.Logger)
-        logger = InstanceLogger("test123456", mock_logger)
+        log = Log("test123456", mock_logger)
 
-        logger.info("Value is %s and %d", "hello", 42)
+        log.info("Value is %s and %d", "hello", 42)
 
-        mock_logger.info.assert_called_once_with("[test12] Value is %s and %d", "hello", 42)
+        mock_logger.info.assert_called_once_with("[test1] Value is %s and %d", "hello", 42)
 
     #
     # test_passes_kwargs_to_underlying_logger
@@ -123,11 +146,11 @@ class TestInstanceLogger:
         """Test that keyword args are passed through."""
 
         mock_logger = MagicMock(spec=logging.Logger)
-        logger = InstanceLogger("test123456", mock_logger)
+        log = Log("test123456", mock_logger)
 
-        logger.info("Test message", exc_info=True, stack_info=True)
+        log.info("Test message", exc_info=True, stack_info=True)
 
-        mock_logger.info.assert_called_once_with("[test12] Test message", exc_info=True, stack_info=True)
+        mock_logger.info.assert_called_once_with("[test1] Test message", exc_info=True, stack_info=True)
 
     #
     # test_set_level_delegates_to_underlying_logger
@@ -136,9 +159,9 @@ class TestInstanceLogger:
         """Test that setLevel() is delegated to the underlying logger."""
 
         mock_logger = MagicMock(spec=logging.Logger)
-        logger = InstanceLogger("test123456", mock_logger)
+        log = Log("test123456", mock_logger)
 
-        logger.setLevel(logging.DEBUG)
+        log.setLevel(logging.DEBUG)
 
         mock_logger.setLevel.assert_called_once_with(logging.DEBUG)
 
@@ -150,9 +173,9 @@ class TestInstanceLogger:
 
         mock_logger = MagicMock(spec=logging.Logger)
         mock_logger.isEnabledFor.return_value = True
-        logger = InstanceLogger("test123456", mock_logger)
+        log = Log("test123456", mock_logger)
 
-        result = logger.isEnabledFor(logging.DEBUG)
+        result = log.isEnabledFor(logging.DEBUG)
 
         assert result is True
         mock_logger.isEnabledFor.assert_called_once_with(logging.DEBUG)
@@ -161,11 +184,21 @@ class TestInstanceLogger:
     # test_uses_default_logger_when_none_provided
     #
     def test_uses_default_logger_when_none_provided(self) -> None:
-        """Test that the default LOGGER is used when no base_logger is provided."""
+        """Test that the default logger is used when no base_logger is provided."""
 
-        from custom_components.smart_cover_automation.instance_logger import _DEFAULT_LOGGER
+        from custom_components.smart_cover_automation.log import _DEFAULT_LOGGER
 
-        logger = InstanceLogger("test123456")
+        log = Log("test123456")
 
         # Verify it uses the default logger by checking the internal attribute
-        assert logger._logger is _DEFAULT_LOGGER
+        assert log._logger is _DEFAULT_LOGGER
+
+    #
+    # test_logger_from_const_has_no_prefix
+    #
+    def test_logger_from_const_has_no_prefix(self) -> None:
+        """Test that LOGGER from const.py has no prefix (no entry_id)."""
+
+        from custom_components.smart_cover_automation.const import LOGGER
+
+        assert LOGGER.prefix == ""

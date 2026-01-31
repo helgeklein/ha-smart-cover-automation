@@ -19,24 +19,37 @@ from __future__ import annotations
 
 from datetime import timedelta
 from enum import Enum, StrEnum
-from logging import getLogger
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+# For static type checking only
+if TYPE_CHECKING:
+    from .log import Log
 
 # Module-level logger for the integration.
-# __package__ is a special Python variable that contains the dotted package name of the current module. For this file located at:
-#   custom_components/smart_cover_automation/const.py
-# __package__ resolves to: "custom_components.smart_cover_automation"
+# This is an instance of the custom Log class which wraps Python's standard logger.
+# Without an entry_id, log messages have no prefix.
+# With an entry_id, messages are prefixed with [xxxxx] to identify the instance.
 #
-# This creates a logger named "custom_components.smart_cover_automation" which:
-# - Inherits log level settings from parent loggers in the hierarchy
-# - Can be configured in Home Assistant's configuration.yaml under logger:
-#     logger:
-#       logs:
-#         custom_components.smart_cover_automation: debug
-# - Allows all modules in this package to share the same logger namespace
-LOGGER: Final = getLogger(__package__)
+# Note: Imported lazily to avoid circular imports.
+#       Instantiated at module load time by _init_logger().
+LOGGER: Log
 
 
+#
+# _init_logger
+#
+def _init_logger() -> None:
+    """Initialize the module-level LOGGER. Called once at module load time."""
+
+    global LOGGER  # noqa: PLW0603
+    from .log import Log
+
+    LOGGER = Log()
+
+
+#
+# LogSeverity
+#
 class LogSeverity(Enum):
     """Log severity levels for structured logging."""
 
@@ -152,3 +165,6 @@ TRANSL_KEY_FIELDS: Final[str] = "fields"
 
 # hass.data keys
 DATA_COORDINATORS: Final[str] = "coordinators"
+
+# Initialize the module-level logger
+_init_logger()
