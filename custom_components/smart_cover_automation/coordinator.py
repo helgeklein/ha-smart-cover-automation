@@ -76,11 +76,39 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         # Initialize the automation engine (persists across runs, pass instance logger)
         self._automation_engine = AutomationEngine(resolved=resolved, config=config, ha_interface=self._ha_interface, logger=self._logger)
 
-        # Adjust log level if verbose logging is enabled
+        # Track verbose logging state to avoid redundant setLevel calls
+        self._verbose_logging_enabled: bool | None = None
+
+        # Apply verbose logging setting from config
+        self._apply_verbose_logging(resolved.verbose_logging)
+
+    #
+    # _apply_verbose_logging
+    #
+    def _apply_verbose_logging(self, enabled: bool) -> None:
+        """Apply the verbose logging setting to this instance's logger.
+
+        This method is called during initialization and on each coordinator
+        refresh. It only changes the logger level when the setting actually
+        changes, avoiding redundant calls.
+
+        Args:
+            enabled: Whether verbose (DEBUG) logging should be enabled
+        """
+
+        # Skip if state hasn't changed
+        if enabled == self._verbose_logging_enabled:
+            return
+
+        self._verbose_logging_enabled = enabled
+
         try:
-            if resolved.verbose_logging:
+            if enabled:
                 self._logger.setLevel(logging.DEBUG)
                 self._logger.debug("Verbose logging enabled")
+            else:
+                # Reset to NOTSET so the logger inherits from parent
+                self._logger.setLevel(logging.NOTSET)
         except Exception:
             pass
 
@@ -204,6 +232,9 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
                 # Configuration resolution failure is critical - entities should be unavailable
                 self._logger.error(f"Critical configuration error: {err}")
                 raise UpdateFailed(f"Configuration error: {err}") from err
+
+            # Apply verbose logging setting (may have changed via switch)
+            self._apply_verbose_logging(resolved.verbose_logging)
 
             # Collect states for all configured covers
             covers = tuple(resolved.covers)
