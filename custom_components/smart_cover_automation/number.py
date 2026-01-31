@@ -289,7 +289,7 @@ class TempThresholdNumber(IntegrationNumber):
 
         Args:
             coordinator: The DataUpdateCoordinator that manages automation logic
-                        and provides state management for this number entity
+                         and provides state management for this number entity
         """
         entity_description = NumberEntityDescription(
             key=NUMBER_KEY_TEMP_THRESHOLD,
@@ -297,8 +297,8 @@ class TempThresholdNumber(IntegrationNumber):
             entity_category=EntityCategory.CONFIG,
             device_class=NumberDeviceClass.TEMPERATURE,
             icon="mdi:thermometer-lines",
-            native_min_value=10,
-            native_max_value=40,
+            native_min_value=None,
+            native_max_value=None,
             native_step=0.5,
             mode=NumberMode.BOX,
             native_unit_of_measurement=UnitOfTemperature.CELSIUS,
