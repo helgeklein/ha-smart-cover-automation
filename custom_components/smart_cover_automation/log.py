@@ -69,6 +69,12 @@ class Log:
             self._logger = logging.getLogger(_BASE_LOGGER_NAME)
 
     @property
+    def name(self) -> str:
+        """Return the logger name."""
+
+        return self._logger.name
+
+    @property
     def underlying_logger(self) -> logging.Logger:
         """Return the underlying logging.Logger instance.
 
