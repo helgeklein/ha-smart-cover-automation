@@ -13,6 +13,7 @@ from homeassistant.helpers import selector
 
 from . import const
 from .config import ConfKeys, ResolvedConfig, resolve
+from .log import Log
 from .util import to_float_or_none, to_int_or_none
 
 
@@ -26,12 +27,13 @@ class FlowHelper:
     # validate_user_input_step_1
     #
     @staticmethod
-    def validate_user_input_step_1(hass: Any, user_input: dict[str, Any]) -> dict[str, str]:
+    def validate_user_input_step_1(hass: Any, user_input: dict[str, Any], logger: Log) -> dict[str, str]:
         """Validate step 1 input: covers and weather entity.
 
         Args:
             hass: Home Assistant instance
             user_input: User input from the form
+            logger: Logger instance for logging messages
 
         Returns:
             Dictionary of errors (empty if valid)
@@ -42,7 +44,7 @@ class FlowHelper:
         covers = user_input.get(ConfKeys.COVERS.value, [])
         if not covers:
             errors[ConfKeys.COVERS.value] = const.ERROR_NO_COVERS
-            const.LOGGER.error("No covers selected")
+            logger.error("No covers selected")
         elif hass:
             invalid_covers = []
             for cover in covers:
@@ -50,27 +52,27 @@ class FlowHelper:
                 if not state:
                     invalid_covers.append(cover)
                 elif state.state == STATE_UNAVAILABLE:
-                    const.LOGGER.warning(f"Cover {cover} is currently unavailable but will be configured")
+                    logger.warning(f"Cover {cover} is currently unavailable but will be configured")
 
             if invalid_covers:
                 errors[ConfKeys.COVERS.value] = const.ERROR_INVALID_COVER
-                const.LOGGER.error(f"Invalid covers selected: {invalid_covers}")
+                logger.error(f"Invalid covers selected: {invalid_covers}")
 
         # Validate weather entity
         weather_entity_id = user_input.get(ConfKeys.WEATHER_ENTITY_ID.value)
         if not weather_entity_id:
             errors[ConfKeys.WEATHER_ENTITY_ID.value] = const.ERROR_NO_WEATHER_ENTITY
-            const.LOGGER.error("No weather entity selected")
+            logger.error("No weather entity selected")
         elif hass:
             weather_state = hass.states.get(weather_entity_id)
             if weather_state:
                 supported_features = weather_state.attributes.get("supported_features", 0)
                 if not supported_features & WeatherEntityFeature.FORECAST_DAILY:
                     errors[ConfKeys.WEATHER_ENTITY_ID.value] = const.ERROR_INVALID_WEATHER_ENTITY
-                    const.LOGGER.error(f"Weather entity {weather_entity_id} does not support daily forecasts")
+                    logger.error(f"Weather entity {weather_entity_id} does not support daily forecasts")
             else:
                 errors[ConfKeys.WEATHER_ENTITY_ID.value] = const.ERROR_INVALID_WEATHER_ENTITY
-                const.LOGGER.error(f"Weather entity {weather_entity_id} has no state value")
+                logger.error(f"Weather entity {weather_entity_id} has no state value")
 
         return errors
 
@@ -497,8 +499,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         Avoid assigning to OptionsFlow.config_entry directly to prevent frame-helper
         warnings in tests; keep a private reference instead.
         """
+
         self._config_entry = config_entry
         self._config_data: dict[str, Any] = {}
+        self._logger = Log(entry_id=config_entry.entry_id)
 
     #
     # _is_empty_value
@@ -661,17 +665,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 removed_settings[key] = old_value
 
         if changed_settings:
-            const.LOGGER.info(f"Options flow: {len(changed_settings)} changed settings: {changed_settings}")
+            self._logger.info(f"Options flow: {len(changed_settings)} changed settings: {changed_settings}")
         else:
-            const.LOGGER.info("Options flow: No changed settings")
+            self._logger.info("Options flow: No changed settings")
         if new_settings:
-            const.LOGGER.info(f"Options flow: {len(new_settings)} new settings: {new_settings}")
+            self._logger.info(f"Options flow: {len(new_settings)} new settings: {new_settings}")
         else:
-            const.LOGGER.info("Options flow: No new settings")
+            self._logger.info("Options flow: No new settings")
         if removed_settings:
-            const.LOGGER.info(f"Options flow: {len(removed_settings)} removed settings: {removed_settings}")
+            self._logger.info(f"Options flow: {len(removed_settings)} removed settings: {removed_settings}")
         else:
-            const.LOGGER.info("Options flow: No removed settings")
+            self._logger.info("Options flow: No removed settings")
 
         # Clean up orphaned cover settings and empty values from the merged data
         keys_to_remove = []
@@ -699,7 +703,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         for key in keys_to_remove:
             merged.pop(key, None)
 
-        const.LOGGER.debug(f"Options flow completed. Final configuration being saved: {merged}")
+        self._logger.debug(f"Options flow completed. Final configuration being saved: {merged}")
 
         # Apply the new settings
         # This triggers a reload of the integration with the updated configuration.
@@ -725,7 +729,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
         else:
             # Validate user input
-            errors = FlowHelper.validate_user_input_step_1(self.hass, user_input)
+            errors = FlowHelper.validate_user_input_step_1(self.hass, user_input, self._logger)
             if errors:
                 # Convert user input into resolved settings
                 resolved_settings = resolve(user_input)
@@ -736,7 +740,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     errors=errors,
                 )
             else:
-                const.LOGGER.debug(f"Options flow step 1 user input: {user_input}")
+                self._logger.debug(f"Options flow step 1 user input: {user_input}")
 
                 # Store step 1 data (temporarily, for the next step of the flow) and proceed to step 2
                 self._config_data.update(user_input)
@@ -761,7 +765,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=FlowHelper.build_schema_step_2(covers=selected_covers, defaults=current_settings),
             )
         else:
-            const.LOGGER.debug(f"Options flow step 2 user input: {user_input}")
+            self._logger.debug(f"Options flow step 2 user input: {user_input}")
 
             # Store step 2 data (temporarily, for the next step of the flow) and proceed to step 3
             self._config_data.update(user_input)
@@ -786,7 +790,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=FlowHelper.build_schema_step_3(covers=selected_covers, defaults=current_settings),
             )
 
-        const.LOGGER.debug(f"Options flow step 3 user input: {user_input}")
+        self._logger.debug(f"Options flow step 3 user input: {user_input}")
 
         # Get the selected covers
         covers_in_input = self._get_covers()
@@ -828,7 +832,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=FlowHelper.build_schema_step_4(covers=selected_covers, defaults=current_settings),
             )
 
-        const.LOGGER.debug(f"Options flow step 4 user input: {user_input}")
+        self._logger.debug(f"Options flow step 4 user input: {user_input}")
 
         # Get the selected covers
         covers_in_input = self._get_covers()
@@ -868,7 +872,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=FlowHelper.build_schema_step_5(covers=selected_covers, resolved_settings=resolved_settings),
             )
 
-        const.LOGGER.debug(f"Options flow step 5 user input: {user_input}")
+        self._logger.debug(f"Options flow step 5 user input: {user_input}")
 
         # Extract section data if present
         section_names = {const.STEP_5_SECTION_TIME_RANGE, const.STEP_5_SECTION_CLOSE_AFTER_SUNSET}

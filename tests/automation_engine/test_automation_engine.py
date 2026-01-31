@@ -44,13 +44,14 @@ def basic_config():
 
 
 @pytest.fixture
-def automation_engine(mock_ha_interface, basic_config):
+def automation_engine(mock_ha_interface, basic_config, mock_logger):
     """Create an AutomationEngine instance for testing."""
     resolved = resolve(basic_config)
     return AutomationEngine(
         resolved=resolved,
         config=basic_config,
         ha_interface=mock_ha_interface,
+        logger=mock_logger,
     )
 
 
@@ -64,7 +65,7 @@ class TestAutomationEngineInitialization:
         assert automation_engine._ha_interface is not None
         assert automation_engine._cover_pos_history_mgr is not None
 
-    def test_initialization_stores_resolved_config(self, mock_ha_interface):
+    def test_initialization_stores_resolved_config(self, mock_ha_interface, mock_logger):
         """Test that resolved configuration is stored correctly."""
         config = {
             ConfKeys.COVERS.value: ["cover.living_room", "cover.bedroom"],
@@ -76,6 +77,7 @@ class TestAutomationEngineInitialization:
             resolved=resolved,
             config=config,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
 
         assert engine.resolved.temp_threshold == 25.0
@@ -210,7 +212,7 @@ class TestCheckGlobalConditions:
         assert should_proceed is True
         assert message == ""
 
-    def test_check_global_conditions_time_period_disabled(self, mock_ha_interface):
+    def test_check_global_conditions_time_period_disabled(self, mock_ha_interface, mock_logger):
         """Test global conditions check when in disabled time period."""
         # Configure with disabled time range
         config = {
@@ -225,6 +227,7 @@ class TestCheckGlobalConditions:
             resolved=resolved,
             config=config,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
 
         # Mock current time to be within disabled period
@@ -255,7 +258,7 @@ class TestInTimePeriodAutomationDisabled:
         assert is_disabled is False
         assert period_string == ""
 
-    def test_time_period_disabled_outside_range(self, mock_ha_interface):
+    def test_time_period_disabled_outside_range(self, mock_ha_interface, mock_logger):
         """Test when current time is outside disabled range."""
         # Configure with disabled time range
         config = {
@@ -270,6 +273,7 @@ class TestInTimePeriodAutomationDisabled:
             resolved=resolved,
             config=config,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
 
         # Mock current time to be outside disabled period
@@ -285,7 +289,7 @@ class TestInTimePeriodAutomationDisabled:
             assert is_disabled is False
             assert period_string == ""
 
-    def test_time_period_disabled_inside_overnight_range(self, mock_ha_interface):
+    def test_time_period_disabled_inside_overnight_range(self, mock_ha_interface, mock_logger):
         """Test when current time is inside overnight disabled range."""
         # Configure with disabled time range
         config = {
@@ -300,6 +304,7 @@ class TestInTimePeriodAutomationDisabled:
             resolved=resolved,
             config=config,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
 
         # Mock current time to be inside disabled period (late night)
@@ -315,7 +320,7 @@ class TestInTimePeriodAutomationDisabled:
             assert is_disabled is True
             assert period_string == "22:00:00 - 06:00:00"
 
-    def test_time_period_disabled_inside_same_day_range(self, mock_ha_interface):
+    def test_time_period_disabled_inside_same_day_range(self, mock_ha_interface, mock_logger):
         """Test when current time is inside same-day disabled range."""
         # Configure with disabled time range
         config = {
@@ -330,6 +335,7 @@ class TestInTimePeriodAutomationDisabled:
             resolved=resolved,
             config=config,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
 
         # Mock current time to be inside disabled period
@@ -349,7 +355,7 @@ class TestInTimePeriodAutomationDisabled:
 class TestRunMethod:
     """Test the main run method."""
 
-    async def test_run_with_no_covers_configured(self, mock_ha_interface):
+    async def test_run_with_no_covers_configured(self, mock_ha_interface, mock_logger):
         """Test run when no covers are configured."""
         # Configure with no covers
         config = {
@@ -361,6 +367,7 @@ class TestRunMethod:
             resolved=resolved,
             config=config,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
 
         # Call run
@@ -369,7 +376,7 @@ class TestRunMethod:
         # Verify result
         assert result.covers == {}
 
-    async def test_run_with_automation_disabled(self, mock_ha_interface):
+    async def test_run_with_automation_disabled(self, mock_ha_interface, mock_logger):
         """Test run when automation is disabled."""
         # Configure with automation disabled
         config = {
@@ -382,6 +389,7 @@ class TestRunMethod:
             resolved=resolved,
             config=config,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
 
         # Call run
@@ -435,7 +443,7 @@ class TestRunMethod:
         assert result.temp_hot is not None
         assert result.weather_sunny is not None
 
-    async def test_run_blocked_by_nighttime(self, mock_ha_interface):
+    async def test_run_blocked_by_nighttime(self, mock_ha_interface, mock_logger):
         """Test run when blocked by nighttime condition."""
         # Configure to block at night
         config = {
@@ -449,6 +457,7 @@ class TestRunMethod:
             resolved=resolved,
             config=config,
             ha_interface=mock_ha_interface,
+            logger=mock_logger,
         )
 
         # Configure mocks - sun is below horizon
@@ -498,7 +507,7 @@ class TestCheckSunsetClosing:
     #
     # test_check_sunset_closing_feature_disabled
     #
-    def test_check_sunset_closing_feature_disabled(self, mock_ha_interface):
+    def test_check_sunset_closing_feature_disabled(self, mock_ha_interface, mock_logger):
         """Test that method returns False when feature is disabled."""
 
         config = {
@@ -507,7 +516,7 @@ class TestCheckSunsetClosing:
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: False,
         }
         resolved = resolve(config)
-        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
         result = engine._check_sunset_closing()
 
@@ -517,7 +526,7 @@ class TestCheckSunsetClosing:
     # test_check_sunset_closing_before_window
     #
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
-    def test_check_sunset_closing_before_window(self, mock_get_astral, mock_ha_interface, freezer):
+    def test_check_sunset_closing_before_window(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
         """Test that method returns False when current time is before the closing window."""
         from datetime import datetime
 
@@ -530,7 +539,7 @@ class TestCheckSunsetClosing:
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
-        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
         # Freeze time to 18:00 (before sunset + delay window)
         freezer.move_to("2025-11-04 18:00:00")
@@ -548,7 +557,7 @@ class TestCheckSunsetClosing:
     # test_check_sunset_closing_inside_window_first_time
     #
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
-    def test_check_sunset_closing_inside_window_first_time(self, mock_get_astral, mock_ha_interface, freezer):
+    def test_check_sunset_closing_inside_window_first_time(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
         """Test that method returns True once when entering the closing window."""
         from datetime import datetime
 
@@ -561,7 +570,7 @@ class TestCheckSunsetClosing:
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
-        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
         # Freeze time to 18:47 (inside window: 18:45 to 18:55)
         freezer.move_to("2025-11-04 18:47:00")
@@ -583,7 +592,7 @@ class TestCheckSunsetClosing:
     # test_check_sunset_closing_inside_window_already_closed
     #
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
-    def test_check_sunset_closing_inside_window_already_closed(self, mock_get_astral, mock_ha_interface, freezer):
+    def test_check_sunset_closing_inside_window_already_closed(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
         """Test that method returns False if already closed within the window."""
         from datetime import datetime
 
@@ -596,7 +605,7 @@ class TestCheckSunsetClosing:
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
-        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
         # Pre-set already closed
         engine._sunset_covers_closed = True
@@ -615,7 +624,7 @@ class TestCheckSunsetClosing:
     # test_check_sunset_closing_after_window_resets_state
     #
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
-    def test_check_sunset_closing_after_window_resets_state(self, mock_get_astral, mock_ha_interface, freezer):
+    def test_check_sunset_closing_after_window_resets_state(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
         """Test that state resets after the closing window ends."""
         from datetime import datetime
 
@@ -628,7 +637,7 @@ class TestCheckSunsetClosing:
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
-        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
         # Pre-set state as already closed
         engine._sunset_covers_closed = True
@@ -649,7 +658,7 @@ class TestCheckSunsetClosing:
     # test_check_sunset_closing_zero_delay
     #
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
-    def test_check_sunset_closing_zero_delay(self, mock_get_astral, mock_ha_interface, freezer):
+    def test_check_sunset_closing_zero_delay(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
         """Test that zero delay triggers at sunset time."""
         from datetime import datetime
 
@@ -662,7 +671,7 @@ class TestCheckSunsetClosing:
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
-        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
         # Freeze time to exactly sunset + 1 minute (inside window: 18:30 to 18:40)
         freezer.move_to("2025-11-04 18:31:00")
@@ -678,7 +687,7 @@ class TestCheckSunsetClosing:
     # test_check_sunset_closing_sunset_unavailable
     #
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
-    def test_check_sunset_closing_sunset_unavailable(self, mock_get_astral, mock_ha_interface, freezer):
+    def test_check_sunset_closing_sunset_unavailable(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
         """Test that method returns False when sunset time is unavailable."""
 
         config = {
@@ -689,7 +698,7 @@ class TestCheckSunsetClosing:
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
-        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
         freezer.move_to("2025-11-04 18:45:00")
 
@@ -703,7 +712,7 @@ class TestCheckSunsetClosing:
     # test_check_sunset_closing_multiple_day_cycles
     #
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
-    def test_check_sunset_closing_multiple_day_cycles(self, mock_get_astral, mock_ha_interface, freezer):
+    def test_check_sunset_closing_multiple_day_cycles(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
         """Test that feature works correctly across multiple days."""
         from datetime import datetime
 
@@ -716,7 +725,7 @@ class TestCheckSunsetClosing:
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
-        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
         # Day 1: Inside window - should close
         freezer.move_to("2025-11-04 18:46:00")

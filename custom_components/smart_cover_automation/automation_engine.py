@@ -14,6 +14,7 @@ from .config import ResolvedConfig
 from .cover_automation import CoverAutomation, SensorData
 from .cover_position_history import CoverPositionHistoryManager
 from .data import CoordinatorData
+from .log import Log
 
 if TYPE_CHECKING:
     from homeassistant.core import State
@@ -30,6 +31,7 @@ class AutomationEngine:
         resolved: ResolvedConfig,
         config: dict[str, Any],
         ha_interface: Any,
+        logger: Log,
     ) -> None:
         """Initialize the automation engine.
 
@@ -37,12 +39,14 @@ class AutomationEngine:
             resolved: Resolved configuration settings
             config: Raw configuration dictionary
             ha_interface: Home Assistant interface for API interactions
+            logger: Instance-specific logger with entry_id prefix
         """
 
         self.resolved = resolved
         self.config = config
         self._cover_pos_history_mgr = CoverPositionHistoryManager()
         self._ha_interface = ha_interface
+        self._logger = logger
 
         # First run tracking
         self._first_run: bool = True  # Track first iteration to suppress startup warnings
@@ -119,7 +123,7 @@ class AutomationEngine:
             "temp_hot": result.temp_hot,
             "weather_sunny": result.weather_sunny,
         }
-        const.LOGGER.info(f"Sensor states: {str(sensor_states)}")
+        self._logger.info(f"Sensor states: {str(sensor_states)}")
 
         # Log global settings
         global_settings = {
@@ -130,11 +134,11 @@ class AutomationEngine:
             "temp_threshold": self.resolved.temp_threshold,
             "weather_hot_cutover_time": self.resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
         }
-        const.LOGGER.info(f"Global settings: {str(global_settings)}")
+        self._logger.info(f"Global settings: {str(global_settings)}")
 
         # Log lock state if active
         if is_locked:
-            const.LOGGER.warning(f"Cover lock active: {lock_mode}")
+            self._logger.warning(f"Cover lock active: {lock_mode}")
 
         # Check global blocking conditions
         success, message, severity = self._check_global_conditions()
@@ -150,6 +154,7 @@ class AutomationEngine:
                 config=self.config,
                 cover_pos_history_mgr=self._cover_pos_history_mgr,
                 ha_interface=self._ha_interface,
+                logger=self._logger,
             )
             cover_attrs = await cover_automation.process(state, sensor_data)
             result.covers[entity_id] = cover_attrs
@@ -182,7 +187,7 @@ class AutomationEngine:
             return (None, str(err))
         except Exception as err:
             # Unexpected error - log and treat as temporary unavailability
-            const.LOGGER.error(f"Unexpected error getting sun data: {err}")
+            self._logger.error(f"Unexpected error getting sun data: {err}")
             return (None, f"Unexpected error getting sun data: {err}")
 
         # Get weather data
@@ -198,7 +203,7 @@ class AutomationEngine:
             return (None, message)
         except Exception as err:
             # Unexpected error - log and treat as temporary unavailability
-            const.LOGGER.error(f"Unexpected error getting weather data: {err}")
+            self._logger.error(f"Unexpected error getting weather data: {err}")
             return (None, f"Unexpected error getting weather data: {err}")
 
         # Calculate derived values
@@ -247,7 +252,7 @@ class AutomationEngine:
         # Get today's sunset time
         sunset_time = get_astral_event_date(self._ha_interface.hass, SUN_EVENT_SUNSET, today)
         if sunset_time is None:
-            const.LOGGER.debug("Could not determine sunset time for today")
+            self._logger.debug("Could not determine sunset time for today")
             return False
 
         # Calculate the closing window
@@ -261,16 +266,16 @@ class AutomationEngine:
         if in_window:
             window_start_local = dt_util.as_local(window_start).strftime("%H:%M:%S")
             window_end_local = dt_util.as_local(window_end).strftime("%H:%M:%S")
-            const.LOGGER.info(f"Evening closure: In active time window ({window_start_local} - {window_end_local})")
+            self._logger.info(f"Evening closure: In active time window ({window_start_local} - {window_end_local})")
             if not self._sunset_covers_closed:
                 # First time we've detected being in the window - close covers!
                 self._sunset_covers_closed = True
-                const.LOGGER.info("Evening closure: Signaling configured covers to be closed now")
+                self._logger.info("Evening closure: Signaling configured covers to be closed now")
                 return True
         else:
             # Ensure the state is reset outside the window
             if self._sunset_covers_closed:
-                const.LOGGER.debug("Evening closure: Outside active time window. Resetting state")
+                self._logger.debug("Evening closure: Outside active time window. Resetting state")
                 self._sunset_covers_closed = False
 
         return False
@@ -349,12 +354,13 @@ class AutomationEngine:
             message: Message to log
             severity: Log severity level
         """
+
         # Log the message
         if severity == const.LogSeverity.DEBUG:
-            const.LOGGER.debug(message)
+            self._logger.debug(message)
         elif severity == const.LogSeverity.INFO:
-            const.LOGGER.info(message)
+            self._logger.info(message)
         elif severity == const.LogSeverity.WARNING:
-            const.LOGGER.warning(message)
+            self._logger.warning(message)
         else:
-            const.LOGGER.error(message)
+            self._logger.error(message)

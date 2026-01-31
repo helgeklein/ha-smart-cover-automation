@@ -9,8 +9,8 @@ multiple integration instances in the logs.
 Usage:
     # Without instance ID (for module-level/early logging):
     from .log import Log
-    LOGGER = Log()
-    LOGGER.info("Starting setup")  # Output: Starting setup
+    logger = Log()
+    logger.info("Starting setup")  # Output: Starting setup
 
     # With instance ID (for instance-specific logging):
     logger = Log(entry_id="1a2b3c4d-5e6f-7890-abcd-ef1234567890")

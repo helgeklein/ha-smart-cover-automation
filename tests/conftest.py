@@ -159,6 +159,27 @@ def create_forecast_with_applicable_date(temp: float, cutover_time: time | None 
 
 
 @pytest.fixture
+def mock_logger() -> MagicMock:
+    """Create a mock Log instance for testing.
+
+    Provides a mock logger that captures all log calls without producing output.
+    This is used when testing components that require a logger parameter.
+    """
+
+    logger = MagicMock()
+    logger.debug = MagicMock()
+    logger.info = MagicMock()
+    logger.warning = MagicMock()
+    logger.error = MagicMock()
+    logger.exception = MagicMock()
+    logger.setLevel = MagicMock()
+    logger.isEnabledFor = MagicMock(return_value=True)
+    logger.underlying_logger = MagicMock()
+    logger.prefix = ""
+    return logger
+
+
+@pytest.fixture
 def mock_hass() -> MagicMock:
     """Create a mock HomeAssistant instance.
 
@@ -479,6 +500,7 @@ class MockConfigEntry:
         """
         self.domain = DOMAIN
         self.entry_id = "test_entry"
+        self.title = "Test Entry"
         # Config entry data is empty (only marks integration as installed)
         self.data = {}
         # All user settings are in options
@@ -1150,9 +1172,7 @@ def mock_config_entry_basic() -> MockConfigEntry:
     Returns:
         MockConfigEntry: Mock config entry with temperature automation setup
     """
-    entry = MockConfigEntry(create_temperature_config())
-    entry.title = "Test Entry"
-    return entry
+    return MockConfigEntry(create_temperature_config())
 
 
 @pytest.fixture

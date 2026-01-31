@@ -14,6 +14,7 @@ from homeassistant.const import EntityCategory
 from . import const
 from .const import SELECT_KEY_LOCK_MODE
 from .entity import IntegrationEntity
+from .log import Log
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -118,6 +119,7 @@ class LockModeSelect(IntegrationSelect):
         )
 
         self._attr_options = [mode.value for mode in const.LockMode]
+        self._logger = Log(entry_id=coordinator.config_entry.entry_id)
 
     #
     # current_option
@@ -138,7 +140,7 @@ class LockModeSelect(IntegrationSelect):
         try:
             lock_mode = const.LockMode(option)
         except ValueError:
-            const.LOGGER.error(f"Invalid lock mode value: {option}")
+            self._logger.error(f"Invalid lock mode value: {option}")
             return
 
         await self.coordinator.async_set_lock_mode(lock_mode)

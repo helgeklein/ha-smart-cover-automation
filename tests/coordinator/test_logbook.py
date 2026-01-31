@@ -119,7 +119,7 @@ class TestLogbookEntries:
                 "custom_components.smart_cover_automation.ha_interface.translation.async_get_translations", new_callable=AsyncMock
             ) as mock_get_translations,
             patch("custom_components.smart_cover_automation.ha_interface.async_log_entry") as mock_log_entry,
-            patch.object(const.LOGGER, "warning") as mock_warning,
+            patch.object(mock_coordinator._logger, "warning") as mock_warning,
         ):
             mock_get_translations.return_value = mock_translations
 
@@ -163,7 +163,7 @@ class TestLogbookEntries:
                 "custom_components.smart_cover_automation.ha_interface.translation.async_get_translations", new_callable=AsyncMock
             ) as mock_get_translations,
             patch("custom_components.smart_cover_automation.ha_interface.async_log_entry") as mock_log_entry,
-            patch.object(const.LOGGER, "warning") as mock_warning,
+            patch.object(mock_coordinator._logger, "warning") as mock_warning,
         ):
             mock_get_translations.return_value = empty_translations
 
@@ -249,7 +249,7 @@ class TestLogbookEntries:
 
         with (
             patch.object(ha_entity_registry, "async_get", side_effect=Exception("Registry error")),
-            patch.object(const.LOGGER, "debug") as mock_debug,
+            patch.object(mock_coordinator._logger, "debug") as mock_debug,
         ):
             # Execute - should not raise exception
             await mock_coordinator._ha_interface.add_logbook_entry(

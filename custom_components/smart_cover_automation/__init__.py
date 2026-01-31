@@ -33,6 +33,7 @@ from .const import (
 )
 from .coordinator import DataUpdateCoordinator
 from .data import RuntimeData
+from .log import Log
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -60,6 +61,8 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
 
     This preserves the user-facing entity_id while allowing multiple instances.
     """
+    logger = Log(entry_id=entry.entry_id)
+
     registry = er.async_get(hass)
     entries = er.async_entries_for_config_entry(registry, entry.entry_id)
 
@@ -69,7 +72,7 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
     if not legacy_candidates:
         return
 
-    LOGGER.info(
+    logger.info(
         "Starting unique ID migration for entry %s. Found %d entities to migrate.",
         entry.entry_id,
         len(legacy_candidates),
@@ -82,7 +85,7 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
         key = old_unique_id.replace(f"{const.DOMAIN}_", "", 1)
         new_unique_id = f"{entry.entry_id}_{key}"
 
-        LOGGER.info(f"Migrating entity {entity.entity_id} unique_id from {old_unique_id} to {new_unique_id}")
+        logger.info(f"Migrating entity {entity.entity_id} unique_id from {old_unique_id} to {new_unique_id}")
         try:
             registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
             migrated_count += 1
@@ -96,7 +99,7 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
 
             collision_resolved = False
             if existing_entity_id:
-                LOGGER.warning(
+                logger.warning(
                     "Collision detected while migrating %s to %s. Existing owner: %s",
                     entity.entity_id,
                     new_unique_id,
@@ -105,7 +108,7 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
                 existing_entry = registry.async_get(existing_entity_id)
                 # If the blocking entity has no config entry connected, it's an orphan/zombie
                 if existing_entry and existing_entry.config_entry_id is None:
-                    LOGGER.warning(
+                    logger.warning(
                         "Found orphaned entity %s blocking migration to %s. Removing it.",
                         existing_entity_id,
                         new_unique_id,
@@ -117,19 +120,19 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
                         migrated_count += 1
                         collision_resolved = True
                     except ValueError as retry_err:
-                        LOGGER.error("Migration retry failed for %s: %s", entity.entity_id, retry_err)
+                        logger.error("Migration retry failed for %s: %s", entity.entity_id, retry_err)
             else:
-                LOGGER.warning(
+                logger.warning(
                     f"Collaboration collision detected for {entity.entity_id} but no blocking entity found in registry query: {err}"
                 )
 
             if not collision_resolved:
                 # If we get here, it's a real conflict we can't auto-resolve
-                LOGGER.warning(f"Error migrating unique_id for {entity.entity_id}: {err}")
+                logger.warning(f"Error migrating unique_id for {entity.entity_id}: {err}")
         except Exception as err:
-            LOGGER.error(f"Unexpected error migrating {entity.entity_id}: {err}")
+            logger.error(f"Unexpected error migrating {entity.entity_id}: {err}")
 
-    LOGGER.info(f"Finished unique ID migration. Migrated {migrated_count} entities.")
+    logger.info(f"Finished unique ID migration. Migrated {migrated_count} entities.")
 
 
 #
@@ -303,13 +306,15 @@ async def async_setup_entry(
     - Sets up platforms
     - Sets up the reload listener
     """
+    logger = Log(entry_id=entry.entry_id)
+
     # Configure logging level early to capture setup/migration logs
     options = dict(getattr(entry, HA_OPTIONS, {}) or {})
     if options.get(ConfKeys.VERBOSE_LOGGING.value, False):
-        LOGGER.setLevel(logging.DEBUG)
-        LOGGER.debug("Verbose logging enabled by configuration (early setup)")
+        logger.setLevel(logging.DEBUG)
+        logger.debug("Verbose logging enabled by configuration (early setup)")
 
-    LOGGER.info("Starting integration setup")
+    logger.info("Starting integration setup")
 
     # Migrate unique IDs if needed
     await _async_migrate_unique_ids(hass, entry)
@@ -348,12 +353,12 @@ async def async_setup_entry(
         await _async_register_lock_service(hass)
 
         # Call each platform's async_setup_entry()
-        LOGGER.debug(f"Setting up platforms: {PLATFORMS}")
+        logger.debug(f"Setting up platforms: {PLATFORMS}")
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
         # Trigger initial coordinator refresh after platforms are set up
         # This ensures all entities are registered before the first state update
-        LOGGER.debug("Starting initial coordinator refresh")
+        logger.debug("Starting initial coordinator refresh")
         await coordinator.async_config_entry_first_refresh()
 
         # Register the update listener
@@ -361,18 +366,18 @@ async def async_setup_entry(
 
     except (OSError, ValueError, TypeError) as err:
         # "Expected" errors: only log an error message
-        LOGGER.error(f"Failed to set up {INTEGRATION_NAME} integration: {err}")
+        logger.error(f"Failed to set up {INTEGRATION_NAME} integration: {err}")
         return False
     except (ImportError, AttributeError, KeyError) as err:
         # "Unexpected" errors: log exception with stack trace
-        LOGGER.exception(f"Error during {INTEGRATION_NAME} setup: {err}")
+        logger.exception(f"Error during {INTEGRATION_NAME} setup: {err}")
         return False
     except Exception as err:
         # "Unexpected" errors: log exception with stack trace
-        LOGGER.exception(f"Error during {INTEGRATION_NAME} setup: {err}")
+        logger.exception(f"Error during {INTEGRATION_NAME} setup: {err}")
         return False
     else:
-        LOGGER.info(f"{INTEGRATION_NAME} integration setup completed")
+        logger.info(f"{INTEGRATION_NAME} integration setup completed")
         return True
 
 
@@ -396,7 +401,9 @@ async def async_unload_entry(
     entry: IntegrationConfigEntry,
 ) -> bool:
     """Handle removal of an entry."""
-    LOGGER.info(f"Unloading {INTEGRATION_NAME} integration")
+    logger = Log(entry_id=entry.entry_id)
+
+    logger.info(f"Unloading {INTEGRATION_NAME} integration")
     try:
         result = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
@@ -415,11 +422,11 @@ async def async_unload_entry(
         return result
     except (OSError, ValueError, TypeError) as err:
         # "Expected" errors: only log an error message
-        LOGGER.error(f"Error unloading {INTEGRATION_NAME} integration: {err}")
+        logger.error(f"Error unloading {INTEGRATION_NAME} integration: {err}")
         return False
     except Exception as err:
         # "Unexpected" errors: log exception with stack trace
-        LOGGER.exception(f"Error unloading {INTEGRATION_NAME} integration: {err}")
+        logger.exception(f"Error unloading {INTEGRATION_NAME} integration: {err}")
         return False
 
 
@@ -435,6 +442,8 @@ async def async_reload_entry(
     For runtime options that have corresponding entities (switches, numbers),
     we only need to refresh the coordinator. For structural changes, we need a full reload.
     """
+    logger = Log(entry_id=entry.entry_id)
+
     # These keys can be changed at runtime via their corresponding entities
     # without requiring a full reload. The list is centrally defined in config.py
     # based on the runtime_configurable flag in CONF_SPECS.
@@ -455,7 +464,7 @@ async def async_reload_entry(
 
         # If the only changes are to runtime-configurable keys, just refresh
         if changed_keys and changed_keys.issubset(runtime_configurable_keys):
-            LOGGER.info(f"Runtime settings change detected ({changes}), refreshing coordinator")
+            logger.info(f"Runtime settings change detected ({changes}), refreshing coordinator")
 
             # Update the stored config with new values
             coordinator._merged_config = new_config
@@ -466,7 +475,7 @@ async def async_reload_entry(
             return
 
     # For all other changes (structural, new keys, etc.), do a full reload
-    LOGGER.info(f"Reloading {INTEGRATION_NAME} integration")
+    logger.info(f"Reloading {INTEGRATION_NAME} integration")
     await hass.config_entries.async_reload(entry.entry_id)
 
 

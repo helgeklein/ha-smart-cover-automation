@@ -79,10 +79,10 @@ def resolved_settings_callback(mock_resolved_config: ResolvedConfig) -> MagicMoc
 
 
 @pytest.fixture
-def ha_interface(mock_hass: MagicMock, resolved_settings_callback: MagicMock) -> HomeAssistantInterface:  # type: ignore[type-arg]
+def ha_interface(mock_hass: MagicMock, resolved_settings_callback: MagicMock, mock_logger: MagicMock) -> HomeAssistantInterface:  # type: ignore[type-arg]
     """Create a HomeAssistantInterface instance for testing."""
 
-    interface = HomeAssistantInterface(mock_hass, resolved_settings_callback)  # type: ignore[arg-type]
+    interface = HomeAssistantInterface(mock_hass, resolved_settings_callback, mock_logger)  # type: ignore[arg-type]
     interface.status_sensor_unique_id = TEST_UNIQUE_ID
     return interface
 
@@ -102,10 +102,11 @@ class TestHomeAssistantInterfaceInitialization:
         self,
         mock_hass: MagicMock,
         resolved_settings_callback: MagicMock,  # type: ignore[type-arg]
+        mock_logger: MagicMock,
     ) -> None:
         """Test successful initialization with valid parameters."""
 
-        interface = HomeAssistantInterface(mock_hass, resolved_settings_callback)  # type: ignore[arg-type]
+        interface = HomeAssistantInterface(mock_hass, resolved_settings_callback, mock_logger)  # type: ignore[arg-type]
 
         assert interface.hass == mock_hass
         assert interface._resolved_settings_callback == resolved_settings_callback
@@ -118,10 +119,11 @@ class TestHomeAssistantInterfaceInitialization:
         self,
         mock_hass: MagicMock,
         resolved_settings_callback: MagicMock,  # type: ignore[type-arg]
+        mock_logger: MagicMock,
     ) -> None:
         """Test that unique_id can be set after initialization."""
 
-        interface = HomeAssistantInterface(mock_hass, resolved_settings_callback)  # type: ignore[arg-type]
+        interface = HomeAssistantInterface(mock_hass, resolved_settings_callback, mock_logger)  # type: ignore[arg-type]
         interface.status_sensor_unique_id = TEST_UNIQUE_ID
 
         assert interface.status_sensor_unique_id == TEST_UNIQUE_ID
