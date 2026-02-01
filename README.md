@@ -31,6 +31,8 @@ A Home Assistant integration to automate the control of your smart home's window
     - Move the covers to opened or closed state and keep them there.
     - Alternatively, lock the covers in their current position.
     - Can be triggered as an action, e.g., when a warning is received from a weather service.
+- **Grouping:**
+    - Maintain configurations for windows with different heat or sun protection requirements by setting up multiple instances of the extension.
 - **Comfort:**
     - Micro-adjustments are avoided.
 - **Supported covers:** Works with any cover entity that supports open/close or position control.
