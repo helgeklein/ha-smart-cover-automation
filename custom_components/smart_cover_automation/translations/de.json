@@ -33,13 +33,21 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Schritt 3 von 5",
-                "description": "Konfigurieren Sie die **Min/Max**-Positionen für jeden Rollladen (optional).\n\n(0 = vollständig geschlossen, 100 = vollständig geöffnet)",
+                "description": "Konfigurieren Sie die **Min/Max**-Positionen der Rollläden (optional).\nGlobale Einstellungen gelten für alle Rollläden, sofern sie nicht pro Rollladen überschrieben werden.\n(0 = vollständig geschlossen, 100 = vollständig geöffnet)",
+                "data": {
+                    "covers_max_closure": "Maximale Rollladenposition (global):",
+                    "covers_min_closure": "Minimale Rollladenposition (global):"
+                },
+                "data_description": {
+                    "covers_max_closure": "Die maximale geschlossene Position für alle Rollläden, sofern sie nicht pro Rollladen überschrieben wird.",
+                    "covers_min_closure": "Die minimale offene Position für alle Rollläden, sofern sie nicht pro Rollladen überschrieben wird."
+                },
                 "sections": {
                     "section_max_closure": {
-                        "name": "Maximale Rollladenpositionen"
+                        "name": "Maximale Rollladenpositionen (pro Rollladen)"
                     },
                     "section_min_closure": {
-                        "name": "Minimale Rollladenpositionen"
+                        "name": "Minimale Rollladenpositionen (pro Rollladen)"
                     }
                 }
             },

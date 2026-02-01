@@ -656,14 +656,15 @@ class TestOptionsFlowHelperMethods:
         import logging
 
         # Use dict format for manual_override_duration so it matches what the form returns
+        # Note: Global closure defaults are 0 (max) and 100 (min) per config.py CONF_SPECS
         existing_data = {
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
             ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
-            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
-            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 0,  # Use default value from config.py
+            ConfKeys.COVERS_MIN_CLOSURE.value: 100,  # Use default value from config.py
             ConfKeys.TEMP_THRESHOLD.value: 23,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
         }
@@ -682,8 +683,13 @@ class TestOptionsFlowHelperMethods:
 
             await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
 
-            # Step 3: Continue with min/max settings (proceeds to step 4)
-            await flow.async_step_3({})
+            # Step 3: Include global closure settings that match existing data
+            await flow.async_step_3(
+                {
+                    ConfKeys.COVERS_MAX_CLOSURE.value: 0,
+                    ConfKeys.COVERS_MIN_CLOSURE.value: 100,
+                }
+            )
 
             # Step 4: Continue with window sensors (proceeds to step 5)
             await flow.async_step_4({})
@@ -707,14 +713,15 @@ class TestOptionsFlowHelperMethods:
         import logging
 
         # Start with existing data
+        # Note: Global closure defaults are 0 (max) and 100 (min) per config.py CONF_SPECS
         existing_data = {
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
             ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 5,
             ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
-            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
-            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 0,  # Use default value from config.py
+            ConfKeys.COVERS_MIN_CLOSURE.value: 100,  # Use default value from config.py
             ConfKeys.TEMP_THRESHOLD.value: 23,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
         }
@@ -733,8 +740,13 @@ class TestOptionsFlowHelperMethods:
 
             await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
 
-            # Step 3: Continue with min/max settings (proceeds to step 4)
-            await flow.async_step_3({})
+            # Step 3: Include global closure settings that match existing data
+            await flow.async_step_3(
+                {
+                    ConfKeys.COVERS_MAX_CLOSURE.value: 0,
+                    ConfKeys.COVERS_MIN_CLOSURE.value: 100,
+                }
+            )
 
             # Step 4: Continue with window sensors (proceeds to step 5)
             await flow.async_step_4({})

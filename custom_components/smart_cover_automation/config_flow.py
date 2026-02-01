@@ -145,18 +145,55 @@ class FlowHelper:
     # build_schema_step_3
     #
     @staticmethod
-    def build_schema_step_3(covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
+    def build_schema_step_3(covers: list[str], defaults: Mapping[str, Any], resolved_settings: ResolvedConfig) -> vol.Schema:
         """Build schema for step 3: min/max position per cover.
 
         Args:
             covers: List of cover entity IDs
             defaults: Dictionary to look up default values
+            resolved_settings: Resolved configuration with defaults
 
         Returns:
-            Schema for step 4 form
+            Schema for step 3 form
         """
 
         schema_dict: dict[vol.Marker, object] = {}
+
+        #
+        # IMPORTANT:
+        #
+        # Without these required settings, a bug in HA is triggered when advancing
+        # without expanding a section.
+        # When that happens, submitting the following step (4!) results in the error:
+        #
+        #    extra keys not allowed @ data['section_window_sensors']
+        #
+
+        # Global min closure setting (default for all covers)
+        schema_dict[vol.Required(ConfKeys.COVERS_MIN_CLOSURE.value, default=resolved_settings.covers_min_closure)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    unit_of_measurement="%",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        )
+
+        # Global max closure setting (default for all covers)
+        schema_dict[vol.Required(ConfKeys.COVERS_MAX_CLOSURE.value, default=resolved_settings.covers_max_closure)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    unit_of_measurement="%",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        )
 
         # Build schema dict for min closure positions and group inside collapsible section
         min_schema_dict = FlowHelper._build_schema_cover_positions(covers, const.COVER_SFX_MIN_CLOSURE, defaults)
@@ -780,6 +817,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is None:
             # Get currently valid settings
             current_settings = self._current_settings()
+            resolved_settings = resolve(current_settings)
 
             # Get the selected covers
             selected_covers = self._get_covers()
@@ -787,7 +825,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Show the form
             return self.async_show_form(
                 step_id="3",
-                data_schema=FlowHelper.build_schema_step_3(covers=selected_covers, defaults=current_settings),
+                data_schema=FlowHelper.build_schema_step_3(
+                    covers=selected_covers, defaults=current_settings, resolved_settings=resolved_settings
+                ),
             )
 
         self._logger.debug(f"Options flow step 3 user input: {user_input}")
@@ -797,6 +837,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Get currently valid settings
         current_settings = self._current_settings()
+
+        # Store global min/max closure settings
+        self._config_data[ConfKeys.COVERS_MAX_CLOSURE.value] = int(user_input.get(ConfKeys.COVERS_MAX_CLOSURE.value, 0))
+        self._config_data[ConfKeys.COVERS_MIN_CLOSURE.value] = int(user_input.get(ConfKeys.COVERS_MIN_CLOSURE.value, 100))
 
         # Build complete lists of min and max closure settings for all covers
         min_closure_data = self._build_section_cover_settings(

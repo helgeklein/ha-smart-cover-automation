@@ -33,13 +33,21 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Krok 3 z 5",
-                "description": "Skonfiguruj pozycje **min/max** dla każdej rolety (opcjonalne).\n\n(0 = całkowicie zamknięte, 100 = całkowicie otwarte)",
+                "description": "Skonfiguruj pozycje **min/max** rolet (opcjonalne).\nUstawienia globalne dotyczą wszystkich rolet, chyba że zostaną nadpisane dla konkretnej rolety.\n(0 = całkowicie zamknięte, 100 = całkowicie otwarte)",
+                "data": {
+                    "covers_max_closure": "Maksymalna pozycja rolety (globalnie):",
+                    "covers_min_closure": "Minimalna pozycja rolety (globalnie):"
+                },
+                "data_description": {
+                    "covers_max_closure": "Maksymalna pozycja zamknięcia dla wszystkich rolet, chyba że zostanie nadpisana dla konkretnej rolety.",
+                    "covers_min_closure": "Minimalna pozycja otwarcia dla wszystkich rolet, chyba że zostanie nadpisana dla konkretnej rolety."
+                },
                 "sections": {
                     "section_max_closure": {
-                        "name": "Maksymalne pozycje rolet"
+                        "name": "Maksymalne pozycje rolet (per roleta)"
                     },
                     "section_min_closure": {
-                        "name": "Minimalne pozycje rolet"
+                        "name": "Minimalne pozycje rolet (per roleta)"
                     }
                 }
             },

@@ -6,7 +6,7 @@ description: "Configuring multiple instances of Smart Cover Automation for Home 
 permalink: /multiple-instances/
 ---
 
-# UI Multiple Instances
+# Multiple Instances
 
 The integration supports multiple instances. This can be useful if you have varying heat or sun protection requirements for different groups of covers.
 

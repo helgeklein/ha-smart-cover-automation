@@ -302,10 +302,13 @@ class TestFlowHelperSchemaBuilding:
         This exercises the else branch in _build_schema_cover_positions where
         default_value is None (lines 294, 306-309).
         """
-        covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
-        defaults = {}  # No per-cover defaults
+        from custom_components.smart_cover_automation.config import resolve
 
-        schema = FlowHelper.build_schema_step_3(covers, defaults)
+        covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
+        defaults: dict[str, Any] = {}  # No per-cover defaults
+        resolved_settings = resolve(defaults)
+
+        schema = FlowHelper.build_schema_step_3(covers, defaults, resolved_settings)
 
         # Verify schema was created
         assert schema is not None
@@ -316,23 +319,29 @@ class TestFlowHelperSchemaBuilding:
             section_name = str(key.schema) if hasattr(key, "schema") else str(key)
             sections[section_name] = value
 
-        # Verify section structure
+        # Verify section structure (now includes global settings)
         assert "section_min_closure" in sections
         assert "section_max_closure" in sections
+        # Verify global closure settings are included
+        assert ConfKeys.COVERS_MAX_CLOSURE.value in sections
+        assert ConfKeys.COVERS_MIN_CLOSURE.value in sections
 
         # Verify that fields for all covers exist in the sections
         # (The actual structure is nested, but we're checking the schema was created)
-        assert len(sections) >= 2
+        assert len(sections) >= 4  # 2 global settings + 2 sections
 
     def test_build_schema_step_3_with_per_cover_defaults(self) -> None:
         """Test step 3 schema when covers have per-cover min/max closure defaults."""
+        from custom_components.smart_cover_automation.config import resolve
+
         covers = [MOCK_COVER_ENTITY_ID]
-        defaults = {
+        defaults: dict[str, Any] = {
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}": 20,
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}": 80,
         }
+        resolved_settings = resolve(defaults)
 
-        schema = FlowHelper.build_schema_step_3(covers, defaults)
+        schema = FlowHelper.build_schema_step_3(covers, defaults, resolved_settings)
 
         # Verify schema was created
         assert schema is not None
@@ -346,6 +355,9 @@ class TestFlowHelperSchemaBuilding:
         # Verify both sections exist
         assert "section_min_closure" in sections
         assert "section_max_closure" in sections
+        # Verify global closure settings are included
+        assert ConfKeys.COVERS_MAX_CLOSURE.value in sections
+        assert ConfKeys.COVERS_MIN_CLOSURE.value in sections
 
 
 class TestFlowHelperFlattenSection:
