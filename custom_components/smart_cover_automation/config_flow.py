@@ -159,6 +159,16 @@ class FlowHelper:
 
         schema_dict: dict[vol.Marker, object] = {}
 
+        #
+        # IMPORTANT:
+        #
+        # Without these required settings, a bug in HA is triggered when advancing
+        # without expanding a section.
+        # When that happens, submitting the following step (4!) results in the error:
+        #
+        #    extra keys not allowed @ data['section_window_sensors']
+        #
+
         # Global min closure setting (default for all covers)
         schema_dict[vol.Required(ConfKeys.COVERS_MIN_CLOSURE.value, default=resolved_settings.covers_min_closure)] = (
             selector.NumberSelector(
