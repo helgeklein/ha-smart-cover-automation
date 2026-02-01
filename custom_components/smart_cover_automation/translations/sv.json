@@ -33,13 +33,21 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Steg 3 av 5",
-                "description": "Konfigurera **min/max**-lägena för varje persienn (valfritt).\n\n(0 = helt stängd, 100 = helt öppen)",
+                "description": "Konfigurera **min/max**-lägen för persienner (valfritt).\nGlobala inställningar gäller för alla persienner om de inte åsidosätts per persienn.\n(0 = helt stängd, 100 = helt öppen)",
+                "data": {
+                    "covers_max_closure": "Högsta läge för persienn (globalt):",
+                    "covers_min_closure": "Lägsta läge för persienn (globalt):"
+                },
+                "data_description": {
+                    "covers_max_closure": "Det högsta stängda läget för alla persienner om det inte åsidosätts per persienn.",
+                    "covers_min_closure": "Det lägsta öppna läget för alla persienner om det inte åsidosätts per persienn."
+                },
                 "sections": {
                     "section_max_closure": {
-                        "name": "Högsta persiennlägen"
+                        "name": "Högsta persiennlägen (per persienn)"
                     },
                     "section_min_closure": {
-                        "name": "Lägsta persiennlägen"
+                        "name": "Lägsta persiennlägen (per persienn)"
                     }
                 }
             },

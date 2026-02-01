@@ -33,13 +33,21 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Passo 3 di 5",
-                "description": "Configura le posizioni **min/max** per ciascuna tapparella (opzionale).\n\n(0 = completamente chiusa, 100 = completamente aperta)",
+                "description": "Configura le posizioni **min/max** delle tapparelle (opzionale).\nLe impostazioni globali si applicano a tutte le tapparelle, a meno che non vengano sovrascritte per tapparella.\n(0 = completamente chiusa, 100 = completamente aperta)",
+                "data": {
+                    "covers_max_closure": "Posizione massima della tapparella (globale):",
+                    "covers_min_closure": "Posizione minima della tapparella (globale):"
+                },
+                "data_description": {
+                    "covers_max_closure": "La posizione massima di chiusura per tutte le tapparelle, a meno che non venga sovrascritta per tapparella.",
+                    "covers_min_closure": "La posizione minima di apertura per tutte le tapparelle, a meno che non venga sovrascritta per tapparella."
+                },
                 "sections": {
                     "section_max_closure": {
-                        "name": "Posizioni massime della tapparella"
+                        "name": "Posizioni massime della tapparella (per tapparella)"
                     },
                     "section_min_closure": {
-                        "name": "Posizioni minime della tapparella"
+                        "name": "Posizioni minime della tapparella (per tapparella)"
                     }
                 }
             },

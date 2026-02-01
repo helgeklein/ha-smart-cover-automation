@@ -33,13 +33,21 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Stap 3 van 5",
-                "description": "Configureer de **min/max**-posities voor elk rolluik (optioneel).\n\n(0 = volledig gesloten, 100 = volledig open)",
+                "description": "Configureer de **min/max**-posities van de rolluiken (optioneel).\nGlobale instellingen gelden voor alle rolluiken tenzij per rolluik overschreven.\n(0 = volledig gesloten, 100 = volledig open)",
+                "data": {
+                    "covers_max_closure": "Maximale positie van het rolluik (globaal):",
+                    "covers_min_closure": "Minimale positie van het rolluik (globaal):"
+                },
+                "data_description": {
+                    "covers_max_closure": "De maximale gesloten positie voor alle rolluiken tenzij per rolluik overschreven.",
+                    "covers_min_closure": "De minimale open positie voor alle rolluiken tenzij per rolluik overschreven."
+                },
                 "sections": {
                     "section_max_closure": {
-                        "name": "Maximale posities van het rolluik"
+                        "name": "Maximale posities van het rolluik (per rolluik)"
                     },
                     "section_min_closure": {
-                        "name": "Minimale posities van het rolluik"
+                        "name": "Minimale posities van het rolluik (per rolluik)"
                     }
                 }
             },

@@ -33,13 +33,21 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Passo 3 de 5",
-                "description": "Configure as posições **mín/máx** para cada persiana (opcional).\n\n(0 = totalmente fechada, 100 = totalmente aberta)",
+                "description": "Configure as posições **mín/máx** das persianas (opcional).\nAs definições globais aplicam-se a todas as persianas, a menos que sejam substituídas por persiana.\n(0 = totalmente fechada, 100 = totalmente aberta)",
+                "data": {
+                    "covers_max_closure": "Posição máxima da persiana (global):",
+                    "covers_min_closure": "Posição mínima da persiana (global):"
+                },
+                "data_description": {
+                    "covers_max_closure": "A posição máxima de fecho para todas as persianas, a menos que seja substituída por persiana.",
+                    "covers_min_closure": "A posição mínima de abertura para todas as persianas, a menos que seja substituída por persiana."
+                },
                 "sections": {
                     "section_max_closure": {
-                        "name": "Posições máximas da persiana"
+                        "name": "Posições máximas da persiana (por persiana)"
                     },
                     "section_min_closure": {
-                        "name": "Posições mínimas da persiana"
+                        "name": "Posições mínimas da persiana (por persiana)"
                     }
                 }
             },

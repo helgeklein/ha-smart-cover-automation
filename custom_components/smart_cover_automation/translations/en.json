@@ -44,10 +44,10 @@
                 },
                 "sections": {
                     "section_max_closure": {
-                        "name": "Maximum cover positions (per-cover overrides)"
+                        "name": "Maximum cover positions (per-cover)"
                     },
                     "section_min_closure": {
-                        "name": "Minimum cover positions (per-cover overrides)"
+                        "name": "Minimum cover positions (per-cover)"
                     }
                 }
             },

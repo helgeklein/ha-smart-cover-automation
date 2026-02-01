@@ -33,13 +33,21 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Étape 3 sur 5",
-                "description": "Configurez les positions **min/max** pour chaque volet (facultatif).\n\n(0 = totalement fermé, 100 = totalement ouvert)",
+                "description": "Configurez les positions **min/max** des volets (facultatif).\nLes réglages globaux s'appliquent à tous les volets, sauf s'ils sont remplacés par volet.\n(0 = totalement fermé, 100 = totalement ouvert)",
+                "data": {
+                    "covers_max_closure": "Position maximale du volet (globale) :",
+                    "covers_min_closure": "Position minimale du volet (globale) :"
+                },
+                "data_description": {
+                    "covers_max_closure": "La position maximale de fermeture pour tous les volets, sauf si elle est remplacée par volet.",
+                    "covers_min_closure": "La position minimale d'ouverture pour tous les volets, sauf si elle est remplacée par volet."
+                },
                 "sections": {
                     "section_max_closure": {
-                        "name": "Positions maximales du volet"
+                        "name": "Positions maximales du volet (par volet)"
                     },
                     "section_min_closure": {
-                        "name": "Positions minimales du volet"
+                        "name": "Positions minimales du volet (par volet)"
                     }
                 }
             },
