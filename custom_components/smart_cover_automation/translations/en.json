@@ -33,13 +33,21 @@
             },
             "3": {
                 "title": "Smart Cover Automation - Step 3 of 5",
-                "description": "Configure the **min/max** positions for each cover (optional).\n\n(0 = fully closed, 100 = fully open)",
+                "description": "Configure the cover **min/max** positions (optional).\nGlobal settings apply to all covers unless overridden per cover.\n(0 = fully closed, 100 = fully open)",
+                "data": {
+                    "covers_max_closure": "Maximum cover position (global):",
+                    "covers_min_closure": "Minimum cover position (global):"
+                },
+                "data_description": {
+                    "covers_max_closure": "The maximum closed position for all covers unless overridden per cover.",
+                    "covers_min_closure": "The minimum open position for all covers unless overridden per cover."
+                },
                 "sections": {
                     "section_max_closure": {
-                        "name": "Maximum cover positions"
+                        "name": "Maximum cover positions (per-cover overrides)"
                     },
                     "section_min_closure": {
-                        "name": "Minimum cover positions"
+                        "name": "Minimum cover positions (per-cover overrides)"
                     }
                 }
             },
