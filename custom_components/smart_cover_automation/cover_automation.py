@@ -186,14 +186,14 @@ class CoverAutomation:
         cover_state.sun_hitting = sun_hitting
         cover_state.sun_azimuth_diff = round(sun_azimuth_difference, 1)
 
-        # Calculate desired position (lockout protection and nighttime block are checked inside _calculate_desired_position)
+        # Calculate desired position (lockout protection and nighttime opening block are checked inside _calculate_desired_position)
         desired_pos, movement_reason, lockout_protection = self._calculate_desired_position(sensor_data, sun_hitting, current_pos)
         cover_state.pos_target_desired = desired_pos
         cover_state.lockout_protection = lockout_protection
 
         # Move cover if needed (skip if movement_reason is None, e.g., nighttime block active)
         if movement_reason is None:
-            # No movement - nighttime block or other condition preventing movement
+            # No movement - nighttime opening block or other condition preventing movement
             self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
             cover_moved = False
             message = "No movement (blocked by nighttime or other condition)"
@@ -206,10 +206,10 @@ class CoverAutomation:
                 # Movement occurred
                 cover_state.pos_target_final = actual_pos
 
-        # Apply tilt after position handling — skip only when the nighttime block is
+        # Apply tilt after position handling — skip only when the nighttime opening block is
         # active (cover opening suppressed at night).  Other reasons for no position
         # change (e.g. lockout protection) should still allow tilt updates.
-        if not self._is_nighttime_block_active():
+        if not self._is_nighttime_opening_block_active():
             await self._apply_tilt(cover_state, sensor_data, features, movement_reason, cover_moved)
 
         # Log per-cover state
@@ -320,9 +320,9 @@ class CoverAutomation:
         return False
 
     #
-    # _is_nighttime_block_active
+    # _is_nighttime_opening_block_active
     #
-    def _is_nighttime_block_active(self) -> bool:
+    def _is_nighttime_opening_block_active(self) -> bool:
         """Check if nighttime block opening should prevent cover opening.
 
         The nighttime block feature prevents automatic cover opening during nighttime
@@ -497,7 +497,7 @@ class CoverAutomation:
                 movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
         else:
             # Let light in mode - check if nighttime block is active
-            if self._is_nighttime_block_active():
+            if self._is_nighttime_opening_block_active():
                 # Nighttime block active - keep current position (no movement)
                 desired_pos = current_pos
                 desired_pos_friendly_name = "unchanged (nighttime block active)"
