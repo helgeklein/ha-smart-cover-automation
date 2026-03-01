@@ -12,7 +12,7 @@ from datetime import time
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
-from custom_components.smart_cover_automation.const import HA_OPTIONS, LockMode
+from custom_components.smart_cover_automation.const import HA_OPTIONS, LockMode, TiltMode
 
 T = TypeVar("T")
 
@@ -193,7 +193,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool, runtime_configurable=True),
-    ConfKeys.LOCK_MODE: _ConfSpec(default="unlocked", converter=_Converters.to_str, runtime_configurable=True),
+    ConfKeys.LOCK_MODE: _ConfSpec(default=LockMode.UNLOCKED, converter=LockMode, runtime_configurable=True),
     ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds, runtime_configurable=True),
     ConfKeys.NIGHTTIME_BLOCK_OPENING: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
@@ -201,8 +201,8 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=10.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=24.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.TILT_MIN_CHANGE_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
-    ConfKeys.TILT_MODE_DAY: _ConfSpec(default="open", converter=_Converters.to_str),
-    ConfKeys.TILT_MODE_NIGHT: _ConfSpec(default="closed", converter=_Converters.to_str),
+    ConfKeys.TILT_MODE_DAY: _ConfSpec(default=TiltMode.AUTO, converter=TiltMode),
+    ConfKeys.TILT_MODE_NIGHT: _ConfSpec(default=TiltMode.CLOSED, converter=TiltMode),
     ConfKeys.TILT_SLAT_OVERLAP_RATIO: _ConfSpec(default=0.9, converter=_Converters.to_float),
     ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.WEATHER_ENTITY_ID: _ConfSpec(default="", converter=_Converters.to_str),
@@ -259,8 +259,8 @@ class ResolvedConfig:
     sun_elevation_threshold: float
     temp_threshold: float
     tilt_min_change_delta: int
-    tilt_mode_day: str
-    tilt_mode_night: str
+    tilt_mode_day: TiltMode
+    tilt_mode_night: TiltMode
     tilt_slat_overlap_ratio: float
     verbose_logging: bool
     weather_entity_id: str
