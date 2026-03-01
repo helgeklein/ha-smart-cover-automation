@@ -262,19 +262,22 @@ class TestOptionsFlowIntegration:
         assert result3_dict["type"] == FlowResultType.FORM
         assert result3_dict["step_id"] == "4"
 
-        # Step 4: Submit window sensors (now proceeds to step 5)
-        result4 = await flow.async_step_4({})
-        result4_dict = _as_dict(result4)
-        assert result4_dict["type"] == FlowResultType.FORM
-        assert result4_dict["step_id"] == "5"
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
+        await flow.async_step_4({})
 
-        # Step 5: Submit time settings (creates entry)
+        # Step 5: Submit window sensors (now proceeds to step 6)
         result5 = await flow.async_step_5({})
         result5_dict = _as_dict(result5)
-        assert result5_dict["type"] == FlowResultType.CREATE_ENTRY
+        assert result5_dict["type"] == FlowResultType.FORM
+        assert result5_dict["step_id"] == "6"
+
+        # Step 6: Submit time settings (creates entry)
+        result6 = await flow.async_step_6({})
+        result6_dict = _as_dict(result6)
+        assert result6_dict["type"] == FlowResultType.CREATE_ENTRY
 
         # Verify updated configuration
-        data = result5_dict["data"]
+        data = result6_dict["data"]
         assert len(data[ConfKeys.COVERS.value]) == 2
         assert data[ConfKeys.SUN_ELEVATION_THRESHOLD.value] == 20  # Unchanged from initial
         assert data[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}"] == 270.0
@@ -309,11 +312,14 @@ class TestOptionsFlowIntegration:
         # Step 3: Continue with min/max settings (proceeds to step 4)
         await flow.async_step_3({})
 
-        # Step 4: Continue with window sensors (proceeds to step 5)
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Step 5: Complete (creates entry)
-        result = await flow.async_step_5({})
+        # Step 5: Continue with window sensors (now proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete (creates entry)
+        result = await flow.async_step_6({})
 
         data = _as_dict(result)["data"]
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in data
@@ -360,11 +366,14 @@ class TestOptionsFlowIntegration:
         # Step 3: Continue with min/max settings (proceeds to step 4)
         await flow.async_step_3({})
 
-        # Step 4: Continue with window sensors (proceeds to step 5)
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Step 5: Complete flow
-        result = await flow.async_step_5({})
+        # Step 5: Continue with window sensors (now proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete flow
+        result = await flow.async_step_6({})
 
         data = _as_dict(result)["data"]
 
@@ -415,11 +424,14 @@ class TestOptionsFlowIntegration:
         # Step 3: Continue with min/max settings (proceeds to step 4)
         await flow.async_step_3({})
 
-        # Step 4: Continue with window sensors (proceeds to step 5)
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Step 5: Complete flow
-        result = await flow.async_step_5({})
+        # Step 5: Continue with window sensors (now proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete flow
+        result = await flow.async_step_6({})
 
         data = _as_dict(result)["data"]
 
@@ -468,11 +480,14 @@ class TestOptionsFlowIntegration:
         # Step 3: Continue with min/max settings (proceeds to step 4)
         await flow.async_step_3({})
 
-        # Step 4: Continue with window sensors (proceeds to step 5)
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Step 5: Complete flow
-        result = await flow.async_step_5({})
+        # Step 5: Continue with window sensors (now proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete flow
+        result = await flow.async_step_6({})
 
         data = _as_dict(result)["data"]
 
@@ -517,11 +532,14 @@ class TestOptionsFlowIntegration:
             # Step 3: Continue with cleared section (proceeds to step 4)
             await flow.async_step_3({"section_min_closure": {}})
 
-            # Step 4: Continue with window sensors (proceeds to step 5)
+            # Step 4: Submit tilt config (skip - proceeds to step 5)
             await flow.async_step_4({})
 
-            # Step 5: Complete flow
-            result = await flow.async_step_5({})
+            # Step 5: Continue with window sensors (now proceeds to step 6)
+            await flow.async_step_5({})
+
+            # Step 6: Complete flow
+            result = await flow.async_step_6({})
 
             # Verify that the cleared setting was logged as removed
             assert "1 removed settings:" in caplog.text
@@ -566,11 +584,14 @@ class TestOptionsFlowIntegration:
         # Step 3: Continue with None section (proceeds to step 4)
         await flow.async_step_3({"section_min_closure": None})
 
-        # Step 4: Continue with window sensors (proceeds to step 5)
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Step 5: Complete flow
-        result = await flow.async_step_5({})
+        # Step 5: Continue with window sensors (now proceeds to step 6)
+        await flow.async_step_5({})
+
+        # Step 6: Complete flow
+        result = await flow.async_step_6({})
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
@@ -667,6 +688,10 @@ class TestOptionsFlowHelperMethods:
             ConfKeys.COVERS_MIN_CLOSURE.value: 100,  # Use default value from config.py
             ConfKeys.TEMP_THRESHOLD.value: 23,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            ConfKeys.TILT_MODE_DAY.value: "open",
+            ConfKeys.TILT_MODE_NIGHT.value: "closed",
+            ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
+            ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
         }
         mock_entry = _create_mock_entry(data=existing_data)
         flow = OptionsFlowHandler(mock_entry)
@@ -691,11 +716,14 @@ class TestOptionsFlowHelperMethods:
                 }
             )
 
-            # Step 4: Continue with window sensors (proceeds to step 5)
+            # Step 4: Submit tilt config (skip - proceeds to step 5)
             await flow.async_step_4({})
 
-            # Step 5: Complete flow
-            result = await flow.async_step_5({})
+            # Step 5: Continue with window sensors (now proceeds to step 6)
+            await flow.async_step_5({})
+
+            # Step 6: Complete flow
+            result = await flow.async_step_6({})
 
             # Check that info messages were logged for no changes
             assert "Options flow: No changed settings" in caplog.text
@@ -748,11 +776,14 @@ class TestOptionsFlowHelperMethods:
                 }
             )
 
-            # Step 4: Continue with window sensors (proceeds to step 5)
+            # Step 4: Submit tilt config (skip - proceeds to step 5)
             await flow.async_step_4({})
 
-            # Step 5: Complete flow with changed temp_threshold and sun_elevation_threshold
-            result = await flow.async_step_5(
+            # Step 5: Continue with window sensors (now proceeds to step 6)
+            await flow.async_step_5({})
+
+            # Step 6: Complete flow with changed temp_threshold and sun_elevation_threshold
+            result = await flow.async_step_6(
                 {
                     ConfKeys.TEMP_THRESHOLD.value: 25,  # Changed from 23
                     ConfKeys.SUN_ELEVATION_THRESHOLD.value: 10,  # Changed from 5
@@ -801,22 +832,25 @@ class TestOptionsFlowStep6CloseAfterSunset:
         await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
         # Step 3: min/max settings
         await flow.async_step_3({})
-        # Step 4: window sensors
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Get step 5 form (time settings)
-        result = await flow.async_step_5()
+        # Step 5: window sensors
+        await flow.async_step_5({})
+
+        # Get step 6 form (time settings)
+        result = await flow.async_step_6()
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.FORM
-        assert result_dict["step_id"] == "5"
+        assert result_dict["step_id"] == "6"
 
         # Verify schema contains the section
         schema = result_dict["data_schema"]
         schema_keys = [str(key) for key in schema.schema.keys()]
 
         # The section itself should be in schema
-        assert any(const.STEP_5_SECTION_CLOSE_AFTER_SUNSET in key for key in schema_keys)
+        assert any(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET in key for key in schema_keys)
 
     #
     # test_step_6_saves_close_after_sunset_settings
@@ -854,19 +888,22 @@ class TestOptionsFlowStep6CloseAfterSunset:
         )
         # Step 3: min/max settings
         await flow.async_step_3({})
-        # Step 4: window sensors
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Submit step 5 with close_after_sunset settings
+        # Step 5: window sensors
+        await flow.async_step_5({})
+
+        # Submit step 6 with close_after_sunset settings
         user_input = {
-            const.STEP_5_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 1, "minutes": 30, "seconds": 0},
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
             }
         }
 
-        result = await flow.async_step_5(user_input)
+        result = await flow.async_step_6(user_input)
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
@@ -908,19 +945,22 @@ class TestOptionsFlowStep6CloseAfterSunset:
         await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
         # Step 3: min/max settings
         await flow.async_step_3({})
-        # Step 4: window sensors
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Submit step 5 with close_after_sunset disabled
+        # Step 5: window sensors
+        await flow.async_step_5({})
+
+        # Submit step 6 with close_after_sunset disabled
         user_input = {
-            const.STEP_5_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: False,
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [],
             }
         }
 
-        result = await flow.async_step_5(user_input)
+        result = await flow.async_step_6(user_input)
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
@@ -959,19 +999,22 @@ class TestOptionsFlowStep6CloseAfterSunset:
         await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
         # Step 3: min/max settings
         await flow.async_step_3({})
-        # Step 4: window sensors
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Submit step 5 with empty cover list
+        # Step 5: window sensors
+        await flow.async_step_5({})
+
+        # Submit step 6 with empty cover list
         user_input = {
-            const.STEP_5_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [],  # Empty list
             }
         }
 
-        result = await flow.async_step_5(user_input)
+        result = await flow.async_step_6(user_input)
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
@@ -1010,19 +1053,22 @@ class TestOptionsFlowStep6CloseAfterSunset:
         await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
         # Step 3: min/max settings
         await flow.async_step_3({})
-        # Step 4: window sensors
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Submit step 5 with zero delay
+        # Step 5: window sensors
+        await flow.async_step_5({})
+
+        # Submit step 6 with zero delay
         user_input = {
-            const.STEP_5_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 0, "seconds": 0},
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
             }
         }
 
-        result = await flow.async_step_5(user_input)
+        result = await flow.async_step_6(user_input)
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
@@ -1067,19 +1113,22 @@ class TestOptionsFlowStep6CloseAfterSunset:
         )
         # Step 3: min/max settings
         await flow.async_step_3({})
-        # Step 4: window sensors
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Submit step 5 with multiple covers
+        # Step 5: window sensors
+        await flow.async_step_5({})
+
+        # Submit step 6 with multiple covers
         user_input = {
-            const.STEP_5_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 2, "minutes": 0, "seconds": 30},
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
             }
         }
 
-        result = await flow.async_step_5(user_input)
+        result = await flow.async_step_6(user_input)
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
@@ -1094,9 +1143,9 @@ class TestOptionsFlowStep6CloseAfterSunset:
         assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value] == {"hours": 2, "minutes": 0, "seconds": 30}
 
     #
-    # test_step_5_section_extraction_flattens_correctly
+    # test_step_6_section_extraction_flattens_correctly
     #
-    async def test_step_5_section_extraction_flattens_correctly(self, mock_hass_with_covers: MagicMock) -> None:
+    async def test_step_6_section_extraction_flattens_correctly(self, mock_hass_with_covers: MagicMock) -> None:
         """Test that section extraction correctly flattens nested close_after_sunset data."""
 
         existing_data = {
@@ -1123,26 +1172,29 @@ class TestOptionsFlowStep6CloseAfterSunset:
         await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
         # Step 3: min/max settings
         await flow.async_step_3({})
-        # Step 4: window sensors
+        # Step 4: Submit tilt config (skip - proceeds to step 5)
         await flow.async_step_4({})
 
-        # Submit step 5 with nested section data
+        # Step 5: window sensors
+        await flow.async_step_5({})
+
+        # Submit step 6 with nested section data
         user_input = {
-            const.STEP_5_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 1, "minutes": 15, "seconds": 30},
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
             }
         }
 
-        result = await flow.async_step_5(user_input)
+        result = await flow.async_step_6(user_input)
         result_dict = _as_dict(result)
 
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
         saved_data = result_dict["data"]
 
         # Verify section key is NOT in saved data (should be flattened)
-        assert const.STEP_5_SECTION_CLOSE_AFTER_SUNSET not in saved_data
+        assert const.STEP_6_SECTION_CLOSE_AFTER_SUNSET not in saved_data
 
         # Verify all three settings are at top level
         assert ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value in saved_data

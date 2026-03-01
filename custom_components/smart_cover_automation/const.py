@@ -81,6 +81,8 @@ INTEGRATION_NAME: Final[str] = "Smart Cover Automation"
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
 COVER_SFX_MAX_CLOSURE: Final[str] = "cover_max_closure"  # Cover maximum closure position (%)
 COVER_SFX_MIN_CLOSURE: Final[str] = "cover_min_closure"  # Cover minimum closure position (%)
+COVER_SFX_TILT_MODE_DAY: Final[str] = "cover_tilt_mode_day"  # Per-cover tilt mode override (day)
+COVER_SFX_TILT_MODE_NIGHT: Final[str] = "cover_tilt_mode_night"  # Per-cover tilt mode override (night)
 COVER_SFX_WINDOW_SENSORS: Final[str] = "cover_window_sensors"  # Window sensor entity IDs
 
 # Per-cover position history configuration
@@ -97,6 +99,18 @@ class LockMode(StrEnum):
     HOLD_POSITION = "hold_position"
     FORCE_OPEN = "force_open"
     FORCE_CLOSE = "force_close"
+
+
+#
+# TiltMode
+#
+class TiltMode(StrEnum):
+    """Tilt angle control mode for covers with tiltable slats."""
+
+    OPEN = "open"  # Horizontal position — let light in (tilt = 100)
+    CLOSED = "closed"  # Vertical position — block light (tilt = 0)
+    MANUAL = "manual"  # Restore manually set angle after cover movement
+    AUTO = "auto"  # Dynamically block direct sunlight
 
 
 # Service constants
@@ -139,9 +153,11 @@ ERROR_NO_COVERS: Final[str] = "no_covers"
 ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"
 STEP_3_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
 STEP_3_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
-STEP_4_SECTION_WINDOW_SENSORS: Final[str] = "section_window_sensors"
-STEP_5_SECTION_TIME_RANGE: Final[str] = "section_time_range"
-STEP_5_SECTION_CLOSE_AFTER_SUNSET: Final[str] = "section_close_after_sunset"
+STEP_4_SECTION_TILT_DAY: Final[str] = "section_tilt_day"
+STEP_4_SECTION_TILT_NIGHT: Final[str] = "section_tilt_night"
+STEP_5_SECTION_WINDOW_SENSORS: Final[str] = "section_window_sensors"
+STEP_6_SECTION_TIME_RANGE: Final[str] = "section_time_range"
+STEP_6_SECTION_CLOSE_AFTER_SUNSET: Final[str] = "section_close_after_sunset"
 
 # Home Assistant string literals
 HA_OPTIONS: Final[str] = "options"

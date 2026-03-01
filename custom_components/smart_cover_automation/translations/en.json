@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Step 1 of 5",
+                "title": "Smart Cover Automation - Step 1 of 6",
                 "description": "Select a **weather forecast sensor** and the **covers** to automate (required).",
                 "data": {
                     "covers": "Covers to automate:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Step 2 of 5",
+                "title": "Smart Cover Automation - Step 2 of 6",
                 "description": "Configure the **azimuth** (direction) for each cover (required).\n\n(0°=North, 90°=East, 180°=South, 270°=West)"
             },
             "3": {
-                "title": "Smart Cover Automation - Step 3 of 5",
+                "title": "Smart Cover Automation - Step 3 of 6",
                 "description": "Configure the cover **min/max** positions (optional).\nGlobal settings apply to all covers unless overridden per cover.\n(0 = fully closed, 100 = fully open)",
                 "data": {
                     "covers_max_closure": "Maximum cover position (global):",
@@ -52,7 +52,31 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Step 4 of 5",
+                "title": "Smart Cover Automation - Step 4 of 6",
+                "description": "Configure **tilt angle control** for covers with tiltable slats (optional).\nGlobal settings apply to all tilt-capable covers unless overridden per cover.",
+                "data": {
+                    "tilt_mode_day": "Tilt angle control (day):",
+                    "tilt_mode_night": "Tilt angle control (night):",
+                    "tilt_min_change_delta": "Minimum tilt change:",
+                    "tilt_slat_overlap_ratio": "Slat overlap ratio (d/L):"
+                },
+                "data_description": {
+                    "tilt_mode_day": "How to control the tilt angle of cover slats during the day.",
+                    "tilt_mode_night": "How to control the tilt angle of cover slats at night (applied during evening closure).",
+                    "tilt_min_change_delta": "Minimum tilt change (%) required before sending a command. Prevents excessive motor wear from small adjustments.",
+                    "tilt_slat_overlap_ratio": "Ratio of slat spacing to slat width (0.5\u20131.0). Lower values mean more overlap between slats. The default of 0.9 works well for most venetian blinds. Only relevant for Auto mode."
+                },
+                "sections": {
+                    "section_tilt_day": {
+                        "name": "Per-cover tilt angle control (day)"
+                    },
+                    "section_tilt_night": {
+                        "name": "Per-cover tilt angle control (night)"
+                    }
+                }
+            },
+            "5": {
+                "title": "Smart Cover Automation - Step 5 of 6",
                 "description": "Enable lockout protection by configuring **window sensors** for each cover (optional). If any window sensor associated with a cover reports that the window is open, the cover won't be closed.",
                 "sections": {
                     "section_window_sensors": {
@@ -60,8 +84,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Step 5 of 5",
+            "6": {
+                "title": "Smart Cover Automation - Step 6 of 6",
                 "description": "Configure **time settings** for the automation (optional).",
                 "data": {
                     "nighttime_block_opening": "Disable cover opening at night:"
@@ -269,6 +293,14 @@
                 "hold_position": "Hold current position",
                 "force_open": "Force open and lock",
                 "force_close": "Force close and lock"
+            }
+        },
+        "tilt_mode": {
+            "options": {
+                "open": "Open (horizontal \u2014 let light in)",
+                "closed": "Closed (vertical \u2014 block light)",
+                "manual": "Manual (restore manually set angle)",
+                "auto": "Auto (block direct sunlight)"
             }
         }
     }

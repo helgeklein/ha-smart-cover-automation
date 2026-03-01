@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Steg 1 av 5",
+                "title": "Smart Cover Automation - Steg 1 av 6",
                 "description": "Välj en **väderprognossensor** och de **persienner** som ska automatiseras (obligatoriskt).",
                 "data": {
                     "covers": "Persienner att automatisera:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Steg 2 av 5",
+                "title": "Smart Cover Automation - Steg 2 av 6",
                 "description": "Konfigurera **azimut** (riktning) för varje persienn (obligatoriskt).\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)"
             },
             "3": {
-                "title": "Smart Cover Automation - Steg 3 av 5",
+                "title": "Smart Cover Automation - Steg 3 av 6",
                 "description": "Konfigurera **min/max**-lägen för persienner (valfritt).\nGlobala inställningar gäller för alla persienner om de inte åsidosätts per persienn.\n(0 = helt stängd, 100 = helt öppen)",
                 "data": {
                     "covers_max_closure": "Högsta läge för persienn (globalt):",
@@ -52,7 +52,31 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Steg 4 av 5",
+                "title": "Smart Cover Automation - Steg 4 av 6",
+                "description": "Konfigurera **lutningsvinkelkontroll** för persienner med vinklingsbara lameller (valfritt).\nGlobala inställningar gäller för alla lutningsbara persienner om de inte åsidosätts per persienn.",
+                "data": {
+                    "tilt_mode_day": "Lutningskontroll (dag):",
+                    "tilt_mode_night": "Lutningskontroll (natt):",
+                    "tilt_min_change_delta": "Minsta lutningsändring:",
+                    "tilt_slat_overlap_ratio": "Lamellöverlappningskvot (d/L):"
+                },
+                "data_description": {
+                    "tilt_mode_day": "Hur lutningsvinkeln på lamellerna ska styras under dagen.",
+                    "tilt_mode_night": "Hur lutningsvinkeln på lamellerna ska styras på natten (tillämpas vid kvällsstängning).",
+                    "tilt_min_change_delta": "Minsta lutningsändring (%) som krävs innan ett kommando skickas. Förhindrar onormalt motorslitage från små justeringar.",
+                    "tilt_slat_overlap_ratio": "Förhållande mellan lamellavstånd och lamellbredd (0,5–1,0). Lägre värden innebär mer överlappning. Standardvärdet 0,9 fungerar bra för de flesta persienner. Endast relevant för Auto-läget."
+                },
+                "sections": {
+                    "section_tilt_day": {
+                        "name": "Lutning per persienn (dag)"
+                    },
+                    "section_tilt_night": {
+                        "name": "Lutning per persienn (natt)"
+                    }
+                }
+            },
+            "5": {
+                "title": "Smart Cover Automation - Steg 5 av 6",
                 "description": "Aktivera klämskydd genom att konfigurera **fönstersensorer** för varje persienn (valfritt). Om någon fönstersensor som är kopplad till en persienn rapporterar att fönstret är öppet stängs persiennen inte.",
                 "sections": {
                     "section_window_sensors": {
@@ -60,8 +84,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Steg 5 av 5",
+            "6": {
+                "title": "Smart Cover Automation - Steg 6 av 6",
                 "description": "Konfigurera **tidsinställningar** för automationen (valfritt).",
                 "data": {
                     "nighttime_block_opening": "Inaktivera öppning av persienner på natten:"
@@ -269,6 +293,14 @@
                 "hold_position": "Behåll aktuell position",
                 "force_open": "Tvinga öppning och lås",
                 "force_close": "Tvinga stängning och lås"
+            }
+        },
+        "tilt_mode": {
+            "options": {
+                "open": "Öppen (horisontell — släpp in ljus)",
+                "closed": "Stängd (vertikal — blockera ljus)",
+                "manual": "Manuell (återställ manuellt inställd vinkel)",
+                "auto": "Auto (blockera direkt solljus)"
             }
         }
     }

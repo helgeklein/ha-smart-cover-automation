@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Paso 1 de 5",
+                "title": "Smart Cover Automation - Paso 1 de 6",
                 "description": "Seleccione un **sensor de previsión meteorológica** y las **persianas** a automatizar (obligatorio).",
                 "data": {
                     "covers": "Persianas a automatizar:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Paso 2 de 5",
+                "title": "Smart Cover Automation - Paso 2 de 6",
                 "description": "Configure el **azimut** (dirección) de cada persiana (obligatorio).\n\n(0°=Norte, 90°=Este, 180°=Sur, 270°=Oeste)"
             },
             "3": {
-                "title": "Smart Cover Automation - Paso 3 de 5",
+                "title": "Smart Cover Automation - Paso 3 de 6",
                 "description": "Configure las posiciones **mín/máx** de las persianas (opcional).\nLa configuración global se aplica a todas las persianas salvo que se sobrescriba por persiana.\n(0 = totalmente cerrada, 100 = totalmente abierta)",
                 "data": {
                     "covers_max_closure": "Posición máxima de la persiana (global):",
@@ -52,7 +52,31 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Paso 4 de 5",
+                "title": "Smart Cover Automation - Paso 4 de 6",
+                "description": "Configure el **control del ángulo de inclinación** para persianas con lamas orientables (opcional).\nLos ajustes globales se aplican a todas las persianas con inclinación, salvo que se configuren individualmente.",
+                "data": {
+                    "tilt_mode_day": "Control de inclinación (día):",
+                    "tilt_mode_night": "Control de inclinación (noche):",
+                    "tilt_min_change_delta": "Cambio mínimo de inclinación:",
+                    "tilt_slat_overlap_ratio": "Ratio de solapamiento de lamas (d/L):"
+                },
+                "data_description": {
+                    "tilt_mode_day": "Cómo controlar el ángulo de inclinación de las lamas durante el día.",
+                    "tilt_mode_night": "Cómo controlar el ángulo de inclinación de las lamas por la noche (se aplica durante el cierre vespertino).",
+                    "tilt_min_change_delta": "Cambio mínimo de inclinación (%) requerido antes de enviar un comando. Evita el desgaste excesivo del motor por pequeños ajustes.",
+                    "tilt_slat_overlap_ratio": "Relación entre el espaciado y el ancho de las lamas (0,5–1,0). Valores más bajos significan mayor solapamiento. El valor predeterminado de 0,9 funciona bien para la mayoría de las persianas venecianas. Solo relevante para el modo Auto."
+                },
+                "sections": {
+                    "section_tilt_day": {
+                        "name": "Inclinación por persiana (día)"
+                    },
+                    "section_tilt_night": {
+                        "name": "Inclinación por persiana (noche)"
+                    }
+                }
+            },
+            "5": {
+                "title": "Smart Cover Automation - Paso 5 de 6",
                 "description": "Activa la protección contra bloqueo configurando **sensores de ventana** para cada persiana (opcional). Si algún sensor de ventana asociado a una persiana indica que la ventana está abierta, la persiana no se cerrará.",
                 "sections": {
                     "section_window_sensors": {
@@ -60,8 +84,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Paso 5 de 5",
+            "6": {
+                "title": "Smart Cover Automation - Paso 6 de 6",
                 "description": "Configure **ajustes de tiempo** para la automatización (opcional).",
                 "data": {
                     "nighttime_block_opening": "Desactivar la apertura de persianas por la noche:"
@@ -269,6 +293,14 @@
                 "hold_position": "Mantener posición actual",
                 "force_open": "Forzar apertura y bloquear",
                 "force_close": "Forzar cierre y bloquear"
+            }
+        },
+        "tilt_mode": {
+            "options": {
+                "open": "Abierto (horizontal — dejar entrar la luz)",
+                "closed": "Cerrado (vertical — bloquear la luz)",
+                "manual": "Manual (restaurar el ángulo configurado manualmente)",
+                "auto": "Auto (bloquear la luz solar directa)"
             }
         }
     }

@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Stap 1 van 5",
+                "title": "Smart Cover Automation - Stap 1 van 6",
                 "description": "Selecteer een **weersvoorspellingssensor** en de **rolluiken** die moeten worden geautomatiseerd (verplicht).",
                 "data": {
                     "covers": "Te automatiseren rolluiken:",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Stap 2 van 5",
+                "title": "Smart Cover Automation - Stap 2 van 6",
                 "description": "Configureer de **azimut** (richting) voor elk rolluik (verplicht).\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)"
             },
             "3": {
-                "title": "Smart Cover Automation - Stap 3 van 5",
+                "title": "Smart Cover Automation - Stap 3 van 6",
                 "description": "Configureer de **min/max**-posities van de rolluiken (optioneel).\nGlobale instellingen gelden voor alle rolluiken tenzij per rolluik overschreven.\n(0 = volledig gesloten, 100 = volledig open)",
                 "data": {
                     "covers_max_closure": "Maximale positie van het rolluik (globaal):",
@@ -52,7 +52,31 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Stap 4 van 5",
+                "title": "Smart Cover Automation - Stap 4 van 6",
+                "description": "Configureer de **kanteling** voor rolluiken met kantelbare lamellen (optioneel).\nGlobale instellingen gelden voor alle kantelbare rolluiken, tenzij per rolluik overschreven.",
+                "data": {
+                    "tilt_mode_day": "Kantelregeling (dag):",
+                    "tilt_mode_night": "Kantelregeling (nacht):",
+                    "tilt_min_change_delta": "Minimale kantelwijziging:",
+                    "tilt_slat_overlap_ratio": "Lameloverlapverhouding (d/L):"
+                },
+                "data_description": {
+                    "tilt_mode_day": "Hoe de kantelhoek van de lamellen overdag moet worden geregeld.",
+                    "tilt_mode_night": "Hoe de kantelhoek van de lamellen 's nachts moet worden geregeld (wordt toegepast bij de avondsluiting).",
+                    "tilt_min_change_delta": "Minimale kantelwijziging (%) vereist voordat een commando wordt verstuurd. Voorkomt overmatige motorslijtage door kleine aanpassingen.",
+                    "tilt_slat_overlap_ratio": "Verhouding tussen lamelafstand en lamelbreedte (0,5–1,0). Lagere waarden betekenen meer overlap. De standaardwaarde van 0,9 werkt goed voor de meeste jaloezieën. Alleen relevant voor de Auto-modus."
+                },
+                "sections": {
+                    "section_tilt_day": {
+                        "name": "Kanteling per rolluik (dag)"
+                    },
+                    "section_tilt_night": {
+                        "name": "Kanteling per rolluik (nacht)"
+                    }
+                }
+            },
+            "5": {
+                "title": "Smart Cover Automation - Stap 5 van 6",
                 "description": "Schakel de blokkeerbeveiliging in door **raamsensoren** voor elk rolluik te configureren (optioneel). Als een raamsensor die aan een rolluik is gekoppeld meldt dat het raam openstaat, wordt het rolluik niet gesloten.",
                 "sections": {
                     "section_window_sensors": {
@@ -60,8 +84,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Stap 5 van 5",
+            "6": {
+                "title": "Smart Cover Automation - Stap 6 van 6",
                 "description": "Configureer **tijdinstellingen** voor de automatisering (optioneel).",
                 "data": {
                     "nighttime_block_opening": "Openen van rolluiken 's nachts uitschakelen:"
@@ -269,6 +293,14 @@
                 "hold_position": "Huidige positie vasthouden",
                 "force_open": "Openen afdwingen en vergrendelen",
                 "force_close": "Sluiten afdwingen en vergrendelen"
+            }
+        },
+        "tilt_mode": {
+            "options": {
+                "open": "Open (horizontaal — licht binnenlaten)",
+                "closed": "Gesloten (verticaal — licht blokkeren)",
+                "manual": "Handmatig (handmatig ingestelde hoek herstellen)",
+                "auto": "Auto (direct zonlicht blokkeren)"
             }
         }
     }
