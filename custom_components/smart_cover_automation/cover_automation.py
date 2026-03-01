@@ -115,8 +115,6 @@ class CoverAutomation:
         self._ha_interface = ha_interface
         self._logger = logger
 
-        # Tilt state: cached tilt position for Manual mode
-        self._manual_tilt_position: int | None = None
         # Tilt support: cached flag (set on first process() call)
         self._cover_supports_tilt: bool | None = None
 
@@ -835,16 +833,10 @@ class CoverAutomation:
         elif tilt_mode == const.TiltMode.CLOSED:
             target_tilt = const.COVER_POS_FULLY_CLOSED  # 0
         elif tilt_mode == const.TiltMode.MANUAL:
-            # Restore the manually set tilt (captured on first run)
-            target_tilt = self._manual_tilt_position
-            if target_tilt is None:
-                # First run — capture current tilt as the manual tilt
-                target_tilt = cover_state.tilt_current
-                self._manual_tilt_position = target_tilt
-                self._log_cover_msg(
-                    f"Manual tilt mode: captured tilt position {target_tilt}%",
-                    const.LogSeverity.INFO,
-                )
+            # Restore the tilt the cover had before automation moved it.
+            # cover_state.tilt_current was read from the HA state *before* the
+            # position change, so it reflects the user's (or previous) setting.
+            target_tilt = cover_state.tilt_current
             if target_tilt is None:
                 return  # No tilt info available
         elif tilt_mode == const.TiltMode.AUTO:

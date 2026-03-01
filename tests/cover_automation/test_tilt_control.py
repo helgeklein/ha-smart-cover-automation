@@ -349,33 +349,71 @@ class TestApplyTilt:
         assert cover_state.tilt_target == 0
 
     #
-    # test_manual_mode_captures_and_restores
+    # test_manual_mode_restores_pre_move_tilt
     #
     @pytest.mark.asyncio
-    async def test_manual_mode_captures_and_restores(
+    async def test_manual_mode_restores_pre_move_tilt(
         self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
     ) -> None:
-        """Manual mode should capture tilt on first run and restore it."""
+        """Manual mode should restore the tilt that was read before the cover moved."""
 
         mock_resolved_config.tilt_mode_day = TiltMode.MANUAL
         mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=75)
         auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
         auto._cover_supports_tilt = True
 
-        # First run: captures tilt from current state
+        # tilt_current=75 is the pre-move snapshot read from HA state before position change
         cover_state = CoverState(tilt_current=75, sun_hitting=True, sun_azimuth_diff=10.0)
         await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
 
-        assert auto._manual_tilt_position == 75
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 75, tilt_features)
+        assert cover_state.tilt_target == 75
+
+    #
+    # test_manual_mode_uses_current_tilt_each_cycle
+    #
+    @pytest.mark.asyncio
+    async def test_manual_mode_uses_current_tilt_each_cycle(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Manual mode should use the current tilt snapshot each cycle, not a cached value."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.MANUAL
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        # First cycle: user had tilt at 75
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=75)
+        cover_state1 = CoverState(tilt_current=75, sun_hitting=True, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state1, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 75, tilt_features)
 
-        # Second run: restores captured tilt
-        mock_ha_interface.set_cover_tilt_position.reset_mock()
-        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=75)
-        cover_state2 = CoverState(tilt_current=0, sun_hitting=True, sun_azimuth_diff=10.0)
+        # Second cycle: user changed tilt to 30 between cycles
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=30)
+        cover_state2 = CoverState(tilt_current=30, sun_hitting=True, sun_azimuth_diff=10.0)
         await auto._apply_tilt(cover_state2, sensor_data, tilt_features, CoverMovementReason.CLOSING_HEAT_PROTECTION, True)
 
-        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 75, tilt_features)
+        # Should restore 30, not 75 from the first cycle
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 30, tilt_features)
+
+    #
+    # test_manual_mode_skips_when_no_tilt_info
+    #
+    @pytest.mark.asyncio
+    async def test_manual_mode_skips_when_no_tilt_info(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Manual mode should skip tilt when current tilt info is unavailable."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.MANUAL
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(tilt_current=None, sun_hitting=True, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
 
     #
     # test_auto_mode_calculates_tilt_from_sun
