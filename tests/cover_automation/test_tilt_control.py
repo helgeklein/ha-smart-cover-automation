@@ -224,6 +224,28 @@ class TestCalculateAutoTilt:
         result = CoverAutomation._calculate_auto_tilt(30, 89, 0.9)
         assert 0 <= result <= 100
 
+    #
+    # test_sun_exactly_parallel_to_facade
+    #
+    def test_sun_exactly_parallel_to_facade(self) -> None:
+        """Sun exactly parallel to facade (HSA=90°) triggers the cos(HSA)≈0 guard."""
+
+        # cos(90°) ≈ 6e-17 which is below the 1e-10 threshold,
+        # so omega_rad is set to π/2 instead of computing atan(tan/0).
+        result = CoverAutomation._calculate_auto_tilt(30, 90, 0.9)
+        assert 0 <= result <= 100
+
+    #
+    # test_ratio_exceeds_unity_fully_closes
+    #
+    def test_ratio_exceeds_unity_fully_closes(self) -> None:
+        """When slat_overlap_ratio * cos(omega) > 1, geometry is impossible → fully close."""
+
+        # With d/L=1.5 and low elevation (5°, HSA=0°): omega≈5°, cos(omega)≈0.996,
+        # ratio = 1.5 * 0.996 ≈ 1.49 > 1 → theta_deg = 90 → tilt = 0%.
+        result = CoverAutomation._calculate_auto_tilt(5, 0, 1.5)
+        assert result == 0
+
 
 # ───────────────────────────────────────────────────────────────────────
 # Tilt mode resolution tests
@@ -761,6 +783,69 @@ class TestLockModeTilt:
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 0, tilt_features)
         assert cover_state.tilt_target == 0
+
+    #
+    # test_force_open_tilt_error_is_caught
+    #
+    @pytest.mark.asyncio
+    async def test_force_open_tilt_error_is_caught(
+        self,
+        mock_resolved_config,
+        basic_config,
+        mock_cover_pos_history_mgr,
+        mock_ha_interface,
+        mock_logger,
+        tilt_features,
+        sensor_data,
+        mock_state,
+    ) -> None:
+        """FORCE_OPEN lock should catch tilt errors and continue without crashing."""
+
+        mock_resolved_config.lock_mode = LockMode.FORCE_OPEN
+        mock_ha_interface.set_cover_position = AsyncMock(return_value=100)
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(side_effect=RuntimeError("Tilt failed"))
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+
+        # Should not raise — error is caught and logged
+        cover_state = await auto.process(mock_state, sensor_data)
+
+        mock_logger.error.assert_called()
+        assert cover_state is not None
+
+    #
+    # test_force_close_tilt_error_is_caught
+    #
+    @pytest.mark.asyncio
+    async def test_force_close_tilt_error_is_caught(
+        self,
+        mock_resolved_config,
+        basic_config,
+        mock_cover_pos_history_mgr,
+        mock_ha_interface,
+        mock_logger,
+        tilt_features,
+        sensor_data,
+    ) -> None:
+        """FORCE_CLOSE lock should catch tilt errors and continue without crashing."""
+
+        mock_resolved_config.lock_mode = LockMode.FORCE_CLOSE
+        mock_ha_interface.set_cover_position = AsyncMock(return_value=0)
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(side_effect=RuntimeError("Tilt failed"))
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+
+        state = MagicMock()
+        state.state = STATE_OPEN
+        state.attributes = {
+            ATTR_CURRENT_POSITION: 50,
+            ATTR_CURRENT_TILT_POSITION: 50,
+            "supported_features": tilt_features,
+        }
+
+        # Should not raise — error is caught and logged
+        cover_state = await auto.process(state, sensor_data)
+
+        mock_logger.error.assert_called()
+        assert cover_state is not None
 
     #
     # test_hold_position_skips_tilt

@@ -17,8 +17,17 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from homeassistant.components.cover import ATTR_POSITION, CoverEntityFeature
-from homeassistant.const import ATTR_ENTITY_ID, SERVICE_CLOSE_COVER, SERVICE_OPEN_COVER, SERVICE_SET_COVER_POSITION, Platform
+from homeassistant.components.cover import ATTR_POSITION, ATTR_TILT_POSITION, CoverEntityFeature
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    SERVICE_CLOSE_COVER,
+    SERVICE_CLOSE_COVER_TILT,
+    SERVICE_OPEN_COVER,
+    SERVICE_OPEN_COVER_TILT,
+    SERVICE_SET_COVER_POSITION,
+    SERVICE_SET_COVER_TILT_POSITION,
+    Platform,
+)
 from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.smart_cover_automation import const
@@ -310,6 +319,190 @@ class TestSetCoverPosition:
 
         with pytest.raises(ServiceCallError, match="Unexpected error"):
             await ha_interface.set_cover_position(MOCK_COVER_ENTITY_ID, 50, int(features))
+
+
+class TestSetCoverTiltPosition:
+    """Test set_cover_tilt_position method."""
+
+    #
+    # test_set_tilt_with_tilt_position_support
+    #
+    async def test_set_tilt_with_tilt_position_support(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test setting cover tilt position when SET_TILT_POSITION is supported."""
+
+        features = CoverEntityFeature.SET_TILT_POSITION
+        desired_tilt = 75
+
+        result = await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, desired_tilt, int(features))
+
+        assert result == desired_tilt
+        mock_hass.services.async_call.assert_called_once_with(
+            Platform.COVER,
+            SERVICE_SET_COVER_TILT_POSITION,
+            {ATTR_ENTITY_ID: MOCK_COVER_ENTITY_ID, ATTR_TILT_POSITION: desired_tilt},
+        )
+
+    #
+    # test_open_tilt_without_tilt_position_support
+    #
+    async def test_open_tilt_without_tilt_position_support(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test opening tilt when SET_TILT_POSITION is not supported."""
+
+        features = 0  # No tilt position support
+        desired_tilt = 80  # > 50, should open tilt
+
+        result = await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, desired_tilt, features)
+
+        assert result == const.COVER_POS_FULLY_OPEN
+        mock_hass.services.async_call.assert_called_once_with(
+            Platform.COVER, SERVICE_OPEN_COVER_TILT, {ATTR_ENTITY_ID: MOCK_COVER_ENTITY_ID}
+        )
+
+    #
+    # test_close_tilt_without_tilt_position_support
+    #
+    async def test_close_tilt_without_tilt_position_support(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test closing tilt when SET_TILT_POSITION is not supported."""
+
+        features = 0  # No tilt position support
+        desired_tilt = 20  # <= 50, should close tilt
+
+        result = await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, desired_tilt, features)
+
+        assert result == const.COVER_POS_FULLY_CLOSED
+        mock_hass.services.async_call.assert_called_once_with(
+            Platform.COVER, SERVICE_CLOSE_COVER_TILT, {ATTR_ENTITY_ID: MOCK_COVER_ENTITY_ID}
+        )
+
+    #
+    # test_set_tilt_boundary_at_50_percent
+    #
+    async def test_set_tilt_boundary_at_50_percent(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test that exactly 50% without tilt position support closes the tilt."""
+
+        features = 0  # No tilt position support
+        desired_tilt = 50  # Exactly 50, should close tilt
+
+        result = await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, desired_tilt, features)
+
+        assert result == const.COVER_POS_FULLY_CLOSED
+        mock_hass.services.async_call.assert_called_once_with(
+            Platform.COVER, SERVICE_CLOSE_COVER_TILT, {ATTR_ENTITY_ID: MOCK_COVER_ENTITY_ID}
+        )
+
+    #
+    # test_set_tilt_simulation_mode
+    #
+    async def test_set_tilt_simulation_mode(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+        mock_resolved_config: MagicMock,  # type: ignore[type-arg]
+    ) -> None:
+        """Test that service call is skipped in simulation mode."""
+
+        mock_resolved_config.simulation_mode = True
+        features = CoverEntityFeature.SET_TILT_POSITION
+        desired_tilt = 60
+
+        result = await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, desired_tilt, int(features))
+
+        assert result == desired_tilt
+        mock_hass.services.async_call.assert_not_called()
+
+    #
+    # test_set_tilt_invalid_position_too_low
+    #
+    async def test_set_tilt_invalid_position_too_low(self, ha_interface: HomeAssistantInterface) -> None:
+        """Test that invalid tilt position (< 0) raises ValueError."""
+
+        features = CoverEntityFeature.SET_TILT_POSITION
+
+        with pytest.raises(ValueError, match="tilt_position must be between"):
+            await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, -1, int(features))
+
+    #
+    # test_set_tilt_invalid_position_too_high
+    #
+    async def test_set_tilt_invalid_position_too_high(self, ha_interface: HomeAssistantInterface) -> None:
+        """Test that invalid tilt position (> 100) raises ValueError."""
+
+        features = CoverEntityFeature.SET_TILT_POSITION
+
+        with pytest.raises(ValueError, match="tilt_position must be between"):
+            await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, 101, int(features))
+
+    #
+    # test_set_tilt_oserror_handling
+    #
+    async def test_set_tilt_oserror_handling(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test handling of OSError during tilt service call."""
+
+        mock_hass.services.async_call.side_effect = OSError("Network error")
+        features = CoverEntityFeature.SET_TILT_POSITION
+
+        with pytest.raises(ServiceCallError, match="Failed to call"):
+            await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, 50, int(features))
+
+    #
+    # test_set_tilt_connection_error_handling
+    #
+    async def test_set_tilt_connection_error_handling(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test handling of ConnectionError during tilt service call."""
+
+        mock_hass.services.async_call.side_effect = ConnectionError("Connection lost")
+        features = CoverEntityFeature.SET_TILT_POSITION
+
+        with pytest.raises(ServiceCallError, match="Failed to call"):
+            await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, 50, int(features))
+
+    #
+    # test_set_tilt_timeout_error_handling
+    #
+    async def test_set_tilt_timeout_error_handling(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test handling of TimeoutError during tilt service call."""
+
+        mock_hass.services.async_call.side_effect = TimeoutError("Request timeout")
+        features = CoverEntityFeature.SET_TILT_POSITION
+
+        with pytest.raises(ServiceCallError, match="Failed to call"):
+            await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, 50, int(features))
+
+    #
+    # test_set_tilt_value_error_handling
+    #
+    async def test_set_tilt_value_error_handling(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test handling of ValueError during tilt service call."""
+
+        mock_hass.services.async_call.side_effect = ValueError("Invalid value")
+        features = CoverEntityFeature.SET_TILT_POSITION
+
+        with pytest.raises(ServiceCallError, match="Failed to call"):
+            await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, 50, int(features))
+
+    #
+    # test_set_tilt_type_error_handling
+    #
+    async def test_set_tilt_type_error_handling(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test handling of TypeError during tilt service call."""
+
+        mock_hass.services.async_call.side_effect = TypeError("Type mismatch")
+        features = CoverEntityFeature.SET_TILT_POSITION
+
+        with pytest.raises(ServiceCallError, match="Failed to call"):
+            await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, 50, int(features))
+
+    #
+    # test_set_tilt_generic_exception_handling
+    #
+    async def test_set_tilt_generic_exception_handling(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test handling of unexpected exceptions during tilt service call."""
+
+        mock_hass.services.async_call.side_effect = RuntimeError("Unexpected error")
+        features = CoverEntityFeature.SET_TILT_POSITION
+
+        with pytest.raises(ServiceCallError, match="Unexpected error"):
+            await ha_interface.set_cover_tilt_position(MOCK_COVER_ENTITY_ID, 50, int(features))
 
 
 #

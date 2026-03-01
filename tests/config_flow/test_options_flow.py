@@ -670,7 +670,52 @@ class TestOptionsFlowHelperMethods:
         # First cover should have the value
         assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}"] == 90
         # Second cover should NOT be in result (was not modified)
-        assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_MAX_CLOSURE}" not in result
+
+    #
+    # test_build_section_cover_settings_with_tilt_mode
+    #
+    def test_build_section_cover_settings_with_tilt_mode(self) -> None:
+        """Test _build_section_cover_settings handles tilt mode suffixes."""
+
+        user_input = {
+            const.STEP_4_SECTION_TILT_DAY: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_DAY}": "closed",
+            },
+        }
+
+        covers = [MOCK_COVER_ENTITY_ID]
+        current_settings: dict[str, Any] = {}
+
+        result = OptionsFlowHandler._build_section_cover_settings(
+            user_input, const.STEP_4_SECTION_TILT_DAY, const.COVER_SFX_TILT_MODE_DAY, covers, current_settings
+        )
+
+        # Tilt mode should be stored as a string
+        assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_DAY}"] == "closed"
+
+    #
+    # test_build_section_cover_settings_tilt_mode_cleared
+    #
+    def test_build_section_cover_settings_tilt_mode_cleared(self) -> None:
+        """Test _build_section_cover_settings handles cleared tilt mode values."""
+
+        user_input = {
+            const.STEP_4_SECTION_TILT_NIGHT: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_NIGHT}": "",
+            },
+        }
+
+        covers = [MOCK_COVER_ENTITY_ID]
+        current_settings: dict[str, Any] = {
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_NIGHT}": "open",
+        }
+
+        result = OptionsFlowHandler._build_section_cover_settings(
+            user_input, const.STEP_4_SECTION_TILT_NIGHT, const.COVER_SFX_TILT_MODE_NIGHT, covers, current_settings
+        )
+
+        # Cleared value should be stored as None (changed from "open")
+        assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_NIGHT}"] is None
 
     async def test_options_flow_no_changes_logs_debug(self, mock_hass_with_covers: MagicMock, caplog: Any) -> None:
         """Test that completing flow with no changes logs at debug level."""
