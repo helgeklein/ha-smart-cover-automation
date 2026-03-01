@@ -13,5 +13,5 @@
     "documentation": "https://ha-smart-cover-automation.helgeklein.com/",
     "iot_class": "calculated",
     "issue_tracker": "https://github.com/helgeklein/ha-smart-cover-automation/issues",
-    "version": "1.2.0"
+    "version": "1.3.0"
 }
