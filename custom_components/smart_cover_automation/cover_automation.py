@@ -828,6 +828,11 @@ class CoverAutomation:
         if tilt_mode is None:
             return  # Cover doesn't support tilt
 
+        # Skip tilt when cover is fully open (raised) — slats are not deployed
+        effective_pos = cover_state.pos_target_final if cover_moved else cover_state.pos_current
+        if effective_pos == const.COVER_POS_FULLY_OPEN:
+            return
+
         # Determine target tilt based on mode
         target_tilt: int | None = None
 

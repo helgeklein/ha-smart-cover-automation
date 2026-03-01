@@ -333,6 +333,44 @@ class TestApplyTilt:
     """Tests for _apply_tilt method."""
 
     #
+    # test_skips_tilt_when_cover_fully_open_no_movement
+    #
+    @pytest.mark.asyncio
+    async def test_skips_tilt_when_cover_fully_open_no_movement(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Tilt should be skipped when cover is fully open (raised) and did not move."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.OPEN
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=100, tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+        assert cover_state.tilt_target is None
+
+    #
+    # test_skips_tilt_when_cover_moved_to_fully_open
+    #
+    @pytest.mark.asyncio
+    async def test_skips_tilt_when_cover_moved_to_fully_open(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Tilt should be skipped when cover was moved to fully open (raised)."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.OPEN
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_target_final=100, tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+        assert cover_state.tilt_target is None
+
+    #
     # test_open_mode_sets_tilt_100
     #
     @pytest.mark.asyncio
