@@ -3,7 +3,7 @@
 Tests cover:
 - Auto tilt formula calculations
 - Tilt mode resolution (per-cover vs global)
-- Tilt application for all modes (open, closed, manual, auto)
+- Tilt application for all modes (open, closed, manual, auto, set_value)
 - Tilt delta threshold
 - Tilt during lock modes
 - Tilt in process() flow
@@ -47,6 +47,7 @@ def mock_resolved_config():
     resolved.close_covers_after_sunset_cover_list = ()
     resolved.tilt_mode_day = TiltMode.OPEN
     resolved.tilt_mode_night = TiltMode.CLOSED
+    resolved.tilt_set_value_night = 0
     resolved.tilt_min_change_delta = 5
     resolved.tilt_slat_overlap_ratio = 0.9
     return resolved
@@ -448,23 +449,24 @@ class TestApplyTilt:
         assert 55 <= tilt_value <= 62  # ~58% expected
 
     #
-    # test_auto_mode_falls_back_to_closed_at_night
+    # test_set_value_mode_uses_configured_angle
     #
     @pytest.mark.asyncio
-    async def test_auto_mode_falls_back_to_closed_at_night(
+    async def test_set_value_mode_uses_configured_angle(
         self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
     ) -> None:
-        """Auto mode should fall back to closed (0) at night."""
+        """Set value mode should use the configured fixed tilt angle."""
 
-        mock_resolved_config.tilt_mode_night = TiltMode.AUTO
-        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=0)
+        mock_resolved_config.tilt_mode_night = TiltMode.SET_VALUE
+        mock_resolved_config.tilt_set_value_night = 30
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=30)
         auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(tilt_current=50, sun_hitting=False, sun_azimuth_diff=10.0)
         await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.CLOSING_AFTER_SUNSET, True)
 
-        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 0, tilt_features)
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 30, tilt_features)
 
     #
     # test_auto_mode_opens_when_sun_not_hitting

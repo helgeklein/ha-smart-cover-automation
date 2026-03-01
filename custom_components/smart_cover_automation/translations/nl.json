@@ -57,12 +57,14 @@
                 "data": {
                     "tilt_mode_day": "Kantelregeling (dag):",
                     "tilt_mode_night": "Kantelregeling (nacht):",
+                    "tilt_set_value_night": "Nacht-kantelhoek (vaste waarde):",
                     "tilt_min_change_delta": "Minimale kantelwijziging:",
                     "tilt_slat_overlap_ratio": "Lameloverlapverhouding (d/L):"
                 },
                 "data_description": {
                     "tilt_mode_day": "Hoe de kantelhoek van de lamellen overdag moet worden geregeld.",
                     "tilt_mode_night": "Hoe de kantelhoek van de lamellen 's nachts moet worden geregeld (wordt toegepast bij de avondsluiting).",
+                    "tilt_set_value_night": "Vaste kantelhoek voor de nachtmodus. 0 % = volledig gesloten (verticaal, blokkeert licht), 100 % = volledig open (horizontaal, laat licht door). Wordt alleen gebruikt wanneer de nacht-kantelmodus is ingesteld op ‘Vaste waarde’.",
                     "tilt_min_change_delta": "Minimale kantelwijziging (%) vereist voordat een commando wordt verstuurd. Voorkomt overmatige motorslijtage door kleine aanpassingen.",
                     "tilt_slat_overlap_ratio": "Verhouding tussen lamelafstand en lamelbreedte (0,5–1,0). Lagere waarden betekenen meer overlap. De standaardwaarde van 0,9 werkt goed voor de meeste jaloezieën. Alleen relevant voor de Auto-modus."
                 },
@@ -300,7 +302,8 @@
                 "open": "Open (horizontaal — licht binnenlaten)",
                 "closed": "Gesloten (verticaal — licht blokkeren)",
                 "manual": "Handmatig (handmatig ingestelde hoek herstellen)",
-                "auto": "Auto (direct zonlicht blokkeren)"
+                "auto": "Auto (direct zonlicht blokkeren)",
+                "set_value": "Vaste waarde (vaste kantelhoek)"
             }
         }
     }

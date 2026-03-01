@@ -57,12 +57,14 @@
                 "data": {
                     "tilt_mode_day": "Tilt angle control (day):",
                     "tilt_mode_night": "Tilt angle control (night):",
+                    "tilt_set_value_night": "Night tilt angle (set value):",
                     "tilt_min_change_delta": "Minimum tilt change:",
                     "tilt_slat_overlap_ratio": "Slat overlap ratio (d/L):"
                 },
                 "data_description": {
                     "tilt_mode_day": "How to control the tilt angle of cover slats during the day.",
                     "tilt_mode_night": "How to control the tilt angle of cover slats at night (applied during evening closure).",
+                    "tilt_set_value_night": "Fixed tilt angle for night mode. 0% = fully closed (vertical, blocks light), 100% = fully open (horizontal, lets light in). Only used when night tilt mode is set to 'Set value'.",
                     "tilt_min_change_delta": "Minimum tilt change (%) required before sending a command. Prevents excessive motor wear from small adjustments.",
                     "tilt_slat_overlap_ratio": "Ratio of slat spacing to slat width (0.5\u20131.0). Lower values mean more overlap between slats. The default of 0.9 works well for most venetian blinds. Only relevant for Auto mode."
                 },
@@ -300,7 +302,8 @@
                 "open": "Open (horizontal \u2014 let light in)",
                 "closed": "Closed (vertical \u2014 block light)",
                 "manual": "Manual (restore manually set angle)",
-                "auto": "Auto (block direct sunlight)"
+                "auto": "Auto (block direct sunlight)",
+                "set_value": "Set value (fixed tilt angle)"
             }
         }
     }

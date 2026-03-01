@@ -57,12 +57,14 @@
                 "data": {
                     "tilt_mode_day": "Contrôle de l'inclinaison (jour) :",
                     "tilt_mode_night": "Contrôle de l'inclinaison (nuit) :",
+                    "tilt_set_value_night": "Angle d'inclinaison nocturne (valeur fixe) :",
                     "tilt_min_change_delta": "Changement d'inclinaison minimum :",
                     "tilt_slat_overlap_ratio": "Ratio de chevauchement des lamelles (d/L) :"
                 },
                 "data_description": {
                     "tilt_mode_day": "Comment contrôler l'angle d'inclinaison des lamelles pendant la journée.",
                     "tilt_mode_night": "Comment contrôler l'angle d'inclinaison des lamelles la nuit (appliqué lors de la fermeture du soir).",
+                    "tilt_set_value_night": "Angle d'inclinaison fixe pour le mode nuit. 0 % = complètement fermé (vertical, bloque la lumière), 100 % = complètement ouvert (horizontal, laisse entrer la lumière). Utilisé uniquement lorsque le mode d'inclinaison nocturne est réglé sur « Valeur fixe ».",
                     "tilt_min_change_delta": "Changement d'inclinaison minimum (%) requis avant d'envoyer une commande. Évite l'usure excessive du moteur par de petits ajustements.",
                     "tilt_slat_overlap_ratio": "Rapport entre l'espacement et la largeur des lamelles (0,5–1,0). Des valeurs plus basses signifient plus de chevauchement. La valeur par défaut de 0,9 convient à la plupart des stores vénitiens. Pertinent uniquement pour le mode Auto."
                 },
@@ -300,7 +302,8 @@
                 "open": "Ouvert (horizontal — laisser entrer la lumière)",
                 "closed": "Fermé (vertical — bloquer la lumière)",
                 "manual": "Manuel (restaurer l'angle réglé manuellement)",
-                "auto": "Auto (bloquer la lumière directe du soleil)"
+                "auto": "Auto (bloquer la lumière directe du soleil)",
+                "set_value": "Valeur fixe (angle d'inclinaison fixe)"
             }
         }
     }

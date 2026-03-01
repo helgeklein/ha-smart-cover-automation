@@ -57,12 +57,14 @@
                 "data": {
                     "tilt_mode_day": "Controllo inclinazione (giorno):",
                     "tilt_mode_night": "Controllo inclinazione (notte):",
+                    "tilt_set_value_night": "Angolo di inclinazione notturno (valore fisso):",
                     "tilt_min_change_delta": "Variazione minima di inclinazione:",
                     "tilt_slat_overlap_ratio": "Rapporto di sovrapposizione lamelle (d/L):"
                 },
                 "data_description": {
                     "tilt_mode_day": "Come controllare l'angolo di inclinazione delle lamelle durante il giorno.",
                     "tilt_mode_night": "Come controllare l'angolo di inclinazione delle lamelle di notte (applicato durante la chiusura serale).",
+                    "tilt_set_value_night": "Angolo di inclinazione fisso per la modalità notturna. 0 % = completamente chiuso (verticale, blocca la luce), 100 % = completamente aperto (orizzontale, lascia entrare la luce). Utilizzato solo quando la modalità di inclinazione notturna è impostata su «Valore fisso».",
                     "tilt_min_change_delta": "Variazione minima di inclinazione (%) richiesta prima di inviare un comando. Previene l'usura eccessiva del motore per piccole regolazioni.",
                     "tilt_slat_overlap_ratio": "Rapporto tra spaziatura e larghezza delle lamelle (0,5–1,0). Valori più bassi significano più sovrapposizione. Il valore predefinito di 0,9 funziona bene per la maggior parte delle veneziane. Rilevante solo per la modalità Auto."
                 },
@@ -300,7 +302,8 @@
                 "open": "Aperto (orizzontale — far entrare la luce)",
                 "closed": "Chiuso (verticale — bloccare la luce)",
                 "manual": "Manuale (ripristinare l'angolo impostato manualmente)",
-                "auto": "Auto (bloccare la luce solare diretta)"
+                "auto": "Auto (bloccare la luce solare diretta)",
+                "set_value": "Valore fisso (angolo di inclinazione fisso)"
             }
         }
     }

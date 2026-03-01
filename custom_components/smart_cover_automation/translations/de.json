@@ -57,12 +57,14 @@
                 "data": {
                     "tilt_mode_day": "Lamellenneigung (Tag):",
                     "tilt_mode_night": "Lamellenneigung (Nacht):",
+                    "tilt_set_value_night": "Nacht-Neigungswinkel (Festwert):",
                     "tilt_min_change_delta": "Minimale Neigungsänderung:",
                     "tilt_slat_overlap_ratio": "Lamellenüberlappungsverhältnis (d/L):"
                 },
                 "data_description": {
                     "tilt_mode_day": "Wie der Neigungswinkel der Lamellen tagsüber gesteuert werden soll.",
                     "tilt_mode_night": "Wie der Neigungswinkel der Lamellen nachts gesteuert werden soll (wird beim abendlichen Schließen angewendet).",
+                    "tilt_set_value_night": "Fester Neigungswinkel für den Nachtmodus. 0 % = vollständig geschlossen (vertikal, blockiert Licht), 100 % = vollständig geöffnet (horizontal, lässt Licht herein). Wird nur verwendet, wenn der Nacht-Neigungsmodus auf „Festwert“ eingestellt ist.",
                     "tilt_min_change_delta": "Minimale Neigungsänderung (%) bevor ein Befehl gesendet wird. Verhindert übermäßigen Motorverschleiß durch kleine Anpassungen.",
                     "tilt_slat_overlap_ratio": "Verhältnis von Lamellenabstand zu Lamellenbreite (0,5–1,0). Niedrigere Werte bedeuten mehr Überlappung. Der Standardwert von 0,9 funktioniert für die meisten Jalousien gut. Nur relevant für den Auto-Modus."
                 },
@@ -300,7 +302,8 @@
                 "open": "Offen (horizontal — Licht hereinlassen)",
                 "closed": "Geschlossen (vertikal — Licht blockieren)",
                 "manual": "Manuell (manuell eingestellten Winkel beibehalten)",
-                "auto": "Automatisch (direktes Sonnenlicht blockieren)"
+                "auto": "Automatisch (direktes Sonnenlicht blockieren)",
+                "set_value": "Festwert (fester Neigungswinkel)"
             }
         }
     }

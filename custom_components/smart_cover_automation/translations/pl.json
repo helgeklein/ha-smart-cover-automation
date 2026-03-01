@@ -57,12 +57,14 @@
                 "data": {
                     "tilt_mode_day": "Kontrola nachylenia (dzień):",
                     "tilt_mode_night": "Kontrola nachylenia (noc):",
+                    "tilt_set_value_night": "Nocny kąt nachylenia (wartość stała):",
                     "tilt_min_change_delta": "Minimalna zmiana nachylenia:",
                     "tilt_slat_overlap_ratio": "Współczynnik zakładki lameli (d/L):"
                 },
                 "data_description": {
                     "tilt_mode_day": "Jak kontrolować kąt nachylenia lameli w ciągu dnia.",
                     "tilt_mode_night": "Jak kontrolować kąt nachylenia lameli w nocy (stosowane podczas wieczornego zamykania).",
+                    "tilt_set_value_night": "Stały kąt nachylenia dla trybu nocnego. 0 % = całkowicie zamknięte (pionowo, blokuje światło), 100 % = całkowicie otwarte (poziomo, wpuszcza światło). Używane tylko, gdy nocny tryb nachylenia jest ustawiony na „Wartość stała”.",
                     "tilt_min_change_delta": "Minimalna zmiana nachylenia (%) wymagana przed wysłaniem polecenia. Zapobiega nadmiernemu zużyciu silnika przez drobne regulacje.",
                     "tilt_slat_overlap_ratio": "Stosunek odstępu do szerokości lameli (0,5–1,0). Niższe wartości oznaczają większe zakładki. Wartość domyślna 0,9 sprawdza się w większości żaluzji weneckich. Dotyczy tylko trybu Auto."
                 },
@@ -300,7 +302,8 @@
                 "open": "Otwarte (poziomo — wpuszczać światło)",
                 "closed": "Zamknięte (pionowo — blokować światło)",
                 "manual": "Ręczne (przywrócić ręcznie ustawiony kąt)",
-                "auto": "Auto (blokować bezpośrednie światło słoneczne)"
+                "auto": "Auto (blokować bezpośrednie światło słoneczne)",
+                "set_value": "Wartość stała (stały kąt nachylenia)"
             }
         }
     }

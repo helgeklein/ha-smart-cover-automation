@@ -57,12 +57,14 @@
                 "data": {
                     "tilt_mode_day": "倾斜角度控制（白天）：",
                     "tilt_mode_night": "倾斜角度控制（夜晚）：",
+                    "tilt_set_value_night": "夜间倾斜角度（固定值）：",
                     "tilt_min_change_delta": "最小倾斜变化：",
                     "tilt_slat_overlap_ratio": "叶片重叠比 (d/L)："
                 },
                 "data_description": {
                     "tilt_mode_day": "如何在白天控制叶片的倾斜角度。",
                     "tilt_mode_night": "如何在夜晚控制叶片的倾斜角度（在傍晚关闭时应用）。",
+                    "tilt_set_value_night": "夜间模式的固定倾斜角度。0% = 完全关闭（垂直，阻挡光线），100% = 完全打开（水平，让光线进入）。仅在夜间倾斜模式设置为“固定值”时使用。",
                     "tilt_min_change_delta": "发送命令前所需的最小倾斜变化（%）。防止小调整导致电机过度磨损。",
                     "tilt_slat_overlap_ratio": "叶片间距与叶片宽度的比率（0.5–1.0）。较低的值表示更多重叠。默认值 0.9 适用于大多数百叶窗帘。仅与自动模式相关。"
                 },
@@ -300,7 +302,8 @@
                 "open": "打开（水平 — 让光线进入）",
                 "closed": "关闭（垂直 — 阻挡光线）",
                 "manual": "手动（恢复手动设置的角度）",
-                "auto": "自动（阻挡直射阳光）"
+                "auto": "自动（阻挡直射阳光）",
+                "set_value": "固定值（固定倾斜角度）"
             }
         }
     }

@@ -110,7 +110,8 @@ class TiltMode(StrEnum):
     OPEN = "open"  # Horizontal position — let light in (tilt = 100)
     CLOSED = "closed"  # Vertical position — block light (tilt = 0)
     MANUAL = "manual"  # Restore manually set angle after cover movement
-    AUTO = "auto"  # Dynamically block direct sunlight
+    AUTO = "auto"  # Dynamically block direct sunlight (day only)
+    SET_VALUE = "set_value"  # Fixed user-specified tilt angle (night only)
 
 
 # Service constants

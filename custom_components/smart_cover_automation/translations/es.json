@@ -57,12 +57,14 @@
                 "data": {
                     "tilt_mode_day": "Control de inclinación (día):",
                     "tilt_mode_night": "Control de inclinación (noche):",
+                    "tilt_set_value_night": "Ángulo de inclinación nocturno (valor fijo):",
                     "tilt_min_change_delta": "Cambio mínimo de inclinación:",
                     "tilt_slat_overlap_ratio": "Ratio de solapamiento de lamas (d/L):"
                 },
                 "data_description": {
                     "tilt_mode_day": "Cómo controlar el ángulo de inclinación de las lamas durante el día.",
                     "tilt_mode_night": "Cómo controlar el ángulo de inclinación de las lamas por la noche (se aplica durante el cierre vespertino).",
+                    "tilt_set_value_night": "Ángulo de inclinación fijo para el modo nocturno. 0 % = completamente cerrado (vertical, bloquea la luz), 100 % = completamente abierto (horizontal, deja entrar la luz). Solo se utiliza cuando el modo de inclinación nocturna está configurado como «Valor fijo».",
                     "tilt_min_change_delta": "Cambio mínimo de inclinación (%) requerido antes de enviar un comando. Evita el desgaste excesivo del motor por pequeños ajustes.",
                     "tilt_slat_overlap_ratio": "Relación entre el espaciado y el ancho de las lamas (0,5–1,0). Valores más bajos significan mayor solapamiento. El valor predeterminado de 0,9 funciona bien para la mayoría de las persianas venecianas. Solo relevante para el modo Auto."
                 },
@@ -300,7 +302,8 @@
                 "open": "Abierto (horizontal — dejar entrar la luz)",
                 "closed": "Cerrado (vertical — bloquear la luz)",
                 "manual": "Manual (restaurar el ángulo configurado manualmente)",
-                "auto": "Auto (bloquear la luz solar directa)"
+                "auto": "Auto (bloquear la luz solar directa)",
+                "set_value": "Valor fijo (ángulo de inclinación fijo)"
             }
         }
     }

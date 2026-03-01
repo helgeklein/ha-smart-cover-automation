@@ -283,18 +283,45 @@ class FlowHelper:
 
         schema_dict: dict[vol.Marker, object] = {}
 
-        # Global tilt mode selectors
-        tilt_mode_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.TiltMode]
-        tilt_mode_selector = selector.SelectSelector(
+        # Day tilt modes: open, closed, manual, auto (no set_value)
+        tilt_mode_day_options = [
+            selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.TiltMode if mode != const.TiltMode.SET_VALUE
+        ]
+        tilt_mode_day_selector = selector.SelectSelector(
             selector.SelectSelectorConfig(
-                options=tilt_mode_options,
+                options=tilt_mode_day_options,
                 mode=selector.SelectSelectorMode.DROPDOWN,
                 translation_key="tilt_mode",
             )
         )
 
-        schema_dict[vol.Required(ConfKeys.TILT_MODE_DAY.value, default=resolved_settings.tilt_mode_day)] = tilt_mode_selector
-        schema_dict[vol.Required(ConfKeys.TILT_MODE_NIGHT.value, default=resolved_settings.tilt_mode_night)] = tilt_mode_selector
+        # Night tilt modes: open, closed, manual, set_value (no auto)
+        tilt_mode_night_options = [
+            selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.TiltMode if mode != const.TiltMode.AUTO
+        ]
+        tilt_mode_night_selector = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=tilt_mode_night_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="tilt_mode",
+            )
+        )
+
+        schema_dict[vol.Required(ConfKeys.TILT_MODE_DAY.value, default=resolved_settings.tilt_mode_day)] = tilt_mode_day_selector
+        schema_dict[vol.Required(ConfKeys.TILT_MODE_NIGHT.value, default=resolved_settings.tilt_mode_night)] = tilt_mode_night_selector
+
+        # Fixed tilt value for night "set_value" mode
+        schema_dict[vol.Required(ConfKeys.TILT_SET_VALUE_NIGHT.value, default=resolved_settings.tilt_set_value_night)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    unit_of_measurement="%",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        )
 
         # Minimum tilt change delta
         schema_dict[vol.Required(ConfKeys.TILT_MIN_CHANGE_DELTA.value, default=resolved_settings.tilt_min_change_delta)] = (
@@ -334,7 +361,7 @@ class FlowHelper:
         # Per-cover tilt mode overrides (day)
         if tilt_capable_covers:
             day_schema_dict = FlowHelper._build_schema_cover_tilt_mode(
-                tilt_capable_covers, const.COVER_SFX_TILT_MODE_DAY, defaults, tilt_mode_selector
+                tilt_capable_covers, const.COVER_SFX_TILT_MODE_DAY, defaults, tilt_mode_day_selector
             )
             if day_schema_dict:
                 schema_dict[vol.Optional(const.STEP_4_SECTION_TILT_DAY)] = section(
@@ -344,7 +371,7 @@ class FlowHelper:
 
             # Per-cover tilt mode overrides (night)
             night_schema_dict = FlowHelper._build_schema_cover_tilt_mode(
-                tilt_capable_covers, const.COVER_SFX_TILT_MODE_NIGHT, defaults, tilt_mode_selector
+                tilt_capable_covers, const.COVER_SFX_TILT_MODE_NIGHT, defaults, tilt_mode_night_selector
             )
             if night_schema_dict:
                 schema_dict[vol.Optional(const.STEP_4_SECTION_TILT_NIGHT)] = section(
@@ -1034,8 +1061,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         current_settings = self._current_settings()
 
         # Store global tilt settings
-        self._config_data[ConfKeys.TILT_MODE_DAY.value] = user_input.get(ConfKeys.TILT_MODE_DAY.value, "open")
+        self._config_data[ConfKeys.TILT_MODE_DAY.value] = user_input.get(ConfKeys.TILT_MODE_DAY.value, "auto")
         self._config_data[ConfKeys.TILT_MODE_NIGHT.value] = user_input.get(ConfKeys.TILT_MODE_NIGHT.value, "closed")
+        self._config_data[ConfKeys.TILT_SET_VALUE_NIGHT.value] = int(user_input.get(ConfKeys.TILT_SET_VALUE_NIGHT.value, 0))
         self._config_data[ConfKeys.TILT_MIN_CHANGE_DELTA.value] = int(user_input.get(ConfKeys.TILT_MIN_CHANGE_DELTA.value, 5))
         self._config_data[ConfKeys.TILT_SLAT_OVERLAP_RATIO.value] = float(user_input.get(ConfKeys.TILT_SLAT_OVERLAP_RATIO.value, 0.9))
 

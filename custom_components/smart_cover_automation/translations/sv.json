@@ -57,12 +57,14 @@
                 "data": {
                     "tilt_mode_day": "Lutningskontroll (dag):",
                     "tilt_mode_night": "Lutningskontroll (natt):",
+                    "tilt_set_value_night": "Nattlutningsvinkel (fast värde):",
                     "tilt_min_change_delta": "Minsta lutningsändring:",
                     "tilt_slat_overlap_ratio": "Lamellöverlappningskvot (d/L):"
                 },
                 "data_description": {
                     "tilt_mode_day": "Hur lutningsvinkeln på lamellerna ska styras under dagen.",
                     "tilt_mode_night": "Hur lutningsvinkeln på lamellerna ska styras på natten (tillämpas vid kvällsstängning).",
+                    "tilt_set_value_night": "Fast lutningsvinkel för nattläget. 0 % = helt stängd (vertikal, blockerar ljus), 100 % = helt öppen (horisontell, släpper in ljus). Används endast när nattlutningsläget är inställt på ”Fast värde”.",
                     "tilt_min_change_delta": "Minsta lutningsändring (%) som krävs innan ett kommando skickas. Förhindrar onormalt motorslitage från små justeringar.",
                     "tilt_slat_overlap_ratio": "Förhållande mellan lamellavstånd och lamellbredd (0,5–1,0). Lägre värden innebär mer överlappning. Standardvärdet 0,9 fungerar bra för de flesta persienner. Endast relevant för Auto-läget."
                 },
@@ -300,7 +302,8 @@
                 "open": "Öppen (horisontell — släpp in ljus)",
                 "closed": "Stängd (vertikal — blockera ljus)",
                 "manual": "Manuell (återställ manuellt inställd vinkel)",
-                "auto": "Auto (blockera direkt solljus)"
+                "auto": "Auto (blockera direkt solljus)",
+                "set_value": "Fast värde (fast lutningsvinkel)"
             }
         }
     }
