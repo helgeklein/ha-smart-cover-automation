@@ -12,7 +12,7 @@ from datetime import time
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
-from custom_components.smart_cover_automation.const import HA_OPTIONS, LockMode
+from custom_components.smart_cover_automation.const import HA_OPTIONS, LockMode, TiltMode
 
 T = TypeVar("T")
 
@@ -63,6 +63,12 @@ class ConfKeys(StrEnum):
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
     TEMP_THRESHOLD = "temp_threshold"  # Temperature threshold at which heat protection activates (°C).
+    TILT_MIN_CHANGE_DELTA = "tilt_min_change_delta"  # Minimum tilt change (%) to actually send a service call.
+    TILT_MODE_DAY = "tilt_mode_day"  # Global tilt mode during daytime.
+    TILT_MODE_NIGHT = "tilt_mode_night"  # Global tilt mode at night / evening closure.
+    TILT_SET_VALUE_DAY = "tilt_set_value_day"  # Fixed tilt angle (0-100) for day "set_value" mode.
+    TILT_SET_VALUE_NIGHT = "tilt_set_value_night"  # Fixed tilt angle (0-100) for night "set_value" mode.
+    TILT_SLAT_OVERLAP_RATIO = "tilt_slat_overlap_ratio"  # Slat spacing/width ratio (d/L) for Auto tilt calculation.
     VERBOSE_LOGGING = "verbose_logging"  # Enable DEBUG logs for this entry.
     WEATHER_ENTITY_ID = "weather_entity_id"  # Weather entity_id.
     WEATHER_HOT_CUTOVER_TIME = "weather_hot_cutover_time"  # Time of day to switch to next day's forecast for hot weather detection.
@@ -189,13 +195,19 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool, runtime_configurable=True),
-    ConfKeys.LOCK_MODE: _ConfSpec(default="unlocked", converter=_Converters.to_str, runtime_configurable=True),
+    ConfKeys.LOCK_MODE: _ConfSpec(default=LockMode.UNLOCKED, converter=LockMode, runtime_configurable=True),
     ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds, runtime_configurable=True),
     ConfKeys.NIGHTTIME_BLOCK_OPENING: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=10.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=24.0, converter=_Converters.to_float, runtime_configurable=True),
+    ConfKeys.TILT_MIN_CHANGE_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
+    ConfKeys.TILT_MODE_DAY: _ConfSpec(default=TiltMode.AUTO, converter=TiltMode),
+    ConfKeys.TILT_MODE_NIGHT: _ConfSpec(default=TiltMode.CLOSED, converter=TiltMode),
+    ConfKeys.TILT_SET_VALUE_DAY: _ConfSpec(default=50, converter=_Converters.to_int),
+    ConfKeys.TILT_SET_VALUE_NIGHT: _ConfSpec(default=0, converter=_Converters.to_int),
+    ConfKeys.TILT_SLAT_OVERLAP_RATIO: _ConfSpec(default=0.9, converter=_Converters.to_float),
     ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.WEATHER_ENTITY_ID: _ConfSpec(default="", converter=_Converters.to_str),
     ConfKeys.WEATHER_HOT_CUTOVER_TIME: _ConfSpec(default=time(16, 0, 0), converter=_Converters.to_time),
@@ -250,6 +262,12 @@ class ResolvedConfig:
     sun_azimuth_tolerance: int
     sun_elevation_threshold: float
     temp_threshold: float
+    tilt_min_change_delta: int
+    tilt_mode_day: TiltMode
+    tilt_mode_night: TiltMode
+    tilt_set_value_day: int
+    tilt_set_value_night: int
+    tilt_slat_overlap_ratio: float
     verbose_logging: bool
     weather_entity_id: str
     weather_hot_cutover_time: time

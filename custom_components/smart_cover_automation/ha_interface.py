@@ -9,15 +9,18 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.components.cover import ATTR_POSITION, CoverEntityFeature
+from homeassistant.components.cover import ATTR_POSITION, ATTR_TILT_POSITION, CoverEntityFeature
 from homeassistant.components.logbook import async_log_entry
 from homeassistant.components.weather import SERVICE_GET_FORECASTS
 from homeassistant.components.weather.const import ATTR_WEATHER_TEMPERATURE_UNIT
 from homeassistant.const import (
     ATTR_ENTITY_ID,
     SERVICE_CLOSE_COVER,
+    SERVICE_CLOSE_COVER_TILT,
     SERVICE_OPEN_COVER,
+    SERVICE_OPEN_COVER_TILT,
     SERVICE_SET_COVER_POSITION,
+    SERVICE_SET_COVER_TILT_POSITION,
     Platform,
     UnitOfTemperature,
 )
@@ -180,6 +183,80 @@ class HomeAssistantInterface:
         except Exception as err:
             # Catch-all for unexpected errors
             error_msg = f"Unexpected error during cover control: {err}"
+            self._logger.error(f"[{entity_id}] {error_msg}")
+            raise ServiceCallError(service, entity_id, str(err)) from err
+
+    #
+    # set_cover_tilt_position
+    #
+    async def set_cover_tilt_position(self, entity_id: str, tilt_position: int, features: int) -> int:
+        """Set cover tilt position using the most appropriate service call.
+
+        Args:
+            entity_id: The cover entity ID to control
+            tilt_position: Target tilt (0=closed/vertical, 100=open/horizontal)
+            features: Cover's supported features bitmask
+
+        Returns:
+            The actual tilt position set
+
+        Raises:
+            ServiceCallError: If the service call fails
+            ValueError: If tilt_position is outside valid range (0-100)
+        """
+
+        # Validate tilt position parameter
+        if not (const.COVER_POS_FULLY_CLOSED <= tilt_position <= const.COVER_POS_FULLY_OPEN):
+            raise ValueError(
+                f"tilt_position must be between {const.COVER_POS_FULLY_CLOSED} and {const.COVER_POS_FULLY_OPEN}, got {tilt_position}"
+            )
+
+        # Initialize service name and actual tilt for error handling and return value
+        service = "unknown_service"
+        actual_tilt = None
+
+        try:
+            if int(features) & CoverEntityFeature.SET_TILT_POSITION:
+                # The cover supports setting a specific tilt position
+                service = SERVICE_SET_COVER_TILT_POSITION
+                service_data = {ATTR_ENTITY_ID: entity_id, ATTR_TILT_POSITION: tilt_position}
+                actual_tilt = tilt_position
+                self._logger.debug(f"[{entity_id}] Setting tilt to {tilt_position}% via set_cover_tilt_position service")
+            else:
+                # Fallback to open_tilt/close_tilt
+                if tilt_position > const.COVER_POS_FULLY_OPEN / 2:
+                    service = SERVICE_OPEN_COVER_TILT
+                    service_data = {ATTR_ENTITY_ID: entity_id}
+                    actual_tilt = const.COVER_POS_FULLY_OPEN  # Binary tilt goes fully open
+                    self._logger.debug(f"[{entity_id}] Opening tilt fully via open_cover_tilt service (no tilt position support)")
+                else:
+                    service = SERVICE_CLOSE_COVER_TILT
+                    service_data = {ATTR_ENTITY_ID: entity_id}
+                    actual_tilt = const.COVER_POS_FULLY_CLOSED  # Binary tilt goes fully closed
+                    self._logger.debug(f"[{entity_id}] Closing tilt fully via close_cover_tilt service (no tilt position support)")
+
+            resolved = self._resolved_settings_callback()
+            if resolved.simulation_mode:
+                self._logger.info(
+                    f"[{entity_id}] Simulation mode enabled; skipping actual {service} call; would have set tilt to {actual_tilt}%"
+                )
+            else:
+                await self.hass.services.async_call(Platform.COVER, service, service_data)
+
+            return actual_tilt
+
+        except (OSError, ConnectionError, TimeoutError) as err:
+            error_msg = f"Communication error while controlling cover tilt: {err}"
+            self._logger.error(f"[{entity_id}] {error_msg}")
+            raise ServiceCallError(service, entity_id, str(err)) from err
+
+        except (ValueError, TypeError) as err:
+            error_msg = f"Invalid parameters for cover tilt control: {err}"
+            self._logger.error(f"[{entity_id}] {error_msg}")
+            raise ServiceCallError(service, entity_id, str(err)) from err
+
+        except Exception as err:
+            error_msg = f"Unexpected error during cover tilt control: {err}"
             self._logger.error(f"[{entity_id}] {error_msg}")
             raise ServiceCallError(service, entity_id, str(err)) from err
 

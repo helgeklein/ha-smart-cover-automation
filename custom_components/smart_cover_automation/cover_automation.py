@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any, assert_never
 
-from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
+from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_CURRENT_TILT_POSITION, CoverEntityFeature
 from homeassistant.const import (
     ATTR_SUPPORTED_FEATURES,
     STATE_CLOSED,
@@ -69,6 +70,10 @@ class CoverState:
     pos_target_desired: int | None = None
     pos_target_final: int | None = None
 
+    # Tilt state
+    tilt_current: int | None = None
+    tilt_target: int | None = None
+
     # Sun calculations
     sun_hitting: bool | None = None
     sun_azimuth_diff: float | None = None
@@ -110,6 +115,9 @@ class CoverAutomation:
         self._ha_interface = ha_interface
         self._logger = logger
 
+        # Tilt support: cached flag (set on first process() call)
+        self._cover_supports_tilt: bool | None = None
+
     #
     # process
     #
@@ -149,6 +157,14 @@ class CoverAutomation:
         features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
         cover_state.supported_features = features
 
+        # Cache tilt support flag on first call
+        if self._cover_supports_tilt is None:
+            self._cover_supports_tilt = bool(int(features) & CoverEntityFeature.SET_TILT_POSITION)
+
+        # Read current tilt position (for Manual mode tracking and delta checks)
+        if self._cover_supports_tilt:
+            cover_state.tilt_current = to_int_or_none(state.attributes.get(ATTR_CURRENT_TILT_POSITION))
+
         # Get cover position
         success, current_pos = self._get_cover_position(state, features)
         if not success:
@@ -170,25 +186,31 @@ class CoverAutomation:
         cover_state.sun_hitting = sun_hitting
         cover_state.sun_azimuth_diff = round(sun_azimuth_difference, 1)
 
-        # Calculate desired position (lockout protection and nighttime block are checked inside _calculate_desired_position)
+        # Calculate desired position (lockout protection and nighttime opening block are checked inside _calculate_desired_position)
         desired_pos, movement_reason, lockout_protection = self._calculate_desired_position(sensor_data, sun_hitting, current_pos)
         cover_state.pos_target_desired = desired_pos
         cover_state.lockout_protection = lockout_protection
 
         # Move cover if needed (skip if movement_reason is None, e.g., nighttime block active)
         if movement_reason is None:
-            # No movement - nighttime block or other condition preventing movement
+            # No movement - nighttime opening block or other condition preventing movement
             self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
-            movement_needed = False
+            cover_moved = False
             message = "No movement (blocked by nighttime or other condition)"
         else:
-            movement_needed, actual_pos, message = await self._move_cover_if_needed(current_pos, desired_pos, features, movement_reason)
-            if not movement_needed:
+            cover_moved, actual_pos, message = await self._move_cover_if_needed(current_pos, desired_pos, features, movement_reason)
+            if not cover_moved:
                 # No movement - just add the current position to the history
                 self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
             else:
                 # Movement occurred
                 cover_state.pos_target_final = actual_pos
+
+        # Apply tilt after position handling — skip only when the nighttime opening block is
+        # active (cover opening suppressed at night).  Other reasons for no position
+        # change (e.g. lockout protection) should still allow tilt updates.
+        if not self._is_nighttime_opening_block_active():
+            await self._apply_tilt(cover_state, sensor_data, features, movement_reason, cover_moved)
 
         # Log per-cover state
         self._logger.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}")
@@ -298,9 +320,9 @@ class CoverAutomation:
         return False
 
     #
-    # _is_nighttime_block_active
+    # _is_nighttime_opening_block_active
     #
-    def _is_nighttime_block_active(self) -> bool:
+    def _is_nighttime_opening_block_active(self) -> bool:
         """Check if nighttime block opening should prevent cover opening.
 
         The nighttime block feature prevents automatic cover opening during nighttime
@@ -475,7 +497,7 @@ class CoverAutomation:
                 movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
         else:
             # Let light in mode - check if nighttime block is active
-            if self._is_nighttime_block_active():
+            if self._is_nighttime_opening_block_active():
                 # Nighttime block active - keep current position (no movement)
                 desired_pos = current_pos
                 desired_pos_friendly_name = "unchanged (nighttime block active)"
@@ -605,21 +627,33 @@ class CoverAutomation:
             return False
 
         if self.resolved.lock_mode == const.LockMode.HOLD_POSITION:
-            # Just block all automation
+            # Just block all automation (including tilt)
             self._log_cover_msg(f"Lock active ({self.resolved.lock_mode}), skipping automation", const.LogSeverity.INFO)
             self._set_lock_attrs(cover_state, desired_pos=current_pos, target_pos=current_pos, cover_moved=False)
 
         elif self.resolved.lock_mode == const.LockMode.FORCE_OPEN:
-            # Ensure cover is fully open (100%)
+            # Ensure cover is fully open (100%) and tilt is fully open (100%)
             await self._enforce_locked_position(
                 cover_state, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_OPEN, features=features
             )
+            if self._cover_supports_tilt:
+                try:
+                    await self._ha_interface.set_cover_tilt_position(self.entity_id, const.COVER_POS_FULLY_OPEN, features)
+                    cover_state.tilt_target = const.COVER_POS_FULLY_OPEN
+                except Exception as err:
+                    self._logger.error(f"[{self.entity_id}] Failed to set lock tilt: {err}")
 
         elif self.resolved.lock_mode == const.LockMode.FORCE_CLOSE:
-            # Ensure cover is fully closed (0%)
+            # Ensure cover is fully closed (0%) and tilt is fully closed (0%)
             await self._enforce_locked_position(
                 cover_state, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_CLOSED, features=features
             )
+            if self._cover_supports_tilt:
+                try:
+                    await self._ha_interface.set_cover_tilt_position(self.entity_id, const.COVER_POS_FULLY_CLOSED, features)
+                    cover_state.tilt_target = const.COVER_POS_FULLY_CLOSED
+                except Exception as err:
+                    self._logger.error(f"[{self.entity_id}] Failed to set lock tilt: {err}")
 
         else:
             # Have the type checker fail if a new lock mode is added but not handled here
@@ -670,6 +704,182 @@ class CoverAutomation:
         # Log and store position
         self._log_cover_msg(f"Lock active ({self.resolved.lock_mode}), {move_msg} ({target_pos}%)", const.LogSeverity.INFO)
         self._set_lock_attrs(cover_state, desired_pos=new_pos, target_pos=new_pos, cover_moved=cover_moved)
+
+    #
+    # _get_effective_tilt_mode
+    #
+    def _get_effective_tilt_mode(self, is_night: bool) -> str | None:
+        """Get the effective tilt mode for this cover.
+
+        Checks per-cover override first, falls back to global setting.
+        Returns None if the cover doesn't support tilt.
+
+        Args:
+            is_night: True for night/evening closure mode, False for daytime
+
+        Returns:
+            Tilt mode string or None if tilt not supported
+        """
+
+        if self._cover_supports_tilt is False:
+            return None
+
+        # Determine suffix and global default based on day/night
+        if is_night:
+            suffix = const.COVER_SFX_TILT_MODE_NIGHT
+            global_default = self.resolved.tilt_mode_night
+        else:
+            suffix = const.COVER_SFX_TILT_MODE_DAY
+            global_default = self.resolved.tilt_mode_day
+
+        # Check for per-cover override
+        per_cover_key = f"{self.entity_id}_{suffix}"
+        per_cover_value = self.config.get(per_cover_key)
+        if per_cover_value is not None:
+            return str(per_cover_value)
+
+        return global_default
+
+    #
+    # _calculate_auto_tilt
+    #
+    @staticmethod
+    def _calculate_auto_tilt(
+        sun_elevation: float,
+        sun_azimuth_diff: float,
+        slat_overlap_ratio: float,
+    ) -> int:
+        """Calculate optimal tilt to block direct sunlight while maximizing daylight.
+
+        Uses the profile-angle / slat-cutoff formula with a configurable slat overlap
+        ratio (d/L). The default of 0.9 works for most venetian blinds without
+        requiring the user to measure their slats.
+
+        Args:
+            sun_elevation: Sun elevation in degrees (0-90).
+            sun_azimuth_diff: Absolute azimuth difference between sun and cover (0-180°).
+            slat_overlap_ratio: Ratio of slat spacing to slat width (d/L, typically 0.5-1.0).
+
+        Returns:
+            Tilt position 0-100 (0 = closed/vertical, 100 = open/horizontal).
+        """
+
+        if sun_elevation <= 0:
+            return 0  # Sun at/below horizon → fully closed
+
+        # Step 1: Profile angle (ω) — vertical sun angle projected onto facade-normal plane
+        alt_rad = math.radians(sun_elevation)
+        hsa_rad = math.radians(sun_azimuth_diff)
+        cos_hsa = math.cos(hsa_rad)
+
+        if abs(cos_hsa) < 1e-10:
+            # Sun nearly parallel to facade → profile angle approaches 90°
+            omega_rad = math.pi / 2
+        else:
+            omega_rad = math.atan(math.tan(alt_rad) / cos_hsa)
+
+        # Step 2: Slat cut-off angle (θ) from sin(θ + ω) = (d/L) · cos(ω)
+        cos_omega = math.cos(omega_rad)
+        ratio = slat_overlap_ratio * cos_omega
+
+        if ratio > 1.0:
+            # Geometry impossible — fully close
+            theta_deg = 90.0
+        elif ratio < -1.0:
+            theta_deg = 0.0
+        else:
+            theta_rad = math.asin(ratio) - omega_rad
+            theta_deg = math.degrees(theta_rad)
+
+        # Step 3: Clamp and convert to HA tilt percentage
+        theta_deg = max(0.0, min(90.0, theta_deg))
+        tilt_percent = 100.0 * (1.0 - theta_deg / 90.0)
+        return max(0, min(100, round(tilt_percent)))
+
+    #
+    # _apply_tilt
+    #
+    async def _apply_tilt(
+        self,
+        cover_state: CoverState,
+        sensor_data: SensorData,
+        features: int,
+        movement_reason: CoverMovementReason | None,
+        cover_moved: bool,
+    ) -> None:
+        """Apply tilt angle to the cover based on tilt mode and context.
+
+        Determines the appropriate tilt mode (day or night), calculates the target
+        tilt position, and sends the tilt command if the change exceeds the minimum
+        delta threshold.
+
+        Args:
+            cover_state: Cover state object to update with tilt info
+            sensor_data: Current sensor data
+            features: Cover's supported features bitmask
+            movement_reason: The reason for cover movement (or None if no movement)
+            cover_moved: Whether the cover position was changed this cycle
+        """
+
+        # Determine day/night context
+        is_night = movement_reason == CoverMovementReason.CLOSING_AFTER_SUNSET
+        tilt_mode = self._get_effective_tilt_mode(is_night)
+
+        if tilt_mode is None:
+            return  # Cover doesn't support tilt
+
+        # Determine target tilt based on mode
+        target_tilt: int | None = None
+
+        if tilt_mode == const.TiltMode.OPEN:
+            target_tilt = const.COVER_POS_FULLY_OPEN  # 100
+        elif tilt_mode == const.TiltMode.CLOSED:
+            target_tilt = const.COVER_POS_FULLY_CLOSED  # 0
+        elif tilt_mode == const.TiltMode.MANUAL:
+            # Restore the tilt the cover had before automation moved it.
+            # cover_state.tilt_current was read from the HA state *before* the
+            # position change, so it reflects the user's (or previous) setting.
+            target_tilt = cover_state.tilt_current
+            if target_tilt is None:
+                return  # No tilt info available
+        elif tilt_mode == const.TiltMode.AUTO:
+            if sensor_data.weather_sunny and cover_state.sun_hitting and cover_state.sun_azimuth_diff is not None:
+                target_tilt = self._calculate_auto_tilt(
+                    sensor_data.sun_elevation,
+                    cover_state.sun_azimuth_diff,
+                    self.resolved.tilt_slat_overlap_ratio,
+                )
+            else:
+                # Sun not hitting or not sunny — open tilt fully to let in diffuse daylight
+                target_tilt = const.COVER_POS_FULLY_OPEN
+        elif tilt_mode == const.TiltMode.SET_VALUE:
+            target_tilt = self.resolved.tilt_set_value_night if is_night else self.resolved.tilt_set_value_day
+
+        if target_tilt is None:
+            return
+
+        cover_state.tilt_target = target_tilt
+
+        # Check minimum change delta (skip if cover was just moved — always apply tilt then)
+        current_tilt = cover_state.tilt_current
+        if not cover_moved and current_tilt is not None:
+            if abs(target_tilt - current_tilt) < self.resolved.tilt_min_change_delta:
+                self._log_cover_msg(
+                    f"Tilt change too small ({current_tilt}% → {target_tilt}%), skipping",
+                    const.LogSeverity.DEBUG,
+                )
+                return
+
+        # Send tilt command
+        try:
+            actual_tilt = await self._ha_interface.set_cover_tilt_position(self.entity_id, target_tilt, features)
+            cover_state.tilt_target = actual_tilt
+            self._log_cover_msg(
+                f"Tilt set to {actual_tilt}% (mode: {tilt_mode})",
+                const.LogSeverity.INFO,
+            )
+        except Exception as err:
+            self._logger.error(f"[{self.entity_id}] Failed to set tilt: {err}")
 
     #
     # _log_cover_msg

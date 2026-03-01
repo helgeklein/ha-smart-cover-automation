@@ -255,11 +255,184 @@ class FlowHelper:
         return schema_dict
 
     #
-    # build_schema_step_4
+    # build_schema_step_4_tilt
     #
     @staticmethod
-    def build_schema_step_4(covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
-        """Build schema for step 4: window sensors per cover.
+    def build_schema_step_4_tilt(
+        covers: list[str],
+        defaults: Mapping[str, Any],
+        resolved_settings: ResolvedConfig,
+        hass: Any,
+    ) -> vol.Schema:
+        """Build schema for step 4: tilt angle control.
+
+        Only covers that support CoverEntityFeature.SET_TILT_POSITION are shown
+        in the per-cover override sections.
+
+        Args:
+            covers: List of cover entity IDs
+            defaults: Dictionary to look up default values
+            resolved_settings: Resolved configuration with defaults
+            hass: Home Assistant instance (for checking cover features)
+
+        Returns:
+            Schema for step 4 form
+        """
+
+        from homeassistant.components.cover import CoverEntityFeature
+
+        schema_dict: dict[vol.Marker, object] = {}
+
+        # Day tilt modes: open, closed, manual, auto, set_value
+        tilt_mode_day_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.TiltMode]
+        tilt_mode_day_selector = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=tilt_mode_day_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="tilt_mode",
+            )
+        )
+
+        # Night tilt modes: open, closed, manual, set_value (no auto)
+        tilt_mode_night_options = [
+            selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.TiltMode if mode != const.TiltMode.AUTO
+        ]
+        tilt_mode_night_selector = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=tilt_mode_night_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="tilt_mode",
+            )
+        )
+
+        schema_dict[vol.Required(ConfKeys.TILT_MODE_DAY.value, default=resolved_settings.tilt_mode_day)] = tilt_mode_day_selector
+        schema_dict[vol.Required(ConfKeys.TILT_MODE_NIGHT.value, default=resolved_settings.tilt_mode_night)] = tilt_mode_night_selector
+
+        # Fixed tilt value for day "set_value" mode
+        schema_dict[vol.Required(ConfKeys.TILT_SET_VALUE_DAY.value, default=resolved_settings.tilt_set_value_day)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    unit_of_measurement="%",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        )
+
+        # Fixed tilt value for night "set_value" mode
+        schema_dict[vol.Required(ConfKeys.TILT_SET_VALUE_NIGHT.value, default=resolved_settings.tilt_set_value_night)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    unit_of_measurement="%",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        )
+
+        # Minimum tilt change delta
+        schema_dict[vol.Required(ConfKeys.TILT_MIN_CHANGE_DELTA.value, default=resolved_settings.tilt_min_change_delta)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    unit_of_measurement="%",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        )
+
+        # Slat overlap ratio (d/L) for Auto mode
+        schema_dict[vol.Required(ConfKeys.TILT_SLAT_OVERLAP_RATIO.value, default=resolved_settings.tilt_slat_overlap_ratio)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0.5,
+                    max=1.0,
+                    step=0.01,
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        )
+
+        # Detect tilt-capable covers
+        tilt_capable_covers = []
+        if hass:
+            for cover in covers:
+                state = hass.states.get(cover)
+                if state:
+                    features = state.attributes.get("supported_features", 0)
+                    if int(features) & CoverEntityFeature.SET_TILT_POSITION:
+                        tilt_capable_covers.append(cover)
+
+        # Per-cover tilt mode overrides (day)
+        if tilt_capable_covers:
+            day_schema_dict = FlowHelper._build_schema_cover_tilt_mode(
+                tilt_capable_covers, const.COVER_SFX_TILT_MODE_DAY, defaults, tilt_mode_day_selector
+            )
+            if day_schema_dict:
+                schema_dict[vol.Optional(const.STEP_4_SECTION_TILT_DAY)] = section(
+                    vol.Schema(day_schema_dict),
+                    {"collapsed": True},
+                )
+
+            # Per-cover tilt mode overrides (night)
+            night_schema_dict = FlowHelper._build_schema_cover_tilt_mode(
+                tilt_capable_covers, const.COVER_SFX_TILT_MODE_NIGHT, defaults, tilt_mode_night_selector
+            )
+            if night_schema_dict:
+                schema_dict[vol.Optional(const.STEP_4_SECTION_TILT_NIGHT)] = section(
+                    vol.Schema(night_schema_dict),
+                    {"collapsed": True},
+                )
+
+        return vol.Schema(schema_dict)
+
+    #
+    # _build_schema_cover_tilt_mode
+    #
+    @staticmethod
+    def _build_schema_cover_tilt_mode(
+        covers: list[str],
+        suffix: str,
+        defaults: Mapping[str, Any],
+        tilt_mode_selector: selector.SelectSelector,
+    ) -> dict[vol.Marker, object]:
+        """Helper to build schema for per-cover tilt mode selection.
+
+        Args:
+            covers: List of tilt-capable cover entity IDs
+            suffix: Suffix to append to each cover entity ID for the key
+            defaults: Dictionary to look up default values
+            tilt_mode_selector: Pre-built tilt mode selector to reuse
+        """
+
+        schema_dict: dict[vol.Marker, object] = {}
+
+        for cover in sorted(covers):
+            key = f"{cover}_{suffix}"
+
+            raw = defaults.get(key)
+
+            if raw is not None:
+                key_marker = vol.Optional(key, description={"suggested_value": str(raw)})
+            else:
+                key_marker = vol.Optional(key)
+
+            schema_dict[key_marker] = tilt_mode_selector
+
+        return schema_dict
+
+    #
+    # build_schema_step_5
+    #
+    @staticmethod
+    def build_schema_step_5(covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
+        """Build schema for step 5: window sensors per cover.
 
         Args:
             covers: List of cover entity IDs
@@ -274,7 +447,7 @@ class FlowHelper:
         # Build schema dict for window sensors and group inside collapsible section
         window_sensors_schema_dict = FlowHelper._build_schema_cover_entities(covers, const.COVER_SFX_WINDOW_SENSORS, defaults)
         if window_sensors_schema_dict:
-            schema_dict[vol.Optional(const.STEP_4_SECTION_WINDOW_SENSORS)] = section(
+            schema_dict[vol.Optional(const.STEP_5_SECTION_WINDOW_SENSORS)] = section(
                 vol.Schema(window_sensors_schema_dict),
                 {"collapsed": True},
             )
@@ -320,11 +493,11 @@ class FlowHelper:
         return schema_dict
 
     #
-    # build_schema_step_5
+    # build_schema_step_6
     #
     @staticmethod
-    def build_schema_step_5(covers: list[str], resolved_settings: ResolvedConfig) -> vol.Schema:
-        """Build schema for step 5 settings.
+    def build_schema_step_6(covers: list[str], resolved_settings: ResolvedConfig) -> vol.Schema:
+        """Build schema for step 6 settings.
 
         Args:
             covers: List of cover entity IDs
@@ -374,7 +547,7 @@ class FlowHelper:
         ] = selector.TimeSelector()
 
         # Group settings in collapsed section
-        schema_dict[vol.Optional(const.STEP_5_SECTION_TIME_RANGE)] = section(
+        schema_dict[vol.Optional(const.STEP_6_SECTION_TIME_RANGE)] = section(
             vol.Schema(time_range_schema_dict),
             {"collapsed": True},
         )
@@ -421,7 +594,7 @@ class FlowHelper:
         )
 
         # Group settings in collapsed section
-        schema_dict[vol.Optional(const.STEP_5_SECTION_CLOSE_AFTER_SUNSET)] = section(
+        schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
             vol.Schema(covers_sunset_schema_dict),
             {"collapsed": True},
         )
@@ -590,8 +763,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Determine which section names are possible based on the suffix
         if suffix in (const.COVER_SFX_MIN_CLOSURE, const.COVER_SFX_MAX_CLOSURE):
             section_names = {const.STEP_3_SECTION_MIN_CLOSURE, const.STEP_3_SECTION_MAX_CLOSURE}
+        elif suffix in (const.COVER_SFX_TILT_MODE_DAY, const.COVER_SFX_TILT_MODE_NIGHT):
+            section_names = {const.STEP_4_SECTION_TILT_DAY, const.STEP_4_SECTION_TILT_NIGHT}
         elif suffix == const.COVER_SFX_WINDOW_SENSORS:
-            section_names = {const.STEP_4_SECTION_WINDOW_SENSORS}
+            section_names = {const.STEP_5_SECTION_WINDOW_SENSORS}
         else:
             # If you add a new per-cover section, update this method
             raise AssertionError(f"Unknown suffix '{suffix}' in _build_section_cover_settings")
@@ -617,6 +792,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 if suffix == const.COVER_SFX_WINDOW_SENSORS:
                     # Window sensors are lists - keep as-is
                     new_value = user_input_extracted[key]
+                elif suffix in (const.COVER_SFX_TILT_MODE_DAY, const.COVER_SFX_TILT_MODE_NIGHT):
+                    # Tilt modes are strings - keep as-is (or None if cleared)
+                    raw_val = user_input_extracted[key]
+                    new_value = str(raw_val) if not OptionsFlowHandler._is_empty_value(raw_val) else None
                 else:
                     # Min/max closures are integers (or None if cleared)
                     new_value = OptionsFlowHandler._to_int(user_input_extracted[key])
@@ -720,6 +899,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             f"_{const.COVER_SFX_AZIMUTH}",
             f"_{const.COVER_SFX_MAX_CLOSURE}",
             f"_{const.COVER_SFX_MIN_CLOSURE}",
+            f"_{const.COVER_SFX_TILT_MODE_DAY}",
+            f"_{const.COVER_SFX_TILT_MODE_NIGHT}",
             f"_{const.COVER_SFX_WINDOW_SENSORS}",
         )
         for key, value in list(merged.items()):
@@ -861,11 +1042,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     # async_step_4
     #
     async def async_step_4(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 4: Configure window sensors for each cover."""
+        """Step 4: Configure tilt angle control for covers with tiltable slats."""
 
         if user_input is None:
             # Get currently valid settings
             current_settings = self._current_settings()
+            resolved_settings = resolve(current_settings)
 
             # Get the selected covers
             selected_covers = self._get_covers()
@@ -873,7 +1055,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Show the form
             return self.async_show_form(
                 step_id="4",
-                data_schema=FlowHelper.build_schema_step_4(covers=selected_covers, defaults=current_settings),
+                data_schema=FlowHelper.build_schema_step_4_tilt(
+                    covers=selected_covers,
+                    defaults=current_settings,
+                    resolved_settings=resolved_settings,
+                    hass=self.hass,
+                ),
             )
 
         self._logger.debug(f"Options flow step 4 user input: {user_input}")
@@ -884,13 +1071,25 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Get currently valid settings
         current_settings = self._current_settings()
 
-        # Build complete lists of window sensor settings for all covers
-        window_sensor_data = self._build_section_cover_settings(
-            user_input, const.STEP_4_SECTION_WINDOW_SENSORS, const.COVER_SFX_WINDOW_SENSORS, covers_in_input, current_settings
+        # Store global tilt settings
+        self._config_data[ConfKeys.TILT_MODE_DAY.value] = user_input.get(ConfKeys.TILT_MODE_DAY.value, "auto")
+        self._config_data[ConfKeys.TILT_MODE_NIGHT.value] = user_input.get(ConfKeys.TILT_MODE_NIGHT.value, "closed")
+        self._config_data[ConfKeys.TILT_SET_VALUE_DAY.value] = int(user_input.get(ConfKeys.TILT_SET_VALUE_DAY.value, 50))
+        self._config_data[ConfKeys.TILT_SET_VALUE_NIGHT.value] = int(user_input.get(ConfKeys.TILT_SET_VALUE_NIGHT.value, 0))
+        self._config_data[ConfKeys.TILT_MIN_CHANGE_DELTA.value] = int(user_input.get(ConfKeys.TILT_MIN_CHANGE_DELTA.value, 5))
+        self._config_data[ConfKeys.TILT_SLAT_OVERLAP_RATIO.value] = float(user_input.get(ConfKeys.TILT_SLAT_OVERLAP_RATIO.value, 0.9))
+
+        # Build per-cover tilt mode settings
+        tilt_day_data = self._build_section_cover_settings(
+            user_input, const.STEP_4_SECTION_TILT_DAY, const.COVER_SFX_TILT_MODE_DAY, covers_in_input, current_settings
+        )
+        tilt_night_data = self._build_section_cover_settings(
+            user_input, const.STEP_4_SECTION_TILT_NIGHT, const.COVER_SFX_TILT_MODE_NIGHT, covers_in_input, current_settings
         )
 
-        # Store the complete per-cover settings
-        self._config_data.update(window_sensor_data)
+        # Store the per-cover tilt settings
+        self._config_data.update(tilt_day_data)
+        self._config_data.update(tilt_night_data)
 
         # Proceed to step 5
         return await self.async_step_5()
@@ -899,7 +1098,45 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     # async_step_5
     #
     async def async_step_5(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 5: Configure evening closure and night silence settings."""
+        """Step 5: Configure window sensors for each cover."""
+
+        if user_input is None:
+            # Get currently valid settings
+            current_settings = self._current_settings()
+
+            # Get the selected covers
+            selected_covers = self._get_covers()
+
+            # Show the form
+            return self.async_show_form(
+                step_id="5",
+                data_schema=FlowHelper.build_schema_step_5(covers=selected_covers, defaults=current_settings),
+            )
+
+        self._logger.debug(f"Options flow step 5 user input: {user_input}")
+
+        # Get the selected covers
+        covers_in_input = self._get_covers()
+
+        # Get currently valid settings
+        current_settings = self._current_settings()
+
+        # Build complete lists of window sensor settings for all covers
+        window_sensor_data = self._build_section_cover_settings(
+            user_input, const.STEP_5_SECTION_WINDOW_SENSORS, const.COVER_SFX_WINDOW_SENSORS, covers_in_input, current_settings
+        )
+
+        # Store the complete per-cover settings
+        self._config_data.update(window_sensor_data)
+
+        # Proceed to step 6
+        return await self.async_step_6()
+
+    #
+    # async_step_6
+    #
+    async def async_step_6(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Step 6: Configure evening closure and night silence settings."""
 
         if user_input is None:
             # Get currently valid settings
@@ -912,17 +1149,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             # Show the form
             return self.async_show_form(
-                step_id="5",
-                data_schema=FlowHelper.build_schema_step_5(covers=selected_covers, resolved_settings=resolved_settings),
+                step_id="6",
+                data_schema=FlowHelper.build_schema_step_6(covers=selected_covers, resolved_settings=resolved_settings),
             )
 
-        self._logger.debug(f"Options flow step 5 user input: {user_input}")
+        self._logger.debug(f"Options flow step 6 user input: {user_input}")
 
         # Extract section data if present
-        section_names = {const.STEP_5_SECTION_TIME_RANGE, const.STEP_5_SECTION_CLOSE_AFTER_SUNSET}
+        section_names = {const.STEP_6_SECTION_TIME_RANGE, const.STEP_6_SECTION_CLOSE_AFTER_SUNSET}
         user_input_extracted, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
 
-        # Store step 5 data (use extracted data to handle sections properly)
+        # Store step 6 data (use extracted data to handle sections properly)
         self._config_data.update(user_input_extracted)
 
         # Finalize and save configuration

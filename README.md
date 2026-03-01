@@ -17,6 +17,12 @@ A Home Assistant integration to automate the control of your smart home's window
         - Is the sun shining or is it cloudy?
         - Is it a hot day?
         - Is the sun in a position to shine on a given window?
+- **Tilt angle control and flexibility:**
+    - Automatic: block incoming sunlight but allow seeing through as much as possible.
+    - Manual: don't change the user's setting.
+    - Specific value: open, closed or any angle in between.
+    - Dedicated setting for the night.
+    - For all covers that have horizontal slats whose tilt angle can be changed to let light in to varying degrees.
 - **Manual override detection:**
     - Detect manual adjustments and pause automation to avoid conflicts.
 - **Lockout protection:**
@@ -37,8 +43,6 @@ A Home Assistant integration to automate the control of your smart home's window
     - Micro-adjustments are avoided.
 - **Supported covers:** Works with any cover entity that supports open/close or position control.
 - **Rich language support:** UI translations available for Chinese, Dutch, English, French, German, Italian, Polish, Portuguese, Spanish, Swedish.
-- **Pre-positioning before silent phases:** (TODO)
-    - Move the covers to the position they need to be in ahead of time so that there's silence at night but the covers are closed when the sun starts shining in the morning.
 
 ## Configuration Options
 

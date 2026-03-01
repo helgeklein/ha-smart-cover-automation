@@ -50,21 +50,44 @@ Select the covers the integration should automate.
 
 ## Step 2: Cover Azimuth
 
-In the second step of the configuration wizard, specify each cover's azimuth, aka the direction, as an angle from north. This is necessary so that the integration can calculate when the sun is shining on a window.
+In this step of the configuration wizard, specify each cover's azimuth, aka the direction, as an angle from north. This is necessary so that the integration can calculate when the sun is shining on a window.
 
 There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). [This website](https://doc.forecast.solar/find_your_azimuth) has instructions for both.
 
 ## Step 3: Per-Cover Max/Min Positions (Optional)
 
-In the third step of the configuration wizard, you can specify maximum and minimum positions per cover. If configured, these per-cover settings override the global max/min positions which can be configured in the previous step.
+In this step of the configuration wizard, you can specify maximum and minimum positions per cover. If configured, these per-cover settings override the global max/min positions which can be configured in the previous step.
 
-## Step 4: Window Sensors for Lockout Protection (Optional)
+## Step 4: Tilt Angle Control (Optional)
 
-In the fourth step of the configuration wizard, you can enable lockout protection by configuring window sensors for each cover. If any window sensor associated with a cover reports that the window is open, the cover won't be closed. This is especially useful for patio or terrace doors with a cover that would block you from re-entering the building if closed.
+*New in version 1.3*
 
-## Step 5: Time Settings (Optional)
+In this step of the configuration wizard, you can specify how the title angle of covers with adjustable slats is to be controlled. The following options are available:
 
-In the fifth step of the configuration wizard, the following settings can be configured:
+- **Auto:** Block direct sunlight but allow seeing through as much as possible.
+  - Note that this mode takes cloudy conditions and the sun's position into account.
+  - Only direct sunlight is blocked.
+  - If the sun is not shining on a window, the slats are kept in open mode to allow indirect light through.
+- **Manual:** Don't change the user's manual setting.
+- **Open:** Keep the slats fully open.
+- **Closed:** Keep the slats fully closed.
+- **Set value:** Keep the slats at a fixed angle.
+
+### Global Tilt Modes for Day and Night
+
+The above tilt modes are available in two variants: one applies to operations during the day, the other to the evening closure position.
+
+### Per-Cover Overrides
+
+The global tilt modes can be overridden per cover.
+
+## Step 5: Window Sensors for Lockout Protection (Optional)
+
+In this step of the configuration wizard, you can enable lockout protection by configuring window sensors for each cover. If any window sensor associated with a cover reports that the window is open, the cover won't be closed. This is especially useful for patio or terrace doors with a cover that would block you from re-entering the building if closed.
+
+## Step 6: Time Settings (Optional)
+
+In this step of the configuration wizard, the following settings can be configured:
 
 - **Disable cover opening at night:** The automation opens the covers when they needn't be closed for heat protection. By default, this auto-opening doesn't happen at night (when the sun is below the horizon). You can change that behavior by flipping this setting to disabled.
 

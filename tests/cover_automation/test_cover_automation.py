@@ -1003,14 +1003,14 @@ class TestCalculateDesiredPositionLockout:
 
 
 class TestIsNighttimeBlockActive:
-    """Test _is_nighttime_block_active method."""
+    """Test _is_nighttime_opening_block_active method."""
 
     def test_nighttime_block_disabled(self, cover_automation, mock_resolved_config, mock_ha_interface):
         """Test nighttime block when disabled in config."""
         mock_resolved_config.nighttime_block_opening = False
         mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
 
-        result = cover_automation._is_nighttime_block_active()
+        result = cover_automation._is_nighttime_opening_block_active()
         assert result is False
 
     def test_nighttime_block_enabled_sun_below_horizon(self, cover_automation, mock_resolved_config, mock_ha_interface):
@@ -1018,7 +1018,7 @@ class TestIsNighttimeBlockActive:
         mock_resolved_config.nighttime_block_opening = True
         mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
 
-        result = cover_automation._is_nighttime_block_active()
+        result = cover_automation._is_nighttime_opening_block_active()
         assert result is True
 
     def test_nighttime_block_enabled_sun_above_horizon(self, cover_automation, mock_resolved_config, mock_ha_interface):
@@ -1026,7 +1026,7 @@ class TestIsNighttimeBlockActive:
         mock_resolved_config.nighttime_block_opening = True
         mock_ha_interface.get_sun_state.return_value = "above_horizon"
 
-        result = cover_automation._is_nighttime_block_active()
+        result = cover_automation._is_nighttime_opening_block_active()
         assert result is False
 
     def test_calculate_desired_position_nighttime_block_prevents_opening(self, cover_automation, mock_resolved_config, mock_ha_interface):

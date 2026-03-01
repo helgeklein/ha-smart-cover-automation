@@ -16,7 +16,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Étape 1 sur 5",
+                "title": "Smart Cover Automation - Étape 1 sur 6",
                 "description": "Sélectionnez un **capteur de prévisions météo** et les **volets** à automatiser (obligatoire).",
                 "data": {
                     "covers": "Volets à automatiser :",
@@ -28,11 +28,11 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Étape 2 sur 5",
+                "title": "Smart Cover Automation - Étape 2 sur 6",
                 "description": "Configurez l'**azimut** (direction) pour chaque volet (obligatoire).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest)"
             },
             "3": {
-                "title": "Smart Cover Automation - Étape 3 sur 5",
+                "title": "Smart Cover Automation - Étape 3 sur 6",
                 "description": "Configurez les positions **min/max** des volets (facultatif).\nLes réglages globaux s'appliquent à tous les volets, sauf s'ils sont remplacés par volet.\n(0 = totalement fermé, 100 = totalement ouvert)",
                 "data": {
                     "covers_max_closure": "Position maximale du volet (globale) :",
@@ -52,7 +52,35 @@
                 }
             },
             "4": {
-                "title": "Smart Cover Automation - Étape 4 sur 5",
+                "title": "Smart Cover Automation - Étape 4 sur 6",
+                "description": "Configurez le **contrôle de l'angle d'inclinaison** pour les volets à lamelles orientables (facultatif).\nLes paramètres globaux s'appliquent à tous les volets orientables, sauf s'ils sont remplacés par volet.",
+                "data": {
+                    "tilt_mode_day": "Contrôle de l'inclinaison (jour) :",
+                    "tilt_mode_night": "Contrôle de l'inclinaison (nuit) :",
+                    "tilt_set_value_day": "Angle d'inclinaison diurne (valeur fixe) :",
+                    "tilt_set_value_night": "Angle d'inclinaison nocturne (valeur fixe) :",
+                    "tilt_min_change_delta": "Changement d'inclinaison minimum :",
+                    "tilt_slat_overlap_ratio": "Ratio de chevauchement des lamelles (d/L) :"
+                },
+                "data_description": {
+                    "tilt_mode_day": "Comment contrôler l'angle d'inclinaison des lamelles pendant la journée.",
+                    "tilt_mode_night": "Comment contrôler l'angle d'inclinaison des lamelles la nuit (appliqué lors de la fermeture du soir).",
+                    "tilt_set_value_day": "Angle d'inclinaison fixe pour le mode jour. 0 % = complètement fermé (vertical, bloque la lumière), 100 % = complètement ouvert (horizontal, laisse entrer la lumière). Utilisé uniquement lorsque le mode d'inclinaison diurne est réglé sur « Valeur fixe ».",
+                    "tilt_set_value_night": "Angle d'inclinaison fixe pour le mode nuit. 0 % = complètement fermé (vertical, bloque la lumière), 100 % = complètement ouvert (horizontal, laisse entrer la lumière). Utilisé uniquement lorsque le mode d'inclinaison nocturne est réglé sur « Valeur fixe ».",
+                    "tilt_min_change_delta": "Changement d'inclinaison minimum (%) requis avant d'envoyer une commande. Évite l'usure excessive du moteur par de petits ajustements.",
+                    "tilt_slat_overlap_ratio": "Rapport entre l'espacement et la largeur des lamelles (0,5–1,0). Des valeurs plus basses signifient plus de chevauchement. La valeur par défaut de 0,9 convient à la plupart des stores vénitiens. Pertinent uniquement pour le mode Auto."
+                },
+                "sections": {
+                    "section_tilt_day": {
+                        "name": "Inclinaison par volet (jour)"
+                    },
+                    "section_tilt_night": {
+                        "name": "Inclinaison par volet (nuit)"
+                    }
+                }
+            },
+            "5": {
+                "title": "Smart Cover Automation - Étape 5 sur 6",
                 "description": "Activez la protection anti-blocage en configurant des **capteurs de fenêtre** pour chaque volet (facultatif). Si un capteur de fenêtre associé à un volet indique que la fenêtre est ouverte, le volet ne se fermera pas.",
                 "sections": {
                     "section_window_sensors": {
@@ -60,8 +88,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Étape 5 sur 5",
+            "6": {
+                "title": "Smart Cover Automation - Étape 6 sur 6",
                 "description": "Configurez les **paramètres temporels** de l'automatisation (facultatif).",
                 "data": {
                     "nighttime_block_opening": "Désactiver l'ouverture des volets la nuit :"
@@ -269,6 +297,15 @@
                 "hold_position": "Maintenir la position actuelle",
                 "force_open": "Forcer l'ouverture et verrouiller",
                 "force_close": "Forcer la fermeture et verrouiller"
+            }
+        },
+        "tilt_mode": {
+            "options": {
+                "open": "Ouvert (horizontal — laisser entrer la lumière)",
+                "closed": "Fermé (vertical — bloquer la lumière)",
+                "manual": "Manuel (restaurer l'angle réglé manuellement)",
+                "auto": "Auto (bloquer la lumière directe du soleil)",
+                "set_value": "Valeur fixe (angle d'inclinaison fixe)"
             }
         }
     }
