@@ -843,14 +843,14 @@ class CoverAutomation:
             if target_tilt is None:
                 return  # No tilt info available
         elif tilt_mode == const.TiltMode.AUTO:
-            if cover_state.sun_hitting and cover_state.sun_azimuth_diff is not None:
+            if sensor_data.weather_sunny and cover_state.sun_hitting and cover_state.sun_azimuth_diff is not None:
                 target_tilt = self._calculate_auto_tilt(
                     sensor_data.sun_elevation,
                     cover_state.sun_azimuth_diff,
                     self.resolved.tilt_slat_overlap_ratio,
                 )
             else:
-                # Sun not hitting — open tilt fully to let in diffuse daylight
+                # Sun not hitting or not sunny — open tilt fully to let in diffuse daylight
                 target_tilt = const.COVER_POS_FULLY_OPEN
         elif tilt_mode == const.TiltMode.SET_VALUE:
             target_tilt = self.resolved.tilt_set_value_night if is_night else self.resolved.tilt_set_value_day

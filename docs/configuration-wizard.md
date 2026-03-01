@@ -60,10 +60,12 @@ In this step of the configuration wizard, you can specify maximum and minimum po
 
 ## Step 4: Tilt Angle Control (Optional)
 
+*New in version 1.3*
+
 In this step of the configuration wizard, you can specify how the title angle of covers with adjustable slats is to be controlled. The following options are available:
 
 - **Auto:** Block direct sunlight but allow seeing through as much as possible.
-  - Note that this mode takes weather conditions and the sun's position into account.
+  - Note that this mode takes cloudy conditions and the sun's position into account.
   - Only direct sunlight is blocked.
   - If the sun is not shining on a window, the slats are kept in open mode to allow indirect light through.
 - **Manual:** Don't change the user's manual setting.
@@ -73,7 +75,7 @@ In this step of the configuration wizard, you can specify how the title angle of
 
 ### Global Tilt Modes for Day and Night
 
-The above tilt modes are available in two variants: one applies to day operations, the other to the evening closure position.
+The above tilt modes are available in two variants: one applies to operations during the day, the other to the evening closure position.
 
 ### Per-Cover Overrides
 

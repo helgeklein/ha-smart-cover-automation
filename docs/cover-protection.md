@@ -116,6 +116,7 @@ To test the automation, go to **Developer Tools** → **States** and manually se
 
 Here's a sample implementation of wind speed and gusts sensors via REST API calls to Open-Meteo. Paste the following into `configuration.yaml`:
 
+{% raw %}
 ```yaml
 rest:
   # Open-Meteo sensor for current wind speed and gusts at home location
@@ -138,3 +139,4 @@ rest:
         device_class: wind_speed
         state_class: measurement
 ```
+{% endraw %}

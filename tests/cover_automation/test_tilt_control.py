@@ -532,6 +532,27 @@ class TestApplyTilt:
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 100, tilt_features)
 
     #
+    # test_auto_mode_opens_when_not_sunny
+    #
+    @pytest.mark.asyncio
+    async def test_auto_mode_opens_when_not_sunny(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Auto mode should set tilt to 100 when weather is not sunny (overcast)."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.AUTO
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=100)
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        # Sun IS hitting geometrically, but weather is not sunny
+        sensor_data.weather_sunny = False
+        cover_state = CoverState(tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 100, tilt_features)
+
+    #
     # test_no_tilt_when_cover_doesnt_support
     #
     @pytest.mark.asyncio

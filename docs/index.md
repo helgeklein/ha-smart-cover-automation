@@ -30,7 +30,7 @@ A Home Assistant integration to automate the control of your smart home's window
     - Manual: don't change the user's setting.
     - Specific value: open, closed or any angle in between.
     - Dedicated setting for the night.
-    - For all covers that have horizontal slats whose tilt angle can be varied to let light in to varying degrees.
+    - For all covers that have horizontal slats whose tilt angle can be changed to let light in to varying degrees.
 - **Manual override detection:**
     - Detect manual adjustments and pause automation to avoid conflicts.
 - **Lockout protection:**
