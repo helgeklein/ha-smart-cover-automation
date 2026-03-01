@@ -206,8 +206,11 @@ class CoverAutomation:
                 # Movement occurred
                 cover_state.pos_target_final = actual_pos
 
-        # Apply tilt after position handling (including tilt-only updates for Auto mode)
-        await self._apply_tilt(cover_state, sensor_data, features, movement_reason, cover_moved)
+        # Apply tilt after position handling — skip only when the nighttime block is
+        # active (cover opening suppressed at night).  Other reasons for no position
+        # change (e.g. lockout protection) should still allow tilt updates.
+        if not self._is_nighttime_block_active():
+            await self._apply_tilt(cover_state, sensor_data, features, movement_reason, cover_moved)
 
         # Log per-cover state
         self._logger.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}")
