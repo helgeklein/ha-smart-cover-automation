@@ -47,6 +47,7 @@ def mock_resolved_config():
     resolved.close_covers_after_sunset_cover_list = ()
     resolved.tilt_mode_day = TiltMode.OPEN
     resolved.tilt_mode_night = TiltMode.CLOSED
+    resolved.tilt_set_value_day = 50
     resolved.tilt_set_value_night = 0
     resolved.tilt_min_change_delta = 5
     resolved.tilt_slat_overlap_ratio = 0.9
@@ -477,7 +478,7 @@ class TestApplyTilt:
     async def test_set_value_mode_uses_configured_angle(
         self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
     ) -> None:
-        """Set value mode should use the configured fixed tilt angle."""
+        """Set value mode at night should use the configured night tilt angle."""
 
         mock_resolved_config.tilt_mode_night = TiltMode.SET_VALUE
         mock_resolved_config.tilt_set_value_night = 30
@@ -489,6 +490,27 @@ class TestApplyTilt:
         await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.CLOSING_AFTER_SUNSET, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 30, tilt_features)
+
+    #
+    # test_set_value_day_mode_uses_configured_day_angle
+    #
+    @pytest.mark.asyncio
+    async def test_set_value_day_mode_uses_configured_day_angle(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Set value mode during the day should use the configured day tilt angle."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.SET_VALUE
+        mock_resolved_config.tilt_set_value_day = 65
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=65)
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
+        # Not a sunset closure → daytime context
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.CLOSING_HEAT_PROTECTION, True)
+
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 65, tilt_features)
 
     #
     # test_auto_mode_opens_when_sun_not_hitting

@@ -853,7 +853,7 @@ class CoverAutomation:
                 # Sun not hitting — open tilt fully to let in diffuse daylight
                 target_tilt = const.COVER_POS_FULLY_OPEN
         elif tilt_mode == const.TiltMode.SET_VALUE:
-            target_tilt = self.resolved.tilt_set_value_night
+            target_tilt = self.resolved.tilt_set_value_night if is_night else self.resolved.tilt_set_value_day
 
         if target_tilt is None:
             return

@@ -57,6 +57,7 @@
                 "data": {
                     "tilt_mode_day": "Controlo de inclinação (dia):",
                     "tilt_mode_night": "Controlo de inclinação (noite):",
+                    "tilt_set_value_day": "Ângulo de inclinação diurno (valor fixo):",
                     "tilt_set_value_night": "Ângulo de inclinação noturno (valor fixo):",
                     "tilt_min_change_delta": "Alteração mínima de inclinação:",
                     "tilt_slat_overlap_ratio": "Rácio de sobreposição das lâminas (d/L):"
@@ -64,6 +65,7 @@
                 "data_description": {
                     "tilt_mode_day": "Como controlar o ângulo de inclinação das lâminas durante o dia.",
                     "tilt_mode_night": "Como controlar o ângulo de inclinação das lâminas à noite (aplicado durante o fecho noturno).",
+                    "tilt_set_value_day": "Ângulo de inclinação fixo para o modo diurno. 0 % = completamente fechado (vertical, bloqueia luz), 100 % = completamente aberto (horizontal, deixa entrar luz). Utilizado apenas quando o modo de inclinação diurna está definido como «Valor fixo».",
                     "tilt_set_value_night": "Ângulo de inclinação fixo para o modo noturno. 0 % = completamente fechado (vertical, bloqueia luz), 100 % = completamente aberto (horizontal, deixa entrar luz). Utilizado apenas quando o modo de inclinação noturna está definido como «Valor fixo».",
                     "tilt_min_change_delta": "Alteração mínima de inclinação (%) necessária antes de enviar um comando. Evita desgaste excessivo do motor com pequenos ajustes.",
                     "tilt_slat_overlap_ratio": "Rácio entre o espaçamento e a largura das lâminas (0,5–1,0). Valores mais baixos significam mais sobreposição. O valor predefinido de 0,9 funciona bem para a maioria das persianas venezianas. Relevante apenas para o modo Auto."

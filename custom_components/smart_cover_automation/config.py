@@ -66,6 +66,7 @@ class ConfKeys(StrEnum):
     TILT_MIN_CHANGE_DELTA = "tilt_min_change_delta"  # Minimum tilt change (%) to actually send a service call.
     TILT_MODE_DAY = "tilt_mode_day"  # Global tilt mode during daytime.
     TILT_MODE_NIGHT = "tilt_mode_night"  # Global tilt mode at night / evening closure.
+    TILT_SET_VALUE_DAY = "tilt_set_value_day"  # Fixed tilt angle (0-100) for day "set_value" mode.
     TILT_SET_VALUE_NIGHT = "tilt_set_value_night"  # Fixed tilt angle (0-100) for night "set_value" mode.
     TILT_SLAT_OVERLAP_RATIO = "tilt_slat_overlap_ratio"  # Slat spacing/width ratio (d/L) for Auto tilt calculation.
     VERBOSE_LOGGING = "verbose_logging"  # Enable DEBUG logs for this entry.
@@ -204,6 +205,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.TILT_MIN_CHANGE_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.TILT_MODE_DAY: _ConfSpec(default=TiltMode.AUTO, converter=TiltMode),
     ConfKeys.TILT_MODE_NIGHT: _ConfSpec(default=TiltMode.CLOSED, converter=TiltMode),
+    ConfKeys.TILT_SET_VALUE_DAY: _ConfSpec(default=50, converter=_Converters.to_int),
     ConfKeys.TILT_SET_VALUE_NIGHT: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.TILT_SLAT_OVERLAP_RATIO: _ConfSpec(default=0.9, converter=_Converters.to_float),
     ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
@@ -263,6 +265,7 @@ class ResolvedConfig:
     tilt_min_change_delta: int
     tilt_mode_day: TiltMode
     tilt_mode_night: TiltMode
+    tilt_set_value_day: int
     tilt_set_value_night: int
     tilt_slat_overlap_ratio: float
     verbose_logging: bool
