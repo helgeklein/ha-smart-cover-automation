@@ -1,4 +1,4 @@
-"""Tests for the WeatherSunnyOverrideSwitch entity.
+"""Tests for the WeatherSunnyExternalControlSwitch entity.
 
 This module tests the weather sunny override switch, which allows external
 sunlight sensors to control the integration's "sun is shining" state.
@@ -21,24 +21,24 @@ import pytest
 from custom_components.smart_cover_automation.config import ConfKeys, resolve
 from custom_components.smart_cover_automation.const import SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL
 from custom_components.smart_cover_automation.switch import (
-    WeatherSunnyOverrideSwitch,
+    WeatherSunnyExternalControlSwitch,
 )
 from tests.conftest import MOCK_WEATHER_ENTITY_ID
 
 
 @pytest.fixture
-def override_switch(mock_coordinator_basic) -> WeatherSunnyOverrideSwitch:
-    """Create a WeatherSunnyOverrideSwitch for testing.
+def override_switch(mock_coordinator_basic) -> WeatherSunnyExternalControlSwitch:
+    """Create a WeatherSunnyExternalControlSwitch for testing.
 
     Returns:
-        WeatherSunnyOverrideSwitch instance bound to the basic coordinator
+        WeatherSunnyExternalControlSwitch instance bound to the basic coordinator
     """
 
-    return WeatherSunnyOverrideSwitch(mock_coordinator_basic)
+    return WeatherSunnyExternalControlSwitch(mock_coordinator_basic)
 
 
 class TestWeatherSunnyOverrideSwitchInit:
-    """Test WeatherSunnyOverrideSwitch initialization."""
+    """Test WeatherSunnyExternalControlSwitch initialization."""
 
     def test_unique_id(self, override_switch, mock_coordinator_basic) -> None:
         """Test that the unique ID is set correctly."""
@@ -68,7 +68,7 @@ class TestWeatherSunnyOverrideSwitchInit:
 
 
 class TestWeatherSunnyOverrideSwitchState:
-    """Test WeatherSunnyOverrideSwitch state reading."""
+    """Test WeatherSunnyExternalControlSwitch state reading."""
 
     def test_is_on_returns_false_when_key_absent(self, override_switch) -> None:
         """Test that is_on returns False when the override key is not in options."""
@@ -90,7 +90,7 @@ class TestWeatherSunnyOverrideSwitchState:
 
 
 class TestWeatherSunnyOverrideSwitchToggle:
-    """Test WeatherSunnyOverrideSwitch turn on/off behavior."""
+    """Test WeatherSunnyExternalControlSwitch turn on/off behavior."""
 
     async def test_turn_on_persists_true(self, override_switch) -> None:
         """Test that turning the switch ON persists True to config options."""
@@ -120,7 +120,7 @@ class TestWeatherSunnyOverrideSwitchToggle:
 
 
 class TestWeatherSunnyOverrideSwitchRemoval:
-    """Test WeatherSunnyOverrideSwitch cleanup on entity removal."""
+    """Test WeatherSunnyExternalControlSwitch cleanup on entity removal."""
 
     async def test_removal_clears_override_key(self, override_switch) -> None:
         """Test that disabling/removing the entity removes the override key from options."""
@@ -259,4 +259,4 @@ class TestWeatherSunnyOverrideInEngine:
         await engine._gather_sensor_data()
 
         # Verify the override was logged
-        mock_logger.info.assert_any_call("Weather sunny override active: True")
+        mock_logger.debug.assert_any_call("Weather sunny external control active. Current state sunny? True")

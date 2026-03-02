@@ -19,7 +19,7 @@ from custom_components.smart_cover_automation.switch import (
     EnabledSwitch,
     SimulationModeSwitch,
     VerboseLoggingSwitch,
-    WeatherSunnyOverrideSwitch,
+    WeatherSunnyExternalControlSwitch,
 )
 from custom_components.smart_cover_automation.switch import (
     async_setup_entry as async_setup_entry_switch,
@@ -52,7 +52,7 @@ async def test_switch_entity_properties(mock_coordinator_basic) -> None:
     enabled_switch = next((entity for entity in captured if isinstance(entity, EnabledSwitch)), None)
     simulation_switch = next((entity for entity in captured if isinstance(entity, SimulationModeSwitch)), None)
     verbose_switch = next((entity for entity in captured if isinstance(entity, VerboseLoggingSwitch)), None)
-    weather_override_switch = next((entity for entity in captured if isinstance(entity, WeatherSunnyOverrideSwitch)), None)
+    weather_override_switch = next((entity for entity in captured if isinstance(entity, WeatherSunnyExternalControlSwitch)), None)
 
     # Verify all switches exist
     assert enabled_switch is not None
@@ -64,4 +64,4 @@ async def test_switch_entity_properties(mock_coordinator_basic) -> None:
     assert enabled_switch.unique_id == f"{entry.entry_id}_enabled"
     assert simulation_switch.unique_id == f"{entry.entry_id}_simulation_mode"
     assert verbose_switch.unique_id == f"{entry.entry_id}_verbose_logging"
-    assert weather_override_switch.unique_id == f"{entry.entry_id}_weather_sunny_override"
+    assert weather_override_switch.unique_id == f"{entry.entry_id}_weather_sunny_external_control"
