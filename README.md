@@ -18,17 +18,17 @@ A Home Assistant integration to automate the control of your smart home's window
         - Is it a hot day?
         - Is the sun in a position to shine on a given window?
 - **Tilt angle control and flexibility:**
-    - Automatic: block incoming sunlight but allow seeing through as much as possible.
+    - Automatic: block direct sunlight but allow seeing through as much as possible.
     - Manual: don't change the user's setting.
     - Specific value: open, closed or any angle in between.
     - Dedicated setting for the night.
     - For all covers that have horizontal slats whose tilt angle can be changed to let light in to varying degrees.
 - **Manual override detection:**
-    - Detect manual adjustments and pause automation to avoid conflicts.
+    - Detect manual cover position adjustments and pause automation to avoid conflicts.
 - **Lockout protection:**
     - Pause automations for a cover if the door/window is open.
 - **Night privacy** & **night silence**:
-    - Close a subset of covers after sunset for privacy.
+    - Close all or a subset of covers after sunset for privacy.
     - Don't move the covers when people are sleeping.
     - Don't open the covers when the sun is below the horizon.
 - **Plant light:**
@@ -39,6 +39,10 @@ A Home Assistant integration to automate the control of your smart home's window
     - Can be triggered as an action, e.g., when a warning is received from a weather service.
 - **Grouping:**
     - Maintain configurations for windows with different heat or sun protection requirements by setting up multiple instances of the extension.
+- **Sunshine status from weather forecast or any other source:**
+    - The integration needs to know if the sun is shining.
+    - It'll automatically query your weather forecast entity for an approximate value.
+    - If you have your own hardware, you can use it instead for better accuracy.
 - **Comfort:**
     - Micro-adjustments are avoided.
 - **Supported covers:** Works with any cover entity that supports open/close or position control.
