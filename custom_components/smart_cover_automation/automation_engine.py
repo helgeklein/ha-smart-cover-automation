@@ -208,7 +208,16 @@ class AutomationEngine:
 
         # Calculate derived values
         temp_hot = temp_max > self.resolved.temp_threshold
-        weather_sunny = weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS
+
+        # Check for weather sunny external control override
+        weather_sunny_external_control = self.config.get(const.SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL)
+        if weather_sunny_external_control is not None:
+            # External control is enabled - use its boolean value to determine sunny state
+            weather_sunny = bool(weather_sunny_external_control)
+            self._logger.debug(f"Weather sunny external control active. Current state sunny? {weather_sunny}")
+        else:
+            # External control disabled - determine sunny state based on weather condition
+            weather_sunny = weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS
 
         # Check for sunset and handle delayed cover closing
         should_close_for_sunset = self._check_sunset_closing()

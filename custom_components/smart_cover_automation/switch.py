@@ -18,6 +18,7 @@ from homeassistant.components.switch import SwitchEntity, SwitchEntityDescriptio
 from homeassistant.const import EntityCategory
 
 from .config import ConfKeys, resolve_entry
+from .const import SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -53,6 +54,8 @@ async def async_setup_entry(
         SimulationModeSwitch(coordinator),
         # Verbose logging control switch
         VerboseLoggingSwitch(coordinator),
+        # Weather sunny external control switch (disabled by default)
+        WeatherSunnyExternalControlSwitch(coordinator),
     ]
 
     async_add_entities(entities)
@@ -247,3 +250,113 @@ class VerboseLoggingSwitch(IntegrationSwitch):
 
         # Return true if either is enabled
         return ha_logger_is_debug or config_value
+
+
+#
+# WeatherSunnyExternalControlSwitch
+#
+class WeatherSunnyExternalControlSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
+    """Switch for overriding the integration's weather sunny detection.
+
+    This switch allows external sunlight sensors (e.g., pyranometers) to
+    control the integration's "sun is shining" state, superseding the
+    built-in weather forecast logic.
+
+    The switch is disabled by default in the entity registry. When a user
+    enables it, the override becomes active:
+    - ON: Override sunny = True (sun is shining)
+    - OFF: Override sunny = False (sun is not shining)
+
+    When the entity is disabled again, the override is removed and the
+    integration reverts to its built-in weather forecast logic.
+
+    This switch is handled outside the standard _ConfSpec system because
+    it requires tri-state semantics (absent / True / False) that the
+    boolean-only spec system does not support.
+    """
+
+    # Disabled by default — users opt in by enabling the entity
+    _attr_entity_registry_enabled_default = False
+
+    #
+    # __init__
+    #
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the weather sunny external control switch.
+
+        Args:
+            coordinator: The DataUpdateCoordinator that manages automation logic
+                        and provides state management for this switch
+        """
+
+        super().__init__(coordinator)
+
+        self.entity_description = SwitchEntityDescription(
+            key=SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
+            translation_key=SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:weather-sunny-alert",
+        )
+
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL}"
+
+    #
+    # is_on
+    #
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
+        """Return whether the switch is set to sunny.
+
+        Reads directly from config options since this setting is not
+        part of the standard ResolvedConfig system.
+        """
+
+        options: Any = self.coordinator.config_entry.options or {}
+        return bool(options.get(SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL, False))
+
+    #
+    # async_turn_on
+    #
+    async def async_turn_on(self, **_: Any) -> None:
+        """Turn the switch on (sunny)."""
+
+        await self._async_persist_override(True)
+
+    #
+    # async_turn_off
+    #
+    async def async_turn_off(self, **_: Any) -> None:
+        """Turn the switch off (not sunny)."""
+
+        await self._async_persist_override(False)
+
+    #
+    # async_will_remove_from_hass
+    #
+    async def async_will_remove_from_hass(self) -> None:
+        """Clean up when the entity is removed or disabled.
+
+        Removes the external control key from config options so the automation
+        engine reverts to the built-in weather forecast logic.
+        """
+
+        entry = self.coordinator.config_entry
+        current_options = dict(entry.options or {})
+        if SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL in current_options:
+            del current_options[SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL]
+            self.coordinator.hass.config_entries.async_update_entry(entry, options=current_options)
+
+    #
+    # _async_persist_override
+    #
+    async def _async_persist_override(self, value: bool) -> None:
+        """Persist the external control value to config options.
+
+        Args:
+            value: True for sunny, False for not sunny
+        """
+
+        entry = self.coordinator.config_entry
+        current_options = dict(entry.options or {})
+        current_options[SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL] = value
+        self.coordinator.hass.config_entries.async_update_entry(entry, options=current_options)

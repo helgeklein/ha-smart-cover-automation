@@ -225,6 +225,9 @@
             },
             "verbose_logging": {
                 "name": "Verbose logging"
+            },
+            "weather_sunny_external_control": {
+                "name": "Weather: sunny? (external control)"
             }
         }
     },

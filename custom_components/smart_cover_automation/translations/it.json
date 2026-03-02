@@ -225,6 +225,9 @@
             },
             "verbose_logging": {
                 "name": "Registrazione dettagliata"
+            },
+            "weather_sunny_external_control": {
+                "name": "Meteo: soleggiato? (controllo esterno)"
             }
         }
     },

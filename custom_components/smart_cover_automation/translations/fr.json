@@ -225,6 +225,9 @@
             },
             "verbose_logging": {
                 "name": "Journalisation détaillée"
+            },
+            "weather_sunny_external_control": {
+                "name": "Météo : ensoleillé ? (contrôle externe)"
             }
         }
     },

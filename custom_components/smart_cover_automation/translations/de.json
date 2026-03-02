@@ -225,6 +225,9 @@
             },
             "verbose_logging": {
                 "name": "Ausführliches Logging"
+            },
+            "weather_sunny_external_control": {
+                "name": "Wetter: sonnig? (externe Steuerung)"
             }
         }
     },

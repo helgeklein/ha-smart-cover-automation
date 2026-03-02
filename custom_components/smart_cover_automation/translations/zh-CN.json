@@ -225,6 +225,9 @@
             },
             "verbose_logging": {
                 "name": "详细日志记录"
+            },
+            "weather_sunny_external_control": {
+                "name": "天气：晴天？（外部控制）"
             }
         }
     },

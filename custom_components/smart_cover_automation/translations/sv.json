@@ -225,6 +225,9 @@
             },
             "verbose_logging": {
                 "name": "Utförlig loggning"
+            },
+            "weather_sunny_external_control": {
+                "name": "Väder: soligt? (extern styrning)"
             }
         }
     },

@@ -225,6 +225,9 @@
             },
             "verbose_logging": {
                 "name": "Registo detalhado"
+            },
+            "weather_sunny_external_control": {
+                "name": "Meteorologia: ensolarado? (controlo externo)"
             }
         }
     },

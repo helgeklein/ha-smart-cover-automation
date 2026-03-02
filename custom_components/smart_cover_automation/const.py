@@ -129,6 +129,9 @@ BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING: Final[str] = (
 BINARY_SENSOR_KEY_TEMP_HOT: Final[str] = "temp_hot"  # Key for the temp_hot binary sensor entity
 BINARY_SENSOR_KEY_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Key for the weather_sunny binary sensor entity
 BINARY_SENSOR_KEY_LOCK_ACTIVE: Final[str] = "lock_active"  # Key for the lock active binary sensor entity
+SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL: Final[str] = (
+    "weather_sunny_external_control"  # Key for the weather sunny external control switch entity
+)
 SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE: Final[str] = (
     "automation_disabled_time_range"  # Key for the automation disabled time range sensor entity
 )
