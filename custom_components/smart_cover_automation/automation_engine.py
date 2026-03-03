@@ -133,6 +133,20 @@ class AutomationEngine:
             "sun_elevation_threshold": self.resolved.sun_elevation_threshold,
             "temp_threshold": self.resolved.temp_threshold,
             "weather_hot_cutover_time": self.resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
+            "manual_override_duration": self.resolved.manual_override_duration,
+            "nighttime_block_opening": self.resolved.nighttime_block_opening,
+            "automation_disabled_time_range": self.resolved.automation_disabled_time_range,
+            "automation_disabled_time_range_start": self.resolved.automation_disabled_time_range_start.strftime("%H:%M:%S"),
+            "automation_disabled_time_range_end": self.resolved.automation_disabled_time_range_end.strftime("%H:%M:%S"),
+            "evening_closure_enabled": self.resolved.evening_closure_enabled,
+            "evening_closure_mode": self.resolved.evening_closure_mode,
+            "evening_closure_time": self.resolved.evening_closure_time.strftime("%H:%M:%S"),
+            "tilt_mode_day": self.resolved.tilt_mode_day,
+            "tilt_mode_night": self.resolved.tilt_mode_night,
+            "tilt_set_value_day": self.resolved.tilt_set_value_day,
+            "tilt_set_value_night": self.resolved.tilt_set_value_night,
+            "tilt_min_change_delta": self.resolved.tilt_min_change_delta,
+            "tilt_slat_overlap_ratio": self.resolved.tilt_slat_overlap_ratio,
         }
         self._logger.info(f"Global settings: {str(global_settings)}")
 
