@@ -17,6 +17,7 @@ from homeassistant.const import EntityCategory, UnitOfTemperature
 from .const import (
     SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
     SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY,
+    SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_MODE,
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
@@ -55,6 +56,7 @@ async def async_setup_entry(
     entities = [
         AutomationDisabledTimeRangeSensor(coordinator),
         CloseCoversAfterSunsetDelaySensor(coordinator),
+        CloseCoversAfterSunsetModeSensor(coordinator),
         SunAzimuthSensor(coordinator),
         SunElevationSensor(coordinator),
         TempCurrentMaxSensor(coordinator),
@@ -166,9 +168,9 @@ class AutomationDisabledTimeRangeSensor(IntegrationSensor):
 # CloseCoversAfterSunsetDelaySensor
 #
 class CloseCoversAfterSunsetDelaySensor(IntegrationSensor):
-    """Sensor that reports the configured delay for closing covers after sunset.
+    """Sensor that reports the configured time for evening closure.
 
-    The sensor displays the delay in minutes.
+    The sensor displays the time value as HH:MM.
     """
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
@@ -183,22 +185,55 @@ class CloseCoversAfterSunsetDelaySensor(IntegrationSensor):
             translation_key=SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY,
             entity_category=EntityCategory.DIAGNOSTIC,
             icon="mdi:timer-outline",
-            native_unit_of_measurement="min",
         )
         super().__init__(coordinator, entity_description)
 
     @property
-    def native_value(self) -> int:  # pyright: ignore
-        """Return the configured delay for closing covers after sunset.
+    def native_value(self) -> str:  # pyright: ignore
+        """Return the configured time value for evening closure.
 
         Returns:
-            Integer representing the delay in minutes.
+            String in HH:MM format.
         """
 
         resolved = self.coordinator._resolved_settings()
 
-        # Convert seconds to minutes
-        return resolved.close_covers_after_sunset_delay // 60
+        delay_time = resolved.close_covers_after_sunset_delay
+        return f"{delay_time.hour:02d}:{delay_time.minute:02d}"
+
+
+#
+# CloseCoversAfterSunsetModeSensor
+#
+class CloseCoversAfterSunsetModeSensor(IntegrationSensor):
+    """Sensor that reports the configured evening closure mode."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+
+        entity_description = SensorEntityDescription(
+            key=SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_MODE,
+            translation_key=SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_MODE,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            icon="mdi:clock-time-eight",
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def native_value(self) -> str:  # pyright: ignore
+        """Return the configured evening closure mode.
+
+        Returns:
+            String value of the evening closure mode.
+        """
+
+        resolved = self.coordinator._resolved_settings()
+
+        return resolved.close_covers_after_sunset_mode
 
 
 #

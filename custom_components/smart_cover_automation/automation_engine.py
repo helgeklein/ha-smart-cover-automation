@@ -241,10 +241,14 @@ class AutomationEngine:
     # _check_sunset_closing
     #
     def _check_sunset_closing(self) -> bool:
-        """Check if covers should close after sunset.
+        """Check if covers should close based on evening closure settings.
+
+        Supports two modes:
+        - after_sunset: closes covers after sunset + configured delay
+        - fixed_time: closes covers at a fixed time of day
 
         Uses a 10-minute window approach for reliability: covers should close if
-        current time is within the window starting at (sunset + configured delay)
+        current time is within the window starting at the calculated closing time
         and ending 10 minutes later. This ensures we don't miss the closing even
         if an update cycle is skipped.
 
@@ -260,15 +264,29 @@ class AutomationEngine:
         now = dt_util.now()
         today = now.date()
 
-        # Get today's sunset time
-        sunset_time = get_astral_event_date(self._ha_interface.hass, SUN_EVENT_SUNSET, today)
-        if sunset_time is None:
-            self._logger.debug("Could not determine sunset time for today")
-            return False
+        # Calculate window_start based on mode
+        mode = self.resolved.close_covers_after_sunset_mode
 
-        # Calculate the closing window
-        delay_seconds = self.resolved.close_covers_after_sunset_delay
-        window_start = sunset_time + timedelta(seconds=delay_seconds)
+        if mode == const.EveningClosureMode.FIXED_TIME:
+            # Fixed time mode: use the configured time directly
+            closing_time = self.resolved.close_covers_after_sunset_delay
+            window_start = now.replace(
+                hour=closing_time.hour,
+                minute=closing_time.minute,
+                second=closing_time.second,
+                microsecond=0,
+            )
+        else:
+            # After sunset mode: sunset + configured delay
+            sunset_time = get_astral_event_date(self._ha_interface.hass, SUN_EVENT_SUNSET, today)
+            if sunset_time is None:
+                self._logger.debug("Could not determine sunset time for today")
+                return False
+
+            delay_time = self.resolved.close_covers_after_sunset_delay
+            delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
+            window_start = sunset_time + timedelta(seconds=delay_seconds)
+
         window_end = window_start + timedelta(minutes=const.SUNSET_CLOSING_WINDOW_MINUTES)
 
         # Check if we're within the closing window

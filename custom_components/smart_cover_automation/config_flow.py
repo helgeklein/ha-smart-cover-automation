@@ -565,19 +565,28 @@ class FlowHelper:
             )
         ] = selector.BooleanSelector()
 
-        delay_default = {
-            "hours": resolved_settings.close_covers_after_sunset_delay // 3600,
-            "minutes": (resolved_settings.close_covers_after_sunset_delay % 3600) // 60,
-            "seconds": resolved_settings.close_covers_after_sunset_delay % 60,
-        }
+        # Evening closure mode: after_sunset or fixed_time
+        evening_closure_mode_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.EveningClosureMode]
+        covers_sunset_schema_dict[
+            vol.Required(
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE.value,
+                default=resolved_settings.close_covers_after_sunset_mode,
+            )
+        ] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=evening_closure_mode_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="evening_closure_mode",
+            )
+        )
 
-        # Close covers after sunset: delay
+        # Close covers after sunset: time value (delay after sunset or fixed time of day)
         covers_sunset_schema_dict[
             vol.Required(
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value,
-                default=delay_default,
+                default=resolved_settings.close_covers_after_sunset_delay,
             )
-        ] = selector.DurationSelector()
+        ] = selector.TimeSelector()
 
         # Close covers after sunset: cover list
         covers_sunset_schema_dict[

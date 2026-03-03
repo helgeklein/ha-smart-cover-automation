@@ -104,6 +104,16 @@ class LockMode(StrEnum):
 #
 # TiltMode
 #
+class EveningClosureMode(StrEnum):
+    """Evening closure timing mode."""
+
+    AFTER_SUNSET = "after_sunset"  # Close a configurable duration after sunset
+    FIXED_TIME = "fixed_time"  # Close at a fixed time of day
+
+
+#
+# TiltMode
+#
 class TiltMode(StrEnum):
     """Tilt angle control mode for covers with tiltable slats."""
 
@@ -137,6 +147,9 @@ SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE: Final[str] = (
 )
 SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY: Final[str] = (
     "close_covers_after_sunset_delay"  # Key for the close covers after sunset delay sensor entity
+)
+SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_MODE: Final[str] = (
+    "close_covers_after_sunset_mode"  # Key for the close covers after sunset mode sensor entity
 )
 NUMBER_KEY_SUN_AZIMUTH_TOLERANCE: Final[str] = "sun_azimuth_tolerance"  # Key for the sun azimuth tolerance number entity
 NUMBER_KEY_COVERS_MAX_CLOSURE: Final[str] = "covers_max_closure"  # Key for the covers maximum closure number entity

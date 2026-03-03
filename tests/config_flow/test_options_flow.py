@@ -945,7 +945,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
         user_input = {
             const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 1, "minutes": 30, "seconds": 0},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE.value: "after_sunset",
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "01:30:00",
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
             }
         }
@@ -956,9 +957,10 @@ class TestOptionsFlowStep6CloseAfterSunset:
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
         saved_data = result_dict["data"]
 
-        # Verify all three settings are saved correctly
+        # Verify all settings are saved correctly
         assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value] is True
-        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value] == {"hours": 1, "minutes": 30, "seconds": 0}
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE.value] == "after_sunset"
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value] == "01:30:00"
         assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value] == [MOCK_COVER_ENTITY_ID]
 
     #
@@ -1002,7 +1004,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
         user_input = {
             const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: False,
-                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE.value: "after_sunset",
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [],
             }
         }
@@ -1056,7 +1059,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
         user_input = {
             const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE.value: "after_sunset",
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [],  # Empty list
             }
         }
@@ -1110,7 +1114,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
         user_input = {
             const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 0, "seconds": 0},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE.value: "after_sunset",
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:00:00",
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
             }
         }
@@ -1121,8 +1126,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
         saved_data = result_dict["data"]
 
-        # Verify zero delay is saved correctly as a dict
-        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value] == {"hours": 0, "minutes": 0, "seconds": 0}
+        # Verify zero delay is saved correctly as a time string
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value] == "00:00:00"
 
     #
     # test_step_6_close_after_sunset_multiple_covers
@@ -1170,7 +1175,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
         user_input = {
             const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 2, "minutes": 0, "seconds": 30},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE.value: "after_sunset",
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "02:00:30",
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
             }
         }
@@ -1186,8 +1192,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
             MOCK_COVER_ENTITY_ID,
             MOCK_COVER_ENTITY_ID_2,
         }
-        # Verify delay is saved as dict: 2 hours + 30 seconds
-        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value] == {"hours": 2, "minutes": 0, "seconds": 30}
+        # Verify delay is saved as time string: 2 hours + 30 seconds
+        assert saved_data[ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value] == "02:00:30"
 
     #
     # test_step_6_section_extraction_flattens_correctly
@@ -1229,7 +1235,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
         user_input = {
             const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 1, "minutes": 15, "seconds": 30},
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE.value: "after_sunset",
+                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "01:15:30",
                 ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
             }
         }
@@ -1243,7 +1250,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
         # Verify section key is NOT in saved data (should be flattened)
         assert const.STEP_6_SECTION_CLOSE_AFTER_SUNSET not in saved_data
 
-        # Verify all three settings are at top level
+        # Verify all settings are at top level
         assert ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value in saved_data
+        assert ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE.value in saved_data
         assert ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value in saved_data
         assert ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value in saved_data

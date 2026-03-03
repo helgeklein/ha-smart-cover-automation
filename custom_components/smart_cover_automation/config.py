@@ -12,7 +12,13 @@ from datetime import time
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
-from custom_components.smart_cover_automation.const import HA_OPTIONS, SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL, LockMode, TiltMode
+from custom_components.smart_cover_automation.const import (
+    HA_OPTIONS,
+    SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
+    EveningClosureMode,
+    LockMode,
+    TiltMode,
+)
 
 T = TypeVar("T")
 
@@ -49,7 +55,8 @@ class ConfKeys(StrEnum):
     AUTOMATION_DISABLED_TIME_RANGE_START = "automation_disabled_time_range_start"  # Start time for disabling the automation.
     AUTOMATION_DISABLED_TIME_RANGE_END = "automation_disabled_time_range_end"  # End time for disabling the automation.
     CLOSE_COVERS_AFTER_SUNSET = "close_covers_after_sunset"  # Close covers after sunset.
-    CLOSE_COVERS_AFTER_SUNSET_DELAY = "close_covers_after_sunset_delay"  # Close covers after sunset: delay.
+    CLOSE_COVERS_AFTER_SUNSET_MODE = "close_covers_after_sunset_mode"  # Evening closure timing mode.
+    CLOSE_COVERS_AFTER_SUNSET_DELAY = "close_covers_after_sunset_delay"  # Close covers after sunset: time value.
     CLOSE_COVERS_AFTER_SUNSET_COVER_LIST = "close_covers_after_sunset_cover_list"  # Close covers after sunset: list of covers.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
@@ -188,7 +195,8 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(6, 0, 0), converter=_Converters.to_time),
     ConfKeys.CLOSE_COVERS_AFTER_SUNSET: _ConfSpec(default=False, converter=_Converters.to_bool),
-    ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY: _ConfSpec(default=900, converter=_Converters.to_duration_seconds),
+    ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE: _ConfSpec(default=EveningClosureMode.AFTER_SUNSET, converter=EveningClosureMode),
+    ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY: _ConfSpec(default=time(0, 15, 0), converter=_Converters.to_time),
     ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
@@ -259,7 +267,8 @@ class ResolvedConfig:
     automation_disabled_time_range_start: time
     automation_disabled_time_range_end: time
     close_covers_after_sunset: bool
-    close_covers_after_sunset_delay: int
+    close_covers_after_sunset_mode: EveningClosureMode
+    close_covers_after_sunset_delay: time
     close_covers_after_sunset_cover_list: tuple[str, ...]
     covers: tuple[str, ...]
     covers_max_closure: int

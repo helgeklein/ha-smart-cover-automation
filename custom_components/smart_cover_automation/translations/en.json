@@ -114,14 +114,16 @@
                     "section_close_after_sunset": {
                         "name": "Evening closure",
                         "data": {
-                            "close_covers_after_sunset": "Close covers after sunset:",
-                            "close_covers_after_sunset_delay": "Time delay:",
+                            "close_covers_after_sunset": "Close covers in the evening:",
+                            "close_covers_after_sunset_mode": "Mode:",
+                            "close_covers_after_sunset_delay": "Time:",
                             "close_covers_after_sunset_cover_list": "Covers:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "When enabled, covers will be closed a certain time after sunset.",
-                            "close_covers_after_sunset_delay": "Time to wait after sunset before closing the covers.",
-                            "close_covers_after_sunset_cover_list": "Select the covers that should be closed after sunset."
+                            "close_covers_after_sunset": "When enabled, covers will be closed automatically in the evening.",
+                            "close_covers_after_sunset_mode": "Choose whether to close at a fixed time or relative to sunset.",
+                            "close_covers_after_sunset_delay": "Depending on the selected mode: delay after sunset, or fixed time of day.",
+                            "close_covers_after_sunset_cover_list": "Select the covers that should be closed in the evening."
                         }
                     }
                 }
@@ -184,7 +186,10 @@
                 }
             },
             "close_covers_after_sunset_delay": {
-                "name": "Evening closure: delay"
+                "name": "Evening closure: time"
+            },
+            "close_covers_after_sunset_mode": {
+                "name": "Evening closure: mode"
             },
             "sun_azimuth": {
                 "name": "Sun azimuth"
@@ -309,6 +314,12 @@
                 "manual": "Manual (restore manually set angle)",
                 "auto": "Auto (block direct sunlight)",
                 "set_value": "Set value (fixed tilt angle)"
+            }
+        },
+        "evening_closure_mode": {
+            "options": {
+                "after_sunset": "After sunset (relative delay)",
+                "fixed_time": "Fixed time of day"
             }
         }
     }

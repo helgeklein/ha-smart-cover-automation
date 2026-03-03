@@ -535,7 +535,7 @@ class TestCheckSunsetClosing:
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
@@ -566,7 +566,7 @@ class TestCheckSunsetClosing:
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
@@ -601,7 +601,7 @@ class TestCheckSunsetClosing:
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
@@ -633,7 +633,7 @@ class TestCheckSunsetClosing:
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
@@ -667,7 +667,7 @@ class TestCheckSunsetClosing:
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 0, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:00:00",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
@@ -694,7 +694,7 @@ class TestCheckSunsetClosing:
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
@@ -721,7 +721,7 @@ class TestCheckSunsetClosing:
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: {"hours": 0, "minutes": 15, "seconds": 0},
+            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
             ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
