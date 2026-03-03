@@ -21,7 +21,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.const import EntityCategory
 
 from .const import (
-    BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET,
+    BINARY_SENSOR_KEY_EVENING_CLOSURE,
     BINARY_SENSOR_KEY_LOCK_ACTIVE,
     BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
     BINARY_SENSOR_KEY_STATUS,
@@ -59,7 +59,7 @@ async def async_setup_entry(
     entities = [
         # Status binary sensor - indicates system problems
         StatusBinarySensor(coordinator),
-        CloseCoversAfterSunsetBinarySensor(coordinator),
+        EveningClosureBinarySensor(coordinator),
         NighttimeBlockOpeningBinarySensor(coordinator),
         TempHotBinarySensor(coordinator),
         WeatherSunnyBinarySensor(coordinator),
@@ -152,13 +152,13 @@ class StatusBinarySensor(IntegrationBinarySensor):
 
 
 #
-# CloseCoversAfterSunsetBinarySensor
+# EveningClosureBinarySensor
 #
-class CloseCoversAfterSunsetBinarySensor(IntegrationBinarySensor):
+class EveningClosureBinarySensor(IntegrationBinarySensor):
     """Binary sensor that reports whether the evening closure feature is enabled.
 
     State meanings:
-    - on: Evening closure is enabled (covers will close after sunset)
+    - on: Evening closure is enabled
     - off: Evening closure is disabled
     """
 
@@ -169,8 +169,8 @@ class CloseCoversAfterSunsetBinarySensor(IntegrationBinarySensor):
             coordinator: Provides the data for this sensor
         """
         entity_description = BinarySensorEntityDescription(
-            key=BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET,
-            translation_key=BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET,
+            key=BINARY_SENSOR_KEY_EVENING_CLOSURE,
+            translation_key=BINARY_SENSOR_KEY_EVENING_CLOSURE,
             entity_category=EntityCategory.DIAGNOSTIC,
             # No device class - allows custom state translations (Yes/No)
             icon="mdi:weather-sunset",
@@ -181,7 +181,7 @@ class CloseCoversAfterSunsetBinarySensor(IntegrationBinarySensor):
     def is_on(self) -> bool:  # pyright: ignore
         """Return True if evening closure is enabled."""
         resolved = self.coordinator._resolved_settings()
-        return resolved.close_covers_after_sunset
+        return resolved.evening_closure_enabled
 
 
 #

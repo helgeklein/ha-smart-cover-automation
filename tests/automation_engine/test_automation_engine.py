@@ -495,7 +495,7 @@ class TestLogAutomationResult:
 
 
 class TestCheckSunsetClosing:
-    """Test _check_sunset_closing method for evening closure feature.
+    """Test _check_evening_closure method for evening closure feature.
 
     The evening closure uses a window-based approach for reliability:
     - Window starts at: sunset + configured delay
@@ -513,12 +513,12 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: False,
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: False,
         }
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
 
         assert result is False
 
@@ -534,9 +534,9 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
@@ -548,10 +548,10 @@ class TestCheckSunsetClosing:
         sunset_time = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
         mock_get_astral.return_value = sunset_time
 
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
 
         assert result is False
-        assert engine._sunset_covers_closed is False
+        assert engine._evening_covers_closed is False
 
     #
     # test_check_sunset_closing_inside_window_first_time
@@ -565,9 +565,9 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
@@ -580,12 +580,12 @@ class TestCheckSunsetClosing:
         mock_get_astral.return_value = sunset_time
 
         # First call: should return True
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
         assert result is True
-        assert engine._sunset_covers_closed is True
+        assert engine._evening_covers_closed is True
 
         # Second call: should return False (already closed)
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
         assert result is False
 
     #
@@ -600,15 +600,15 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
         # Pre-set already closed
-        engine._sunset_covers_closed = True
+        engine._evening_covers_closed = True
 
         # Freeze time inside window
         freezer.move_to("2025-11-04 18:50:00")
@@ -617,7 +617,7 @@ class TestCheckSunsetClosing:
         sunset_time = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
         mock_get_astral.return_value = sunset_time
 
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
         assert result is False
 
     #
@@ -632,15 +632,15 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
 
         # Pre-set state as already closed
-        engine._sunset_covers_closed = True
+        engine._evening_covers_closed = True
 
         # Freeze time to after window ends (window was 18:45-18:55, now it's 19:00)
         freezer.move_to("2025-11-04 19:00:00")
@@ -649,10 +649,10 @@ class TestCheckSunsetClosing:
         sunset_time = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
         mock_get_astral.return_value = sunset_time
 
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
 
         assert result is False
-        assert engine._sunset_covers_closed is False  # State reset
+        assert engine._evening_covers_closed is False  # State reset
 
     #
     # test_check_sunset_closing_zero_delay
@@ -666,9 +666,9 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:00:00",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "00:00:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
@@ -680,7 +680,7 @@ class TestCheckSunsetClosing:
         sunset_time = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
         mock_get_astral.return_value = sunset_time
 
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
         assert result is True
 
     #
@@ -693,9 +693,9 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
@@ -705,7 +705,7 @@ class TestCheckSunsetClosing:
         # Mock sunset unavailable
         mock_get_astral.return_value = None
 
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
         assert result is False
 
     #
@@ -720,9 +720,9 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value: True,
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value: "00:15:00",
-            ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value: ["cover.test"],
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
@@ -732,20 +732,20 @@ class TestCheckSunsetClosing:
         sunset_day1 = datetime(2025, 11, 4, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
         mock_get_astral.return_value = sunset_day1
 
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
         assert result is True
-        assert engine._sunset_covers_closed is True
+        assert engine._evening_covers_closed is True
 
         # Day 1: After window - should reset
         freezer.move_to("2025-11-04 19:00:00")
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
         assert result is False
-        assert engine._sunset_covers_closed is False
+        assert engine._evening_covers_closed is False
 
         # Day 2: Inside new window - should close again
         freezer.move_to("2025-11-05 18:47:00")
         sunset_day2 = datetime(2025, 11, 5, 18, 31, 0, tzinfo=dt_util.get_default_time_zone())
         mock_get_astral.return_value = sunset_day2
 
-        result = engine._check_sunset_closing()
+        result = engine._check_evening_closure()
         assert result is True

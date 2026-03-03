@@ -553,24 +553,24 @@ class FlowHelper:
         )
 
         #
-        # Section: Close covers after sunset
+        # Section: Evening closure
         #
-        covers_sunset_schema_dict: dict[vol.Marker, object] = {}
+        evening_closure_schema_dict: dict[vol.Marker, object] = {}
 
         # Setting to enable/disable
-        covers_sunset_schema_dict[
+        evening_closure_schema_dict[
             vol.Required(
-                ConfKeys.CLOSE_COVERS_AFTER_SUNSET.value,
-                default=resolved_settings.close_covers_after_sunset,
+                ConfKeys.EVENING_CLOSURE_ENABLED.value,
+                default=resolved_settings.evening_closure_enabled,
             )
         ] = selector.BooleanSelector()
 
         # Evening closure mode: after_sunset or fixed_time
         evening_closure_mode_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.EveningClosureMode]
-        covers_sunset_schema_dict[
+        evening_closure_schema_dict[
             vol.Required(
-                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_MODE.value,
-                default=resolved_settings.close_covers_after_sunset_mode,
+                ConfKeys.EVENING_CLOSURE_MODE.value,
+                default=resolved_settings.evening_closure_mode,
             )
         ] = selector.SelectSelector(
             selector.SelectSelectorConfig(
@@ -580,19 +580,19 @@ class FlowHelper:
             )
         )
 
-        # Close covers after sunset: time value (delay after sunset or fixed time of day)
-        covers_sunset_schema_dict[
+        # Evening closure: time value (delay after sunset or fixed time of day)
+        evening_closure_schema_dict[
             vol.Required(
-                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY.value,
-                default=resolved_settings.close_covers_after_sunset_delay,
+                ConfKeys.EVENING_CLOSURE_TIME.value,
+                default=resolved_settings.evening_closure_time,
             )
         ] = selector.TimeSelector()
 
-        # Close covers after sunset: cover list
-        covers_sunset_schema_dict[
+        # Evening closure: cover list
+        evening_closure_schema_dict[
             vol.Required(
-                ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST.value,
-                default=list(resolved_settings.close_covers_after_sunset_cover_list),
+                ConfKeys.EVENING_CLOSURE_COVER_LIST.value,
+                default=list(resolved_settings.evening_closure_cover_list),
             )
         ] = selector.EntitySelector(
             selector.EntitySelectorConfig(
@@ -604,7 +604,7 @@ class FlowHelper:
 
         # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
-            vol.Schema(covers_sunset_schema_dict),
+            vol.Schema(evening_closure_schema_dict),
             {"collapsed": True},
         )
 

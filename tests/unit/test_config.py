@@ -38,6 +38,7 @@ from custom_components.smart_cover_automation.config import (
     CONF_SPECS,
     ConfKeys,
     ResolvedConfig,
+    _field_name,
     resolve,
     resolve_entry,
 )
@@ -96,15 +97,16 @@ class TestConfigurationRegistry:
         enum_names = {k.value for k in ConfKeys}  # Keys defined in enum
         spec_names = {k.value for k in CONF_SPECS.keys()}  # Keys with validation specs
         dc_names = {f.name for f in fields(ResolvedConfig)}  # Keys in runtime dataclass
+        mapped_names = {_field_name(k) for k in ConfKeys}  # Mapped field names
 
         # Ensure ConfKeys and CONF_SPECS are perfectly synchronized
         assert enum_names == spec_names, (
             f"ConfKeys vs CONF_SPECS mismatch:\nmissing_in_specs={enum_names - spec_names}\nextra_in_specs={spec_names - enum_names}"
         )
 
-        # Ensure ConfKeys and ResolvedConfig are perfectly synchronized
-        assert enum_names == dc_names, (
-            f"ConfKeys vs ResolvedConfig mismatch:\nmissing_in_dc={enum_names - dc_names}\nextra_in_dc={dc_names - enum_names}"
+        # Ensure mapped ConfKeys field names and ResolvedConfig are perfectly synchronized
+        assert mapped_names == dc_names, (
+            f"ConfKeys (mapped) vs ResolvedConfig mismatch:\nmissing_in_dc={mapped_names - dc_names}\nextra_in_dc={dc_names - mapped_names}"
         )
 
     def test_no_none_defaults_in_specs(self):
@@ -187,9 +189,11 @@ class TestConfigurationRegistry:
         original_enum_names = {k.value for k in ConfKeys}
         original_spec_names = {k.value for k in CONF_SPECS.keys()}
         original_dc_names = {f.name for f in fields(ResolvedConfig)}
+        original_mapped_names = {_field_name(k) for k in ConfKeys}
 
         # All should be equal in the current valid state
-        assert original_enum_names == original_spec_names == original_dc_names
+        assert original_enum_names == original_spec_names
+        assert original_mapped_names == original_dc_names
 
         # Simulate what would happen with mismatches
         fake_enum_names = original_enum_names | {"fake_key"}
@@ -198,9 +202,9 @@ class TestConfigurationRegistry:
 
         # These would trigger validation errors
         assert fake_enum_names != original_spec_names  # Would trigger ConfKeys vs CONF_SPECS mismatch
-        assert fake_enum_names != original_dc_names  # Would trigger ConfKeys vs ResolvedConfig mismatch
+        assert fake_enum_names != original_mapped_names  # Would trigger ConfKeys vs ResolvedConfig mismatch
         assert fake_spec_names != original_enum_names  # Would trigger CONF_SPECS vs ConfKeys mismatch
-        assert fake_dc_names != original_enum_names  # Would trigger ResolvedConfig vs ConfKeys mismatch
+        assert fake_dc_names != original_mapped_names  # Would trigger ResolvedConfig vs ConfKeys mismatch
 
 
 # =============================================================================

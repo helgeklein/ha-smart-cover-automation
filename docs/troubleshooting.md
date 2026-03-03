@@ -22,8 +22,9 @@ Filter the logbook for entries from this integration's instances by selecting `S
 
 The integration comes with the following sensors that help you understand the integration's inner workings:
 
-- **Evening closure: enabled?** When enabled, covers will be closed a certain time after sunset.
-- **Evening closure: delay** Time to wait after sunset before closing the covers.
+- **Evening closure: enabled?** When enabled, covers will be closed at a fixed time or a certain time after sunset.
+- **Evening closure: mode** Either `After sunset (relative delay)` or `Fixed time of day`.
+- **Evening closure: time** Depending on evening closure mode, an absolute time or the delay after sunset at which to close covers in the evening.
 - **Lock status**: Whether lock mode is enabled or disabled.
 - **Nighttime: block opening?** Whether to block automatic cover opening during nighttime (when the sun is below the horizon).
 - **Status:** Overall status returned by the last automation update.

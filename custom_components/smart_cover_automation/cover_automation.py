@@ -48,7 +48,7 @@ class SensorData:
     temp_hot: bool
     weather_condition: str
     weather_sunny: bool
-    should_close_for_sunset: bool  # True only in the ONE update cycle when covers should close after sunset
+    evening_closure: bool
 
 
 @dataclass
@@ -467,7 +467,7 @@ class CoverAutomation:
 
         lockout_protection_active = False
 
-        if sensor_data.should_close_for_sunset and self.entity_id in self.resolved.close_covers_after_sunset_cover_list:
+        if sensor_data.evening_closure and self.entity_id in self.resolved.evening_closure_cover_list:
             # Evening closure mode - check lockout protection first
             if self._is_lockout_protection_active(CoverMovementReason.CLOSING_AFTER_SUNSET):
                 # Lockout protection active - keep current position (prevent closing)

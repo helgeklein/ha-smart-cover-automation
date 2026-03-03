@@ -130,9 +130,7 @@ SERVICE_FIELD_LOCK_MODE: Final[str] = "lock_mode"  # Field name for lock mode pa
 
 # Entity keys
 BINARY_SENSOR_KEY_STATUS: Final[str] = "status"  # Key for the status binary sensor entity
-BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET: Final[str] = (
-    "close_covers_after_sunset"  # Key for the close covers after sunset binary sensor entity
-)
+BINARY_SENSOR_KEY_EVENING_CLOSURE: Final[str] = "close_covers_after_sunset"  # Key for the evening closure binary sensor entity
 BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING: Final[str] = (
     "nighttime_block_opening"  # Key for the nighttime block opening binary sensor entity
 )
@@ -145,12 +143,8 @@ SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL: Final[str] = (
 SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE: Final[str] = (
     "automation_disabled_time_range"  # Key for the automation disabled time range sensor entity
 )
-SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY: Final[str] = (
-    "close_covers_after_sunset_delay"  # Key for the close covers after sunset delay sensor entity
-)
-SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_MODE: Final[str] = (
-    "close_covers_after_sunset_mode"  # Key for the close covers after sunset mode sensor entity
-)
+SENSOR_KEY_EVENING_CLOSURE_TIME: Final[str] = "close_covers_after_sunset_delay"  # Key for the evening closure time sensor entity
+SENSOR_KEY_EVENING_CLOSURE_MODE: Final[str] = "close_covers_after_sunset_mode"  # Key for the evening closure mode sensor entity
 NUMBER_KEY_SUN_AZIMUTH_TOLERANCE: Final[str] = "sun_azimuth_tolerance"  # Key for the sun azimuth tolerance number entity
 NUMBER_KEY_COVERS_MAX_CLOSURE: Final[str] = "covers_max_closure"  # Key for the covers maximum closure number entity
 NUMBER_KEY_COVERS_MIN_CLOSURE: Final[str] = "covers_min_closure"  # Key for the covers minimum closure number entity

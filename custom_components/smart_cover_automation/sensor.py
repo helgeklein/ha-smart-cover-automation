@@ -16,8 +16,8 @@ from homeassistant.const import EntityCategory, UnitOfTemperature
 
 from .const import (
     SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
-    SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY,
-    SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_MODE,
+    SENSOR_KEY_EVENING_CLOSURE_MODE,
+    SENSOR_KEY_EVENING_CLOSURE_TIME,
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
@@ -55,8 +55,8 @@ async def async_setup_entry(
     # Create all sensor entities
     entities = [
         AutomationDisabledTimeRangeSensor(coordinator),
-        CloseCoversAfterSunsetDelaySensor(coordinator),
-        CloseCoversAfterSunsetModeSensor(coordinator),
+        EveningClosureTimeSensor(coordinator),
+        EveningClosureModeSensor(coordinator),
         SunAzimuthSensor(coordinator),
         SunElevationSensor(coordinator),
         TempCurrentMaxSensor(coordinator),
@@ -165,9 +165,9 @@ class AutomationDisabledTimeRangeSensor(IntegrationSensor):
 
 
 #
-# CloseCoversAfterSunsetDelaySensor
+# EveningClosureTimeSensor
 #
-class CloseCoversAfterSunsetDelaySensor(IntegrationSensor):
+class EveningClosureTimeSensor(IntegrationSensor):
     """Sensor that reports the configured time for evening closure.
 
     The sensor displays the time value as HH:MM.
@@ -181,8 +181,8 @@ class CloseCoversAfterSunsetDelaySensor(IntegrationSensor):
         """
 
         entity_description = SensorEntityDescription(
-            key=SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY,
-            translation_key=SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_DELAY,
+            key=SENSOR_KEY_EVENING_CLOSURE_TIME,
+            translation_key=SENSOR_KEY_EVENING_CLOSURE_TIME,
             entity_category=EntityCategory.DIAGNOSTIC,
             icon="mdi:timer-outline",
         )
@@ -198,14 +198,14 @@ class CloseCoversAfterSunsetDelaySensor(IntegrationSensor):
 
         resolved = self.coordinator._resolved_settings()
 
-        delay_time = resolved.close_covers_after_sunset_delay
+        delay_time = resolved.evening_closure_time
         return f"{delay_time.hour:02d}:{delay_time.minute:02d}"
 
 
 #
-# CloseCoversAfterSunsetModeSensor
+# EveningClosureModeSensor
 #
-class CloseCoversAfterSunsetModeSensor(IntegrationSensor):
+class EveningClosureModeSensor(IntegrationSensor):
     """Sensor that reports the configured evening closure mode."""
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
@@ -216,8 +216,8 @@ class CloseCoversAfterSunsetModeSensor(IntegrationSensor):
         """
 
         entity_description = SensorEntityDescription(
-            key=SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_MODE,
-            translation_key=SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET_MODE,
+            key=SENSOR_KEY_EVENING_CLOSURE_MODE,
+            translation_key=SENSOR_KEY_EVENING_CLOSURE_MODE,
             entity_category=EntityCategory.DIAGNOSTIC,
             icon="mdi:clock-time-eight",
         )
@@ -233,7 +233,7 @@ class CloseCoversAfterSunsetModeSensor(IntegrationSensor):
 
         resolved = self.coordinator._resolved_settings()
 
-        return resolved.close_covers_after_sunset_mode
+        return resolved.evening_closure_mode
 
 
 #

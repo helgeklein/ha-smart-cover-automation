@@ -52,7 +52,7 @@ class AutomationEngine:
         self._first_run: bool = True  # Track first iteration to suppress startup warnings
 
         # Evening closure state tracking
-        self._sunset_covers_closed: bool = False  # Prevent multiple closings per sunset
+        self._evening_covers_closed: bool = False  # Prevent multiple closings within the evening closure window
 
     #
     # run
@@ -221,8 +221,8 @@ class AutomationEngine:
             sunny_source = "weather entity"
         self._logger.debug(f"Current weather condition: {'sunny' if weather_sunny else 'not sunny'} (source: {sunny_source})")
 
-        # Check for sunset and handle delayed cover closing
-        should_close_for_sunset = self._check_sunset_closing()
+        # Check for evening closure and handle delayed cover closing
+        evening_closure = self._check_evening_closure()
 
         return (
             SensorData(
@@ -232,15 +232,15 @@ class AutomationEngine:
                 temp_hot=temp_hot,
                 weather_condition=weather_condition,
                 weather_sunny=weather_sunny,
-                should_close_for_sunset=should_close_for_sunset,
+                evening_closure=evening_closure,
             ),
             "",
         )
 
     #
-    # _check_sunset_closing
+    # _check_evening_closure
     #
-    def _check_sunset_closing(self) -> bool:
+    def _check_evening_closure(self) -> bool:
         """Check if covers should close based on evening closure settings.
 
         Supports two modes:
@@ -257,7 +257,7 @@ class AutomationEngine:
         """
 
         # Check if feature is enabled
-        if not self.resolved.close_covers_after_sunset:
+        if not self.resolved.evening_closure_enabled:
             return False
 
         # Get current time
@@ -265,11 +265,11 @@ class AutomationEngine:
         today = now.date()
 
         # Calculate window_start based on mode
-        mode = self.resolved.close_covers_after_sunset_mode
+        mode = self.resolved.evening_closure_mode
 
         if mode == const.EveningClosureMode.FIXED_TIME:
             # Fixed time mode: use the configured time directly
-            closing_time = self.resolved.close_covers_after_sunset_delay
+            closing_time = self.resolved.evening_closure_time
             window_start = now.replace(
                 hour=closing_time.hour,
                 minute=closing_time.minute,
@@ -283,7 +283,7 @@ class AutomationEngine:
                 self._logger.debug("Could not determine sunset time for today")
                 return False
 
-            delay_time = self.resolved.close_covers_after_sunset_delay
+            delay_time = self.resolved.evening_closure_time
             delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
             window_start = sunset_time + timedelta(seconds=delay_seconds)
 
@@ -296,16 +296,16 @@ class AutomationEngine:
             window_start_local = dt_util.as_local(window_start).strftime("%H:%M:%S")
             window_end_local = dt_util.as_local(window_end).strftime("%H:%M:%S")
             self._logger.info(f"Evening closure: In active time window ({window_start_local} - {window_end_local})")
-            if not self._sunset_covers_closed:
+            if not self._evening_covers_closed:
                 # First time we've detected being in the window - close covers!
-                self._sunset_covers_closed = True
+                self._evening_covers_closed = True
                 self._logger.info("Evening closure: Signaling configured covers to be closed now")
                 return True
         else:
             # Ensure the state is reset outside the window
-            if self._sunset_covers_closed:
+            if self._evening_covers_closed:
                 self._logger.debug("Evening closure: Outside active time window. Resetting state")
-                self._sunset_covers_closed = False
+                self._evening_covers_closed = False
 
         return False
 
