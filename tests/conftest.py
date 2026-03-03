@@ -23,6 +23,9 @@ from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFea
 from homeassistant.components.weather.const import WeatherEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 from homeassistant.core import HomeAssistant
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry as HAMockConfigEntry,
+)
 
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 
@@ -93,14 +96,37 @@ def _quiet_logs(caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.ERROR, logger="homeassistant")
 
 
-# Global variable to store current temperature for weather service mock
+# Default temperature for weather service mock.  The autouse fixture
+# ``_reset_weather_temp`` resets this to the default after every test,
+# eliminating inter-test coupling.
 _CURRENT_WEATHER_TEMP = 25.0
 
+#: Default value so the reset fixture can restore it.
+_DEFAULT_WEATHER_TEMP: float = 25.0
 
+
+#
+# set_weather_forecast_temp
+#
 def set_weather_forecast_temp(temp: float) -> None:
     """Set the temperature that the weather service mock will return."""
+
     global _CURRENT_WEATHER_TEMP
     _CURRENT_WEATHER_TEMP = temp
+
+
+@pytest.fixture(autouse=True)
+def _reset_weather_temp():
+    """Reset the global weather temperature after each test.
+
+    This eliminates inter-test coupling caused by ``set_weather_forecast_temp``
+    mutating a module-level global.
+    """
+
+    global _CURRENT_WEATHER_TEMP
+    _CURRENT_WEATHER_TEMP = _DEFAULT_WEATHER_TEMP
+    yield
+    _CURRENT_WEATHER_TEMP = _DEFAULT_WEATHER_TEMP
 
 
 def get_applicable_forecast_date(cutover_time: time | None = None) -> date:
@@ -471,46 +497,124 @@ def mock_hass_with_covers() -> MagicMock:
     def _async_update_entry(entry: MagicMock, *, data: dict[str, Any] | None = None, options: dict[str, Any] | None = None) -> None:
         """Simulate Home Assistant's async_update_entry by mutating the entry."""
 
+        from types import MappingProxyType
+
         if data is not None:
-            entry.data = data
+            object.__setattr__(entry, "data", MappingProxyType(data))
         if options is not None:
-            entry.options = options
+            set_test_options(entry, options)
 
     hass.config_entries.async_update_entry = MagicMock(side_effect=_async_update_entry)
     return hass
 
 
-class MockConfigEntry:
-    """Mock config entry for testing integration configuration scenarios.
+#
+# _MutableMockConfigEntry
+#
+class _MutableMockConfigEntry(HAMockConfigEntry):
+    """``MockConfigEntry`` subclass that allows direct attribute mutation.
 
-    Provides a lightweight mock of Home Assistant's ConfigEntry class with:
-    - Standard domain and entry ID attributes
-    - Runtime data structure for configuration access
-    - Mock methods for listener management and lifecycle hooks
+    The real ``ConfigEntry.__setattr__`` blocks writes to ``data``,
+    ``options``, ``title``, etc. to enforce immutability.  In unit tests that
+    use a **mock** *hass* (no real ``async_update_entry`` available), we need
+    to set these attributes during test setup.
 
-    This is used when tests need more control over config entry behavior
-    than the standard fixtures provide.
+    Using ``object.__setattr__`` directly everywhere is fragile; inheriting
+    and overriding once keeps the code DRY and the intent explicit.
     """
 
-    def __init__(self, data: dict[str, Any]) -> None:
-        """Initialize mock config entry with configuration data.
+    #
+    # __init__
+    #
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialise and convert frozen attributes to mutable types."""
 
-        Args:
-            data: Configuration dictionary matching integration schema (will be stored in options)
-        """
-        self.domain = DOMAIN
-        self.entry_id = "test_entry"
-        self.title = "Test Entry"
-        # Config entry data is empty (only marks integration as installed)
-        self.data = {}
-        # All user settings are in options
-        self.options = data
-        self.runtime_data = MagicMock()
-        self.runtime_data.config = data
-        self.add_update_listener = MagicMock(return_value=MagicMock())
-        self.async_on_unload = MagicMock()
-        self.hass = MagicMock()
-        self.hass.states = MagicMock()
+        super().__init__(**kwargs)
+        # ``ConfigEntry.__init__`` stores options/data as ``MappingProxyType``
+        # via ``object.__setattr__``.  Convert to plain dicts so tests can
+        # do ``entry.options[key] = value``.
+        object.__setattr__(self, "options", dict(self.options or {}))
+        object.__setattr__(self, "data", dict(self.data or {}))
+
+    #
+    # __setattr__
+    #
+    def __setattr__(self, key: str, value: Any) -> None:
+        """Allow unrestricted attribute setting for test convenience."""
+
+        object.__setattr__(self, key, value)
+
+
+#
+# create_test_config_entry
+#
+def create_test_config_entry(
+    config: dict[str, Any],
+    entry_id: str = "test_entry",
+) -> _MutableMockConfigEntry:
+    """Create a test config entry backed by the real ``MockConfigEntry``.
+
+    This replaces the former custom ``MockConfigEntry`` class with
+    ``_MutableMockConfigEntry`` (a thin subclass of the real
+    ``MockConfigEntry`` from *pytest-homeassistant-custom-component*),
+    ensuring consistent behaviour across unit and integration tests while
+    still allowing direct attribute mutation during test setup.
+
+    ``runtime_data`` is set to a ``MagicMock`` whose ``.config`` attribute
+    mirrors *config* so that ``DataUpdateCoordinator._async_update_data``
+    can access it.
+
+    Args:
+        config: Configuration dictionary (stored in ``.options`` **and**
+            ``.runtime_data.config``).
+        entry_id: Unique entry identifier.
+
+    Returns:
+        A ``_MutableMockConfigEntry`` with ``runtime_data`` pre-configured.
+    """
+
+    entry = _MutableMockConfigEntry(
+        domain=DOMAIN,
+        title="Test Entry",
+        data={},
+        options=config,
+        entry_id=entry_id,
+    )
+
+    # ``runtime_data.config`` must reference the **same** dict as
+    # ``entry.options`` so that mutations through one path are visible
+    # from the other — matching the old custom MockConfigEntry behaviour.
+    mock_runtime = MagicMock()
+    mock_runtime.config = entry.options
+    entry.runtime_data = mock_runtime
+    return entry
+
+
+# Backward-compatible alias so existing ``MockConfigEntry(config)`` calls
+# continue to work without changes.
+MockConfigEntry = create_test_config_entry
+
+
+#
+# set_test_options
+#
+def set_test_options(entry: HAMockConfigEntry, options: dict[str, Any]) -> None:
+    """Override ``.options`` on a real ``MockConfigEntry`` during test setup.
+
+    The real ``ConfigEntry`` makes ``.options`` a read-only ``MappingProxyType``
+    to enforce updates via ``async_update_entry``.  In unit tests with a mocked
+    *hass*, that API is also mocked so we need a way to set the initial state.
+
+    Only use for **initial test setup**; never call in production code.
+
+    Args:
+        entry: The config entry to modify.
+        options: New options dict.
+    """
+
+    from types import MappingProxyType
+
+    object.__setattr__(entry, "options", MappingProxyType(options))
 
 
 def create_sun_config(
@@ -1117,16 +1221,17 @@ def setup_hass_with_weather_and_entities(
 
 @pytest.fixture
 def mock_basic_hass() -> MagicMock:
-    """Create a basic mock Home Assistant instance.
+    """Create a basic mock Home Assistant instance with ``spec=HomeAssistant``.
 
-    This fixture consolidates the duplicate `hass = MagicMock()` patterns found
-    across multiple test files, providing a standardized basic mock with the
-    most commonly used attributes configured.
+    Using ``spec`` ensures that accessing a non-existent attribute raises
+    ``AttributeError`` instead of silently returning another ``MagicMock``,
+    catching typos and HA API drift early.
 
     Returns:
         MagicMock: Basic Home Assistant mock instance with states, services, and config_entries
     """
-    hass = MagicMock()
+
+    hass = MagicMock(spec=HomeAssistant)
     hass.states = MagicMock()
     hass.services = MagicMock()
     hass.config_entries = MagicMock()
@@ -1162,17 +1267,18 @@ def mock_hass_with_spec() -> MagicMock:
 
 
 @pytest.fixture
-def mock_config_entry_basic() -> MockConfigEntry:
+def mock_config_entry_basic() -> HAMockConfigEntry:
     """Create a basic mock config entry with temperature configuration.
 
-    This fixture consolidates the duplicate `MockConfigEntry(create_temperature_config())`
-    patterns found across multiple test files, providing a standardized config entry
+    This fixture consolidates the duplicate ``MockConfigEntry(create_temperature_config())``
+    patterns found across multiple test files, providing a standardised config entry
     for tests that need a simple temperature-based automation configuration.
 
     Returns:
-        MockConfigEntry: Mock config entry with temperature automation setup
+        HAMockConfigEntry: Mock config entry with temperature automation setup.
     """
-    return MockConfigEntry(create_temperature_config())
+
+    return create_test_config_entry(create_temperature_config())
 
 
 @pytest.fixture

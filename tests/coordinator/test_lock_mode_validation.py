@@ -15,7 +15,7 @@ import pytest
 from custom_components.smart_cover_automation.const import LockMode
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 
-from ..conftest import MockConfigEntry, create_temperature_config
+from ..conftest import MockConfigEntry, create_temperature_config, set_test_options
 
 
 class TestLockModeValidation:
@@ -123,11 +123,14 @@ class TestLockModeValidation:
     async def test_async_set_lock_mode_preserves_other_options(self, coordinator):
         """Test that setting lock mode preserves other config options."""
         # Add some existing options
-        coordinator.config_entry.options = {
-            "lock_mode": LockMode.UNLOCKED,
-            "covers": ["cover.test"],
-            "temp_threshold": 25,
-        }
+        set_test_options(
+            coordinator.config_entry,
+            {
+                "lock_mode": LockMode.UNLOCKED,
+                "covers": ["cover.test"],
+                "temp_threshold": 25,
+            },
+        )
 
         new_mode = LockMode.HOLD_POSITION
         await coordinator.async_set_lock_mode(new_mode)

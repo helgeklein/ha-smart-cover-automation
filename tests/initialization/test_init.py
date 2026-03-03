@@ -322,6 +322,10 @@ class TestIntegrationSetup:
         mock_hass_with_spec.config_entries = MagicMock()
         mock_hass_with_spec.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
 
+        # Stub lifecycle methods so we can assert they were called
+        mock_config_entry_basic.add_update_listener = MagicMock(return_value=MagicMock())
+        mock_config_entry_basic.async_on_unload = MagicMock()
+
         # Mock integration loading and coordinator setup
         with (
             patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
