@@ -214,10 +214,12 @@ class AutomationEngine:
         if weather_sunny_external_control is not None:
             # External control is enabled - use its boolean value to determine sunny state
             weather_sunny = bool(weather_sunny_external_control)
-            self._logger.debug(f"Weather sunny external control active. Current state sunny? {weather_sunny}")
+            sunny_source = "external control"
         else:
             # External control disabled - determine sunny state based on weather condition
             weather_sunny = weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS
+            sunny_source = "weather entity"
+        self._logger.debug(f"Current weather condition: {'sunny' if weather_sunny else 'not sunny'} (source: {sunny_source})")
 
         # Check for sunset and handle delayed cover closing
         should_close_for_sunset = self._check_sunset_closing()

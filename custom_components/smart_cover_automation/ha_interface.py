@@ -285,7 +285,6 @@ class HomeAssistantInterface:
             raise InvalidSensorReadingError(entity_id, f"Weather entity {entity_id}: state is unavailable")
 
         condition = state.state
-        self._logger.debug(f"Current weather condition: {condition}")
         return condition
 
     #
