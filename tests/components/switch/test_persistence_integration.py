@@ -31,6 +31,7 @@ from custom_components.smart_cover_automation.switch import (
 from custom_components.smart_cover_automation.switch import (
     async_setup_entry as async_setup_entry_switch,
 )
+from tests.conftest import set_test_options
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity import Entity
@@ -54,7 +55,7 @@ async def test_switch_persistence_across_simulated_restart(mock_coordinator_basi
     # Setup initial integration with switch disabled
     entry = mock_coordinator_basic.config_entry
     entry.runtime_data.config[ConfKeys.ENABLED.value] = False
-    entry.options = {ConfKeys.ENABLED.value: False}  # Initial persisted state
+    set_test_options(entry, {ConfKeys.ENABLED.value: False})  # Initial persisted state
 
     # Setup mock Home Assistant environment
     mock_coordinator_basic.last_update_success = True
@@ -106,10 +107,11 @@ async def test_switch_persistence_across_simulated_restart(mock_coordinator_basi
     }
 
     # Create new config entry with persisted values (simulating restart)
-    from tests.conftest import MockConfigEntry
+    from tests.conftest import create_test_config_entry
 
-    new_entry = MockConfigEntry(persisted_config)
-    new_entry.options = {ConfKeys.ENABLED.value: True}  # Persisted from switch change
+    # Options contain the persisted switch state; runtime_data.config holds the full config.
+    new_entry = create_test_config_entry({ConfKeys.ENABLED.value: True})
+    new_entry.runtime_data.config = persisted_config
 
     # Create new coordinator with persisted config (simulating restart)
     from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
@@ -148,7 +150,7 @@ async def test_simulation_mode_persistence_across_simulated_restart(mock_coordin
     # Setup initial integration with simulation mode disabled
     entry = mock_coordinator_basic.config_entry
     entry.runtime_data.config[ConfKeys.SIMULATION_MODE.value] = False
-    entry.options = {ConfKeys.SIMULATION_MODE.value: False}
+    set_test_options(entry, {ConfKeys.SIMULATION_MODE.value: False})
 
     # Setup mock environment
     mock_coordinator_basic.last_update_success = True
@@ -193,10 +195,11 @@ async def test_simulation_mode_persistence_across_simulated_restart(mock_coordin
         ConfKeys.VERBOSE_LOGGING.value: False,
     }
 
-    from tests.conftest import MockConfigEntry
+    from tests.conftest import create_test_config_entry
 
-    new_entry = MockConfigEntry(persisted_config)
-    new_entry.options = {ConfKeys.SIMULATION_MODE.value: True}
+    # Options contain the persisted switch state; runtime_data.config holds the full config.
+    new_entry = create_test_config_entry({ConfKeys.SIMULATION_MODE.value: True})
+    new_entry.runtime_data.config = persisted_config
 
     from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 
@@ -231,7 +234,7 @@ async def test_direct_persistence_without_runtime_overrides(mock_coordinator_bas
     # Setup
     entry = mock_coordinator_basic.config_entry
     entry.runtime_data.config[ConfKeys.ENABLED.value] = False
-    entry.options = {}
+    set_test_options(entry, {})
 
     mock_coordinator_basic.last_update_success = True
     mock_coordinator_basic.async_update_listeners = Mock()
