@@ -301,6 +301,28 @@ class WeatherSunnyExternalControlSwitch(IntegrationEntity, SwitchEntity):  # pyr
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL}"
 
     #
+    # async_added_to_hass
+    #
+    async def async_added_to_hass(self) -> None:
+        """Persist the initial override state when the entity is first enabled.
+
+        When a user enables this entity in the entity registry, the
+        automation engine must immediately see the override key in the
+        config options.  Without this, the key is absent and the engine
+        falls back to the weather forecast logic, ignoring the switch.
+
+        Only writes when the key is absent to avoid unnecessary config
+        updates on regular restarts / reloads.
+        """
+
+        await super().async_added_to_hass()
+        options: dict[str, Any] = dict(self.coordinator.config_entry.options or {})
+        if SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL not in options:
+            # First time the entity is enabled — seed the default (False)
+            # so the engine sees the key on the very next coordinator refresh.
+            await self._async_persist_override(False)
+
+    #
     # is_on
     #
     @property
