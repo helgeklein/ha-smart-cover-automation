@@ -112,16 +112,18 @@
                         }
                     },
                     "section_close_after_sunset": {
-                        "name": "夜间关闭",
+                        "name": "晚间关闭",
                         "data": {
-                            "close_covers_after_sunset": "在日落后关闭遮阳设备：",
-                            "close_covers_after_sunset_delay": "延迟时间：",
+                            "close_covers_after_sunset": "晚间关闭遮阳设备：",
+                            "close_covers_after_sunset_mode": "模式：",
+                            "close_covers_after_sunset_delay": "时间：",
                             "close_covers_after_sunset_cover_list": "遮阳设备："
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "启用后，遮阳设备会在日落后经过一段时间关闭。",
-                            "close_covers_after_sunset_delay": "日落后等待多长时间再关闭遮阳设备。",
-                            "close_covers_after_sunset_cover_list": "选择需要在日落后关闭的遮阳设备。"
+                            "close_covers_after_sunset": "启用后，遮阳设备将在晚间自动关闭。",
+                            "close_covers_after_sunset_mode": "选择在固定时间关闭还是相对于日落时间关闭。",
+                            "close_covers_after_sunset_delay": "根据所选模式：日落后延迟时间或固定时刻。",
+                            "close_covers_after_sunset_cover_list": "选择需要在晚间关闭的遮阳设备。"
                         }
                     }
                 }
@@ -184,7 +186,10 @@
                 }
             },
             "close_covers_after_sunset_delay": {
-                "name": "夜间关闭：延迟"
+                "name": "晚间关闭：时间"
+            },
+            "close_covers_after_sunset_mode": {
+                "name": "晚间关闭：模式"
             },
             "sun_azimuth": {
                 "name": "太阳方位角"
@@ -309,6 +314,12 @@
                 "manual": "手动（恢复手动设置的角度）",
                 "auto": "自动（阻挡直射阳光）",
                 "set_value": "固定值（固定倾斜角度）"
+            }
+        },
+        "evening_closure_mode": {
+            "options": {
+                "after_sunset": "日落后（相对延迟）",
+                "fixed_time": "固定时刻"
             }
         }
     }

@@ -114,14 +114,16 @@
                     "section_close_after_sunset": {
                         "name": "Avondsluiting",
                         "data": {
-                            "close_covers_after_sunset": "Rolluiken na zonsondergang sluiten:",
-                            "close_covers_after_sunset_delay": "Tijdvertraging:",
+                            "close_covers_after_sunset": "Rolluiken 's avonds sluiten:",
+                            "close_covers_after_sunset_mode": "Modus:",
+                            "close_covers_after_sunset_delay": "Tijd:",
                             "close_covers_after_sunset_cover_list": "Rolluiken:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Wanneer ingeschakeld worden de rolluiken een bepaalde tijd na zonsondergang gesloten.",
-                            "close_covers_after_sunset_delay": "Wachttijd na zonsondergang voordat de rolluiken worden gesloten.",
-                            "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die na zonsondergang moeten worden gesloten."
+                            "close_covers_after_sunset": "Wanneer ingeschakeld worden de rolluiken 's avonds automatisch gesloten.",
+                            "close_covers_after_sunset_mode": "Kies of de rolluiken op een vast tijdstip of relatief ten opzichte van zonsondergang worden gesloten.",
+                            "close_covers_after_sunset_delay": "Afhankelijk van de gekozen modus: vertraging na zonsondergang of vast tijdstip.",
+                            "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die 's avonds moeten worden gesloten."
                         }
                     }
                 }
@@ -184,7 +186,10 @@
                 }
             },
             "close_covers_after_sunset_delay": {
-                "name": "Avondsluiting: vertraging"
+                "name": "Avondsluiting: tijd"
+            },
+            "close_covers_after_sunset_mode": {
+                "name": "Avondsluiting: modus"
             },
             "sun_azimuth": {
                 "name": "Zonazimut"
@@ -309,6 +314,12 @@
                 "manual": "Handmatig (handmatig ingestelde hoek herstellen)",
                 "auto": "Auto (direct zonlicht blokkeren)",
                 "set_value": "Vaste waarde (vaste kantelhoek)"
+            }
+        },
+        "evening_closure_mode": {
+            "options": {
+                "after_sunset": "Na zonsondergang (relatieve vertraging)",
+                "fixed_time": "Vast tijdstip"
             }
         }
     }

@@ -112,16 +112,18 @@
                         }
                     },
                     "section_close_after_sunset": {
-                        "name": "Nachtschließen",
+                        "name": "Abendschließen",
                         "data": {
-                            "close_covers_after_sunset": "Rollläden nach Sonnenuntergang schließen:",
-                            "close_covers_after_sunset_delay": "Zeitverzögerung:",
+                            "close_covers_after_sunset": "Rollläden abends schließen:",
+                            "close_covers_after_sunset_mode": "Modus:",
+                            "close_covers_after_sunset_delay": "Zeit:",
                             "close_covers_after_sunset_cover_list": "Rollläden:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Wenn aktiviert, werden die Rollläden eine bestimmte Zeit nach Sonnenuntergang geschlossen.",
-                            "close_covers_after_sunset_delay": "Wartezeit nach Sonnenuntergang, bevor die Rollläden geschlossen werden.",
-                            "close_covers_after_sunset_cover_list": "Wählen Sie die Rollläden aus, die nach Sonnenuntergang geschlossen werden sollen."
+                            "close_covers_after_sunset": "Wenn aktiviert, werden die Rollläden abends automatisch geschlossen.",
+                            "close_covers_after_sunset_mode": "Wählen Sie, ob zu einer festen Uhrzeit oder relativ zum Sonnenuntergang geschlossen werden soll.",
+                            "close_covers_after_sunset_delay": "Je nach gewähltem Modus: Verzögerung nach Sonnenuntergang oder feste Uhrzeit.",
+                            "close_covers_after_sunset_cover_list": "Wählen Sie die Rollläden aus, die abends geschlossen werden sollen."
                         }
                     }
                 }
@@ -131,7 +133,7 @@
     "entity": {
         "binary_sensor": {
             "close_covers_after_sunset": {
-                "name": "Nachtschließen: aktiviert?",
+                "name": "Abendschließen: aktiviert?",
                 "state": {
                     "on": "Ja",
                     "off": "Nein"
@@ -184,7 +186,10 @@
                 }
             },
             "close_covers_after_sunset_delay": {
-                "name": "Nachtschließen: Verzögerung"
+                "name": "Abendschließen: Zeit"
+            },
+            "close_covers_after_sunset_mode": {
+                "name": "Abendschließen: Modus"
             },
             "sun_azimuth": {
                 "name": "Sonnenazimut"
@@ -309,6 +314,12 @@
                 "manual": "Manuell (manuell eingestellten Winkel beibehalten)",
                 "auto": "Automatisch (direktes Sonnenlicht blockieren)",
                 "set_value": "Festwert (fester Neigungswinkel)"
+            }
+        },
+        "evening_closure_mode": {
+            "options": {
+                "after_sunset": "Nach Sonnenuntergang (relative Verzögerung)",
+                "fixed_time": "Feste Uhrzeit"
             }
         }
     }

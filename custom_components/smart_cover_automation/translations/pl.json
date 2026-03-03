@@ -114,14 +114,16 @@
                     "section_close_after_sunset": {
                         "name": "Zamykanie wieczorne",
                         "data": {
-                            "close_covers_after_sunset": "Zamykanie rolet po zachodzie słońca:",
-                            "close_covers_after_sunset_delay": "Opóźnienie czasowe:",
+                            "close_covers_after_sunset": "Zamykanie rolet wieczorem:",
+                            "close_covers_after_sunset_mode": "Tryb:",
+                            "close_covers_after_sunset_delay": "Godzina:",
                             "close_covers_after_sunset_cover_list": "Rolety:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Po włączeniu rolety zostaną zamknięte po określonym czasie od zachodu słońca.",
-                            "close_covers_after_sunset_delay": "Czas oczekiwania po zachodzie słońca przed zamknięciem rolet.",
-                            "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte po zachodzie słońca."
+                            "close_covers_after_sunset": "Po włączeniu rolety zostaną automatycznie zamknięte wieczorem.",
+                            "close_covers_after_sunset_mode": "Wybierz, czy zamykać o stałej godzinie, czy względem zachodu słońca.",
+                            "close_covers_after_sunset_delay": "W zależności od wybranego trybu: opóźnienie po zachodzie słońca lub stała godzina.",
+                            "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem."
                         }
                     }
                 }
@@ -184,7 +186,10 @@
                 }
             },
             "close_covers_after_sunset_delay": {
-                "name": "Zamykanie wieczorne: opóźnienie"
+                "name": "Zamykanie wieczorne: godzina"
+            },
+            "close_covers_after_sunset_mode": {
+                "name": "Zamykanie wieczorne: tryb"
             },
             "sun_azimuth": {
                 "name": "Azymut słońca"
@@ -309,6 +314,12 @@
                 "manual": "Ręczne (przywrócić ręcznie ustawiony kąt)",
                 "auto": "Auto (blokować bezpośrednie światło słoneczne)",
                 "set_value": "Wartość stała (stały kąt nachylenia)"
+            }
+        },
+        "evening_closure_mode": {
+            "options": {
+                "after_sunset": "Po zachodzie słońca (opóźnienie względne)",
+                "fixed_time": "Stała godzina"
             }
         }
     }

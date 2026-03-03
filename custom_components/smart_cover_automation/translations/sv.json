@@ -114,14 +114,16 @@
                     "section_close_after_sunset": {
                         "name": "Kvällsstängning",
                         "data": {
-                            "close_covers_after_sunset": "Stäng persienner efter solnedgång:",
-                            "close_covers_after_sunset_delay": "Tidsfördröjning:",
+                            "close_covers_after_sunset": "Stäng persienner på kvällen:",
+                            "close_covers_after_sunset_mode": "Läge:",
+                            "close_covers_after_sunset_delay": "Tid:",
                             "close_covers_after_sunset_cover_list": "Persienner:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "När den är aktiverad stängs persiennerna en viss tid efter solnedgången.",
-                            "close_covers_after_sunset_delay": "Väntetid efter solnedgången innan persiennerna stängs.",
-                            "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas efter solnedgången."
+                            "close_covers_after_sunset": "När den är aktiverad stängs persiennerna automatiskt på kvällen.",
+                            "close_covers_after_sunset_mode": "Välj om persiennerna ska stängas vid en fast tid eller relativt solnedgången.",
+                            "close_covers_after_sunset_delay": "Beroende på valt läge: fördröjning efter solnedgången eller fast tidpunkt.",
+                            "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas på kvällen."
                         }
                     }
                 }
@@ -184,7 +186,10 @@
                 }
             },
             "close_covers_after_sunset_delay": {
-                "name": "Kvällsstängning: fördröjning"
+                "name": "Kvällsstängning: tid"
+            },
+            "close_covers_after_sunset_mode": {
+                "name": "Kvällsstängning: läge"
             },
             "sun_azimuth": {
                 "name": "Solazimut"
@@ -309,6 +314,12 @@
                 "manual": "Manuell (återställ manuellt inställd vinkel)",
                 "auto": "Auto (blockera direkt solljus)",
                 "set_value": "Fast värde (fast lutningsvinkel)"
+            }
+        },
+        "evening_closure_mode": {
+            "options": {
+                "after_sunset": "Efter solnedgången (relativ fördröjning)",
+                "fixed_time": "Fast tidpunkt"
             }
         }
     }
