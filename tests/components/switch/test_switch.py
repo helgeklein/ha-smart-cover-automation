@@ -15,7 +15,12 @@ from typing import Iterable, cast
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
-from custom_components.smart_cover_automation.switch import EnabledSwitch, SimulationModeSwitch, VerboseLoggingSwitch
+from custom_components.smart_cover_automation.switch import (
+    EnabledSwitch,
+    SimulationModeSwitch,
+    VerboseLoggingSwitch,
+    WeatherSunnyExternalControlSwitch,
+)
 from custom_components.smart_cover_automation.switch import (
     async_setup_entry as async_setup_entry_switch,
 )
@@ -40,20 +45,23 @@ async def test_switch_entity_properties(mock_coordinator_basic) -> None:
     # Setup the switch platform and capture all entities
     await async_setup_entry_switch(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
 
-    # Verify we have exactly 3 switch entities
-    assert len(captured) == 3
+    # Verify we have exactly 4 switch entities
+    assert len(captured) == 4
 
     # Find each switch type
     enabled_switch = next((entity for entity in captured if isinstance(entity, EnabledSwitch)), None)
     simulation_switch = next((entity for entity in captured if isinstance(entity, SimulationModeSwitch)), None)
     verbose_switch = next((entity for entity in captured if isinstance(entity, VerboseLoggingSwitch)), None)
+    weather_override_switch = next((entity for entity in captured if isinstance(entity, WeatherSunnyExternalControlSwitch)), None)
 
-    # Verify both switches exist
+    # Verify all switches exist
     assert enabled_switch is not None
     assert simulation_switch is not None
     assert verbose_switch is not None
+    assert weather_override_switch is not None
 
     # Verify unique IDs are set correctly
     assert enabled_switch.unique_id == f"{entry.entry_id}_enabled"
     assert simulation_switch.unique_id == f"{entry.entry_id}_simulation_mode"
     assert verbose_switch.unique_id == f"{entry.entry_id}_verbose_logging"
+    assert weather_override_switch.unique_id == f"{entry.entry_id}_weather_sunny_external_control"

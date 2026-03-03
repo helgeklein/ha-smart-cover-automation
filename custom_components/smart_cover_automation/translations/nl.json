@@ -225,6 +225,9 @@
             },
             "verbose_logging": {
                 "name": "Uitgebreide logging"
+            },
+            "weather_sunny_external_control": {
+                "name": "Weer: zonnig? (externe besturing)"
             }
         }
     },

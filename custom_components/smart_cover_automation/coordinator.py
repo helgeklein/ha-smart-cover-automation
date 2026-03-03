@@ -222,8 +222,11 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         try:
             self._logger.info("Starting cover automation update")
 
-            # Keep a reference to raw config for dynamic per-cover direction
-            config = self.config_entry.runtime_data.config
+            # Read live options so that keys written during platform setup
+            # (e.g. by async_added_to_hass) are visible immediately, even
+            # before the reload listener has had a chance to update the
+            # runtime_data.config snapshot.
+            config = dict(getattr(self.config_entry, const.HA_OPTIONS, {}) or {})
 
             # Get the resolved settings - configuration errors are critical
             try:

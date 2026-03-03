@@ -225,6 +225,9 @@
             },
             "verbose_logging": {
                 "name": "Szczegółowe logowanie"
+            },
+            "weather_sunny_external_control": {
+                "name": "Pogoda: słonecznie? (sterowanie zewnętrzne)"
             }
         }
     },

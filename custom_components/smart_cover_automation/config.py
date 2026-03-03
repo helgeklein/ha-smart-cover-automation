@@ -12,7 +12,7 @@ from datetime import time
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
-from custom_components.smart_cover_automation.const import HA_OPTIONS, LockMode, TiltMode
+from custom_components.smart_cover_automation.const import HA_OPTIONS, SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL, LockMode, TiltMode
 
 T = TypeVar("T")
 
@@ -233,10 +233,21 @@ def get_runtime_configurable_keys() -> set[str]:
     These keys have corresponding entities (switches, numbers, selects) and
     changes to them only require a coordinator refresh, not a full reload.
 
+    This includes both keys from CONF_SPECS marked as runtime_configurable
+    and the weather sunny external control switch key, which lives outside
+    the spec system due to its tri-state semantics (absent / True / False).
+
     Returns:
         Set of configuration key strings that are runtime configurable
     """
-    return {key.value for key, spec in CONF_SPECS.items() if spec.runtime_configurable}
+
+    keys = {key.value for key, spec in CONF_SPECS.items() if spec.runtime_configurable}
+    # The external control switch is not part of CONF_SPECS (it uses tri-state
+    # semantics: absent means "use forecast", True/False means override).
+    # Include it here so toggling the switch triggers a coordinator refresh
+    # rather than a full integration reload.
+    keys.add(SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL)
+    return keys
 
 
 #
