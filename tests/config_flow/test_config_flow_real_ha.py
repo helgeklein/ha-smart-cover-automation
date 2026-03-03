@@ -10,11 +10,12 @@ See developer_docs/test-relevance-improvement-plan.md, Phase 3.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.components.weather.const import WeatherEntityFeature
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -79,6 +80,15 @@ def expected_lingering_timers() -> bool:
 # ============================================================================
 # Helpers
 # ============================================================================
+
+
+#
+# _as_dict
+#
+def _as_dict(result: ConfigFlowResult) -> dict[str, Any]:
+    """Convert flow result TypedDict to plain dict for test assertions."""
+
+    return cast(dict[str, Any], result)
 
 
 #
@@ -215,16 +225,18 @@ async def _step_through_options_flow(
     inputs = list(step_inputs) + [{}] * (6 - len(step_inputs))
 
     # Step init
-    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "init"
 
     # Steps init → 2 → 3 → 4 → 5 → 6
     step_ids = ["init", "2", "3", "4", "5", "6"]
     for i, step_id in enumerate(step_ids):
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"],
-            user_input=inputs[i],
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input=inputs[i],
+            )
         )
         if result["type"] is FlowResultType.CREATE_ENTRY:
             return result
@@ -259,14 +271,16 @@ class TestConfigFlow:
         """
 
         # Show the initial form
-        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+        result = _as_dict(await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"}))
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == "user"
 
         # Submit the empty form → CREATE_ENTRY
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            user_input={},
+        result = _as_dict(
+            await hass.config_entries.flow.async_configure(
+                result["flow_id"],
+                user_input={},
+            )
         )
         assert result["type"] is FlowResultType.CREATE_ENTRY
         assert result["title"] == INTEGRATION_NAME
@@ -362,17 +376,19 @@ class TestOptionsFlow:
         entry = _create_loaded_entry(hass)
 
         # Start options flow
-        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == "init"
 
         # Submit with non-existent cover
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"],
-            user_input={
-                ConfKeys.WEATHER_ENTITY_ID.value: TEST_WEATHER,
-                ConfKeys.COVERS.value: ["cover.nonexistent"],
-            },
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    ConfKeys.WEATHER_ENTITY_ID.value: TEST_WEATHER,
+                    ConfKeys.COVERS.value: ["cover.nonexistent"],
+                },
+            )
         )
 
         # Should stay on init with an error
@@ -397,13 +413,15 @@ class TestOptionsFlow:
         _register_cover_entity(hass, TEST_COVER_1)
         entry = _create_loaded_entry(hass)
 
-        result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"],
-            user_input={
-                ConfKeys.WEATHER_ENTITY_ID.value: "weather.nonexistent",
-                ConfKeys.COVERS.value: [TEST_COVER_1],
-            },
+        result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    ConfKeys.WEATHER_ENTITY_ID.value: "weather.nonexistent",
+                    ConfKeys.COVERS.value: [TEST_COVER_1],
+                },
+            )
         )
 
         assert result["type"] is FlowResultType.FORM
@@ -432,7 +450,7 @@ class TestOptionsFlow:
         _register_weather_entity(hass)
         entry = _create_loaded_entry(hass)
 
-        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == "init"
 
@@ -536,13 +554,15 @@ class TestOptionsFlow:
 
         entry = _create_loaded_entry(hass)
 
-        result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"],
-            user_input={
-                ConfKeys.WEATHER_ENTITY_ID.value: TEST_WEATHER,
-                ConfKeys.COVERS.value: [TEST_COVER_1],
-            },
+        result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    ConfKeys.WEATHER_ENTITY_ID.value: TEST_WEATHER,
+                    ConfKeys.COVERS.value: [TEST_COVER_1],
+                },
+            )
         )
 
         # Should stay on init with an error about the weather entity

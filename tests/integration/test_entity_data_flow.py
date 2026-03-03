@@ -245,14 +245,10 @@ def _entity_id_for_key(
 
     registry = er.async_get(hass)
     unique_id = f"{entry.entry_id}_{key}"
-    reg_entry = registry.async_get_entity_id(None, DOMAIN, unique_id)
 
-    # async_get_entity_id returns entity_id or None, but when we don't know
-    # the platform we iterate manually.
-    if reg_entry is not None:
-        return reg_entry
-
-    # Fallback: iterate all entries for this config entry
+    # Iterate all entities for this config entry to find the one matching
+    # our unique_id.  We don't know the entity domain up front, so we
+    # cannot use registry.async_get_entity_id() (which requires a domain).
     for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
         if entity.unique_id == unique_id:
             return entity.entity_id
