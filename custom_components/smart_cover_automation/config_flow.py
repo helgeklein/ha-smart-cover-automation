@@ -549,6 +549,14 @@ class FlowHelper:
         #
         evening_closure_schema_dict: dict[vol.Marker, object] = {}
 
+        # Disable cover opening after evening closure
+        evening_closure_schema_dict[
+            vol.Required(
+                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value,
+                default=resolved_settings.block_opening_after_evening_closure,
+            )
+        ] = selector.BooleanSelector()
+
         # Setting to enable/disable
         evening_closure_schema_dict[
             vol.Required(
@@ -593,14 +601,6 @@ class FlowHelper:
                 include_entities=covers,
             )
         )
-
-        # Disable cover opening after evening closure
-        evening_closure_schema_dict[
-            vol.Required(
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value,
-                default=resolved_settings.block_opening_after_evening_closure,
-            )
-        ] = selector.BooleanSelector()
 
         # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
