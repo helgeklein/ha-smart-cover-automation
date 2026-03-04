@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import SUN_EVENT_SUNSET
@@ -134,7 +134,7 @@ class AutomationEngine:
             "temp_threshold": self.resolved.temp_threshold,
             "weather_hot_cutover_time": self.resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
             "manual_override_duration": self.resolved.manual_override_duration,
-            "nighttime_block_opening": self.resolved.nighttime_block_opening,
+            "nighttime_block_opening": self.resolved.block_opening_after_evening_closure,
             "automation_disabled_time_range": self.resolved.automation_disabled_time_range,
             "automation_disabled_time_range_start": self.resolved.automation_disabled_time_range_start.strftime("%H:%M:%S"),
             "automation_disabled_time_range_end": self.resolved.automation_disabled_time_range_end.strftime("%H:%M:%S"),
@@ -238,6 +238,9 @@ class AutomationEngine:
         # Check for evening closure and handle delayed cover closing
         evening_closure = self._check_evening_closure()
 
+        # Compute post-evening-closure flag for the opening block
+        post_evening_closure = self._compute_post_evening_closure()
+
         return (
             SensorData(
                 sun_azimuth=sun_azimuth,
@@ -247,9 +250,44 @@ class AutomationEngine:
                 weather_condition=weather_condition,
                 weather_sunny=weather_sunny,
                 evening_closure=evening_closure,
+                post_evening_closure=post_evening_closure,
             ),
             "",
         )
+
+    #
+    # _get_evening_closure_time
+    #
+    def _get_evening_closure_time(self) -> datetime | None:
+        """Calculate today's evening closure time based on the configured mode.
+
+        Returns:
+            The evening closure datetime for today, or None if it cannot be
+            determined (e.g. sunset data unavailable).
+        """
+
+        now = dt_util.now()
+        today = now.date()
+        mode = self.resolved.evening_closure_mode
+
+        if mode == const.EveningClosureMode.FIXED_TIME:
+            closing_time = self.resolved.evening_closure_time
+            return now.replace(
+                hour=closing_time.hour,
+                minute=closing_time.minute,
+                second=closing_time.second,
+                microsecond=0,
+            )
+
+        # After sunset mode: sunset + configured delay
+        sunset_time = get_astral_event_date(self._ha_interface.hass, SUN_EVENT_SUNSET, today)
+        if sunset_time is None:
+            self._logger.debug("Could not determine sunset time for today")
+            return None
+
+        delay_time = self.resolved.evening_closure_time
+        delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
+        return sunset_time + timedelta(seconds=delay_seconds)
 
     #
     # _check_evening_closure
@@ -274,32 +312,11 @@ class AutomationEngine:
         if not self.resolved.evening_closure_enabled:
             return False
 
-        # Get current time
+        # Get current time and evening closure time
         now = dt_util.now()
-        today = now.date()
-
-        # Calculate window_start based on mode
-        mode = self.resolved.evening_closure_mode
-
-        if mode == const.EveningClosureMode.FIXED_TIME:
-            # Fixed time mode: use the configured time directly
-            closing_time = self.resolved.evening_closure_time
-            window_start = now.replace(
-                hour=closing_time.hour,
-                minute=closing_time.minute,
-                second=closing_time.second,
-                microsecond=0,
-            )
-        else:
-            # After sunset mode: sunset + configured delay
-            sunset_time = get_astral_event_date(self._ha_interface.hass, SUN_EVENT_SUNSET, today)
-            if sunset_time is None:
-                self._logger.debug("Could not determine sunset time for today")
-                return False
-
-            delay_time = self.resolved.evening_closure_time
-            delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
-            window_start = sunset_time + timedelta(seconds=delay_seconds)
+        window_start = self._get_evening_closure_time()
+        if window_start is None:
+            return False
 
         window_end = window_start + timedelta(minutes=const.SUNSET_CLOSING_WINDOW_MINUTES)
 
@@ -320,6 +337,46 @@ class AutomationEngine:
             if self._evening_covers_closed:
                 self._logger.debug("Evening closure: Outside active time window. Resetting state")
                 self._evening_covers_closed = False
+
+        return False
+
+    #
+    # _compute_post_evening_closure
+    #
+    def _compute_post_evening_closure(self) -> bool:
+        """Determine whether we are past tonight's evening closure time.
+
+        This flag is used by the "block opening after evening closure" feature
+        to prevent covers from re-opening once the evening closure time has
+        passed.  It stays True until the next morning (sunrise / sun above
+        horizon).
+
+        The check is stateless — computed fresh every cycle:
+        1. If evening closure is disabled → False
+        2. If current time >= today's evening closure time → True
+        3. Elif sun is below horizon (overnight tail) → True
+        4. Otherwise → False
+
+        Returns:
+            True if we are in the post-evening-closure period, False otherwise
+        """
+
+        # Evening closure must be enabled for this flag to apply
+        if not self.resolved.evening_closure_enabled:
+            return False
+
+        now = dt_util.now()
+
+        # Try to determine today's evening closure time
+        evening_closure_time = self._get_evening_closure_time()
+        if evening_closure_time is not None and now >= evening_closure_time:
+            return True
+
+        # Overnight tail: sun below horizon (covers the period after midnight
+        # when the evening closure time is in the past day)
+        sun_state = self._ha_interface.get_sun_state()
+        if sun_state == const.HA_SUN_STATE_BELOW_HORIZON:
+            return True
 
         return False
 

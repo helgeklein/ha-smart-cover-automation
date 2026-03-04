@@ -89,8 +89,6 @@ In this step of the configuration wizard, you can enable lockout protection by c
 
 In this step of the configuration wizard, the following settings can be configured:
 
-- **Disable cover opening at night:** The automation opens the covers when they needn't be closed for heat protection. By default, this auto-opening doesn't happen at night (when the sun is below the horizon). You can change that behavior by flipping this setting to disabled.
-
 ### Blocked Time Range
 
 Blocked time range allows you to disable the automation in a certain time range, e.g., when you sleep.
@@ -109,6 +107,7 @@ Evening closure allows you to automatically close all or a subset of the previou
 
 Evening closure settings:
 
+- **Disable cover opening after evening closure:** Prevents auto-reopening after the evening closure time.
 - **Close covers in the evening:** Enable or disable the evening closure function.
 - **Mode:** Choose whether to close at a fixed time or relative to sunset.
 - **Time:** Depending on the selected mode: delay after sunset, or fixed time of day.

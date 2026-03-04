@@ -21,9 +21,9 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.const import EntityCategory
 
 from .const import (
+    BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
     BINARY_SENSOR_KEY_EVENING_CLOSURE,
     BINARY_SENSOR_KEY_LOCK_ACTIVE,
-    BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
     BINARY_SENSOR_KEY_STATUS,
     BINARY_SENSOR_KEY_TEMP_HOT,
     BINARY_SENSOR_KEY_WEATHER_SUNNY,
@@ -60,7 +60,7 @@ async def async_setup_entry(
         # Status binary sensor - indicates system problems
         StatusBinarySensor(coordinator),
         EveningClosureBinarySensor(coordinator),
-        NighttimeBlockOpeningBinarySensor(coordinator),
+        BlockOpeningAfterEveningClosureBinarySensor(coordinator),
         TempHotBinarySensor(coordinator),
         WeatherSunnyBinarySensor(coordinator),
         LockActiveSensor(coordinator),
@@ -185,14 +185,14 @@ class EveningClosureBinarySensor(IntegrationBinarySensor):
 
 
 #
-# NighttimeBlockOpeningBinarySensor
+# BlockOpeningAfterEveningClosureBinarySensor
 #
-class NighttimeBlockOpeningBinarySensor(IntegrationBinarySensor):
-    """Binary sensor that reports whether nighttime block opening is enabled.
+class BlockOpeningAfterEveningClosureBinarySensor(IntegrationBinarySensor):
+    """Binary sensor that reports whether opening block after evening closure is enabled.
 
     State meanings:
-    - on: Nighttime block opening is enabled (covers won't open at night)
-    - off: Nighttime block opening is disabled (covers can open at night)
+    - on: Block is enabled (covers won't open after evening closure)
+    - off: Block is disabled (covers can open after evening closure)
     """
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
@@ -202,19 +202,19 @@ class NighttimeBlockOpeningBinarySensor(IntegrationBinarySensor):
             coordinator: Provides the data for this sensor
         """
         entity_description = BinarySensorEntityDescription(
-            key=BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
-            translation_key=BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
+            key=BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
+            translation_key=BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
             entity_category=EntityCategory.DIAGNOSTIC,
             # No device class - allows custom state translations (Yes/No)
-            icon="mdi:weather-night",
+            icon="mdi:door-closed-lock",
         )
         super().__init__(coordinator, entity_description)
 
     @property
     def is_on(self) -> bool:  # pyright: ignore
-        """Return True if nighttime block opening is enabled."""
+        """Return True if opening block after evening closure is enabled."""
         resolved = self.coordinator._resolved_settings()
-        return resolved.nighttime_block_opening
+        return resolved.block_opening_after_evening_closure
 
 
 #

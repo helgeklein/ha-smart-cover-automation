@@ -444,13 +444,13 @@ class TestRunMethod:
         assert result.weather_sunny is not None
 
     async def test_run_blocked_by_nighttime(self, mock_ha_interface, mock_logger):
-        """Test run when blocked by nighttime condition."""
-        # Configure to block at night
+        """Test run when blocked by opening block after evening closure."""
+        # Configure to block after evening closure
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             f"cover.test_{const.COVER_SFX_AZIMUTH}": 180.0,
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
+            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         }
         resolved = resolve(config)
         engine = AutomationEngine(

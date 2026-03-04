@@ -216,7 +216,7 @@ def _create_config_entry(
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-        ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
+        ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         ConfKeys.TEMP_THRESHOLD.value: 24.0,
     }
 
@@ -626,15 +626,20 @@ class TestRuntimeBehavior:
     # test_nighttime_blocks_opening
     #
     async def test_nighttime_blocks_opening(self, hass: HomeAssistant) -> None:
-        """Cover does not open when the sun is below the horizon and nighttime blocking is enabled.
+        """Cover does not open after evening closure when opening block is enabled.
 
-        With nighttime_block_opening=True, a closed cover should stay closed
-        even if temperature is comfortable (no heat protection would open it).
+        With block_opening_after_evening_closure=True and evening closure
+        enabled, a closed cover should stay closed even if temperature is
+        comfortable (no heat protection would open it) when the sun is
+        below the horizon.
         """
 
         entry = _create_config_entry(
             hass,
-            extra_options={ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True},
+            extra_options={
+                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
+                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            },
         )
         await _setup_integration(
             hass,
