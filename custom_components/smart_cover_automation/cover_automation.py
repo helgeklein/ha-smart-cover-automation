@@ -49,6 +49,7 @@ class SensorData:
     weather_condition: str
     weather_sunny: bool
     evening_closure: bool
+    post_evening_closure: bool
 
 
 @dataclass
@@ -186,17 +187,17 @@ class CoverAutomation:
         cover_state.sun_hitting = sun_hitting
         cover_state.sun_azimuth_diff = round(sun_azimuth_difference, 1)
 
-        # Calculate desired position (lockout protection and nighttime opening block are checked inside _calculate_desired_position)
+        # Calculate desired position (lockout protection and opening block after evening closure are checked inside _calculate_desired_position)
         desired_pos, movement_reason, lockout_protection = self._calculate_desired_position(sensor_data, sun_hitting, current_pos)
         cover_state.pos_target_desired = desired_pos
         cover_state.lockout_protection = lockout_protection
 
-        # Move cover if needed (skip if movement_reason is None, e.g., nighttime block active)
+        # Move cover if needed (skip if movement_reason is None, e.g., opening block after evening closure active)
         if movement_reason is None:
-            # No movement - nighttime opening block or other condition preventing movement
+            # No movement - opening block after evening closure or other condition preventing movement
             self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
             cover_moved = False
-            message = "No movement (blocked by nighttime or other condition)"
+            message = "No movement (blocked by opening block after evening closure or other condition)"
         else:
             cover_moved, actual_pos, message = await self._move_cover_if_needed(current_pos, desired_pos, features, movement_reason)
             if not cover_moved:
@@ -206,10 +207,10 @@ class CoverAutomation:
                 # Movement occurred
                 cover_state.pos_target_final = actual_pos
 
-        # Apply tilt after position handling — skip only when the nighttime opening block is
-        # active (cover opening suppressed at night).  Other reasons for no position
-        # change (e.g. lockout protection) should still allow tilt updates.
-        if not self._is_nighttime_opening_block_active():
+        # Apply tilt after position handling — skip only when opening block after
+        # evening closure is active (cover opening suppressed).  Other reasons for
+        # no position change (e.g. lockout protection) should still allow tilt updates.
+        if not self._is_opening_block_after_evening_closure_active(sensor_data):
             await self._apply_tilt(cover_state, sensor_data, features, movement_reason, cover_moved)
 
         # Log per-cover state
@@ -320,28 +321,24 @@ class CoverAutomation:
         return False
 
     #
-    # _is_nighttime_opening_block_active
+    # _is_opening_block_after_evening_closure_active
     #
-    def _is_nighttime_opening_block_active(self) -> bool:
-        """Check if nighttime block opening should prevent cover opening.
+    def _is_opening_block_after_evening_closure_active(self, sensor_data: SensorData) -> bool:
+        """Check if opening block after evening closure should prevent cover opening.
 
-        The nighttime block feature prevents automatic cover opening during nighttime
-        (when the sun is below the horizon). This does NOT prevent closing operations.
+        When enabled, this prevents automatic cover opening once the evening
+        closure time has passed (regardless of whether the sun is still above
+        the horizon).  The block stays active until the next morning.
 
         Returns:
-            True if nighttime block is active and should prevent opening, False otherwise
+            True if block is active and should prevent opening, False otherwise
         """
 
         # Check if feature is enabled
-        if not self.resolved.nighttime_block_opening:
+        if not self.resolved.block_opening_after_evening_closure:
             return False
 
-        # Check if sun is below horizon
-        sun_state = self._ha_interface.get_sun_state()
-        if sun_state == const.HA_SUN_STATE_BELOW_HORIZON:
-            return True
-
-        return False
+        return sensor_data.post_evening_closure
 
     #
     # _get_cover_position
@@ -496,14 +493,14 @@ class CoverAutomation:
                 desired_pos_friendly_name = "heat protection state (closed)"
                 movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
         else:
-            # Let light in mode - check if nighttime block is active
-            if self._is_nighttime_opening_block_active():
-                # Nighttime block active - keep current position (no movement)
+            # Let light in mode - check if opening block after evening closure is active
+            if self._is_opening_block_after_evening_closure_active(sensor_data):
+                # Opening block active - keep current position (no movement)
                 desired_pos = current_pos
-                desired_pos_friendly_name = "unchanged (nighttime block active)"
-                movement_reason = None  # No movement reason when nighttime block active
+                desired_pos_friendly_name = "unchanged (opening block after evening closure active)"
+                movement_reason = None  # No movement reason when block active
             else:
-                # No nighttime block - open the cover
+                # No block - open the cover
                 min_closure_limit = self._get_cover_closure_limit(get_max=False)
                 desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
                 desired_pos_friendly_name = "normal state (open)"

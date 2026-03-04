@@ -91,12 +91,8 @@
             "6": {
                 "title": "Smart Cover Automation - Stap 6 van 6",
                 "description": "Configureer **tijdinstellingen** voor de automatisering (optioneel).",
-                "data": {
-                    "nighttime_block_opening": "Openen van rolluiken 's nachts uitschakelen:"
-                },
-                "data_description": {
-                    "nighttime_block_opening": "Wanneer ingeschakeld, openen de rolluiken 's nachts niet (wanneer de zon onder de horizon staat)."
-                },
+                "data": {},
+                "data_description": {},
                 "sections": {
                     "section_time_range": {
                         "name": "Geblokkeerd tijdvenster",
@@ -117,13 +113,15 @@
                             "close_covers_after_sunset": "Rolluiken 's avonds sluiten:",
                             "close_covers_after_sunset_mode": "Modus:",
                             "close_covers_after_sunset_delay": "Tijd:",
-                            "close_covers_after_sunset_cover_list": "Rolluiken:"
+                            "close_covers_after_sunset_cover_list": "Rolluiken:",
+                            "nighttime_block_opening": "Openen van rolluiken na avondsluiting uitschakelen:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Wanneer ingeschakeld worden de rolluiken 's avonds automatisch gesloten.",
                             "close_covers_after_sunset_mode": "Kies of de rolluiken op een vast tijdstip of relatief ten opzichte van zonsondergang worden gesloten.",
                             "close_covers_after_sunset_delay": "Afhankelijk van de gekozen modus: vertraging na zonsondergang of vast tijdstip.",
-                            "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die 's avonds moeten worden gesloten."
+                            "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die 's avonds moeten worden gesloten.",
+                            "nighttime_block_opening": "Wanneer ingeschakeld worden de rolluiken na de avondsluitingstijd niet meer automatisch geopend."
                         }
                     }
                 }
@@ -143,7 +141,7 @@
                 "name": "Vergrendelstatus"
             },
             "nighttime_block_opening": {
-                "name": "Nacht: openen blokkeren?",
+                "name": "Avondsluiting: openen blokkeren?",
                 "state": {
                     "on": "Ja",
                     "off": "Nee"

@@ -42,7 +42,7 @@ def mock_resolved_config():
     resolved.manual_override_duration = 3600
     resolved.covers_min_position_delta = 5
     resolved.lock_mode = LockMode.UNLOCKED
-    resolved.nighttime_block_opening = False
+    resolved.block_opening_after_evening_closure = False
     resolved.evening_closure_enabled = False
     resolved.evening_closure_cover_list = ()
     resolved.tilt_mode_day = TiltMode.OPEN
@@ -114,6 +114,7 @@ def sensor_data():
         weather_condition="sunny",
         weather_sunny=True,
         evening_closure=False,
+        post_evening_closure=False,
     )
 
 
@@ -499,6 +500,7 @@ class TestApplyTilt:
             weather_condition="sunny",
             weather_sunny=True,
             evening_closure=False,
+            post_evening_closure=False,
         )
         cover_state = CoverState(tilt_current=100, sun_hitting=True, sun_azimuth_diff=0.0)
         await auto._apply_tilt(cover_state, data, tilt_features, CoverMovementReason.CLOSING_HEAT_PROTECTION, True)
@@ -736,6 +738,7 @@ class TestProcessWithTilt:
             weather_condition="sunny",
             weather_sunny=True,
             evening_closure=False,
+            post_evening_closure=False,
         )
 
         cover_state = await auto.process(state, data)

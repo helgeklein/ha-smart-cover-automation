@@ -27,6 +27,7 @@ from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
     COVER_SFX_AZIMUTH,
     INTEGRATION_NAME,
+    STEP_6_SECTION_CLOSE_AFTER_SUNSET,
     TiltMode,
 )
 
@@ -177,7 +178,7 @@ def _create_loaded_entry(
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-        ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
+        ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         ConfKeys.TEMP_THRESHOLD.value: 24.0,
     }
 
@@ -343,7 +344,9 @@ class TestOptionsFlow:
             {},
             # Step 6: time settings
             {
-                ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
+                STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+                    ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
+                },
             },
         ]
 
@@ -511,7 +514,11 @@ class TestOptionsFlow:
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
             },
             {},
-            {ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True},
+            {
+                STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+                    ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
+                },
+            },
         ]
 
         result = await _step_through_options_flow(hass, entry, step_inputs)

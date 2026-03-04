@@ -16,9 +16,9 @@ from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.binary_sensor import (
+    BlockOpeningAfterEveningClosureBinarySensor,
     EveningClosureBinarySensor,
     LockActiveSensor,
-    NighttimeBlockOpeningBinarySensor,
     StatusBinarySensor,
     TempHotBinarySensor,
     WeatherSunnyBinarySensor,
@@ -27,9 +27,9 @@ from custom_components.smart_cover_automation.binary_sensor import (
     async_setup_entry as async_setup_entry_binary_sensor,
 )
 from custom_components.smart_cover_automation.const import (
+    BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
     BINARY_SENSOR_KEY_EVENING_CLOSURE,
     BINARY_SENSOR_KEY_LOCK_ACTIVE,
-    BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
     BINARY_SENSOR_KEY_STATUS,
     BINARY_SENSOR_KEY_TEMP_HOT,
     BINARY_SENSOR_KEY_WEATHER_SUNNY,
@@ -76,12 +76,12 @@ BINARY_SENSOR_CONFIGS = [
     },
     {
         "id": "nighttime_block_opening",
-        "class": NighttimeBlockOpeningBinarySensor,
-        "key": BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
-        "translation_key": BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
+        "class": BlockOpeningAfterEveningClosureBinarySensor,
+        "key": BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
+        "translation_key": BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
         "entity_category": EntityCategory.DIAGNOSTIC,
         "device_class": None,
-        "icon": "mdi:weather-night",
+        "icon": "mdi:door-closed-lock",
         "entity_index": 2,
         "type": "config_boolean",
         "config_key": "nighttime_block_opening",

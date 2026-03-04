@@ -91,12 +91,8 @@
             "6": {
                 "title": "Smart Cover Automation - Krok 6 z 6",
                 "description": "Skonfiguruj **ustawienia czasowe** automatyzacji (opcjonalne).",
-                "data": {
-                    "nighttime_block_opening": "Wyłącz otwieranie rolet w nocy:"
-                },
-                "data_description": {
-                    "nighttime_block_opening": "Po włączeniu rolety nie będą się otwierały w nocy (gdy słońce znajduje się poniżej horyzontu)."
-                },
+                "data": {},
+                "data_description": {},
                 "sections": {
                     "section_time_range": {
                         "name": "Zablokowany przedział czasu",
@@ -117,13 +113,15 @@
                             "close_covers_after_sunset": "Zamykanie rolet wieczorem:",
                             "close_covers_after_sunset_mode": "Tryb:",
                             "close_covers_after_sunset_delay": "Godzina:",
-                            "close_covers_after_sunset_cover_list": "Rolety:"
+                            "close_covers_after_sunset_cover_list": "Rolety:",
+                            "nighttime_block_opening": "Wyłącz otwieranie rolet po zamykaniu wieczornym:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Po włączeniu rolety zostaną automatycznie zamknięte wieczorem.",
                             "close_covers_after_sunset_mode": "Wybierz, czy zamykać o stałej godzinie, czy względem zachodu słońca.",
                             "close_covers_after_sunset_delay": "W zależności od wybranego trybu: opóźnienie po zachodzie słońca lub stała godzina.",
-                            "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem."
+                            "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem.",
+                            "nighttime_block_opening": "Po włączeniu rolety nie będą otwierane automatycznie po godzinie zamykania wieczornego."
                         }
                     }
                 }
@@ -143,7 +141,7 @@
                 "name": "Stan blokady"
             },
             "nighttime_block_opening": {
-                "name": "Noc: blokować otwieranie?",
+                "name": "Zamykanie wieczorne: blokować otwieranie?",
                 "state": {
                     "on": "Tak",
                     "off": "Nie"

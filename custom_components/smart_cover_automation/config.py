@@ -65,7 +65,7 @@ class ConfKeys(StrEnum):
     ENABLED = "enabled"  # Global on/off for all automation.
     LOCK_MODE = "lock_mode"  # Current lock mode for all covers.
     MANUAL_OVERRIDE_DURATION = "manual_override_duration"  # Duration (seconds) to skip a cover's automation after manual cover move.
-    NIGHTTIME_BLOCK_OPENING = "nighttime_block_opening"  # Disable cover open automation at night.
+    BLOCK_OPENING_AFTER_EVENING_CLOSURE = "nighttime_block_opening"  # Disable cover opening after evening closure.
     SIMULATION_MODE = "simulation_mode"  # If enabled, no actual cover commands are sent.
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
@@ -205,7 +205,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.LOCK_MODE: _ConfSpec(default=LockMode.UNLOCKED, converter=LockMode, runtime_configurable=True),
     ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds, runtime_configurable=True),
-    ConfKeys.NIGHTTIME_BLOCK_OPENING: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=10.0, converter=_Converters.to_float, runtime_configurable=True),
@@ -266,6 +266,7 @@ _VALUE_TO_FIELD: dict[str, str] = {
     "close_covers_after_sunset_mode": "evening_closure_mode",
     "close_covers_after_sunset_delay": "evening_closure_time",
     "close_covers_after_sunset_cover_list": "evening_closure_cover_list",
+    "nighttime_block_opening": "block_opening_after_evening_closure",
 }
 
 
@@ -297,7 +298,7 @@ class ResolvedConfig:
     enabled: bool
     lock_mode: LockMode
     manual_override_duration: int
-    nighttime_block_opening: bool
+    block_opening_after_evening_closure: bool
     simulation_mode: bool
     sun_azimuth_tolerance: int
     sun_elevation_threshold: float

@@ -91,12 +91,8 @@
             "6": {
                 "title": "Smart Cover Automation - Paso 6 de 6",
                 "description": "Configure **ajustes de tiempo** para la automatización (opcional).",
-                "data": {
-                    "nighttime_block_opening": "Desactivar la apertura de persianas por la noche:"
-                },
-                "data_description": {
-                    "nighttime_block_opening": "Cuando está activada, las persianas no se abrirán durante la noche (cuando el sol está por debajo del horizonte)."
-                },
+                "data": {},
+                "data_description": {},
                 "sections": {
                     "section_time_range": {
                         "name": "Intervalo de tiempo bloqueado",
@@ -117,13 +113,15 @@
                             "close_covers_after_sunset": "Cerrar persianas por la noche:",
                             "close_covers_after_sunset_mode": "Modo:",
                             "close_covers_after_sunset_delay": "Hora:",
-                            "close_covers_after_sunset_cover_list": "Persianas:"
+                            "close_covers_after_sunset_cover_list": "Persianas:",
+                            "nighttime_block_opening": "Desactivar la apertura de persianas tras el cierre al anochecer:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Cuando está activada, las persianas se cerrarán automáticamente por la noche.",
                             "close_covers_after_sunset_mode": "Elija si cerrar a una hora fija o de forma relativa a la puesta de sol.",
                             "close_covers_after_sunset_delay": "Según el modo seleccionado: retraso tras la puesta de sol u hora fija del día.",
-                            "close_covers_after_sunset_cover_list": "Seleccione las persianas que deben cerrarse por la noche."
+                            "close_covers_after_sunset_cover_list": "Seleccione las persianas que deben cerrarse por la noche.",
+                            "nighttime_block_opening": "Cuando está activada, las persianas no se abrirán automáticamente después de la hora de cierre al anochecer."
                         }
                     }
                 }
@@ -143,7 +141,7 @@
                 "name": "Estado de bloqueo"
             },
             "nighttime_block_opening": {
-                "name": "Noche: ¿bloquear apertura?",
+                "name": "Cierre al anochecer: ¿bloquear apertura?",
                 "state": {
                     "on": "Sí",
                     "off": "No"

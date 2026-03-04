@@ -91,12 +91,8 @@
             "6": {
                 "title": "智能遮阳自动化 - 第 6 步,共 6 步",
                 "description": "为自动化配置**时间设置**（可选）。",
-                "data": {
-                    "nighttime_block_opening": "在夜间禁止打开遮阳设备："
-                },
-                "data_description": {
-                    "nighttime_block_opening": "启用后，夜间（太阳位于地平线以下时）不会打开遮阳设备。"
-                },
+                "data": {},
+                "data_description": {},
                 "sections": {
                     "section_time_range": {
                         "name": "已阻止的时间范围",
@@ -117,13 +113,15 @@
                             "close_covers_after_sunset": "晚间关闭遮阳设备：",
                             "close_covers_after_sunset_mode": "模式：",
                             "close_covers_after_sunset_delay": "时间：",
-                            "close_covers_after_sunset_cover_list": "遮阳设备："
+                            "close_covers_after_sunset_cover_list": "遮阳设备：",
+                            "nighttime_block_opening": "晚间关闭后禁止打开遮阳设备："
                         },
                         "data_description": {
                             "close_covers_after_sunset": "启用后，遮阳设备将在晚间自动关闭。",
                             "close_covers_after_sunset_mode": "选择在固定时间关闭还是相对于日落时间关闭。",
                             "close_covers_after_sunset_delay": "根据所选模式：日落后延迟时间或固定时刻。",
-                            "close_covers_after_sunset_cover_list": "选择需要在晚间关闭的遮阳设备。"
+                            "close_covers_after_sunset_cover_list": "选择需要在晚间关闭的遮阳设备。",
+                            "nighttime_block_opening": "启用后，遮阳设备在晚间关闭时间后不会自动打开。"
                         }
                     }
                 }
@@ -143,7 +141,7 @@
                 "name": "锁定状态"
             },
             "nighttime_block_opening": {
-                "name": "夜间：阻止开启？",
+                "name": "晚间关闭：阻止开启？",
                 "state": {
                     "on": "是",
                     "off": "否"

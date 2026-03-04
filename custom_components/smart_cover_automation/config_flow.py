@@ -509,14 +509,6 @@ class FlowHelper:
 
         schema_dict: dict[vol.Marker, object] = {}
 
-        # "Disable cover opening at night" (above the section)
-        schema_dict[
-            vol.Required(
-                ConfKeys.NIGHTTIME_BLOCK_OPENING.value,
-                default=resolved_settings.nighttime_block_opening,
-            )
-        ] = selector.BooleanSelector()
-
         #
         # Section: Disable automation in time range
         #
@@ -601,6 +593,14 @@ class FlowHelper:
                 include_entities=covers,
             )
         )
+
+        # Disable cover opening after evening closure
+        evening_closure_schema_dict[
+            vol.Required(
+                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value,
+                default=resolved_settings.block_opening_after_evening_closure,
+            )
+        ] = selector.BooleanSelector()
 
         # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
