@@ -91,12 +91,8 @@
             "6": {
                 "title": "Smart Cover Automation - Passo 6 de 6",
                 "description": "Configure **definições de tempo** para a automação (opcional).",
-                "data": {
-                    "nighttime_block_opening": "Desativar abertura das persianas à noite:"
-                },
-                "data_description": {
-                    "nighttime_block_opening": "Quando ativada, as persianas não se abrirão durante a noite (quando o sol está abaixo do horizonte)."
-                },
+                "data": {},
+                "data_description": {},
                 "sections": {
                     "section_time_range": {
                         "name": "Intervalo de tempo bloqueado",
@@ -114,14 +110,18 @@
                     "section_close_after_sunset": {
                         "name": "Fecho ao entardecer",
                         "data": {
-                            "close_covers_after_sunset": "Fechar persianas após o pôr do sol:",
-                            "close_covers_after_sunset_delay": "Atraso de tempo:",
-                            "close_covers_after_sunset_cover_list": "Persianas:"
+                            "close_covers_after_sunset": "Fechar persianas ao anoitecer:",
+                            "close_covers_after_sunset_mode": "Modo:",
+                            "close_covers_after_sunset_delay": "Hora:",
+                            "close_covers_after_sunset_cover_list": "Persianas:",
+                            "nighttime_block_opening": "Desativar abertura das persianas após o fecho ao entardecer:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Quando ativada, as persianas serão fechadas após algum tempo do pôr do sol.",
-                            "close_covers_after_sunset_delay": "Tempo de espera após o pôr do sol antes de fechar as persianas.",
-                            "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas após o pôr do sol."
+                            "close_covers_after_sunset": "Quando ativada, as persianas serão fechadas automaticamente ao anoitecer.",
+                            "close_covers_after_sunset_mode": "Escolha se deve fechar a uma hora fixa ou relativamente ao pôr do sol.",
+                            "close_covers_after_sunset_delay": "Consoante o modo selecionado: atraso após o pôr do sol ou hora fixa do dia.",
+                            "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas ao anoitecer.",
+                            "nighttime_block_opening": "Quando ativada, as persianas não serão abertas automaticamente após a hora de fecho ao entardecer."
                         }
                     }
                 }
@@ -141,7 +141,7 @@
                 "name": "Estado do bloqueio"
             },
             "nighttime_block_opening": {
-                "name": "Noite: bloquear abertura?",
+                "name": "Fecho ao entardecer: bloquear abertura?",
                 "state": {
                     "on": "Sim",
                     "off": "Não"
@@ -184,7 +184,10 @@
                 }
             },
             "close_covers_after_sunset_delay": {
-                "name": "Fecho ao entardecer: atraso"
+                "name": "Fecho ao entardecer: hora"
+            },
+            "close_covers_after_sunset_mode": {
+                "name": "Fecho ao entardecer: modo"
             },
             "sun_azimuth": {
                 "name": "Azimute solar"
@@ -309,6 +312,12 @@
                 "manual": "Manual (restaurar ângulo definido manualmente)",
                 "auto": "Auto (bloquear luz solar direta)",
                 "set_value": "Valor fixo (ângulo de inclinação fixo)"
+            }
+        },
+        "evening_closure_mode": {
+            "options": {
+                "after_sunset": "Após o pôr do sol (atraso relativo)",
+                "fixed_time": "Hora fixa do dia"
             }
         }
     }

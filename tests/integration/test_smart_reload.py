@@ -152,7 +152,7 @@ async def _create_and_load_entry(
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-        ConfKeys.NIGHTTIME_BLOCK_OPENING.value: True,
+        ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         ConfKeys.TEMP_THRESHOLD.value: 24.0,
     }
     for cover in covers:
@@ -278,7 +278,7 @@ class TestSmartReload:
         original_coordinator_id = id(coordinator)
 
         # Change a structural key
-        new_options = {**entry.options, ConfKeys.NIGHTTIME_BLOCK_OPENING.value: False}
+        new_options = {**entry.options, ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: False}
 
         with patch(
             "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",

@@ -89,8 +89,6 @@ In this step of the configuration wizard, you can enable lockout protection by c
 
 In this step of the configuration wizard, the following settings can be configured:
 
-- **Disable cover opening at night:** The automation opens the covers when they needn't be closed for heat protection. By default, this auto-opening doesn't happen at night (when the sun is below the horizon). You can change that behavior by flipping this setting to disabled.
-
 ### Blocked Time Range
 
 Blocked time range allows you to disable the automation in a certain time range, e.g., when you sleep.
@@ -103,14 +101,16 @@ Blocked time range settings:
 
 ### Evening Closure
 
-Evening closure allows you to automatically close a subset of the previously selected covers with a certain delay after sunset.
+Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening, either at a fixed time or with a certain delay after sunset.
 
-**Note:** The evening closure function is active in a 10 minute time window that starts at the configured point in time (sunset + delay). If the integration is not running during that time window, the covers will not be closed.
+**Note:** The evening closure function is active in a 10 minute time window that starts at the configured point in time. If the integration is not running during that time window, the covers will not be closed.
 
 Evening closure settings:
 
-- **Close covers after sunset:** Enable or disable the evening closure function.
-- **Time delay:** How long to wait after sunset unteil the selected subset of covers are closed.
+- **Disable cover opening after evening closure:** Prevents auto-reopening after the evening closure time.
+- **Close covers in the evening:** Enable or disable the evening closure function.
+- **Mode:** Choose whether to close at a fixed time or relative to sunset.
+- **Time:** Depending on the selected mode: delay after sunset, or fixed time of day.
 - **Covers:** Subset of covers to close after sunset.
 
 ## Next Steps

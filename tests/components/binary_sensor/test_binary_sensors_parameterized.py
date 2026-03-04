@@ -16,9 +16,9 @@ from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.binary_sensor import (
-    CloseCoversAfterSunsetBinarySensor,
+    BlockOpeningAfterEveningClosureBinarySensor,
+    EveningClosureBinarySensor,
     LockActiveSensor,
-    NighttimeBlockOpeningBinarySensor,
     StatusBinarySensor,
     TempHotBinarySensor,
     WeatherSunnyBinarySensor,
@@ -27,9 +27,9 @@ from custom_components.smart_cover_automation.binary_sensor import (
     async_setup_entry as async_setup_entry_binary_sensor,
 )
 from custom_components.smart_cover_automation.const import (
-    BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET,
+    BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
+    BINARY_SENSOR_KEY_EVENING_CLOSURE,
     BINARY_SENSOR_KEY_LOCK_ACTIVE,
-    BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
     BINARY_SENSOR_KEY_STATUS,
     BINARY_SENSOR_KEY_TEMP_HOT,
     BINARY_SENSOR_KEY_WEATHER_SUNNY,
@@ -60,9 +60,9 @@ BINARY_SENSOR_CONFIGS = [
     },
     {
         "id": "close_covers_after_sunset",
-        "class": CloseCoversAfterSunsetBinarySensor,
-        "key": BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET,
-        "translation_key": BINARY_SENSOR_KEY_CLOSE_COVERS_AFTER_SUNSET,
+        "class": EveningClosureBinarySensor,
+        "key": BINARY_SENSOR_KEY_EVENING_CLOSURE,
+        "translation_key": BINARY_SENSOR_KEY_EVENING_CLOSURE,
         "entity_category": EntityCategory.DIAGNOSTIC,
         "device_class": None,
         "icon": "mdi:weather-sunset",
@@ -76,12 +76,12 @@ BINARY_SENSOR_CONFIGS = [
     },
     {
         "id": "nighttime_block_opening",
-        "class": NighttimeBlockOpeningBinarySensor,
-        "key": BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
-        "translation_key": BINARY_SENSOR_KEY_NIGHTTIME_BLOCK_OPENING,
+        "class": BlockOpeningAfterEveningClosureBinarySensor,
+        "key": BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
+        "translation_key": BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
         "entity_category": EntityCategory.DIAGNOSTIC,
         "device_class": None,
-        "icon": "mdi:weather-night",
+        "icon": "mdi:door-closed-lock",
         "entity_index": 2,
         "type": "config_boolean",
         "config_key": "nighttime_block_opening",
@@ -390,11 +390,11 @@ async def test_coordinator_state_sensor_states(
 async def test_config_boolean_sensor_states(
     mock_hass_with_spec, mock_config_entry_basic, sensor_config: dict[str, Any], state_test: dict[str, Any]
 ) -> None:
-    """Test config boolean sensors (e.g., CloseCoversAfterSunsetBinarySensor).
+    """Test config boolean sensors (e.g., EveningClosureBinarySensor).
 
     These sensors derive their is_on state from configuration values.
 
-    Coverage target: binary_sensor.py CloseCoversAfterSunsetBinarySensor.is_on,
+    Coverage target: binary_sensor.py EveningClosureBinarySensor.is_on,
                      NighttimeBlockOpeningBinarySensor.is_on properties
     """
     # Create coordinator

@@ -12,7 +12,13 @@ from datetime import time
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
-from custom_components.smart_cover_automation.const import HA_OPTIONS, SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL, LockMode, TiltMode
+from custom_components.smart_cover_automation.const import (
+    HA_OPTIONS,
+    SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
+    EveningClosureMode,
+    LockMode,
+    TiltMode,
+)
 
 T = TypeVar("T")
 
@@ -48,9 +54,10 @@ class ConfKeys(StrEnum):
     AUTOMATION_DISABLED_TIME_RANGE = "automation_disabled_time_range"  # Disable the automation in a time range.
     AUTOMATION_DISABLED_TIME_RANGE_START = "automation_disabled_time_range_start"  # Start time for disabling the automation.
     AUTOMATION_DISABLED_TIME_RANGE_END = "automation_disabled_time_range_end"  # End time for disabling the automation.
-    CLOSE_COVERS_AFTER_SUNSET = "close_covers_after_sunset"  # Close covers after sunset.
-    CLOSE_COVERS_AFTER_SUNSET_DELAY = "close_covers_after_sunset_delay"  # Close covers after sunset: delay.
-    CLOSE_COVERS_AFTER_SUNSET_COVER_LIST = "close_covers_after_sunset_cover_list"  # Close covers after sunset: list of covers.
+    EVENING_CLOSURE_ENABLED = "close_covers_after_sunset"  # Evening closure: enabled.
+    EVENING_CLOSURE_MODE = "close_covers_after_sunset_mode"  # Evening closure: timing mode.
+    EVENING_CLOSURE_TIME = "close_covers_after_sunset_delay"  # Evening closure: time value.
+    EVENING_CLOSURE_COVER_LIST = "close_covers_after_sunset_cover_list"  # Evening closure: list of covers.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_CLOSURE = "covers_min_closure"  # Minimum closure position (0 = fully closed, 100 = fully open)
@@ -58,7 +65,7 @@ class ConfKeys(StrEnum):
     ENABLED = "enabled"  # Global on/off for all automation.
     LOCK_MODE = "lock_mode"  # Current lock mode for all covers.
     MANUAL_OVERRIDE_DURATION = "manual_override_duration"  # Duration (seconds) to skip a cover's automation after manual cover move.
-    NIGHTTIME_BLOCK_OPENING = "nighttime_block_opening"  # Disable cover open automation at night.
+    BLOCK_OPENING_AFTER_EVENING_CLOSURE = "nighttime_block_opening"  # Disable cover opening after evening closure.
     SIMULATION_MODE = "simulation_mode"  # If enabled, no actual cover commands are sent.
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
@@ -187,9 +194,10 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(6, 0, 0), converter=_Converters.to_time),
-    ConfKeys.CLOSE_COVERS_AFTER_SUNSET: _ConfSpec(default=False, converter=_Converters.to_bool),
-    ConfKeys.CLOSE_COVERS_AFTER_SUNSET_DELAY: _ConfSpec(default=900, converter=_Converters.to_duration_seconds),
-    ConfKeys.CLOSE_COVERS_AFTER_SUNSET_COVER_LIST: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
+    ConfKeys.EVENING_CLOSURE_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.EVENING_CLOSURE_MODE: _ConfSpec(default=EveningClosureMode.AFTER_SUNSET, converter=EveningClosureMode),
+    ConfKeys.EVENING_CLOSURE_TIME: _ConfSpec(default=time(0, 15, 0), converter=_Converters.to_time),
+    ConfKeys.EVENING_CLOSURE_COVER_LIST: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int, runtime_configurable=True),
@@ -197,7 +205,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.LOCK_MODE: _ConfSpec(default=LockMode.UNLOCKED, converter=LockMode, runtime_configurable=True),
     ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds, runtime_configurable=True),
-    ConfKeys.NIGHTTIME_BLOCK_OPENING: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=10.0, converter=_Converters.to_float, runtime_configurable=True),
@@ -250,6 +258,27 @@ def get_runtime_configurable_keys() -> set[str]:
     return keys
 
 
+# Mapping from ConfKeys.value strings to ResolvedConfig field names.
+# Only entries whose field name differs from the .value need to be listed;
+# unlisted keys use their .value as the field name.
+_VALUE_TO_FIELD: dict[str, str] = {
+    "close_covers_after_sunset": "evening_closure_enabled",
+    "close_covers_after_sunset_mode": "evening_closure_mode",
+    "close_covers_after_sunset_delay": "evening_closure_time",
+    "close_covers_after_sunset_cover_list": "evening_closure_cover_list",
+    "nighttime_block_opening": "block_opening_after_evening_closure",
+}
+
+
+#
+# _field_name
+#
+def _field_name(key: ConfKeys) -> str:
+    """Map a ConfKeys value to its ResolvedConfig field name."""
+
+    return _VALUE_TO_FIELD.get(key.value, key.value)
+
+
 #
 # ResolvedConfig
 #
@@ -258,9 +287,10 @@ class ResolvedConfig:
     automation_disabled_time_range: bool
     automation_disabled_time_range_start: time
     automation_disabled_time_range_end: time
-    close_covers_after_sunset: bool
-    close_covers_after_sunset_delay: int
-    close_covers_after_sunset_cover_list: tuple[str, ...]
+    evening_closure_enabled: bool
+    evening_closure_mode: EveningClosureMode
+    evening_closure_time: time
+    evening_closure_cover_list: tuple[str, ...]
     covers: tuple[str, ...]
     covers_max_closure: int
     covers_min_closure: int
@@ -268,7 +298,7 @@ class ResolvedConfig:
     enabled: bool
     lock_mode: LockMode
     manual_override_duration: int
-    nighttime_block_opening: bool
+    block_opening_after_evening_closure: bool
     simulation_mode: bool
     sun_azimuth_tolerance: int
     sun_elevation_threshold: float
@@ -284,12 +314,12 @@ class ResolvedConfig:
     weather_hot_cutover_time: time
 
     def get(self, key: ConfKeys) -> Any:
-        # Generic access: ConfKeys values match dataclass field names
-        return getattr(self, key.value)
+        # Generic access via mapping (field names may differ from ConfKeys values)
+        return getattr(self, _field_name(key))
 
     def as_enum_dict(self) -> dict[ConfKeys, Any]:
         # Build dict without hard-coded names
-        return {k: getattr(self, k.value) for k in ConfKeys}
+        return {k: getattr(self, _field_name(k)) for k in ConfKeys}
 
 
 def resolve(options: Mapping[str, Any] | None) -> ResolvedConfig:
@@ -312,7 +342,7 @@ def resolve(options: Mapping[str, Any] | None) -> ResolvedConfig:
             return spec.converter(spec.default)
 
     # Build kwargs dynamically by iterating over ConfKeys, applying light coercion
-    converted: dict[str, Any] = {k.value: _val(k) for k in ConfKeys}
+    converted: dict[str, Any] = {_field_name(k): _val(k) for k in ConfKeys}
 
     # Filter strictly to ResolvedConfig fields and fail clearly if anything is missing
     field_names = {f.name for f in fields(ResolvedConfig)}

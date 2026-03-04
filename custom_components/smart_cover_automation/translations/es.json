@@ -91,12 +91,8 @@
             "6": {
                 "title": "Smart Cover Automation - Paso 6 de 6",
                 "description": "Configure **ajustes de tiempo** para la automatización (opcional).",
-                "data": {
-                    "nighttime_block_opening": "Desactivar la apertura de persianas por la noche:"
-                },
-                "data_description": {
-                    "nighttime_block_opening": "Cuando está activada, las persianas no se abrirán durante la noche (cuando el sol está por debajo del horizonte)."
-                },
+                "data": {},
+                "data_description": {},
                 "sections": {
                     "section_time_range": {
                         "name": "Intervalo de tiempo bloqueado",
@@ -114,14 +110,18 @@
                     "section_close_after_sunset": {
                         "name": "Cierre al anochecer",
                         "data": {
-                            "close_covers_after_sunset": "Cerrar persianas tras la puesta de sol:",
-                            "close_covers_after_sunset_delay": "Retraso temporal:",
-                            "close_covers_after_sunset_cover_list": "Persianas:"
+                            "close_covers_after_sunset": "Cerrar persianas por la noche:",
+                            "close_covers_after_sunset_mode": "Modo:",
+                            "close_covers_after_sunset_delay": "Hora:",
+                            "close_covers_after_sunset_cover_list": "Persianas:",
+                            "nighttime_block_opening": "Desactivar la apertura de persianas tras el cierre al anochecer:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Cuando está activada, las persianas se cerrarán cierto tiempo después de la puesta de sol.",
-                            "close_covers_after_sunset_delay": "Tiempo de espera tras la puesta de sol antes de cerrar las persianas.",
-                            "close_covers_after_sunset_cover_list": "Seleccione las persianas que deben cerrarse tras la puesta de sol."
+                            "close_covers_after_sunset": "Cuando está activada, las persianas se cerrarán automáticamente por la noche.",
+                            "close_covers_after_sunset_mode": "Elija si cerrar a una hora fija o de forma relativa a la puesta de sol.",
+                            "close_covers_after_sunset_delay": "Según el modo seleccionado: retraso tras la puesta de sol u hora fija del día.",
+                            "close_covers_after_sunset_cover_list": "Seleccione las persianas que deben cerrarse por la noche.",
+                            "nighttime_block_opening": "Cuando está activada, las persianas no se abrirán automáticamente después de la hora de cierre al anochecer."
                         }
                     }
                 }
@@ -141,7 +141,7 @@
                 "name": "Estado de bloqueo"
             },
             "nighttime_block_opening": {
-                "name": "Noche: ¿bloquear apertura?",
+                "name": "Cierre al anochecer: ¿bloquear apertura?",
                 "state": {
                     "on": "Sí",
                     "off": "No"
@@ -184,7 +184,10 @@
                 }
             },
             "close_covers_after_sunset_delay": {
-                "name": "Cierre al anochecer: demora"
+                "name": "Cierre al anochecer: hora"
+            },
+            "close_covers_after_sunset_mode": {
+                "name": "Cierre al anochecer: modo"
             },
             "sun_azimuth": {
                 "name": "Acimut solar"
@@ -309,6 +312,12 @@
                 "manual": "Manual (restaurar el ángulo configurado manualmente)",
                 "auto": "Auto (bloquear la luz solar directa)",
                 "set_value": "Valor fijo (ángulo de inclinación fijo)"
+            }
+        },
+        "evening_closure_mode": {
+            "options": {
+                "after_sunset": "Tras la puesta de sol (retraso relativo)",
+                "fixed_time": "Hora fija del día"
             }
         }
     }

@@ -106,7 +106,8 @@ def sensor_data():
         temp_hot=True,
         weather_condition="sunny",
         weather_sunny=True,
-        should_close_for_sunset=False,
+        evening_closure=False,
+        post_evening_closure=False,
     )
 
 
@@ -619,7 +620,8 @@ class TestCalculateDesiredPosition:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
-            should_close_for_sunset=False,
+            evening_closure=False,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
@@ -638,7 +640,8 @@ class TestCalculateDesiredPosition:
             temp_hot=False,
             weather_condition="cloudy",
             weather_sunny=False,
-            should_close_for_sunset=False,
+            evening_closure=False,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
@@ -657,7 +660,8 @@ class TestCalculateDesiredPosition:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
-            should_close_for_sunset=False,
+            evening_closure=False,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
@@ -676,7 +680,8 @@ class TestCalculateDesiredPosition:
             temp_hot=False,
             weather_condition="cloudy",
             weather_sunny=False,
-            should_close_for_sunset=False,
+            evening_closure=False,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
@@ -690,7 +695,7 @@ class TestCalculateDesiredPosition:
         """Test evening closure takes priority when cover is in list and respects max closure limit."""
 
         mock_resolved_config.covers_max_closure = 0
-        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
         # Sensor data with both sunset flag and heat protection conditions
         sensor_data = SensorData(
@@ -700,7 +705,8 @@ class TestCalculateDesiredPosition:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
-            should_close_for_sunset=True,  # Sunset flag is set
+            evening_closure=True,  # Sunset flag is set
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
@@ -714,7 +720,7 @@ class TestCalculateDesiredPosition:
         """Test sunset flag ignored when cover not in list."""
 
         mock_resolved_config.covers_max_closure = 0
-        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.other",)
+        mock_resolved_config.evening_closure_cover_list = ("cover.other",)
 
         # Sensor data with sunset flag but cover not in list
         sensor_data = SensorData(
@@ -724,7 +730,8 @@ class TestCalculateDesiredPosition:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
-            should_close_for_sunset=True,  # Sunset flag is set
+            evening_closure=True,  # Sunset flag is set
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
@@ -738,7 +745,7 @@ class TestCalculateDesiredPosition:
         """Test sunset flag ignored when no cover list configured."""
 
         mock_resolved_config.covers_max_closure = 0
-        mock_resolved_config.close_covers_after_sunset_cover_list = ()  # Empty list
+        mock_resolved_config.evening_closure_cover_list = ()  # Empty list
 
         sensor_data = SensorData(
             sun_azimuth=180.0,
@@ -747,7 +754,8 @@ class TestCalculateDesiredPosition:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
-            should_close_for_sunset=True,  # Sunset flag is set
+            evening_closure=True,  # Sunset flag is set
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
@@ -762,7 +770,7 @@ class TestCalculateDesiredPosition:
 
         mock_resolved_config.covers_max_closure = 15  # Set max closure limit
         mock_resolved_config.covers_min_closure = 100
-        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
         # Conditions would normally open covers (not hot, not sunny)
         sensor_data = SensorData(
@@ -772,7 +780,8 @@ class TestCalculateDesiredPosition:
             temp_hot=False,
             weather_condition="cloudy",
             weather_sunny=False,
-            should_close_for_sunset=True,  # But sunset flag is set
+            evening_closure=True,  # But sunset flag is set
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
@@ -786,7 +795,7 @@ class TestCalculateDesiredPosition:
         """Test that sunset flag False doesn't affect normal operation."""
 
         mock_resolved_config.covers_min_closure = 100
-        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
         # Conditions for opening
         sensor_data = SensorData(
@@ -796,7 +805,8 @@ class TestCalculateDesiredPosition:
             temp_hot=False,
             weather_condition="cloudy",
             weather_sunny=False,
-            should_close_for_sunset=False,  # Sunset flag is False
+            evening_closure=False,  # Sunset flag is False
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
@@ -810,7 +820,7 @@ class TestCalculateDesiredPosition:
         """Test evening closure respects max closure limit (global config)."""
 
         mock_resolved_config.covers_max_closure = 30
-        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
         sensor_data = SensorData(
             sun_azimuth=180.0,
@@ -819,7 +829,8 @@ class TestCalculateDesiredPosition:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
-            should_close_for_sunset=True,
+            evening_closure=True,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
@@ -833,7 +844,7 @@ class TestCalculateDesiredPosition:
         """Test evening closure respects per-cover max closure limit override."""
 
         mock_resolved_config.covers_max_closure = 30  # Global limit
-        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
         basic_config["cover.test_cover_max_closure"] = 20  # Per-cover override
 
         sensor_data = SensorData(
@@ -843,7 +854,8 @@ class TestCalculateDesiredPosition:
             temp_hot=False,
             weather_condition="clear",
             weather_sunny=False,
-            should_close_for_sunset=True,
+            evening_closure=True,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
@@ -867,7 +879,8 @@ class TestCalculateDesiredPositionLockout:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
-            should_close_for_sunset=False,
+            evening_closure=False,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
@@ -890,7 +903,8 @@ class TestCalculateDesiredPositionLockout:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
-            should_close_for_sunset=False,
+            evening_closure=False,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
@@ -903,7 +917,7 @@ class TestCalculateDesiredPositionLockout:
     def test_lockout_protection_sunset_closing_active(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
         """Test lockout protection prevents closing after sunset."""
         mock_resolved_config.covers_max_closure = 0
-        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = STATE_ON  # Window is open
 
@@ -914,7 +928,8 @@ class TestCalculateDesiredPositionLockout:
             temp_hot=False,
             weather_condition="clear",
             weather_sunny=False,
-            should_close_for_sunset=True,
+            evening_closure=True,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=75)
@@ -927,7 +942,7 @@ class TestCalculateDesiredPositionLockout:
     def test_lockout_protection_sunset_closing_inactive(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
         """Test evening closure proceeds when lockout not active."""
         mock_resolved_config.covers_max_closure = 0
-        mock_resolved_config.close_covers_after_sunset_cover_list = ("cover.test",)
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = "off"  # Window is closed
 
@@ -938,7 +953,8 @@ class TestCalculateDesiredPositionLockout:
             temp_hot=False,
             weather_condition="clear",
             weather_sunny=False,
-            should_close_for_sunset=True,
+            evening_closure=True,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=75)
@@ -961,7 +977,8 @@ class TestCalculateDesiredPositionLockout:
             temp_hot=False,
             weather_condition="cloudy",
             weather_sunny=False,
-            should_close_for_sunset=False,
+            evening_closure=False,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=20)
@@ -991,7 +1008,8 @@ class TestCalculateDesiredPositionLockout:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
-            should_close_for_sunset=False,
+            evening_closure=False,
+            post_evening_closure=False,
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
@@ -1002,38 +1020,71 @@ class TestCalculateDesiredPositionLockout:
         assert reason is None
 
 
-class TestIsNighttimeBlockActive:
-    """Test _is_nighttime_opening_block_active method."""
+class TestIsOpeningBlockAfterEveningClosureActive:
+    """Test _is_opening_block_after_evening_closure_active method."""
 
-    def test_nighttime_block_disabled(self, cover_automation, mock_resolved_config, mock_ha_interface):
-        """Test nighttime block when disabled in config."""
-        mock_resolved_config.nighttime_block_opening = False
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+    def test_block_disabled(self, cover_automation, mock_resolved_config):
+        """Test block when disabled in config."""
 
-        result = cover_automation._is_nighttime_opening_block_active()
+        mock_resolved_config.block_opening_after_evening_closure = False
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=True,
+        )
+
+        result = cover_automation._is_opening_block_after_evening_closure_active(sensor_data)
         assert result is False
 
-    def test_nighttime_block_enabled_sun_below_horizon(self, cover_automation, mock_resolved_config, mock_ha_interface):
-        """Test nighttime block when enabled and sun below horizon."""
-        mock_resolved_config.nighttime_block_opening = True
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+    def test_block_enabled_post_evening_closure_true(self, cover_automation, mock_resolved_config):
+        """Test block when enabled and post_evening_closure is True."""
 
-        result = cover_automation._is_nighttime_opening_block_active()
+        mock_resolved_config.block_opening_after_evening_closure = True
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=True,
+        )
+
+        result = cover_automation._is_opening_block_after_evening_closure_active(sensor_data)
         assert result is True
 
-    def test_nighttime_block_enabled_sun_above_horizon(self, cover_automation, mock_resolved_config, mock_ha_interface):
-        """Test nighttime block when enabled and sun above horizon."""
-        mock_resolved_config.nighttime_block_opening = True
-        mock_ha_interface.get_sun_state.return_value = "above_horizon"
+    def test_block_enabled_post_evening_closure_false(self, cover_automation, mock_resolved_config):
+        """Test block when enabled but post_evening_closure is False."""
 
-        result = cover_automation._is_nighttime_opening_block_active()
+        mock_resolved_config.block_opening_after_evening_closure = True
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        result = cover_automation._is_opening_block_after_evening_closure_active(sensor_data)
         assert result is False
 
-    def test_calculate_desired_position_nighttime_block_prevents_opening(self, cover_automation, mock_resolved_config, mock_ha_interface):
-        """Test that nighttime block prevents opening but keeps current position."""
+    def test_calculate_desired_position_block_prevents_opening(self, cover_automation, mock_resolved_config):
+        """Test that opening block prevents opening but keeps current position."""
+
         mock_resolved_config.covers_min_closure = 100
-        mock_resolved_config.nighttime_block_opening = True
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+        mock_resolved_config.block_opening_after_evening_closure = True
 
         # Conditions would normally open covers
         sensor_data = SensorData(
@@ -1043,7 +1094,8 @@ class TestIsNighttimeBlockActive:
             temp_hot=False,
             weather_condition="cloudy",
             weather_sunny=False,
-            should_close_for_sunset=False,
+            evening_closure=False,
+            post_evening_closure=True,
         )
 
         # Test with current position at 30%
@@ -1052,11 +1104,11 @@ class TestIsNighttimeBlockActive:
         assert reason is None  # No movement reason
         assert lockout_active is False
 
-    def test_calculate_desired_position_nighttime_allows_closing(self, cover_automation, mock_resolved_config, mock_ha_interface):
-        """Test that nighttime block does NOT prevent closing operations."""
+    def test_calculate_desired_position_block_allows_closing(self, cover_automation, mock_resolved_config):
+        """Test that opening block does NOT prevent closing operations."""
+
         mock_resolved_config.covers_max_closure = 0
-        mock_resolved_config.nighttime_block_opening = True
-        mock_ha_interface.get_sun_state.return_value = const.HA_SUN_STATE_BELOW_HORIZON
+        mock_resolved_config.block_opening_after_evening_closure = True
 
         # Conditions for heat protection closing
         sensor_data = SensorData(
@@ -1066,10 +1118,11 @@ class TestIsNighttimeBlockActive:
             temp_hot=True,
             weather_condition="sunny",
             weather_sunny=True,
-            should_close_for_sunset=False,
+            evening_closure=False,
+            post_evening_closure=True,
         )
 
-        # Test that closing still happens despite nighttime
+        # Test that closing still happens despite opening block
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=100)
         assert position == 0  # Closes fully
         assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION  # Closing still works

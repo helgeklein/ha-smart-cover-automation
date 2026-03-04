@@ -91,12 +91,8 @@
             "6": {
                 "title": "Smart Cover Automation - Passo 6 di 6",
                 "description": "Configura le **impostazioni temporali** dell'automazione (opzionale).",
-                "data": {
-                    "nighttime_block_opening": "Disattiva l'apertura delle tapparelle di notte:"
-                },
-                "data_description": {
-                    "nighttime_block_opening": "Quando è attivata, le tapparelle non si apriranno durante la notte (quando il sole è sotto l'orizzonte)."
-                },
+                "data": {},
+                "data_description": {},
                 "sections": {
                     "section_time_range": {
                         "name": "Intervallo orario bloccato",
@@ -114,14 +110,18 @@
                     "section_close_after_sunset": {
                         "name": "Chiusura serale",
                         "data": {
-                            "close_covers_after_sunset": "Chiudere le tapparelle dopo il tramonto:",
-                            "close_covers_after_sunset_delay": "Ritardo temporale:",
-                            "close_covers_after_sunset_cover_list": "Tapparelle:"
+                            "close_covers_after_sunset": "Chiudere le tapparelle di sera:",
+                            "close_covers_after_sunset_mode": "Modalità:",
+                            "close_covers_after_sunset_delay": "Orario:",
+                            "close_covers_after_sunset_cover_list": "Tapparelle:",
+                            "nighttime_block_opening": "Disattiva l'apertura delle tapparelle dopo la chiusura serale:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Quando è attivata, le tapparelle si chiuderanno dopo un certo tempo dal tramonto.",
-                            "close_covers_after_sunset_delay": "Tempo di attesa dopo il tramonto prima di chiudere le tapparelle.",
-                            "close_covers_after_sunset_cover_list": "Seleziona le tapparelle da chiudere dopo il tramonto."
+                            "close_covers_after_sunset": "Quando attivata, le tapparelle verranno chiuse automaticamente di sera.",
+                            "close_covers_after_sunset_mode": "Scegli se chiudere a un orario fisso o in modo relativo al tramonto.",
+                            "close_covers_after_sunset_delay": "A seconda della modalità scelta: ritardo dopo il tramonto oppure orario fisso.",
+                            "close_covers_after_sunset_cover_list": "Seleziona le tapparelle che devono essere chiuse di sera.",
+                            "nighttime_block_opening": "Quando attivata, le tapparelle non verranno aperte automaticamente dopo l'orario di chiusura serale."
                         }
                     }
                 }
@@ -141,7 +141,7 @@
                 "name": "Stato blocco"
             },
             "nighttime_block_opening": {
-                "name": "Notte: bloccare l'apertura?",
+                "name": "Chiusura serale: bloccare l'apertura?",
                 "state": {
                     "on": "Sì",
                     "off": "No"
@@ -184,7 +184,10 @@
                 }
             },
             "close_covers_after_sunset_delay": {
-                "name": "Chiusura serale: ritardo"
+                "name": "Chiusura serale: orario"
+            },
+            "close_covers_after_sunset_mode": {
+                "name": "Chiusura serale: modalità"
             },
             "sun_azimuth": {
                 "name": "Azimut solare"
@@ -309,6 +312,12 @@
                 "manual": "Manuale (ripristinare l'angolo impostato manualmente)",
                 "auto": "Auto (bloccare la luce solare diretta)",
                 "set_value": "Valore fisso (angolo di inclinazione fisso)"
+            }
+        },
+        "evening_closure_mode": {
+            "options": {
+                "after_sunset": "Dopo il tramonto (ritardo relativo)",
+                "fixed_time": "Orario fisso"
             }
         }
     }

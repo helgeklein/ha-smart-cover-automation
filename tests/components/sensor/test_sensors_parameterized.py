@@ -8,7 +8,7 @@ Sensors tested:
 - SunAzimuthSensor (data-based)
 - SunElevationSensor (data-based)
 - TempCurrentMaxSensor (data-based)
-- CloseCoversAfterSunsetDelaySensor (config-based)
+- EveningClosureTimeSensor (config-based)
 
 Note: AutomationDisabledTimeRangeSensor has unique complex behavior and is
 tested separately in test_automation_disabled_time_range.py
@@ -16,6 +16,7 @@ tested separately in test_automation_disabled_time_range.py
 
 from __future__ import annotations
 
+from datetime import time
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock
 
@@ -23,7 +24,7 @@ import pytest
 
 from custom_components.smart_cover_automation.data import CoordinatorData
 from custom_components.smart_cover_automation.sensor import (
-    CloseCoversAfterSunsetDelaySensor,
+    EveningClosureTimeSensor,
     SunAzimuthSensor,
     SunElevationSensor,
     TempCurrentMaxSensor,
@@ -69,15 +70,21 @@ SENSOR_CONFIGS = [
         "test_values": [0.0, 15.5, 20.0, 25.3, 30.0, 35.7],
     },
     {
-        "sensor_class": CloseCoversAfterSunsetDelaySensor,
+        "sensor_class": EveningClosureTimeSensor,
         "key": "close_covers_after_sunset_delay",
         "translation_key": "close_covers_after_sunset_delay",
         "icon": "mdi:timer-outline",
-        "native_unit_of_measurement": "min",
+        "native_unit_of_measurement": None,
         "device_class": None,
         "type": "config_based",
-        # Test values as (config_seconds, expected_minutes)
-        "test_values": [(60, 1), (300, 5), (600, 10), (1800, 30), (3600, 60)],
+        # Test values as (config_time, expected_string)
+        "test_values": [
+            (time(0, 1, 0), "00:01"),
+            (time(0, 5, 0), "00:05"),
+            (time(0, 10, 0), "00:10"),
+            (time(0, 30, 0), "00:30"),
+            (time(1, 0, 0), "01:00"),
+        ],
     },
 ]
 
@@ -232,7 +239,7 @@ def _config_value_id(val):
     if isinstance(val, tuple) and len(val) == 2:
         config, value_pair = val
         if isinstance(value_pair, tuple) and len(value_pair) == 2:
-            return f"{config['key']}_{value_pair[0]}s_{value_pair[1]}min"
+            return f"{config['key']}_{value_pair[0]}_{value_pair[1]}"
     return str(val)
 
 
@@ -244,18 +251,18 @@ def _config_value_id(val):
 async def test_config_based_sensor_values(
     mock_coordinator_basic: DataUpdateCoordinator,
     config: dict[str, Any],
-    test_value_pair: tuple[int, int],
+    test_value_pair: tuple[time, str],
 ) -> None:
     """Test config-based sensor returns correct converted value.
 
-    For CloseCoversAfterSunsetDelaySensor, this tests the conversion
-    from seconds (stored in config) to minutes (displayed value).
+    For EveningClosureTimeSensor, this tests the conversion
+    from time object (stored in config) to HH:MM string (displayed value).
     """
-    config_seconds, expected_minutes = test_value_pair
+    config_time, expected_string = test_value_pair
 
     # Create mock for _resolved_settings
     mock_settings = MagicMock()
-    mock_settings.close_covers_after_sunset_delay = config_seconds
+    mock_settings.evening_closure_time = config_time
     mock_coordinator_basic._resolved_settings = MagicMock(return_value=mock_settings)
 
     # Create sensor instance
@@ -265,8 +272,8 @@ async def test_config_based_sensor_values(
     native_value = sensor.native_value
 
     # Verify sensor returns correctly converted value
-    assert native_value == expected_minutes
-    assert isinstance(native_value, int)
+    assert native_value == expected_string
+    assert isinstance(native_value, str)
 
 
 #
@@ -325,12 +332,12 @@ async def test_config_based_sensor_type_validation(mock_coordinator_basic: DataU
     """Test that config-based sensors return correct data types.
 
     Verifies that config-based sensors return the expected type
-    (int for CloseCoversAfterSunsetDelaySensor).
+    (str for EveningClosureTimeSensor).
     """
     # Set up mock settings with first test value
-    config_seconds, expected_minutes = config["test_values"][0]
+    config_time, expected_string = config["test_values"][0]
     mock_settings = MagicMock()
-    mock_settings.close_covers_after_sunset_delay = config_seconds
+    mock_settings.evening_closure_time = config_time
     mock_coordinator_basic._resolved_settings = MagicMock(return_value=mock_settings)
 
     # Create sensor instance
@@ -340,33 +347,33 @@ async def test_config_based_sensor_type_validation(mock_coordinator_basic: DataU
     native_value = sensor.native_value
 
     # Verify type
-    assert isinstance(native_value, int)
+    assert isinstance(native_value, str)
 
 
 #
-# test_close_covers_after_sunset_delay_sensor_boundary_values
+# test_evening_closure_time_sensor_boundary_values
 #
-async def test_close_covers_after_sunset_delay_sensor_boundary_values(mock_coordinator_basic: DataUpdateCoordinator) -> None:
-    """Test CloseCoversAfterSunsetDelaySensor with boundary values.
+async def test_evening_closure_time_sensor_boundary_values(mock_coordinator_basic: DataUpdateCoordinator) -> None:
+    """Test EveningClosureTimeSensor with boundary values.
 
-    Tests edge cases like 0 seconds, very large values, etc.
+    Tests edge cases like zero time, various time values, etc.
     """
     test_cases = [
-        (0, 0),  # 0 seconds = 0 minutes
-        (30, 0),  # 30 seconds = 0 minutes (integer division)
-        (59, 0),  # 59 seconds = 0 minutes
-        (7200, 120),  # 2 hours
-        (86400, 1440),  # 24 hours
+        (time(0, 0, 0), "00:00"),  # Zero
+        (time(0, 0, 30), "00:00"),  # Seconds only — displayed as HH:MM
+        (time(0, 0, 59), "00:00"),  # Just under 1 minute
+        (time(2, 0, 0), "02:00"),  # 2 hours
+        (time(23, 59, 0), "23:59"),  # Max practical value
     ]
 
-    for config_seconds, expected_minutes in test_cases:
+    for config_time, expected_string in test_cases:
         # Set up mock settings
         mock_settings = MagicMock()
-        mock_settings.close_covers_after_sunset_delay = config_seconds
+        mock_settings.evening_closure_time = config_time
         mock_coordinator_basic._resolved_settings = MagicMock(return_value=mock_settings)
 
         # Create sensor instance
-        sensor = CloseCoversAfterSunsetDelaySensor(mock_coordinator_basic)
+        sensor = EveningClosureTimeSensor(mock_coordinator_basic)
 
         # Verify conversion
-        assert sensor.native_value == expected_minutes
+        assert sensor.native_value == expected_string
