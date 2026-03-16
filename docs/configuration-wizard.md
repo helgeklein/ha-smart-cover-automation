@@ -112,6 +112,7 @@ Evening closure settings:
 - **Mode:** Choose whether to close at a fixed time or relative to sunset.
 - **Time:** Depending on the selected mode: delay after sunset, or fixed time of day.
 - **Covers:** Subset of covers to close after sunset.
+- **Ignore manual override duration:** When enabled, the evening closure can move selected covers even if a manual override pause is still active.
 
 ## Next Steps
 
