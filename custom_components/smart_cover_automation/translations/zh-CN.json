@@ -114,6 +114,7 @@
                             "close_covers_after_sunset_mode": "模式：",
                             "close_covers_after_sunset_delay": "时间：",
                             "close_covers_after_sunset_cover_list": "遮阳设备：",
+                            "close_covers_after_sunset_ignore_manual_override_duration": "忽略手动覆盖持续时间：",
                             "nighttime_block_opening": "晚间关闭后禁止打开遮阳设备："
                         },
                         "data_description": {
@@ -121,6 +122,7 @@
                             "close_covers_after_sunset_mode": "选择在固定时间关闭还是相对于日落时间关闭。",
                             "close_covers_after_sunset_delay": "根据所选模式：日落后延迟时间或固定时刻。",
                             "close_covers_after_sunset_cover_list": "选择需要在晚间关闭的遮阳设备。",
+                            "close_covers_after_sunset_ignore_manual_override_duration": "启用后，即使手动覆盖暂停仍然有效，晚间关闭仍可移动所选遮阳设备。",
                             "nighttime_block_opening": "启用后，遮阳设备在晚间关闭时间后不会自动打开。"
                         }
                     }

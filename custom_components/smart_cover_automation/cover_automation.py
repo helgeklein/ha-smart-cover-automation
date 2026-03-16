@@ -179,8 +179,18 @@ class CoverAutomation:
             return cover_state
 
         # Check for manual override
-        if self._check_manual_override(current_pos):
-            return cover_state
+        manual_override_remaining = self._get_manual_override_remaining(current_pos)
+        if manual_override_remaining is not None:
+            if self._should_ignore_manual_override(sensor_data):
+                message = f"Ignoring manual override during evening closure; {manual_override_remaining:.0f} s would otherwise remain"
+                self._log_cover_msg(message, const.LogSeverity.INFO)
+            else:
+                message = (
+                    "Manual override detected (position changed externally), "
+                    f"skipping this cover for another {manual_override_remaining:.0f} s"
+                )
+                self._log_cover_msg(message, const.LogSeverity.INFO)
+                return cover_state
 
         # Calculate sun hitting
         sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
@@ -387,26 +397,65 @@ class CoverAutomation:
             True if override is active (should skip), False otherwise
         """
 
+        time_remaining = self._get_manual_override_remaining(current_pos)
+        if time_remaining is None:
+            return False
+
+        message = f"Manual override detected (position changed externally), skipping this cover for another {time_remaining:.0f} s"
+        self._log_cover_msg(message, const.LogSeverity.INFO)
+        return True
+
+    #
+    # _get_manual_override_remaining
+    #
+    def _get_manual_override_remaining(self, current_pos: int) -> float | None:
+        """Get remaining manual override time for this cover.
+
+        Args:
+            current_pos: Current cover position
+
+        Returns:
+            Remaining override time in seconds, or None if manual override is inactive
+        """
+
         # Check if we're still at the last known position
         last_history_entry = self._cover_pos_history_mgr.get_latest_entry(self.entity_id)
         if last_history_entry is None or current_pos == last_history_entry.position:
-            return False
+            return None
 
         # Beware of system time changes
         time_now = datetime.now(timezone.utc)
         if time_now <= last_history_entry.timestamp:
-            return False
+            return None
 
         # Are we past the override duration?
         time_delta = (time_now - last_history_entry.timestamp).total_seconds()
         if time_delta >= self.resolved.manual_override_duration:
-            return False
+            return None
 
-        # Manual override still active
-        time_remaining = self.resolved.manual_override_duration - time_delta
-        message = f"Manual override detected (position changed externally), skipping this cover for another {time_remaining:.0f} s"
-        self._log_cover_msg(message, const.LogSeverity.INFO)
-        return True
+        return self.resolved.manual_override_duration - time_delta
+
+    #
+    # _should_ignore_manual_override
+    #
+    def _should_ignore_manual_override(self, sensor_data: SensorData) -> bool:
+        """Check whether manual override should be ignored for this cycle.
+
+        The bypass only applies to covers that are explicitly part of the evening
+        closure list and only while the evening closure signal is active.
+
+        Args:
+            sensor_data: Gathered sensor data for the current automation cycle
+
+        Returns:
+            True if evening closure should bypass manual override for this cover
+        """
+
+        return (
+            self.resolved.evening_closure_ignore_manual_override_duration
+            and sensor_data.evening_closure
+            and self.entity_id in self.resolved.evening_closure_cover_list
+        )
 
     #
     # _calculate_sun_hitting

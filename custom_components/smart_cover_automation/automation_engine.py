@@ -141,6 +141,7 @@ class AutomationEngine:
             "evening_closure_enabled": self.resolved.evening_closure_enabled,
             "evening_closure_mode": self.resolved.evening_closure_mode,
             "evening_closure_time": self.resolved.evening_closure_time.strftime("%H:%M:%S"),
+            "evening_closure_ignore_manual_override_duration": self.resolved.evening_closure_ignore_manual_override_duration,
             "tilt_mode_day": self.resolved.tilt_mode_day,
             "tilt_mode_night": self.resolved.tilt_mode_night,
             "tilt_set_value_day": self.resolved.tilt_set_value_day,

@@ -602,6 +602,14 @@ class FlowHelper:
             )
         )
 
+        # Ignore manual override during evening closure if requested
+        evening_closure_schema_dict[
+            vol.Required(
+                ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value,
+                default=resolved_settings.evening_closure_ignore_manual_override_duration,
+            )
+        ] = selector.BooleanSelector()
+
         # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
             vol.Schema(evening_closure_schema_dict),
