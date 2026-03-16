@@ -49,6 +49,8 @@ def mock_resolved_config():
     resolved.sun_elevation_threshold = 10.0
     resolved.sun_azimuth_tolerance = 30.0
     resolved.manual_override_duration = 3600
+    resolved.evening_closure_ignore_manual_override_duration = False
+    resolved.evening_closure_cover_list = ()
     resolved.covers_min_position_delta = 5
     return resolved
 
@@ -495,6 +497,17 @@ class TestGetCoverPosition:
 class TestCheckManualOverride:
     """Test _check_manual_override method."""
 
+    def test_get_manual_override_remaining_active(self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config):
+        """Test remaining override time when manual override is active."""
+        mock_resolved_config.manual_override_duration = 3600
+        entry = PositionEntry(position=50, timestamp=datetime.now(timezone.utc) - timedelta(seconds=100), cover_moved=True)
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+
+        remaining = cover_automation._get_manual_override_remaining(75)
+
+        assert remaining is not None
+        assert 3498 <= remaining <= 3500
+
     def test_check_manual_override_no_history(self, cover_automation, mock_cover_pos_history_mgr):
         """Test when there's no position history."""
         mock_cover_pos_history_mgr.get_latest_entry.return_value = None
@@ -529,6 +542,26 @@ class TestCheckManualOverride:
         entry = PositionEntry(position=50, timestamp=datetime.now(timezone.utc) + timedelta(seconds=100), cover_moved=True)
         mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
         result = cover_automation._check_manual_override(75)
+        assert result is False
+
+    def test_should_ignore_manual_override_for_evening_closure(self, cover_automation, sensor_data, mock_resolved_config):
+        """Test bypass applies to covers in the evening closure list."""
+        mock_resolved_config.evening_closure_ignore_manual_override_duration = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.evening_closure = True
+
+        result = cover_automation._should_ignore_manual_override(sensor_data)
+
+        assert result is True
+
+    def test_should_not_ignore_manual_override_for_other_covers(self, cover_automation, sensor_data, mock_resolved_config):
+        """Test bypass does not apply to covers outside the evening closure list."""
+        mock_resolved_config.evening_closure_ignore_manual_override_duration = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.other",)
+        sensor_data.evening_closure = True
+
+        result = cover_automation._should_ignore_manual_override(sensor_data)
+
         assert result is False
 
 
@@ -1355,6 +1388,38 @@ class TestProcessMethod:
         result = await cover_automation.process(mock_state, sensor_data)
         assert result.pos_current is not None
         # Should not have POS_TARGET_FINAL since manual override prevents movement
+        assert result.pos_target_final is None
+
+    async def test_process_manual_override_ignored_for_evening_closure(
+        self, cover_automation, mock_state, sensor_data, mock_cover_pos_history_mgr, mock_resolved_config, mock_ha_interface
+    ):
+        """Test evening closure can bypass manual override when configured."""
+        mock_resolved_config.manual_override_duration = 3600
+        mock_resolved_config.evening_closure_ignore_manual_override_duration = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.evening_closure = True
+        mock_ha_interface.set_cover_position.return_value = 0
+        entry = PositionEntry(position=50, timestamp=datetime.now(timezone.utc) - timedelta(seconds=100), cover_moved=True)
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+
+        result = await cover_automation.process(mock_state, sensor_data)
+
+        assert result.pos_target_desired == 0
+
+    async def test_process_manual_override_not_ignored_for_non_evening_cover(
+        self, cover_automation, mock_state, sensor_data, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Test evening-closure bypass does not apply outside the configured list."""
+        mock_resolved_config.manual_override_duration = 3600
+        mock_resolved_config.evening_closure_ignore_manual_override_duration = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.other",)
+        sensor_data.evening_closure = True
+        entry = PositionEntry(position=50, timestamp=datetime.now(timezone.utc) - timedelta(seconds=100), cover_moved=True)
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+
+        result = await cover_automation.process(mock_state, sensor_data)
+
+        assert result.pos_current is not None
         assert result.pos_target_final is None
 
     async def test_process_successful_automation(

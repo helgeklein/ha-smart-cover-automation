@@ -853,7 +853,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
     # test_step_6_schema_includes_close_after_sunset_section
     #
     async def test_step_6_schema_includes_close_after_sunset_section(self, mock_hass_with_covers: MagicMock) -> None:
-        """Test that step 6 schema includes all three close_after_sunset fields."""
+        """Test that step 6 schema includes the evening closure section."""
 
         existing_data = {
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
@@ -903,7 +903,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
     # test_step_6_saves_close_after_sunset_settings
     #
     async def test_step_6_saves_close_after_sunset_settings(self, mock_hass_with_covers: MagicMock) -> None:
-        """Test that all three close_after_sunset settings are saved correctly."""
+        """Test that evening closure settings are saved correctly."""
 
         existing_data = {
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
@@ -948,6 +948,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "01:30:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
+                ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True,
             }
         }
 
@@ -962,6 +963,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
         assert saved_data[ConfKeys.EVENING_CLOSURE_MODE.value] == "after_sunset"
         assert saved_data[ConfKeys.EVENING_CLOSURE_TIME.value] == "01:30:00"
         assert saved_data[ConfKeys.EVENING_CLOSURE_COVER_LIST.value] == [MOCK_COVER_ENTITY_ID]
+        assert saved_data[ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value] is True
 
     #
     # test_step_6_close_after_sunset_disabled
@@ -1007,6 +1009,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [],
+                ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
             }
         }
 
@@ -1062,6 +1065,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [],  # Empty list
+                ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
             }
         }
 
@@ -1117,6 +1121,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:00:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
+                ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
             }
         }
 
@@ -1178,6 +1183,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "02:00:30",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+                ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
             }
         }
 
@@ -1238,6 +1244,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "01:15:30",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
+                ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True,
             }
         }
 
@@ -1255,3 +1262,4 @@ class TestOptionsFlowStep6CloseAfterSunset:
         assert ConfKeys.EVENING_CLOSURE_MODE.value in saved_data
         assert ConfKeys.EVENING_CLOSURE_TIME.value in saved_data
         assert ConfKeys.EVENING_CLOSURE_COVER_LIST.value in saved_data
+        assert ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value in saved_data
