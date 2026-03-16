@@ -142,6 +142,32 @@ def test_translation_has_required_keys(language_code: str) -> None:
 
 
 @pytest.mark.parametrize("language_code", _get_available_languages())
+def test_translation_has_evening_closure_section_keys(language_code: str) -> None:
+    """Test that evening closure section fields are translated in every language."""
+
+    data = _load_translations(language_code)
+    section = (
+        data.get(const.HA_OPTIONS, {}).get("step", {}).get("6", {}).get("sections", {}).get(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET, {})
+    )
+    section_data = section.get("data", {})
+    section_descriptions = section.get("data_description", {})
+    expected_fields = {
+        ConfKeys.EVENING_CLOSURE_ENABLED.value,
+        ConfKeys.EVENING_CLOSURE_MODE.value,
+        ConfKeys.EVENING_CLOSURE_TIME.value,
+        ConfKeys.EVENING_CLOSURE_COVER_LIST.value,
+        ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value,
+        ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value,
+    }
+
+    missing_labels = expected_fields - set(section_data.keys())
+    missing_descriptions = expected_fields - set(section_descriptions.keys())
+
+    assert not missing_labels, f"Missing evening closure field labels in {language_code}.json: {sorted(missing_labels)}"
+    assert not missing_descriptions, f"Missing evening closure field descriptions in {language_code}.json: {sorted(missing_descriptions)}"
+
+
+@pytest.mark.parametrize("language_code", _get_available_languages())
 def test_translation_file_is_valid_json(language_code: str) -> None:
     """Test that each translation file contains valid, parseable JSON.
 

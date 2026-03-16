@@ -291,6 +291,13 @@ class TestConfigurationResolution:
         assert rs.enabled is False  # From options
         assert rs.temp_threshold == 22.0  # From options (coerced to float)
 
+    def test_resolve_evening_closure_ignore_manual_override_duration(self):
+        """Test resolving the evening closure manual override bypass option."""
+
+        rs = resolve({ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True})
+
+        assert rs.evening_closure_ignore_manual_override_duration is True
+
 
 # =============================================================================
 # Covers Configuration Tests

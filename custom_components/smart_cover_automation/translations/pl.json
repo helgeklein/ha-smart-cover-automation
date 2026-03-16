@@ -114,6 +114,7 @@
                             "close_covers_after_sunset_mode": "Tryb:",
                             "close_covers_after_sunset_delay": "Godzina:",
                             "close_covers_after_sunset_cover_list": "Rolety:",
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignoruj czas ręcznego nadpisania:",
                             "nighttime_block_opening": "Wyłącz otwieranie rolet po zamykaniu wieczornym:"
                         },
                         "data_description": {
@@ -121,6 +122,7 @@
                             "close_covers_after_sunset_mode": "Wybierz, czy zamykać o stałej godzinie, czy względem zachodu słońca.",
                             "close_covers_after_sunset_delay": "W zależności od wybranego trybu: opóźnienie po zachodzie słońca lub stała godzina.",
                             "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem.",
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Po włączeniu zamykanie wieczorne może poruszyć wybrane rolety, nawet jeśli nadal trwa pauza po ręcznym nadpisaniu.",
                             "nighttime_block_opening": "Po włączeniu rolety nie będą otwierane automatycznie po godzinie zamykania wieczornego."
                         }
                     }

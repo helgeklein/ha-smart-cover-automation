@@ -58,6 +58,9 @@ class ConfKeys(StrEnum):
     EVENING_CLOSURE_MODE = "close_covers_after_sunset_mode"  # Evening closure: timing mode.
     EVENING_CLOSURE_TIME = "close_covers_after_sunset_delay"  # Evening closure: time value.
     EVENING_CLOSURE_COVER_LIST = "close_covers_after_sunset_cover_list"  # Evening closure: list of covers.
+    EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION = (
+        "close_covers_after_sunset_ignore_manual_override_duration"  # Evening closure: ignore manual override duration.
+    )
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_CLOSURE = "covers_min_closure"  # Minimum closure position (0 = fully closed, 100 = fully open)
@@ -198,6 +201,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.EVENING_CLOSURE_MODE: _ConfSpec(default=EveningClosureMode.AFTER_SUNSET, converter=EveningClosureMode),
     ConfKeys.EVENING_CLOSURE_TIME: _ConfSpec(default=time(0, 15, 0), converter=_Converters.to_time),
     ConfKeys.EVENING_CLOSURE_COVER_LIST: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
+    ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int, runtime_configurable=True),
@@ -266,6 +270,7 @@ _VALUE_TO_FIELD: dict[str, str] = {
     "close_covers_after_sunset_mode": "evening_closure_mode",
     "close_covers_after_sunset_delay": "evening_closure_time",
     "close_covers_after_sunset_cover_list": "evening_closure_cover_list",
+    "close_covers_after_sunset_ignore_manual_override_duration": "evening_closure_ignore_manual_override_duration",
     "nighttime_block_opening": "block_opening_after_evening_closure",
 }
 
@@ -291,6 +296,7 @@ class ResolvedConfig:
     evening_closure_mode: EveningClosureMode
     evening_closure_time: time
     evening_closure_cover_list: tuple[str, ...]
+    evening_closure_ignore_manual_override_duration: bool
     covers: tuple[str, ...]
     covers_max_closure: int
     covers_min_closure: int

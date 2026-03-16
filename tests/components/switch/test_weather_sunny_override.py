@@ -14,7 +14,7 @@ Tests cover:
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
@@ -87,6 +87,37 @@ class TestWeatherSunnyOverrideSwitchState:
 
         override_switch.coordinator.config_entry.options[SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL] = False
         assert override_switch.is_on is False
+
+
+class TestWeatherSunnyOverrideSwitchLifecycle:
+    """Test WeatherSunnyExternalControlSwitch lifecycle hooks."""
+
+    async def test_added_to_hass_seeds_default_override_when_key_absent(self, override_switch) -> None:
+        """Test that enabling the entity seeds the default override when the key is absent."""
+
+        override_switch._async_persist_override = AsyncMock()
+
+        with patch(
+            "homeassistant.helpers.update_coordinator.CoordinatorEntity.async_added_to_hass",
+            new=AsyncMock(),
+        ):
+            await override_switch.async_added_to_hass()
+
+        override_switch._async_persist_override.assert_awaited_once_with(False)
+
+    async def test_added_to_hass_does_not_overwrite_existing_override(self, override_switch) -> None:
+        """Test that enabling the entity does not overwrite an existing override value."""
+
+        override_switch.coordinator.config_entry.options[SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL] = True
+        override_switch._async_persist_override = AsyncMock()
+
+        with patch(
+            "homeassistant.helpers.update_coordinator.CoordinatorEntity.async_added_to_hass",
+            new=AsyncMock(),
+        ):
+            await override_switch.async_added_to_hass()
+
+        override_switch._async_persist_override.assert_not_awaited()
 
 
 class TestWeatherSunnyOverrideSwitchToggle:
