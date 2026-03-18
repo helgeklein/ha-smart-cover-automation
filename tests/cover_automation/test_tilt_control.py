@@ -749,6 +749,49 @@ class TestProcessWithTilt:
         assert cover_state.tilt_target == 100
 
     #
+    # test_process_applies_night_tilt_during_evening_closure_when_opening_block_enabled
+    #
+    @pytest.mark.asyncio
+    async def test_process_applies_night_tilt_during_evening_closure_when_opening_block_enabled(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features
+    ) -> None:
+        """Evening closure should still apply night tilt when the post-closure opening block is enabled."""
+
+        mock_resolved_config.block_opening_after_evening_closure = True
+        mock_resolved_config.evening_closure_enabled = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        mock_resolved_config.tilt_mode_night = TiltMode.SET_VALUE
+        mock_resolved_config.tilt_set_value_night = 30
+        mock_ha_interface.set_cover_position = AsyncMock(return_value=0)
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=30)
+
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+
+        state = MagicMock()
+        state.state = STATE_OPEN
+        state.attributes = {
+            ATTR_CURRENT_POSITION: 50,
+            ATTR_CURRENT_TILT_POSITION: 100,
+            "supported_features": tilt_features,
+        }
+        data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=10.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=True,
+            post_evening_closure=True,
+        )
+
+        cover_state = await auto.process(state, data)
+
+        mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 0, tilt_features)
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 30, tilt_features)
+        assert cover_state.tilt_target == 30
+
+    #
     # test_process_no_tilt_for_position_only_covers
     #
     @pytest.mark.asyncio

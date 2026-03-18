@@ -217,10 +217,11 @@ class CoverAutomation:
                 # Movement occurred
                 cover_state.pos_target_final = actual_pos
 
-        # Apply tilt after position handling — skip only when opening block after
-        # evening closure is active (cover opening suppressed).  Other reasons for
-        # no position change (e.g. lockout protection) should still allow tilt updates.
-        if not self._is_opening_block_after_evening_closure_active(sensor_data):
+        # Apply tilt after position handling. Only suppress tilt when an opening
+        # move was blocked after evening closure; the evening-closure cycle itself
+        # must still be allowed to apply the configured night tilt.
+        opening_blocked = movement_reason is None and self._is_opening_block_after_evening_closure_active(sensor_data)
+        if not opening_blocked:
             await self._apply_tilt(cover_state, sensor_data, features, movement_reason, cover_moved)
 
         # Log per-cover state
