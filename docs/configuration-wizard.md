@@ -60,8 +60,6 @@ In this step of the configuration wizard, you can specify maximum and minimum po
 
 ## Step 4: Tilt Angle Control (Optional)
 
-*New in version 1.3*
-
 In this step of the configuration wizard, you can specify how the title angle of covers with adjustable slats is to be controlled. The following options are available:
 
 - **Auto:** Block direct sunlight but allow seeing through as much as possible.

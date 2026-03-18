@@ -74,8 +74,6 @@ The entities in this section control at which temperatures and sun positions the
 
 ### Weather: Sunny? (External Control)
 
-*New in version 1.3*
-
 This binary switch is disabled by default. If you enable it, the integration stops using the weather forecast to determine if it's sunny. In its stead, it uses the state of this switch. To go back to the weather forecast, simply disable it again.
 
 Use case: you have your own pyranometer or luxmeter and want to use its measurements to tell this integration when it's "sunny enough" to close the covers.
