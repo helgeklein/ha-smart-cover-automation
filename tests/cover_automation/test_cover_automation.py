@@ -37,7 +37,7 @@ from custom_components.smart_cover_automation.cover_automation import (
     CoverMovementReason,
     SensorData,
 )
-from custom_components.smart_cover_automation.cover_position_history import PositionEntry
+from custom_components.smart_cover_automation.cover_position_history import PositionEntry, RecentTiltAction
 
 
 @pytest.fixture
@@ -70,6 +70,9 @@ def mock_cover_pos_history_mgr():
     """Create a mock cover position history manager."""
     mgr = MagicMock()
     mgr.get_latest_entry = MagicMock(return_value=None)
+    mgr.get_recent_tilt_action = MagicMock(return_value=None)
+    mgr.set_recent_tilt_action = MagicMock()
+    mgr.clear_recent_tilt_action = MagicMock()
     mgr.add = MagicMock()
     mgr.get_entries = MagicMock(return_value=[])
     return mgr
@@ -528,6 +531,47 @@ class TestCheckManualOverride:
         mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
         result = cover_automation._check_manual_override(75)  # Position changed
         assert result is True
+
+    def test_get_manual_override_remaining_ignores_expected_post_tilt_drift(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Expected post-tilt drift should not activate manual override."""
+
+        mock_resolved_config.manual_override_duration = 3600
+        entry = PositionEntry(position=0, timestamp=datetime.now(timezone.utc) - timedelta(seconds=30), cover_moved=True)
+        recent_tilt_action = RecentTiltAction(
+            expected_position=0,
+            allowed_position_drift=const.COVER_TILT_POSITION_DRIFT_TOLERANCE,
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=60),
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_cover_pos_history_mgr.get_recent_tilt_action.return_value = recent_tilt_action
+
+        remaining = cover_automation._get_manual_override_remaining(2)
+
+        assert remaining is None
+        mock_cover_pos_history_mgr.add.assert_called_once()
+        mock_cover_pos_history_mgr.clear_recent_tilt_action.assert_not_called()
+
+    def test_get_manual_override_remaining_keeps_manual_override_for_large_post_tilt_drift(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Large movement after tilt should still count as manual override."""
+
+        mock_resolved_config.manual_override_duration = 3600
+        entry = PositionEntry(position=0, timestamp=datetime.now(timezone.utc) - timedelta(seconds=30), cover_moved=True)
+        recent_tilt_action = RecentTiltAction(
+            expected_position=0,
+            allowed_position_drift=const.COVER_TILT_POSITION_DRIFT_TOLERANCE,
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=60),
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_cover_pos_history_mgr.get_recent_tilt_action.return_value = recent_tilt_action
+
+        remaining = cover_automation._get_manual_override_remaining(12)
+
+        assert remaining is not None
+        mock_cover_pos_history_mgr.clear_recent_tilt_action.assert_called_once_with("cover.test")
 
     def test_check_manual_override_expired(self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config):
         """Test when manual override has expired."""

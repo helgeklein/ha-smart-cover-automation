@@ -13,6 +13,7 @@ from custom_components.smart_cover_automation.cover_position_history import (
     CoverPositionHistory,
     CoverPositionHistoryManager,
     PositionEntry,
+    RecentTiltAction,
 )
 
 
@@ -457,3 +458,29 @@ class TestPositionEntryAndTimestamps:
         expected_newest_positions = [(COVER_POSITION_HISTORY_SIZE + 2 - i) * 10 for i in range(COVER_POSITION_HISTORY_SIZE)]
         actual_positions = [entry.position for entry in entries]
         assert actual_positions == expected_newest_positions
+
+    def test_position_history_manager_recent_tilt_action_round_trip(self):
+        """Test storing and retrieving recent tilt action metadata."""
+
+        manager = CoverPositionHistoryManager()
+        expires_at = datetime(2025, 10, 5, 12, 0, 0, tzinfo=timezone.utc)
+
+        manager.set_recent_tilt_action("cover.test", expected_position=0, allowed_position_drift=5, expires_at=expires_at)
+
+        recent_tilt_action = manager.get_recent_tilt_action("cover.test")
+        assert recent_tilt_action == RecentTiltAction(
+            expected_position=0,
+            allowed_position_drift=5,
+            expires_at=expires_at,
+        )
+
+    def test_position_history_manager_clear_recent_tilt_action(self):
+        """Test clearing recent tilt action metadata."""
+
+        manager = CoverPositionHistoryManager()
+        expires_at = datetime(2025, 10, 5, 12, 0, 0, tzinfo=timezone.utc)
+        manager.set_recent_tilt_action("cover.test", expected_position=100, allowed_position_drift=5, expires_at=expires_at)
+
+        manager.clear_recent_tilt_action("cover.test")
+
+        assert manager.get_recent_tilt_action("cover.test") is None

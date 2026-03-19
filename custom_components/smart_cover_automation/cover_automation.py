@@ -22,7 +22,7 @@ from homeassistant.const import (
 
 from . import const
 from .config import ResolvedConfig
-from .cover_position_history import CoverPositionHistoryManager
+from .cover_position_history import CoverPositionHistoryManager, PositionEntry
 from .log import Log
 from .util import to_float_or_none, to_int_or_none
 
@@ -424,8 +424,12 @@ class CoverAutomation:
         if last_history_entry is None or current_pos == last_history_entry.position:
             return None
 
-        # Beware of system time changes
         time_now = datetime.now(timezone.utc)
+
+        if self._is_expected_post_tilt_position_drift(current_pos, last_history_entry, time_now):
+            return None
+
+        # Beware of system time changes
         if time_now <= last_history_entry.timestamp:
             return None
 
@@ -435,6 +439,75 @@ class CoverAutomation:
             return None
 
         return self.resolved.manual_override_duration - time_delta
+
+    #
+    # _is_expected_post_tilt_position_drift
+    #
+    def _is_expected_post_tilt_position_drift(
+        self,
+        current_pos: int,
+        last_history_entry: PositionEntry,
+        time_now: datetime,
+    ) -> bool:
+        """Check whether a small position drift is an expected tilt side effect.
+
+        Args:
+            current_pos: Current live cover position
+            last_history_entry: Most recent recorded position history entry
+            time_now: Current UTC time for expiry checks
+
+        Returns:
+            True if the position change should be ignored as a tilt side effect
+        """
+
+        recent_tilt_action = self._cover_pos_history_mgr.get_recent_tilt_action(self.entity_id)
+        if recent_tilt_action is None:
+            return False
+
+        if time_now > recent_tilt_action.expires_at:
+            self._cover_pos_history_mgr.clear_recent_tilt_action(self.entity_id)
+            return False
+
+        lower_bound = max(
+            const.COVER_POS_FULLY_CLOSED,
+            recent_tilt_action.expected_position - recent_tilt_action.allowed_position_drift,
+        )
+        upper_bound = min(
+            const.COVER_POS_FULLY_OPEN,
+            recent_tilt_action.expected_position + recent_tilt_action.allowed_position_drift,
+        )
+
+        if not lower_bound <= current_pos <= upper_bound:
+            self._cover_pos_history_mgr.clear_recent_tilt_action(self.entity_id)
+            return False
+
+        self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=True, timestamp=time_now)
+        self._log_cover_msg(
+            (f"Ignoring expected post-tilt position drift ({last_history_entry.position}% -> {current_pos}%)"),
+            const.LogSeverity.DEBUG,
+        )
+        return True
+
+    #
+    # _record_recent_tilt_action
+    #
+    def _record_recent_tilt_action(self, expected_position: int | None) -> None:
+        """Record a short-lived tolerance window for automation-initiated tilt.
+
+        Args:
+            expected_position: The cover position before the tilt side effect occurs
+        """
+
+        if expected_position is None:
+            return
+
+        expires_at = datetime.now(timezone.utc) + (const.UPDATE_INTERVAL * const.COVER_TILT_SETTLE_CYCLES)
+        self._cover_pos_history_mgr.set_recent_tilt_action(
+            self.entity_id,
+            expected_position=expected_position,
+            allowed_position_drift=const.COVER_TILT_POSITION_DRIFT_TOLERANCE,
+            expires_at=expires_at,
+        )
 
     #
     # _should_ignore_manual_override
@@ -687,6 +760,7 @@ class CoverAutomation:
                 try:
                     await self._ha_interface.set_cover_tilt_position(self.entity_id, const.COVER_POS_FULLY_OPEN, features)
                     cover_state.tilt_target = const.COVER_POS_FULLY_OPEN
+                    self._record_recent_tilt_action(const.COVER_POS_FULLY_OPEN)
                 except Exception as err:
                     self._logger.error(f"[{self.entity_id}] Failed to set lock tilt: {err}")
 
@@ -699,6 +773,7 @@ class CoverAutomation:
                 try:
                     await self._ha_interface.set_cover_tilt_position(self.entity_id, const.COVER_POS_FULLY_CLOSED, features)
                     cover_state.tilt_target = const.COVER_POS_FULLY_CLOSED
+                    self._record_recent_tilt_action(const.COVER_POS_FULLY_CLOSED)
                 except Exception as err:
                     self._logger.error(f"[{self.entity_id}] Failed to set lock tilt: {err}")
 
@@ -926,6 +1001,7 @@ class CoverAutomation:
         try:
             actual_tilt = await self._ha_interface.set_cover_tilt_position(self.entity_id, target_tilt, features)
             cover_state.tilt_target = actual_tilt
+            self._record_recent_tilt_action(effective_pos)
             self._log_cover_msg(
                 f"Tilt set to {actual_tilt}% (mode: {tilt_mode})",
                 const.LogSeverity.INFO,
