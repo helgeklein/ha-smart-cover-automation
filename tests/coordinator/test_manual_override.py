@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
-from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFeature
+from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_CURRENT_TILT_POSITION, CoverEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
 
 from custom_components.smart_cover_automation.config import ConfKeys
@@ -156,3 +156,68 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
         # Verify automation proceeded normally
         cover_result = result.covers[MOCK_COVER_ENTITY_ID]
         assert cover_result.pos_target_desired is not None
+
+    async def test_manual_override_ignores_small_post_tilt_position_drift(self, mock_hass: MagicMock) -> None:
+        """Small position drift after automation tilt should not trigger manual override.
+
+        Scenario:
+        1. First coordinator cycle closes a tilt-capable cover and applies closed tilt.
+        2. Second cycle reports the real device state as 2% open because tilt nudged the cover.
+
+        Expected:
+        - The second cycle should still evaluate automation normally.
+        - No new manual override should be activated.
+        - No extra position or tilt command should be sent for the 2% drift.
+        """
+
+        config_data = create_sun_config()
+        config_data[ConfKeys.MANUAL_OVERRIDE_DURATION.value] = 1800
+        config_data[ConfKeys.TILT_MODE_DAY.value] = "closed"
+        config_entry = MockConfigEntry(config_data)
+
+        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+        coordinator._ha_interface.set_cover_position = AsyncMock(return_value=0)
+        coordinator._ha_interface.set_cover_tilt_position = AsyncMock(return_value=0)
+        coordinator._ha_interface.add_logbook_entry = AsyncMock()
+
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))
+
+        tilt_features = int(CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION)
+        state_mapping = create_combined_state_mock(
+            cover_states={
+                MOCK_COVER_ENTITY_ID: {
+                    ATTR_CURRENT_POSITION: 100,
+                    ATTR_CURRENT_TILT_POSITION: 50,
+                    ATTR_SUPPORTED_FEATURES: tilt_features,
+                }
+            }
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
+
+        first_result = await coordinator._async_update_data()
+
+        first_cover_result = first_result.covers[MOCK_COVER_ENTITY_ID]
+        assert first_cover_result.pos_target_desired == 0
+        assert first_cover_result.pos_target_final == 0
+        assert first_cover_result.tilt_target == 0
+        assert coordinator._ha_interface.set_cover_position.await_count == 1
+        assert coordinator._ha_interface.set_cover_tilt_position.await_count == 1
+
+        state_mapping[MOCK_COVER_ENTITY_ID].attributes = {
+            ATTR_CURRENT_POSITION: 2,
+            ATTR_CURRENT_TILT_POSITION: 0,
+            ATTR_SUPPORTED_FEATURES: tilt_features,
+        }
+
+        second_result = await coordinator._async_update_data()
+
+        second_cover_result = second_result.covers[MOCK_COVER_ENTITY_ID]
+        assert second_cover_result.pos_current == 2
+        assert second_cover_result.pos_target_desired == 0
+        assert second_cover_result.pos_target_final is None
+        assert coordinator._ha_interface.set_cover_position.await_count == 1
+        assert coordinator._ha_interface.set_cover_tilt_position.await_count == 1
+
+        latest_entry = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry(MOCK_COVER_ENTITY_ID)
+        assert latest_entry is not None
+        assert latest_entry.position == 2

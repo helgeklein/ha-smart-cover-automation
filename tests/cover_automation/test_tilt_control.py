@@ -73,6 +73,9 @@ def mock_cover_pos_history_mgr():
 
     mgr = MagicMock()
     mgr.get_latest_entry = MagicMock(return_value=None)
+    mgr.get_recent_tilt_action = MagicMock(return_value=None)
+    mgr.set_recent_tilt_action = MagicMock()
+    mgr.clear_recent_tilt_action = MagicMock()
     mgr.add = MagicMock()
     mgr.get_entries = MagicMock(return_value=[])
     return mgr
