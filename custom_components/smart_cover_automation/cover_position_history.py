@@ -20,8 +20,8 @@ class PositionEntry:
 
 
 @dataclass
-class RecentTiltAction:
-    """Short-lived tracking for expected position drift after automation tilt."""
+class RecentAutomationAction:
+    """Short-lived tracking for expected position drift after recent automation."""
 
     expected_position: int
     allowed_position_drift: int
@@ -84,7 +84,7 @@ class CoverPositionHistoryManager:
     def __init__(self) -> None:
         """Initialize the position history manager."""
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
-        self._recent_tilt_actions: dict[str, RecentTiltAction] = {}
+        self._recent_automation_actions: dict[str, RecentAutomationAction] = {}
 
     #
     # add
@@ -143,16 +143,16 @@ class CoverPositionHistoryManager:
             return None
 
     #
-    # set_recent_tilt_action
+    # set_recent_automation_action
     #
-    def set_recent_tilt_action(
+    def set_recent_automation_action(
         self,
         entity_id: str,
         expected_position: int,
         allowed_position_drift: int,
         expires_at: datetime,
     ) -> None:
-        """Store a short-lived expected position drift after automation tilt.
+        """Store a short-lived expected position drift after recent automation.
 
         Args:
             entity_id: The cover entity ID
@@ -161,24 +161,24 @@ class CoverPositionHistoryManager:
             expires_at: UTC timestamp when the tolerance window expires
         """
 
-        self._recent_tilt_actions[entity_id] = RecentTiltAction(
+        self._recent_automation_actions[entity_id] = RecentAutomationAction(
             expected_position=expected_position,
             allowed_position_drift=allowed_position_drift,
             expires_at=expires_at,
         )
 
     #
-    # get_recent_tilt_action
+    # get_recent_automation_action
     #
-    def get_recent_tilt_action(self, entity_id: str) -> RecentTiltAction | None:
-        """Get the active recent tilt action for a cover, if any."""
+    def get_recent_automation_action(self, entity_id: str) -> RecentAutomationAction | None:
+        """Get the active recent automation action for a cover, if any."""
 
-        return self._recent_tilt_actions.get(entity_id)
+        return self._recent_automation_actions.get(entity_id)
 
     #
-    # clear_recent_tilt_action
+    # clear_recent_automation_action
     #
-    def clear_recent_tilt_action(self, entity_id: str) -> None:
-        """Clear any stored recent tilt action for a cover."""
+    def clear_recent_automation_action(self, entity_id: str) -> None:
+        """Clear any stored recent automation action for a cover."""
 
-        self._recent_tilt_actions.pop(entity_id, None)
+        self._recent_automation_actions.pop(entity_id, None)
