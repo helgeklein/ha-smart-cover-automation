@@ -4,12 +4,28 @@ GitHub is used to host code, to track issues and feature requests, as well as ac
 
 ## Contributing
 
-Pull requests are the best way to propose changes to the codebase.
+### Planning
+
+Contributions are very welcome. Please start with a planning step before working on code and submitting pull requests:
+
+- Create an issue in which you describe your proposed change in detail:
+  - Purpose and use case
+  - Architecture (how will it work?)
+  - Implementation (what will the code look like?)
+- A maintainer will then look at your proposal and get back to you and either:
+  - Approve
+  - Request changes
+  - Reject
+- Once the proposal has been approved, please continue with the next step (pull request).
+
+### Pull Requests
+
+Changes to the codebase are made through pull requests (PRs). Procedure:
 
 - Fork the repo and create your branch from `main`.
 - Make your changes.
 - Make sure your code lints (using `scripts/lint`).
-- Test your contribution (use `scripts/test`; aim to keep coverage ≥ 98%).
+- Test your contribution (use `scripts/test`; aim to keep coverage ≥ 99%).
 - Update the documentation.
 - Issue that pull request!
 
