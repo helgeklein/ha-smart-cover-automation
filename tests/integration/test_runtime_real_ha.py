@@ -736,6 +736,76 @@ class TestRuntimeBehavior:
         assert coordinator.data.temp_hot is True, f"After temp change, temp_hot should be True, got {coordinator.data.temp_hot}"
         assert coordinator.data.temp_current_max == pytest.approx(HOT_TEMP, abs=0.1)
 
+    # ------------------------------------------------------------------
+    # 1.12 Small recent automation drift is not treated as manual override
+    # ------------------------------------------------------------------
+
+    #
+    # test_small_recent_automation_drift_is_not_manual_override
+    #
+    async def test_small_recent_automation_drift_is_not_manual_override(self, hass: HomeAssistant) -> None:
+        """A small post-move drift stays automatable on the next scheduled refresh.
+
+        This exercises the full HA runtime path:
+            initial automation move -> device reports a small position drift -> next timed refresh
+
+        The second cycle should keep evaluating automation normally and must not
+        emit another cover command for the tolerated drift.
+        """
+
+        cover_calls: list[ServiceCall] = []
+
+        async def _record_set_cover_position(call: ServiceCall) -> None:
+            """Record real cover service calls issued by the integration."""
+
+            cover_calls.append(call)
+
+        hass.services.async_register("cover", "set_cover_position", _record_set_cover_position)
+
+        entry = _create_config_entry(
+            hass,
+            extra_options={ConfKeys.COVERS_MIN_POSITION_DELTA.value: 5},
+        )
+        await _setup_integration(
+            hass,
+            entry,
+            temp_max=COMFORTABLE_TEMP,
+            sun_elevation=SUN_HIGH_ELEVATION,
+            sun_azimuth=SUN_INDIRECT_AZIMUTH,
+            cover_positions={TEST_COVER_1: COVER_POS_FULLY_CLOSED},
+        )
+
+        coordinator = _get_coordinator(hass, entry)
+        initial_cover_data = coordinator.data.covers.get(TEST_COVER_1)
+
+        assert initial_cover_data is not None
+        assert initial_cover_data.pos_target_desired == COVER_POS_FULLY_OPEN
+        assert initial_cover_data.pos_target_final == COVER_POS_FULLY_OPEN
+        assert len(cover_calls) == 1
+        assert cover_calls[0].data["entity_id"] == TEST_COVER_1
+        assert cover_calls[0].data["position"] == COVER_POS_FULLY_OPEN
+
+        _setup_cover_entity(hass, TEST_COVER_1, position=98)
+
+        with patch.object(
+            HomeAssistantInterface,
+            "_get_forecast_max_temp",
+            new_callable=AsyncMock,
+            return_value=COMFORTABLE_TEMP,
+        ):
+            await _trigger_coordinator_update(hass)
+
+        drifted_cover_data = coordinator.data.covers.get(TEST_COVER_1)
+        assert drifted_cover_data is not None
+        assert drifted_cover_data.pos_current == 98
+        assert drifted_cover_data.pos_target_desired == COVER_POS_FULLY_OPEN
+        assert drifted_cover_data.pos_target_final is None
+        assert len(cover_calls) == 1
+
+        latest_entry = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry(TEST_COVER_1)
+        assert latest_entry is not None
+        assert latest_entry.position == 98
+
 
 class TestRuntimeEdgeCases:
     """Edge-case runtime tests with real HA."""

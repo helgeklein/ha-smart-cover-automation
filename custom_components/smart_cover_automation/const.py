@@ -87,8 +87,7 @@ COVER_SFX_WINDOW_SENSORS: Final[str] = "cover_window_sensors"  # Window sensor e
 
 # Per-cover position history configuration
 COVER_POSITION_HISTORY_SIZE: Final[int] = 3  # Number of positions to store in history
-COVER_TILT_POSITION_DRIFT_TOLERANCE: Final[int] = 5  # Allowed position drift (%) after automation tilt.
-COVER_TILT_SETTLE_CYCLES: Final[int] = 2  # Number of coordinator cycles to tolerate post-tilt settling.
+COVER_AUTOMATION_SETTLE_CYCLES: Final[int] = 2  # Coordinator cycles to tolerate recent automation settling (1 cycle + safety margin).
 
 
 #
