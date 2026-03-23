@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from homeassistant.const import Platform
 from homeassistant.core import ServiceCall
@@ -48,6 +48,8 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.SWITCH,
 ]
+
+REMOVED_ENTITY_UNIQUE_ID_KEYS: Final[tuple[str, ...]] = ("nighttime_block_opening",)
 
 
 #
@@ -133,6 +135,49 @@ async def _async_migrate_unique_ids(hass: HomeAssistant, entry: IntegrationConfi
             logger.error(f"Unexpected error migrating {entity.entity_id}: {err}")
 
     logger.info(f"Finished unique ID migration. Migrated {migrated_count} entities.")
+
+
+#
+# _async_remove_stale_registry_entities
+#
+async def _async_remove_stale_registry_entities(hass: HomeAssistant, entry: IntegrationConfigEntry) -> None:
+    """Remove entity-registry entries for entities intentionally retired from the integration.
+
+    Existing installations can keep registry entries for removed entities, which
+    then show up in Home Assistant as unavailable. Remove only the known retired
+    entities for this config entry so upgrades stay clean without touching any
+    active entities.
+    """
+
+    logger = Log(entry_id=entry.entry_id)
+
+    try:
+        registry = er.async_get(hass)
+        entries = er.async_entries_for_config_entry(registry, entry.entry_id)
+    except (AttributeError, KeyError, TypeError, ValueError) as err:
+        logger.debug("Skipping stale entity-registry cleanup for entry %s: %s", entry.entry_id, err)
+        return
+
+    removed_unique_ids = {f"{entry.entry_id}_{key}" for key in REMOVED_ENTITY_UNIQUE_ID_KEYS} | {
+        f"{const.DOMAIN}_{key}" for key in REMOVED_ENTITY_UNIQUE_ID_KEYS
+    }
+
+    stale_entries = [entity for entity in entries if entity.unique_id in removed_unique_ids]
+    if not stale_entries:
+        return
+
+    logger.info(
+        "Removing %d stale entity-registry entries for entry %s.",
+        len(stale_entries),
+        entry.entry_id,
+    )
+
+    for entity in stale_entries:
+        logger.info("Removing stale entity-registry entry %s (%s)", entity.entity_id, entity.unique_id)
+        try:
+            registry.async_remove(entity.entity_id)
+        except (AttributeError, KeyError, TypeError, ValueError) as err:
+            logger.warning("Failed to remove stale entity-registry entry %s: %s", entity.entity_id, err)
 
 
 #
@@ -318,6 +363,9 @@ async def async_setup_entry(
 
     # Migrate unique IDs if needed
     await _async_migrate_unique_ids(hass, entry)
+
+    # Remove registry entries for entities that no longer exist in this integration.
+    await _async_remove_stale_registry_entities(hass, entry)
 
     try:
         # Create the coordinator

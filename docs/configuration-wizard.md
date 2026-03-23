@@ -101,11 +101,13 @@ Blocked time range settings:
 
 Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening, either at a fixed time or with a certain delay after sunset.
 
-**Note:** The evening closure function is active in a 10 minute time window that starts at the configured point in time. If the integration is not running during that time window, the covers will not be closed.
+**Notes:**
+
+- The evening closure function is active in a 10 minute time window that starts at the configured point in time. If the integration is not running during that time window, the covers will not be closed.
+- Covers closed by the evening closure function stay closed until sunset the next morning or until the end of the blocked time range - whichever is later.
 
 Evening closure settings:
 
-- **Disable cover opening after evening closure:** Prevents auto-reopening after the evening closure time.
 - **Close covers in the evening:** Enable or disable the evening closure function.
 - **Mode:** Choose whether to close at a fixed time or relative to sunset.
 - **Time:** Depending on the selected mode: delay after sunset, or fixed time of day.

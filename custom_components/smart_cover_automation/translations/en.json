@@ -114,16 +114,14 @@
                             "close_covers_after_sunset_mode": "Mode:",
                             "close_covers_after_sunset_delay": "Time:",
                             "close_covers_after_sunset_cover_list": "Covers:",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignore manual override duration:",
-                            "nighttime_block_opening": "Disable cover opening after evening closure:"
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignore manual override duration:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "When enabled, covers will be closed automatically in the evening.",
                             "close_covers_after_sunset_mode": "Choose whether to close at a fixed time or relative to sunset.",
                             "close_covers_after_sunset_delay": "Depending on the selected mode: delay after sunset, or fixed time of day.",
                             "close_covers_after_sunset_cover_list": "Select the covers that should be closed in the evening.",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active.",
-                            "nighttime_block_opening": "When enabled, covers will not be opened automatically after the evening closure time."
+                            "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active."
                         }
                     }
                 }
@@ -141,13 +139,6 @@
             },
             "lock_active": {
                 "name": "Lock status"
-            },
-            "nighttime_block_opening": {
-                "name": "Evening closure: block opening?",
-                "state": {
-                    "on": "Yes",
-                    "off": "No"
-                }
             },
             "status": {
                 "name": "Status"

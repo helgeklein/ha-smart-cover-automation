@@ -74,6 +74,8 @@ The entities in this section control at which temperatures and sun positions the
 
 ### Weather: Hot? (External Control)
 
+*New in 1.4.0*
+
 #### Global Entity
 
 This binary switch is disabled by default. If you enable it, the integration stops using the weather forecast to determine if it's hot. In its stead, it uses the state of this switch. To go back to the weather forecast, simply disable it again.

@@ -114,16 +114,14 @@
                             "close_covers_after_sunset_mode": "Läge:",
                             "close_covers_after_sunset_delay": "Tid:",
                             "close_covers_after_sunset_cover_list": "Persienner:",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignorera varaktigheten för manuell överstyrning:",
-                            "nighttime_block_opening": "Inaktivera öppning av persienner efter kvällsstängning:"
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignorera varaktigheten för manuell överstyrning:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "När den är aktiverad stängs persiennerna automatiskt på kvällen.",
                             "close_covers_after_sunset_mode": "Välj om persiennerna ska stängas vid en fast tid eller relativt solnedgången.",
                             "close_covers_after_sunset_delay": "Beroende på valt läge: fördröjning efter solnedgången eller fast tidpunkt.",
                             "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas på kvällen.",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "När den är aktiverad får kvällsstängningen flytta valda persienner även om en paus från manuell överstyrning fortfarande är aktiv.",
-                            "nighttime_block_opening": "När den är aktiverad öppnas persiennerna inte automatiskt efter kvällsstängningstiden."
+                            "close_covers_after_sunset_ignore_manual_override_duration": "När den är aktiverad får kvällsstängningen flytta valda persienner även om en paus från manuell överstyrning fortfarande är aktiv."
                         }
                     }
                 }
@@ -141,13 +139,6 @@
             },
             "lock_active": {
                 "name": "Låsstatus"
-            },
-            "nighttime_block_opening": {
-                "name": "Kvällsstängning: blockera öppning?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nej"
-                }
             },
             "status": {
                 "name": "Status"

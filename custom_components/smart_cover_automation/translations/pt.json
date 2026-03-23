@@ -114,16 +114,14 @@
                             "close_covers_after_sunset_mode": "Modo:",
                             "close_covers_after_sunset_delay": "Hora:",
                             "close_covers_after_sunset_cover_list": "Persianas:",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar a duração da sobreposição manual:",
-                            "nighttime_block_opening": "Desativar abertura das persianas após o fecho ao entardecer:"
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar a duração da sobreposição manual:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Quando ativada, as persianas serão fechadas automaticamente ao anoitecer.",
                             "close_covers_after_sunset_mode": "Escolha se deve fechar a uma hora fixa ou relativamente ao pôr do sol.",
                             "close_covers_after_sunset_delay": "Consoante o modo selecionado: atraso após o pôr do sol ou hora fixa do dia.",
                             "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas ao anoitecer.",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Quando ativada, o fecho ao entardecer pode mover as persianas selecionadas mesmo que uma pausa por controlo manual ainda esteja ativa.",
-                            "nighttime_block_opening": "Quando ativada, as persianas não serão abertas automaticamente após a hora de fecho ao entardecer."
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Quando ativada, o fecho ao entardecer pode mover as persianas selecionadas mesmo que uma pausa por controlo manual ainda esteja ativa."
                         }
                     }
                 }
@@ -141,13 +139,6 @@
             },
             "lock_active": {
                 "name": "Estado do bloqueio"
-            },
-            "nighttime_block_opening": {
-                "name": "Fecho ao entardecer: bloquear abertura?",
-                "state": {
-                    "on": "Sim",
-                    "off": "Não"
-                }
             },
             "status": {
                 "name": "Estado"

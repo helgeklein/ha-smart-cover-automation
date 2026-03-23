@@ -450,7 +450,6 @@ class TestRunMethod:
             ConfKeys.COVERS.value: ["cover.test"],
             f"cover.test_{const.COVER_SFX_AZIMUTH}": 180.0,
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         }
         resolved = resolve(config)
         engine = AutomationEngine(

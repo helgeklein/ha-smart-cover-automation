@@ -114,16 +114,14 @@
                             "close_covers_after_sunset_mode": "Modus:",
                             "close_covers_after_sunset_delay": "Zeit:",
                             "close_covers_after_sunset_cover_list": "Rollläden:",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Dauer der manuellen Übersteuerung ignorieren:",
-                            "nighttime_block_opening": "Öffnen der Rollläden nach Abendschließen deaktivieren:"
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Dauer der manuellen Übersteuerung ignorieren:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Wenn aktiviert, werden die Rollläden abends automatisch geschlossen.",
                             "close_covers_after_sunset_mode": "Wählen Sie, ob zu einer festen Uhrzeit oder relativ zum Sonnenuntergang geschlossen werden soll.",
                             "close_covers_after_sunset_delay": "Je nach gewähltem Modus: Verzögerung nach Sonnenuntergang oder feste Uhrzeit.",
                             "close_covers_after_sunset_cover_list": "Wählen Sie die Rollläden aus, die abends geschlossen werden sollen.",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Wenn aktiviert, darf das Abendschließen ausgewählte Rollläden trotz aktiver Pause durch manuelle Übersteuerung bewegen.",
-                            "nighttime_block_opening": "Wenn aktiviert, werden die Rollläden nach der Abendschließzeit nicht mehr automatisch geöffnet."
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Wenn aktiviert, darf das Abendschließen ausgewählte Rollläden trotz aktiver Pause durch manuelle Übersteuerung bewegen."
                         }
                     }
                 }
@@ -141,13 +139,6 @@
             },
             "lock_active": {
                 "name": "Sperrstatus"
-            },
-            "nighttime_block_opening": {
-                "name": "Abendschließen: Öffnen blockieren?",
-                "state": {
-                    "on": "Ja",
-                    "off": "Nein"
-                }
             },
             "status": {
                 "name": "Status"

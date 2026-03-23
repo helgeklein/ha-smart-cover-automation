@@ -134,7 +134,6 @@ class AutomationEngine:
             "temp_threshold": self.resolved.temp_threshold,
             "weather_hot_cutover_time": self.resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
             "manual_override_duration": self.resolved.manual_override_duration,
-            "nighttime_block_opening": self.resolved.block_opening_after_evening_closure,
             "automation_disabled_time_range": self.resolved.automation_disabled_time_range,
             "automation_disabled_time_range_start": self.resolved.automation_disabled_time_range_start.strftime("%H:%M:%S"),
             "automation_disabled_time_range_end": self.resolved.automation_disabled_time_range_end.strftime("%H:%M:%S"),

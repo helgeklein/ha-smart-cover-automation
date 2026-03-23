@@ -16,7 +16,6 @@ from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.binary_sensor import (
-    BlockOpeningAfterEveningClosureBinarySensor,
     EveningClosureBinarySensor,
     LockActiveSensor,
     StatusBinarySensor,
@@ -27,7 +26,6 @@ from custom_components.smart_cover_automation.binary_sensor import (
     async_setup_entry as async_setup_entry_binary_sensor,
 )
 from custom_components.smart_cover_automation.const import (
-    BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
     BINARY_SENSOR_KEY_EVENING_CLOSURE,
     BINARY_SENSOR_KEY_LOCK_ACTIVE,
     BINARY_SENSOR_KEY_STATUS,
@@ -75,22 +73,6 @@ BINARY_SENSOR_CONFIGS = [
         ],
     },
     {
-        "id": "nighttime_block_opening",
-        "class": BlockOpeningAfterEveningClosureBinarySensor,
-        "key": BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
-        "translation_key": BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
-        "entity_category": EntityCategory.DIAGNOSTIC,
-        "device_class": None,
-        "icon": "mdi:door-closed-lock",
-        "entity_index": 2,
-        "type": "config_boolean",
-        "config_key": "nighttime_block_opening",
-        "state_tests": [
-            {"name": "enabled", "config_value": True, "expected_is_on": True},
-            {"name": "disabled", "config_value": False, "expected_is_on": False},
-        ],
-    },
-    {
         "id": "temp_hot",
         "class": TempHotBinarySensor,
         "key": BINARY_SENSOR_KEY_TEMP_HOT,
@@ -98,7 +80,7 @@ BINARY_SENSOR_CONFIGS = [
         "entity_category": EntityCategory.DIAGNOSTIC,
         "device_class": None,
         "icon": "mdi:thermometer-alert",
-        "entity_index": 3,
+        "entity_index": 2,
         "type": "data_boolean",  # is_on from coordinator.data
         "data_key": "temp_hot",
         "state_tests": [
@@ -116,7 +98,7 @@ BINARY_SENSOR_CONFIGS = [
         "entity_category": EntityCategory.DIAGNOSTIC,
         "device_class": None,
         "icon": "mdi:weather-sunny",
-        "entity_index": 4,
+        "entity_index": 3,
         "type": "data_boolean",
         "data_key": "weather_sunny",
         "state_tests": [
@@ -134,7 +116,7 @@ BINARY_SENSOR_CONFIGS = [
         "entity_category": EntityCategory.DIAGNOSTIC,
         "device_class": BinarySensorDeviceClass.LOCK,
         "icon": None,
-        "entity_index": 5,
+        "entity_index": 4,
         "type": "lock_state",  # is_on = NOT coordinator.is_locked (inverted for HA lock semantics)
         "state_tests": [
             {"name": "unlocked", "lock_mode": "unlocked", "expected_is_on": True},
@@ -296,7 +278,7 @@ async def test_binary_sensor_availability(mock_hass_with_spec, mock_config_entry
 async def test_binary_sensor_setup_count(mock_hass_with_spec, mock_config_entry_basic) -> None:
     """Test that binary sensor platform creates all expected entities.
 
-    Verifies that async_setup_entry creates exactly 6 binary sensor entities.
+    Verifies that async_setup_entry creates exactly 5 binary sensor entities.
 
     Coverage target: binary_sensor.py async_setup_entry function
     """
@@ -321,8 +303,8 @@ async def test_binary_sensor_setup_count(mock_hass_with_spec, mock_config_entry_
         add_entities,
     )
 
-    # Binary sensor platform should expose exactly 6 entities
-    assert len(captured) == 6
+    # Binary sensor platform should expose exactly 5 entities
+    assert len(captured) == 5
 
 
 #
@@ -394,8 +376,7 @@ async def test_config_boolean_sensor_states(
 
     These sensors derive their is_on state from configuration values.
 
-    Coverage target: binary_sensor.py EveningClosureBinarySensor.is_on,
-                     NighttimeBlockOpeningBinarySensor.is_on properties
+    Coverage target: binary_sensor.py EveningClosureBinarySensor.is_on property
     """
     # Create coordinator
     coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))

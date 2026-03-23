@@ -124,7 +124,6 @@ def _create_entry(
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-        ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         ConfKeys.TEMP_THRESHOLD.value: 24.0,
         f"{cover}_{COVER_SFX_AZIMUTH}": 180.0,
     }

@@ -1102,29 +1102,8 @@ class TestCalculateDesiredPositionLockout:
 class TestIsOpeningBlockAfterEveningClosureActive:
     """Test _is_opening_block_after_evening_closure_active method."""
 
-    def test_block_disabled(self, cover_automation, mock_resolved_config):
-        """Test block when disabled in config."""
-
-        mock_resolved_config.block_opening_after_evening_closure = False
-
-        sensor_data = SensorData(
-            sun_azimuth=180.0,
-            sun_elevation=45.0,
-            temp_max=20.0,
-            temp_hot=False,
-            weather_condition="cloudy",
-            weather_sunny=False,
-            evening_closure=False,
-            post_evening_closure=True,
-        )
-
-        result = cover_automation._is_opening_block_after_evening_closure_active(sensor_data)
-        assert result is False
-
-    def test_block_enabled_post_evening_closure_true(self, cover_automation, mock_resolved_config):
-        """Test block when enabled and post_evening_closure is True."""
-
-        mock_resolved_config.block_opening_after_evening_closure = True
+    def test_block_tracks_post_evening_closure_true(self, cover_automation, mock_resolved_config):
+        """Test block when post_evening_closure is True."""
 
         sensor_data = SensorData(
             sun_azimuth=180.0,
@@ -1140,10 +1119,8 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         result = cover_automation._is_opening_block_after_evening_closure_active(sensor_data)
         assert result is True
 
-    def test_block_enabled_post_evening_closure_false(self, cover_automation, mock_resolved_config):
-        """Test block when enabled but post_evening_closure is False."""
-
-        mock_resolved_config.block_opening_after_evening_closure = True
+    def test_block_tracks_post_evening_closure_false(self, cover_automation, mock_resolved_config):
+        """Test block when post_evening_closure is False."""
 
         sensor_data = SensorData(
             sun_azimuth=180.0,
@@ -1163,7 +1140,6 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         """Test that opening block prevents opening but keeps current position."""
 
         mock_resolved_config.covers_min_closure = 100
-        mock_resolved_config.block_opening_after_evening_closure = True
 
         # Conditions would normally open covers
         sensor_data = SensorData(
@@ -1187,7 +1163,6 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         """Test that opening block does NOT prevent closing operations."""
 
         mock_resolved_config.covers_max_closure = 0
-        mock_resolved_config.block_opening_after_evening_closure = True
 
         # Conditions for heat protection closing
         sensor_data = SensorData(
