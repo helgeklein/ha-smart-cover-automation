@@ -231,6 +231,12 @@
             "verbose_logging": {
                 "name": "Registro detallado"
             },
+            "weather_hot_external_control": {
+                "name": "Clima: ¿caluroso? (control externo)"
+            },
+            "cover_weather_hot_external_control": {
+                "name": "{cover_name}: Clima: ¿caluroso? (control externo)"
+            },
             "weather_sunny_external_control": {
                 "name": "Clima: ¿soleado? (control externo)"
             }

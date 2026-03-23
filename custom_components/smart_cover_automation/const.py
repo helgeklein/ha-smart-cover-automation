@@ -81,6 +81,7 @@ INTEGRATION_NAME: Final[str] = "Smart Cover Automation"
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
 COVER_SFX_MAX_CLOSURE: Final[str] = "cover_max_closure"  # Cover maximum closure position (%)
 COVER_SFX_MIN_CLOSURE: Final[str] = "cover_min_closure"  # Cover minimum closure position (%)
+COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL: Final[str] = "cover_weather_hot_external_control"  # Per-cover hot weather override.
 COVER_SFX_TILT_MODE_DAY: Final[str] = "cover_tilt_mode_day"  # Per-cover tilt mode override (day)
 COVER_SFX_TILT_MODE_NIGHT: Final[str] = "cover_tilt_mode_night"  # Per-cover tilt mode override (night)
 COVER_SFX_WINDOW_SENSORS: Final[str] = "cover_window_sensors"  # Window sensor entity IDs
@@ -140,6 +141,12 @@ BINARY_SENSOR_KEY_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Key for the wea
 BINARY_SENSOR_KEY_LOCK_ACTIVE: Final[str] = "lock_active"  # Key for the lock active binary sensor entity
 SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL: Final[str] = (
     "weather_sunny_external_control"  # Key for the weather sunny external control switch entity
+)
+SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL: Final[str] = (
+    "weather_hot_external_control"  # Key for the weather hot external control switch entity
+)
+SWITCH_KEY_COVER_WEATHER_HOT_EXTERNAL_CONTROL: Final[str] = (
+    "cover_weather_hot_external_control"  # Translation key for per-cover hot weather external control switch entities
 )
 SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE: Final[str] = (
     "automation_disabled_time_range"  # Key for the automation disabled time range sensor entity

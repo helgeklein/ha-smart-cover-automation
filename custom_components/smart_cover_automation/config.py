@@ -13,7 +13,9 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
 from custom_components.smart_cover_automation.const import (
+    COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL,
     HA_OPTIONS,
+    SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL,
     SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
     EveningClosureMode,
     LockMode,
@@ -231,6 +233,7 @@ __all__ = [
     "CONF_SPECS",
     "ResolvedConfig",
     "get_runtime_configurable_keys",
+    "is_runtime_configurable_key",
     "resolve",
     "resolve_entry",
 ]
@@ -259,7 +262,31 @@ def get_runtime_configurable_keys() -> set[str]:
     # Include it here so toggling the switch triggers a coordinator refresh
     # rather than a full integration reload.
     keys.add(SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL)
+    keys.add(SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL)
     return keys
+
+
+#
+# is_runtime_configurable_key
+#
+def is_runtime_configurable_key(key: str) -> bool:
+    """Return whether a changed option key can be handled by refresh only.
+
+    Runtime-configurable keys include exact-match global settings and pattern-
+    based per-cover hot override keys.
+
+    Args:
+        key: Option key to check.
+
+    Returns:
+        True if a coordinator refresh is sufficient, False if a full reload is
+        required.
+    """
+
+    if key in get_runtime_configurable_keys():
+        return True
+
+    return key.endswith(f"_{COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}")
 
 
 # Mapping from ConfKeys.value strings to ResolvedConfig field names.

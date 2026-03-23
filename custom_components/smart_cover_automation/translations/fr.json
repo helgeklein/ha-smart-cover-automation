@@ -231,6 +231,12 @@
             "verbose_logging": {
                 "name": "Journalisation détaillée"
             },
+            "weather_hot_external_control": {
+                "name": "Météo : chaud ? (contrôle externe)"
+            },
+            "cover_weather_hot_external_control": {
+                "name": "{cover_name}: Météo : chaud ? (contrôle externe)"
+            },
             "weather_sunny_external_control": {
                 "name": "Météo : ensoleillé ? (contrôle externe)"
             }

@@ -231,6 +231,12 @@
             "verbose_logging": {
                 "name": "Uitgebreide logging"
             },
+            "weather_hot_external_control": {
+                "name": "Weer: heet? (externe besturing)"
+            },
+            "cover_weather_hot_external_control": {
+                "name": "{cover_name}: Weer: heet? (externe besturing)"
+            },
             "weather_sunny_external_control": {
                 "name": "Weer: zonnig? (externe besturing)"
             }

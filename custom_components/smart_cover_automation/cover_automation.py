@@ -586,6 +586,7 @@ class CoverAutomation:
         """
 
         lockout_protection_active = False
+        effective_temp_hot = self._get_effective_temp_hot(sensor_data)
 
         if sensor_data.evening_closure and self.entity_id in self.resolved.evening_closure_cover_list:
             # Evening closure mode - check lockout protection first
@@ -601,7 +602,7 @@ class CoverAutomation:
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
                 desired_pos_friendly_name = "evening closure state (closed)"
                 movement_reason = CoverMovementReason.CLOSING_AFTER_SUNSET
-        elif sensor_data.temp_hot and sensor_data.weather_sunny and sun_hitting:
+        elif effective_temp_hot and sensor_data.weather_sunny and sun_hitting:
             # Heat protection mode - check lockout protection first
             if self._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION):
                 # Lockout protection active - keep current position (prevent closing)
@@ -634,6 +635,35 @@ class CoverAutomation:
         )
 
         return desired_pos, movement_reason, lockout_protection_active
+
+    #
+    # _get_effective_temp_hot
+    #
+    def _get_effective_temp_hot(self, sensor_data: SensorData) -> bool:
+        """Get the effective hot-weather state for this cover.
+
+        Per-cover external control overrides the global hot state for this one
+        cover only. When no per-cover override is configured, the global state
+        from sensor_data is used as-is.
+
+        Args:
+            sensor_data: Sensor snapshot for the current automation cycle.
+
+        Returns:
+            Effective hot-weather state for this cover.
+        """
+
+        per_cover_key = f"{self.entity_id}_{const.COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"
+        per_cover_override = self.config.get(per_cover_key)
+        if per_cover_override is not None:
+            effective_temp_hot = bool(per_cover_override)
+            self._log_cover_msg(
+                f"Per-cover weather hot external control active: {'hot' if effective_temp_hot else 'not hot'}",
+                const.LogSeverity.DEBUG,
+            )
+            return effective_temp_hot
+
+        return sensor_data.temp_hot
 
     #
     # _get_cover_closure_limit

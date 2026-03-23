@@ -223,6 +223,12 @@ class AutomationEngine:
 
         # Calculate derived values
         temp_hot = temp_max > self.resolved.temp_threshold
+        hot_source = "forecast threshold"
+
+        weather_hot_external_control = self.config.get(const.SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL)
+        if weather_hot_external_control is not None:
+            temp_hot = bool(weather_hot_external_control)
+            hot_source = "external control"
 
         # Check for weather sunny external control override
         weather_sunny_external_control = self.config.get(const.SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL)
@@ -234,6 +240,7 @@ class AutomationEngine:
             # External control disabled - determine sunny state based on weather condition
             weather_sunny = weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS
             sunny_source = "weather entity"
+        self._logger.debug(f"Current weather temperature state: {'hot' if temp_hot else 'not hot'} (source: {hot_source})")
         self._logger.debug(f"Current weather condition: {'sunny' if weather_sunny else 'not sunny'} (source: {sunny_source})")
 
         # Check for evening closure and handle delayed cover closing

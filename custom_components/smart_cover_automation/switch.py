@@ -18,7 +18,12 @@ from homeassistant.components.switch import SwitchEntity, SwitchEntityDescriptio
 from homeassistant.const import EntityCategory
 
 from .config import ConfKeys, resolve_entry
-from .const import SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL
+from .const import (
+    COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL,
+    SWITCH_KEY_COVER_WEATHER_HOT_EXTERNAL_CONTROL,
+    SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL,
+    SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
+)
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -45,6 +50,7 @@ async def async_setup_entry(
         async_add_entities: Callback to register new entities with Home Assistant
     """
     coordinator = entry.runtime_data.coordinator
+    resolved = resolve_entry(entry)
 
     # Create all switch entities
     entities = [
@@ -56,9 +62,40 @@ async def async_setup_entry(
         VerboseLoggingSwitch(coordinator),
         # Weather sunny external control switch (disabled by default)
         WeatherSunnyExternalControlSwitch(coordinator),
+        # Weather hot external control switch (disabled by default)
+        WeatherHotExternalControlSwitch(coordinator),
     ]
 
+    entities.extend(CoverWeatherHotExternalControlSwitch(coordinator, cover_entity_id) for cover_entity_id in resolved.covers)
+
     async_add_entities(entities)
+
+
+#
+# _format_cover_name
+#
+def _format_cover_name(coordinator: DataUpdateCoordinator, cover_entity_id: str) -> str:
+    """Return a human-friendly name for a cover entity.
+
+    Uses the current state friendly name when available. Falls back to a title-
+    cased object ID so names remain readable during startup or in unit tests.
+
+    Args:
+        coordinator: Coordinator providing access to Home Assistant state.
+        cover_entity_id: Entity ID of the cover.
+
+    Returns:
+        Human-friendly cover name.
+    """
+
+    state = coordinator.hass.states.get(cover_entity_id)
+    if state is not None:
+        friendly_name = state.attributes.get("friendly_name")
+        if isinstance(friendly_name, str) and friendly_name.strip():
+            return friendly_name.strip()
+
+    object_id = cover_entity_id.split(".", 1)[-1]
+    return object_id.replace("_", " ").strip().title()
 
 
 #
@@ -253,9 +290,132 @@ class VerboseLoggingSwitch(IntegrationSwitch):
 
 
 #
+# TriStateExternalControlSwitch
+#
+class TriStateExternalControlSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
+    """Base class for disabled-by-default tri-state external control switches.
+
+    The switch state is persisted directly in config entry options:
+    - key absent: external control disabled
+    - key present with True: force True
+    - key present with False: force False
+    """
+
+    _attr_entity_registry_enabled_default = False
+
+    #
+    # __init__
+    #
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        *,
+        config_key: str,
+        translation_key: str,
+        icon: str,
+        name: str | None = None,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> None:
+        """Initialize the tri-state external control switch.
+
+        Args:
+            coordinator: The DataUpdateCoordinator managing this entry.
+            config_key: Raw config key to persist in entry options.
+            translation_key: Translation key used for the entity description.
+            icon: Icon shown in Home Assistant.
+            name: Optional explicit entity name.
+            translation_placeholders: Optional placeholders used by Home
+                Assistant when rendering the translated entity name.
+        """
+
+        super().__init__(coordinator)
+
+        self._config_key = config_key
+        self.entity_description = SwitchEntityDescription(
+            key=config_key,
+            translation_key=translation_key,
+            entity_category=EntityCategory.CONFIG,
+            icon=icon,
+        )
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{config_key}"
+        if name is not None:
+            self._attr_name = name
+        if translation_placeholders is not None:
+            self._attr_translation_placeholders = translation_placeholders
+
+    #
+    # async_added_to_hass
+    #
+    async def async_added_to_hass(self) -> None:
+        """Persist the initial override state when the entity is first enabled."""
+
+        await super().async_added_to_hass()
+        options: dict[str, Any] = dict(self.coordinator.config_entry.options or {})
+        if self._config_key not in options:
+            await self._async_persist_override(False)
+
+    #
+    # is_on
+    #
+    @property
+    def is_on(self) -> bool:  # pyright: ignore
+        """Return the persisted override state.
+
+        Missing key means the entity is enabled in the registry but external
+        control has not yet been persisted for this config entry.
+        """
+
+        options: Any = self.coordinator.config_entry.options or {}
+        return bool(options.get(self._config_key, False))
+
+    #
+    # async_turn_on
+    #
+    async def async_turn_on(self, **_: Any) -> None:
+        """Turn the switch on."""
+
+        await self._async_persist_override(True)
+
+    #
+    # async_turn_off
+    #
+    async def async_turn_off(self, **_: Any) -> None:
+        """Turn the switch off."""
+
+        await self._async_persist_override(False)
+
+    #
+    # async_will_remove_from_hass
+    #
+    async def async_will_remove_from_hass(self) -> None:
+        """Clean up the persisted override when the entity is disabled."""
+
+        entry = self.coordinator.config_entry
+        current_options = dict(entry.options or {})
+        if self._config_key in current_options:
+            del current_options[self._config_key]
+            self.coordinator.hass.config_entries.async_update_entry(entry, options=current_options)
+
+    #
+    # _async_persist_override
+    #
+    async def _async_persist_override(self, value: bool) -> None:
+        """Persist the external control value to config options.
+
+        Args:
+            value: True to force the controlled state on, False to force it off.
+        """
+
+        entry = self.coordinator.config_entry
+        current_options = dict(entry.options or {})
+        current_options[self._config_key] = value
+        self.coordinator.hass.config_entries.async_update_entry(entry, options=current_options)
+
+
+#
 # WeatherSunnyExternalControlSwitch
 #
-class WeatherSunnyExternalControlSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[reportIncompatibleVariableOverride]
+class WeatherSunnyExternalControlSwitch(TriStateExternalControlSwitch):
     """Switch for overriding the integration's weather sunny detection.
 
     This switch allows external sunlight sensors (e.g., pyranometers) to
@@ -275,9 +435,6 @@ class WeatherSunnyExternalControlSwitch(IntegrationEntity, SwitchEntity):  # pyr
     boolean-only spec system does not support.
     """
 
-    # Disabled by default — users opt in by enabling the entity
-    _attr_entity_registry_enabled_default = False
-
     #
     # __init__
     #
@@ -289,96 +446,58 @@ class WeatherSunnyExternalControlSwitch(IntegrationEntity, SwitchEntity):  # pyr
                         and provides state management for this switch
         """
 
-        super().__init__(coordinator)
-
-        self.entity_description = SwitchEntityDescription(
-            key=SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
+        super().__init__(
+            coordinator,
+            config_key=SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
             translation_key=SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
-            entity_category=EntityCategory.CONFIG,
             icon="mdi:weather-sunny-alert",
         )
 
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL}"
+
+#
+# WeatherHotExternalControlSwitch
+#
+class WeatherHotExternalControlSwitch(TriStateExternalControlSwitch):
+    """Switch for overriding the integration's weather hot detection."""
 
     #
-    # async_added_to_hass
+    # __init__
     #
-    async def async_added_to_hass(self) -> None:
-        """Persist the initial override state when the entity is first enabled.
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the weather hot external control switch."""
 
-        When a user enables this entity in the entity registry, the
-        automation engine must immediately see the override key in the
-        config options.  Without this, the key is absent and the engine
-        falls back to the weather forecast logic, ignoring the switch.
+        super().__init__(
+            coordinator,
+            config_key=SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL,
+            translation_key=SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL,
+            icon="mdi:thermometer-alert",
+        )
 
-        Only writes when the key is absent to avoid unnecessary config
-        updates on regular restarts / reloads.
-        """
 
-        await super().async_added_to_hass()
-        options: dict[str, Any] = dict(self.coordinator.config_entry.options or {})
-        if SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL not in options:
-            # First time the entity is enabled — seed the default (False)
-            # so the engine sees the key on the very next coordinator refresh.
-            await self._async_persist_override(False)
+#
+# CoverWeatherHotExternalControlSwitch
+#
+class CoverWeatherHotExternalControlSwitch(TriStateExternalControlSwitch):
+    """Per-cover switch for overriding hot-weather detection."""
 
     #
-    # is_on
+    # __init__
     #
-    @property
-    def is_on(self) -> bool:  # pyright: ignore
-        """Return whether the switch is set to sunny.
-
-        Reads directly from config options since this setting is not
-        part of the standard ResolvedConfig system.
-        """
-
-        options: Any = self.coordinator.config_entry.options or {}
-        return bool(options.get(SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL, False))
-
-    #
-    # async_turn_on
-    #
-    async def async_turn_on(self, **_: Any) -> None:
-        """Turn the switch on (sunny)."""
-
-        await self._async_persist_override(True)
-
-    #
-    # async_turn_off
-    #
-    async def async_turn_off(self, **_: Any) -> None:
-        """Turn the switch off (not sunny)."""
-
-        await self._async_persist_override(False)
-
-    #
-    # async_will_remove_from_hass
-    #
-    async def async_will_remove_from_hass(self) -> None:
-        """Clean up when the entity is removed or disabled.
-
-        Removes the external control key from config options so the automation
-        engine reverts to the built-in weather forecast logic.
-        """
-
-        entry = self.coordinator.config_entry
-        current_options = dict(entry.options or {})
-        if SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL in current_options:
-            del current_options[SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL]
-            self.coordinator.hass.config_entries.async_update_entry(entry, options=current_options)
-
-    #
-    # _async_persist_override
-    #
-    async def _async_persist_override(self, value: bool) -> None:
-        """Persist the external control value to config options.
+    def __init__(self, coordinator: DataUpdateCoordinator, cover_entity_id: str) -> None:
+        """Initialize the per-cover weather hot external control switch.
 
         Args:
-            value: True for sunny, False for not sunny
+            coordinator: Coordinator for the integration instance.
+            cover_entity_id: Cover entity ID this switch applies to.
         """
 
-        entry = self.coordinator.config_entry
-        current_options = dict(entry.options or {})
-        current_options[SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL] = value
-        self.coordinator.hass.config_entries.async_update_entry(entry, options=current_options)
+        self._cover_entity_id = cover_entity_id
+        cover_name = _format_cover_name(coordinator, cover_entity_id)
+        config_key = f"{cover_entity_id}_{COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"
+        super().__init__(
+            coordinator,
+            config_key=config_key,
+            translation_key=SWITCH_KEY_COVER_WEATHER_HOT_EXTERNAL_CONTROL,
+            icon="mdi:thermometer-chevron-up",
+            translation_placeholders={"cover_name": cover_name},
+        )
