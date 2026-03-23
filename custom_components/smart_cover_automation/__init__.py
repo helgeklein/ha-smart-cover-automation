@@ -17,7 +17,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import async_get_loaded_integration
 
 from . import const
-from .config import ConfKeys, get_runtime_configurable_keys
+from .config import ConfKeys, is_runtime_configurable_key
 from .config_flow import OptionsFlowHandler
 from .const import (
     DATA_COORDINATORS,
@@ -447,8 +447,6 @@ async def async_reload_entry(
     # These keys can be changed at runtime via their corresponding entities
     # without requiring a full reload. The list is centrally defined in config.py
     # based on the runtime_configurable flag in CONF_SPECS.
-    runtime_configurable_keys = get_runtime_configurable_keys()
-
     if hasattr(entry, "runtime_data") and entry.runtime_data:
         coordinator = entry.runtime_data.coordinator
 
@@ -463,7 +461,7 @@ async def async_reload_entry(
         changes = ", ".join(f"{key}={new_config.get(key)}" for key in sorted(changed_keys))
 
         # If the only changes are to runtime-configurable keys, just refresh
-        if changed_keys and changed_keys.issubset(runtime_configurable_keys):
+        if changed_keys and all(is_runtime_configurable_key(key) for key in changed_keys):
             logger.info(f"Runtime settings change detected ({changes}), refreshing coordinator")
 
             # Update the stored config with new values

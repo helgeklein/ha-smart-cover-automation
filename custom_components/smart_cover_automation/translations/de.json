@@ -231,6 +231,12 @@
             "verbose_logging": {
                 "name": "Ausführliches Logging"
             },
+            "weather_hot_external_control": {
+                "name": "Wetter: heiß? (externe Steuerung)"
+            },
+            "cover_weather_hot_external_control": {
+                "name": "{cover_name}: Wetter: heiß? (externe Steuerung)"
+            },
             "weather_sunny_external_control": {
                 "name": "Wetter: sonnig? (externe Steuerung)"
             }

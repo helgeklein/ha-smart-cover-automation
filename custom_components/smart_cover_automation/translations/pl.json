@@ -231,6 +231,12 @@
             "verbose_logging": {
                 "name": "Szczegółowe logowanie"
             },
+            "weather_hot_external_control": {
+                "name": "Pogoda: gorąco? (sterowanie zewnętrzne)"
+            },
+            "cover_weather_hot_external_control": {
+                "name": "{cover_name}: Pogoda: gorąco? (sterowanie zewnętrzne)"
+            },
             "weather_sunny_external_control": {
                 "name": "Pogoda: słonecznie? (sterowanie zewnętrzne)"
             }

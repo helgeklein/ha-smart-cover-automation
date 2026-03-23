@@ -231,6 +231,12 @@
             "verbose_logging": {
                 "name": "Utförlig loggning"
             },
+            "weather_hot_external_control": {
+                "name": "Väder: varmt? (extern styrning)"
+            },
+            "cover_weather_hot_external_control": {
+                "name": "{cover_name}: Väder: varmt? (extern styrning)"
+            },
             "weather_sunny_external_control": {
                 "name": "Väder: soligt? (extern styrning)"
             }

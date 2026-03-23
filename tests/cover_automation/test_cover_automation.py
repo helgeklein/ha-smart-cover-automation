@@ -1245,6 +1245,55 @@ class TestGetCoverClosureLimit:
         assert limit == 25
 
 
+class TestGetEffectiveTempHot:
+    """Test _get_effective_temp_hot method."""
+
+    def test_get_effective_temp_hot_uses_global_sensor_state(self, cover_automation, sensor_data, mock_logger):
+        """Test that the global effective hot state is used when no per-cover override exists."""
+
+        sensor_data.temp_hot = True
+
+        result = cover_automation._get_effective_temp_hot(sensor_data)
+
+        assert result is True
+        mock_logger.debug.assert_not_called()
+
+    def test_get_effective_temp_hot_per_cover_true_overrides_global_false(self, cover_automation, basic_config, sensor_data, mock_logger):
+        """Test that per-cover True overrides a global False hot state."""
+
+        basic_config[f"cover.test_{const.COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"] = True
+        sensor_data.temp_hot = False
+
+        result = cover_automation._get_effective_temp_hot(sensor_data)
+
+        assert result is True
+        mock_logger.debug.assert_called_once_with("[cover.test] Per-cover weather hot external control active: hot")
+
+    def test_get_effective_temp_hot_per_cover_false_overrides_global_true(self, cover_automation, basic_config, sensor_data, mock_logger):
+        """Test that per-cover False overrides a global True hot state."""
+
+        basic_config[f"cover.test_{const.COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"] = False
+        sensor_data.temp_hot = True
+
+        result = cover_automation._get_effective_temp_hot(sensor_data)
+
+        assert result is False
+        mock_logger.debug.assert_called_once_with("[cover.test] Per-cover weather hot external control active: not hot")
+
+    def test_calculate_desired_position_uses_per_cover_hot_override(self, cover_automation, basic_config, sensor_data):
+        """Test that a per-cover hot override changes the heat-protection branch outcome."""
+
+        basic_config[f"cover.test_{const.COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"] = True
+        sensor_data.temp_hot = False
+        sensor_data.weather_sunny = True
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=100)
+
+        assert position == 0
+        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
+        assert lockout_active is False
+
+
 class TestIsLockoutActive:
     """Test _is_lockout_protection_active method."""
 

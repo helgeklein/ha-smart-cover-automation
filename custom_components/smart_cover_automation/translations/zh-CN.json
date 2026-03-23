@@ -231,6 +231,12 @@
             "verbose_logging": {
                 "name": "详细日志记录"
             },
+            "weather_hot_external_control": {
+                "name": "天气：炎热？（外部控制）"
+            },
+            "cover_weather_hot_external_control": {
+                "name": "{cover_name}：天气：炎热？（外部控制）"
+            },
             "weather_sunny_external_control": {
                 "name": "天气：晴天？（外部控制）"
             }

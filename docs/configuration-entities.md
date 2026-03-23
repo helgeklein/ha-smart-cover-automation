@@ -72,6 +72,24 @@ The entities in this section control at which temperatures and sun positions the
 
 **Temperature: heat threshold:** The temperature at which the automation starts closing covers to protect from heat (degrees Celsius).
 
+### Weather: Hot? (External Control)
+
+#### Global Entity
+
+This binary switch is disabled by default. If you enable it, the integration stops using the weather forecast to determine if it's hot. In its stead, it uses the state of this switch. To go back to the weather forecast, simply disable it again.
+
+Use case: you want to create your own logic for determining when it's "hot enough" to close the covers, e.g., based on indoor temperature.
+
+#### Per-Cover Entity
+
+In addition to the global entity, the **Weather: hot?** state can be externally configured for each cover individually. To that end, the integration creates one (initially disabled) entity per cover.
+
+The integration determines a cover's **Weather: hot?** state by checking the following in the given order:
+
+1. Per-cover `Weather: Hot? (External Control)` entity (if enabled).
+2. Global `Weather: Hot? (External Control)` entity (if enabled).
+3. Global calculation based on weather forecast data.
+
 ### Weather: Sunny? (External Control)
 
 This binary switch is disabled by default. If you enable it, the integration stops using the weather forecast to determine if it's sunny. In its stead, it uses the state of this switch. To go back to the weather forecast, simply disable it again.
