@@ -88,7 +88,6 @@ class TestOptionsFlowScenarios:
             ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             ConfKeys.TILT_MODE_DAY.value: "auto",
             ConfKeys.TILT_MODE_NIGHT.value: "closed",
             ConfKeys.TILT_SET_VALUE_DAY.value: 50,
@@ -156,7 +155,6 @@ class TestOptionsFlowScenarios:
             ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         }
         result = await flow.async_step_6(user_input)
         result_dict = _as_dict(result)
@@ -188,7 +186,6 @@ class TestOptionsFlowScenarios:
             ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         }
 
         entry = _create_mock_config_entry(options=initial_options)
@@ -226,7 +223,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
                 ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             }
         )
 
@@ -261,7 +257,6 @@ class TestOptionsFlowScenarios:
             ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         }
 
         entry = _create_mock_config_entry(options=initial_options)
@@ -300,7 +295,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
                 ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             }
         )
 
@@ -330,7 +324,6 @@ class TestOptionsFlowScenarios:
             ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         }
 
         entry = _create_mock_config_entry(options=initial_options)
@@ -370,7 +363,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
                 ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             }
         )
 
@@ -407,7 +399,6 @@ class TestOptionsFlowScenarios:
             ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         }
 
         entry = _create_mock_config_entry(options=initial_options)
@@ -448,7 +439,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
                 ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             }
         )
 
@@ -486,7 +476,6 @@ class TestOptionsFlowScenarios:
             ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         }
 
         entry = _create_mock_config_entry(options=initial_options)
@@ -536,7 +525,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
                 ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             }
         )
 
@@ -607,7 +595,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
                 ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             }
         )
 
@@ -669,7 +656,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
                 ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             }
         )
 
@@ -699,7 +685,6 @@ class TestOptionsFlowScenarios:
             ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         }
 
         entry = _create_mock_config_entry(options=initial_options)
@@ -729,7 +714,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 75.0,  # Changed
                 ConfKeys.COVERS_MIN_CLOSURE.value: 25.0,  # Changed
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 1, "minutes": 0, "seconds": 0},  # Changed
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: False,  # Changed
             }
         )
 
@@ -742,7 +726,6 @@ class TestOptionsFlowScenarios:
         assert final_options[ConfKeys.COVERS_MAX_CLOSURE.value] == 75.0
         assert final_options[ConfKeys.COVERS_MIN_CLOSURE.value] == 25.0
         assert final_options[ConfKeys.MANUAL_OVERRIDE_DURATION.value] == {"hours": 1, "minutes": 0, "seconds": 0}
-        assert final_options[ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value] is False
 
     #
     # test_options_flow_add_new_cover
@@ -801,7 +784,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
                 ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             }
         )
 
@@ -880,7 +862,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
                 ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             }
         )
 
@@ -950,7 +931,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
                 ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
             }
         )
 
@@ -986,7 +966,6 @@ class TestOptionsFlowScenarios:
             ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-            ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         }
 
         entry = _create_mock_config_entry(options=initial_options)
@@ -1043,7 +1022,6 @@ class TestOptionsFlowScenarios:
                 ConfKeys.COVERS_MAX_CLOSURE.value: 90.0,  # Changed
                 ConfKeys.COVERS_MIN_CLOSURE.value: 10.0,  # Changed
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 45, "seconds": 0},  # Changed
-                ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: False,  # Changed
             }
         )
 
@@ -1076,4 +1054,3 @@ class TestOptionsFlowScenarios:
         assert final_options[ConfKeys.COVERS_MAX_CLOSURE.value] == 90.0
         assert final_options[ConfKeys.COVERS_MIN_CLOSURE.value] == 10.0
         assert final_options[ConfKeys.MANUAL_OVERRIDE_DURATION.value] == {"hours": 0, "minutes": 45, "seconds": 0}
-        assert final_options[ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value] is False

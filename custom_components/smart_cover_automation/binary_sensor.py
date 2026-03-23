@@ -21,7 +21,6 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.const import EntityCategory
 
 from .const import (
-    BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
     BINARY_SENSOR_KEY_EVENING_CLOSURE,
     BINARY_SENSOR_KEY_LOCK_ACTIVE,
     BINARY_SENSOR_KEY_STATUS,
@@ -60,7 +59,6 @@ async def async_setup_entry(
         # Status binary sensor - indicates system problems
         StatusBinarySensor(coordinator),
         EveningClosureBinarySensor(coordinator),
-        BlockOpeningAfterEveningClosureBinarySensor(coordinator),
         TempHotBinarySensor(coordinator),
         WeatherSunnyBinarySensor(coordinator),
         LockActiveSensor(coordinator),
@@ -182,39 +180,6 @@ class EveningClosureBinarySensor(IntegrationBinarySensor):
         """Return True if evening closure is enabled."""
         resolved = self.coordinator._resolved_settings()
         return resolved.evening_closure_enabled
-
-
-#
-# BlockOpeningAfterEveningClosureBinarySensor
-#
-class BlockOpeningAfterEveningClosureBinarySensor(IntegrationBinarySensor):
-    """Binary sensor that reports whether opening block after evening closure is enabled.
-
-    State meanings:
-    - on: Block is enabled (covers won't open after evening closure)
-    - off: Block is disabled (covers can open after evening closure)
-    """
-
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the sensor.
-
-        Args:
-            coordinator: Provides the data for this sensor
-        """
-        entity_description = BinarySensorEntityDescription(
-            key=BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
-            translation_key=BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            # No device class - allows custom state translations (Yes/No)
-            icon="mdi:door-closed-lock",
-        )
-        super().__init__(coordinator, entity_description)
-
-    @property
-    def is_on(self) -> bool:  # pyright: ignore
-        """Return True if opening block after evening closure is enabled."""
-        resolved = self.coordinator._resolved_settings()
-        return resolved.block_opening_after_evening_closure
 
 
 #

@@ -157,7 +157,6 @@ def test_translation_has_evening_closure_section_keys(language_code: str) -> Non
         ConfKeys.EVENING_CLOSURE_TIME.value,
         ConfKeys.EVENING_CLOSURE_COVER_LIST.value,
         ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value,
-        ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value,
     }
 
     missing_labels = expected_fields - set(section_data.keys())

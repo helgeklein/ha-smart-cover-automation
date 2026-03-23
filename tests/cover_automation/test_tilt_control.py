@@ -42,7 +42,6 @@ def mock_resolved_config():
     resolved.manual_override_duration = 3600
     resolved.covers_min_position_delta = 5
     resolved.lock_mode = LockMode.UNLOCKED
-    resolved.block_opening_after_evening_closure = False
     resolved.evening_closure_enabled = False
     resolved.evening_closure_cover_list = ()
     resolved.tilt_mode_day = TiltMode.OPEN
@@ -760,7 +759,6 @@ class TestProcessWithTilt:
     ) -> None:
         """Evening closure should still apply night tilt when the post-closure opening block is enabled."""
 
-        mock_resolved_config.block_opening_after_evening_closure = True
         mock_resolved_config.evening_closure_enabled = True
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
         mock_resolved_config.tilt_mode_night = TiltMode.SET_VALUE

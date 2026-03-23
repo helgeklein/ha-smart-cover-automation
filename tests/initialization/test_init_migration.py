@@ -19,7 +19,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from custom_components.smart_cover_automation import _async_migrate_unique_ids, const
+from custom_components.smart_cover_automation import (
+    _async_migrate_unique_ids,
+    _async_remove_stale_registry_entities,
+    const,
+)
 
 
 class TestAsyncMigrateUniqueIds:
@@ -760,3 +764,98 @@ class TestAsyncMigrateUniqueIds:
             legacy_entity.entity_id,
             new_unique_id="abc_status",
         )
+
+
+class TestAsyncRemoveStaleRegistryEntities:
+    """Test setup-time cleanup of removed entity-registry entries."""
+
+    @pytest.fixture
+    def mock_hass(self) -> MagicMock:
+        """Create a mock Home Assistant instance for cleanup tests."""
+
+        hass = MagicMock()
+        hass.data = {}
+        return hass
+
+    @pytest.fixture
+    def mock_entry(self) -> MagicMock:
+        """Create a mock config entry for cleanup tests."""
+
+        entry = MagicMock()
+        entry.entry_id = "abc123def456"
+        entry.domain = const.DOMAIN
+        return entry
+
+    @pytest.fixture
+    def mock_registry(self) -> MagicMock:
+        """Create a mock entity registry for cleanup tests."""
+
+        registry = MagicMock()
+        registry.async_remove = MagicMock()
+        return registry
+
+    #
+    # test_no_stale_entities_returns_early
+    #
+    async def test_no_stale_entities_returns_early(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Cleanup should do nothing when no retired entities are present."""
+
+        active_entity = MagicMock()
+        active_entity.unique_id = f"{mock_entry.entry_id}_status"
+        active_entity.entity_id = "binary_sensor.smart_cover_automation_status"
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[active_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        mock_registry.async_remove.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "unique_id",
+        [
+            "abc123def456_nighttime_block_opening",
+            f"{const.DOMAIN}_nighttime_block_opening",
+        ],
+    )
+    #
+    # test_stale_removed_entity_is_deleted
+    #
+    async def test_stale_removed_entity_is_deleted(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+        unique_id: str,
+    ) -> None:
+        """Cleanup should delete the retired nighttime block opening sensor."""
+
+        stale_entity = MagicMock()
+        stale_entity.unique_id = unique_id
+        stale_entity.entity_id = "binary_sensor.smart_cover_automation_nighttime_block_opening"
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[stale_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        mock_registry.async_remove.assert_called_once_with(stale_entity.entity_id)

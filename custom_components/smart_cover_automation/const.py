@@ -133,9 +133,6 @@ SERVICE_FIELD_LOCK_MODE: Final[str] = "lock_mode"  # Field name for lock mode pa
 # Entity keys
 BINARY_SENSOR_KEY_STATUS: Final[str] = "status"  # Key for the status binary sensor entity
 BINARY_SENSOR_KEY_EVENING_CLOSURE: Final[str] = "close_covers_after_sunset"  # Key for the evening closure binary sensor entity
-BINARY_SENSOR_KEY_BLOCK_OPENING_AFTER_EVENING_CLOSURE: Final[str] = (
-    "nighttime_block_opening"  # Key for the block-opening-after-evening-closure binary sensor entity
-)
 BINARY_SENSOR_KEY_TEMP_HOT: Final[str] = "temp_hot"  # Key for the temp_hot binary sensor entity
 BINARY_SENSOR_KEY_WEATHER_SUNNY: Final[str] = "weather_sunny"  # Key for the weather_sunny binary sensor entity
 BINARY_SENSOR_KEY_LOCK_ACTIVE: Final[str] = "lock_active"  # Key for the lock active binary sensor entity

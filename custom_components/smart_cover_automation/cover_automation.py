@@ -337,17 +337,14 @@ class CoverAutomation:
     def _is_opening_block_after_evening_closure_active(self, sensor_data: SensorData) -> bool:
         """Check if opening block after evening closure should prevent cover opening.
 
-        When enabled, this prevents automatic cover opening once the evening
-        closure time has passed (regardless of whether the sun is still above
-        the horizon).  The block stays active until the next morning.
+        This prevents automatic cover opening once the evening closure time has
+        passed (regardless of whether the sun is still above the horizon). The
+        block then remains active overnight and is cleared once the sun is no
+        longer below the horizon on the following day.
 
         Returns:
             True if block is active and should prevent opening, False otherwise
         """
-
-        # Check if feature is enabled
-        if not self.resolved.block_opening_after_evening_closure:
-            return False
 
         return sensor_data.post_evening_closure
 

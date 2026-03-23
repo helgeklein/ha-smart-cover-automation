@@ -152,7 +152,6 @@ async def _create_and_load_entry(
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-        ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: True,
         ConfKeys.TEMP_THRESHOLD.value: 24.0,
     }
     for cover in covers:
@@ -255,48 +254,7 @@ class TestSmartReload:
         assert current_coordinator._merged_config.get(ConfKeys.TEMP_THRESHOLD.value) == 30.0
 
     # ------------------------------------------------------------------
-    # 4.2  Structural key change → full entry reload
-    # ------------------------------------------------------------------
-
-    #
-    # test_structural_key_change_reloads_entry
-    #
-    async def test_structural_key_change_reloads_entry(
-        self,
-        hass: HomeAssistant,
-    ) -> None:
-        """Changing a structural key triggers a full entry reload.
-
-        ``nighttime_block_opening`` is NOT runtime-configurable, so
-        changing it should cause a full unload → setup cycle.
-        """
-
-        _setup_entities(hass, [TEST_COVER_1])  # Ensure entities exist for reload
-
-        entry = await _create_and_load_entry(hass)
-        coordinator = _get_coordinator(hass, entry)
-        original_coordinator_id = id(coordinator)
-
-        # Change a structural key
-        new_options = {**entry.options, ConfKeys.BLOCK_OPENING_AFTER_EVENING_CLOSURE.value: False}
-
-        with patch(
-            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",
-            new_callable=AsyncMock,
-            return_value=30.0,
-        ):
-            hass.config_entries.async_update_entry(entry, options=new_options)
-            await hass.async_block_till_done()
-
-        # Entry should still be LOADED after the reload completes
-        assert entry.state is ConfigEntryState.LOADED
-
-        # Should be a DIFFERENT coordinator instance (full reload)
-        new_coordinator = _get_coordinator(hass, entry)
-        assert id(new_coordinator) != original_coordinator_id
-
-    # ------------------------------------------------------------------
-    # 4.3  Multiple runtime keys in one update → coordinator refresh
+    # 4.2  Multiple runtime keys in one update → coordinator refresh
     # ------------------------------------------------------------------
 
     #
