@@ -18,14 +18,24 @@ from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
 
 from .config import ConfKeys
 from .const import (
+    COVER_SFX_TILT_EXTERNAL_VALUE_DAY,
+    COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT,
+    COVER_SFX_TILT_MODE_DAY,
+    COVER_SFX_TILT_MODE_NIGHT,
+    NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_DAY,
+    NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_NIGHT,
     NUMBER_KEY_COVERS_MAX_CLOSURE,
     NUMBER_KEY_COVERS_MIN_CLOSURE,
     NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
     NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
     NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
     NUMBER_KEY_TEMP_THRESHOLD,
+    NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
+    NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
+    TiltMode,
 )
 from .entity import IntegrationEntity
+from .util import cover_supports_tilt, to_int_or_none
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -39,7 +49,7 @@ if TYPE_CHECKING:
 # async_setup_entry
 #
 async def async_setup_entry(
-    hass: HomeAssistant,  # noqa: ARG001 Unused function argument: `hass`
+    hass: HomeAssistant,
     entry: IntegrationConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
@@ -54,6 +64,7 @@ async def async_setup_entry(
         async_add_entities: Callback to register new entities with Home Assistant
     """
     coordinator = entry.runtime_data.coordinator
+    resolved = coordinator._resolved_settings()
 
     # Create all number entities
     entities = [
@@ -65,7 +76,40 @@ async def async_setup_entry(
         TempThresholdNumber(coordinator),
     ]
 
+    if resolved.tilt_mode_day == TiltMode.EXTERNAL:
+        entities.append(GlobalExternalTiltDayNumber(coordinator))
+
+    if resolved.tilt_mode_night == TiltMode.EXTERNAL:
+        entities.append(GlobalExternalTiltNightNumber(coordinator))
+
+    options = dict(coordinator.config_entry.options or {})
+    for cover_entity_id in resolved.covers:
+        supports_tilt = cover_supports_tilt(hass, cover_entity_id)
+        if supports_tilt is False:
+            continue
+
+        if options.get(f"{cover_entity_id}_{COVER_SFX_TILT_MODE_DAY}") == TiltMode.EXTERNAL:
+            entities.append(CoverExternalTiltDayNumber(coordinator, cover_entity_id))
+        if options.get(f"{cover_entity_id}_{COVER_SFX_TILT_MODE_NIGHT}") == TiltMode.EXTERNAL:
+            entities.append(CoverExternalTiltNightNumber(coordinator, cover_entity_id))
+
     async_add_entities(entities)
+
+
+#
+# _format_cover_name
+#
+def _format_cover_name(coordinator: DataUpdateCoordinator, cover_entity_id: str) -> str:
+    """Return a human-friendly name for a cover entity."""
+
+    state = coordinator.hass.states.get(cover_entity_id)
+    if state is not None:
+        friendly_name = state.attributes.get("friendly_name")
+        if isinstance(friendly_name, str) and friendly_name.strip():
+            return friendly_name.strip()
+
+    object_id = cover_entity_id.split(".", 1)[-1]
+    return object_id.replace("_", " ").strip().title()
 
 
 #
@@ -170,6 +214,39 @@ class IntegrationNumber(IntegrationEntity, NumberEntity):  # pyright: ignore[rep
         # This will trigger the update listener (async_reload_entry) in __init__.py
         # which will compare configs and decide on refresh vs. reload
         self.coordinator.hass.config_entries.async_update_entry(entry, options=current_options)
+
+
+#
+# ExternalTiltNumber
+#
+class ExternalTiltNumber(IntegrationNumber):
+    """Base number entity for externally supplied tilt angle values."""
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        entity_description: NumberEntityDescription,
+        config_key: str,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> None:
+        """Initialize an external tilt number entity."""
+
+        super().__init__(coordinator, entity_description, config_key)
+        if translation_placeholders is not None:
+            self._attr_translation_placeholders = translation_placeholders
+
+    @property
+    def native_value(self) -> float | None:  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Return the currently stored external tilt value, if any."""
+
+        options = dict(self.coordinator.config_entry.options or {})
+        value = to_int_or_none(options.get(self._config_key))
+        return float(value) if value is not None else None
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Persist a new external tilt value."""
+
+        await self._async_persist_option(self._config_key, int(value))
 
 
 #
@@ -304,6 +381,102 @@ class TempThresholdNumber(IntegrationNumber):
             native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         )
         super().__init__(coordinator, entity_description, ConfKeys.TEMP_THRESHOLD.value)
+
+
+#
+# GlobalExternalTiltDayNumber
+#
+class GlobalExternalTiltDayNumber(ExternalTiltNumber):
+    """Global external tilt value used during daytime."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the global daytime external tilt number."""
+
+        entity_description = NumberEntityDescription(
+            key=NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
+            translation_key=NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:blinds-horizontal",
+            native_min_value=0,
+            native_max_value=100,
+            native_step=1,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement="%",
+        )
+        super().__init__(coordinator, entity_description, NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY)
+
+
+#
+# GlobalExternalTiltNightNumber
+#
+class GlobalExternalTiltNightNumber(ExternalTiltNumber):
+    """Global external tilt value used during night/evening closure."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the global nighttime external tilt number."""
+
+        entity_description = NumberEntityDescription(
+            key=NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
+            translation_key=NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:blinds-horizontal",
+            native_min_value=0,
+            native_max_value=100,
+            native_step=1,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement="%",
+        )
+        super().__init__(coordinator, entity_description, NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT)
+
+
+#
+# CoverExternalTiltDayNumber
+#
+class CoverExternalTiltDayNumber(ExternalTiltNumber):
+    """Per-cover external tilt value used during daytime."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator, cover_entity_id: str) -> None:
+        """Initialize the per-cover daytime external tilt number."""
+
+        cover_name = _format_cover_name(coordinator, cover_entity_id)
+        config_key = f"{cover_entity_id}_{COVER_SFX_TILT_EXTERNAL_VALUE_DAY}"
+        entity_description = NumberEntityDescription(
+            key=config_key,
+            translation_key=NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_DAY,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:blinds-horizontal",
+            native_min_value=0,
+            native_max_value=100,
+            native_step=1,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement="%",
+        )
+        super().__init__(coordinator, entity_description, config_key, {"cover_name": cover_name})
+
+
+#
+# CoverExternalTiltNightNumber
+#
+class CoverExternalTiltNightNumber(ExternalTiltNumber):
+    """Per-cover external tilt value used during night/evening closure."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator, cover_entity_id: str) -> None:
+        """Initialize the per-cover nighttime external tilt number."""
+
+        cover_name = _format_cover_name(coordinator, cover_entity_id)
+        config_key = f"{cover_entity_id}_{COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}"
+        entity_description = NumberEntityDescription(
+            key=config_key,
+            translation_key=NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_NIGHT,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:blinds-horizontal",
+            native_min_value=0,
+            native_max_value=100,
+            native_step=1,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement="%",
+        )
+        super().__init__(coordinator, entity_description, config_key, {"cover_name": cover_name})
 
 
 #

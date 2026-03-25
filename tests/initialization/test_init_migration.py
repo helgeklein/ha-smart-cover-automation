@@ -18,6 +18,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
+from homeassistant.components.cover import CoverEntityFeature
 
 from custom_components.smart_cover_automation import (
     _async_migrate_unique_ids,
@@ -859,3 +860,74 @@ class TestAsyncRemoveStaleRegistryEntities:
             await _async_remove_stale_registry_entities(mock_hass, mock_entry)
 
         mock_registry.async_remove.assert_called_once_with(stale_entity.entity_id)
+
+    #
+    # test_stale_external_tilt_entity_and_value_are_deleted
+    #
+    async def test_stale_external_tilt_entity_and_value_are_deleted(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Cleanup should remove stale external tilt entities and stored values."""
+
+        stale_entity = MagicMock()
+        stale_entity.unique_id = f"{mock_entry.entry_id}_tilt_external_value_day"
+        stale_entity.entity_id = "number.smart_cover_automation_tilt_external_value_day"
+        mock_entry.options = {"tilt_external_value_day": 65, "covers": ["cover.test_cover"]}
+        mock_hass.config_entries = MagicMock()
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[stale_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        mock_registry.async_remove.assert_called_once_with(stale_entity.entity_id)
+        mock_hass.config_entries.async_update_entry.assert_called_once()
+        updated_options = mock_hass.config_entries.async_update_entry.call_args.kwargs["options"]
+        assert "tilt_external_value_day" not in updated_options
+
+    async def test_per_cover_external_tilt_entity_and_value_are_deleted_when_cover_lacks_tilt_support(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Cleanup should remove per-cover external tilt state for covers without tilt support."""
+
+        stale_entity = MagicMock()
+        stale_entity.unique_id = f"{mock_entry.entry_id}_cover.test_cover_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}"
+        stale_entity.entity_id = "number.smart_cover_automation_test_cover_cover_tilt_external_value_day"
+        mock_entry.options = {
+            "covers": ["cover.test_cover"],
+            f"cover.test_cover_{const.COVER_SFX_TILT_MODE_DAY}": const.TiltMode.EXTERNAL,
+            f"cover.test_cover_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}": 65,
+        }
+        mock_hass.config_entries = MagicMock()
+        mock_hass.states = MagicMock()
+        mock_hass.states.get.return_value = MagicMock(attributes={"supported_features": CoverEntityFeature.SET_POSITION})
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[stale_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        mock_registry.async_remove.assert_called_once_with(stale_entity.entity_id)
+        mock_hass.config_entries.async_update_entry.assert_called_once()
+        updated_options = mock_hass.config_entries.async_update_entry.call_args.kwargs["options"]
+        assert f"cover.test_cover_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}" not in updated_options

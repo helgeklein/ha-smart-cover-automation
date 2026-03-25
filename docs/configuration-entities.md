@@ -74,7 +74,7 @@ The entities in this section control at which temperatures and sun positions the
 
 ### Weather: Hot? (External Control)
 
-*New in 1.4.0*
+*New in 2.0.0*
 
 #### Global Entity
 

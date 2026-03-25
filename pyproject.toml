@@ -20,7 +20,7 @@ markers = [
 asyncio_mode = "auto"
 
 [tool.coverage.run]
-source = ["custom_components/smart_cover_automation"]
+source = ["custom_components.smart_cover_automation"]
 omit = [
     "tests/*",
     "*/tests/*",

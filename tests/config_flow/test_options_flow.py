@@ -717,6 +717,30 @@ class TestOptionsFlowHelperMethods:
         # Cleared value should be stored as None (changed from "open")
         assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_NIGHT}"] is None
 
+    #
+    # test_cleanup_external_tilt_value_keys
+    #
+    def test_cleanup_external_tilt_value_keys(self) -> None:
+        """External tilt values should be removed when matching external modes are no longer active."""
+
+        merged = {
+            ConfKeys.TILT_MODE_DAY.value: "open",
+            ConfKeys.TILT_MODE_NIGHT.value: "external",
+            const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY: 40,
+            const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT: 15,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_DAY}": "manual",
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_NIGHT}": "external",
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}": 70,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}": 20,
+        }
+
+        OptionsFlowHandler._cleanup_external_tilt_value_keys(merged, [MOCK_COVER_ENTITY_ID])
+
+        assert const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY not in merged
+        assert const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT in merged
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}" not in merged
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}" in merged
+
     async def test_options_flow_no_changes_logs_debug(self, mock_hass_with_covers: MagicMock, caplog: Any) -> None:
         """Test that completing flow with no changes logs at debug level."""
         import logging

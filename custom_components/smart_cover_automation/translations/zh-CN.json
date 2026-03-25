@@ -199,6 +199,12 @@
             "covers_min_closure": {
                 "name": "遮阳设备最小位置："
             },
+            "cover_tilt_external_value_day": {
+                "name": "{cover_name}：叶片倾角：外部控制（日间）"
+            },
+            "cover_tilt_external_value_night": {
+                "name": "{cover_name}：叶片倾角：外部控制（夜间）"
+            },
             "manual_override_duration": {
                 "name": "手动覆盖持续时间："
             },
@@ -207,6 +213,12 @@
             },
             "sun_elevation_threshold": {
                 "name": "最小太阳仰角："
+            },
+            "tilt_external_value_day": {
+                "name": "叶片倾角：外部控制（日间）"
+            },
+            "tilt_external_value_night": {
+                "name": "叶片倾角：外部控制（夜间）"
             },
             "temp_threshold": {
                 "name": "温度：高温阈值"
@@ -310,6 +322,7 @@
                 "closed": "关闭（垂直 — 阻挡光线）",
                 "manual": "手动（恢复手动设置的角度）",
                 "auto": "自动（阻挡直射阳光）",
+                "external": "外部（通过实体提供叶片倾角）",
                 "set_value": "固定值（固定倾斜角度）"
             }
         },

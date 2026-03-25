@@ -199,6 +199,12 @@
             "covers_min_closure": {
                 "name": "Position minimale du volet :"
             },
+            "cover_tilt_external_value_day": {
+                "name": "{cover_name} : angle d'inclinaison : contrôle externe (jour)"
+            },
+            "cover_tilt_external_value_night": {
+                "name": "{cover_name} : angle d'inclinaison : contrôle externe (nuit)"
+            },
             "manual_override_duration": {
                 "name": "Durée de l'override manuel :"
             },
@@ -207,6 +213,12 @@
             },
             "sun_elevation_threshold": {
                 "name": "Élévation minimale du soleil :"
+            },
+            "tilt_external_value_day": {
+                "name": "Angle d'inclinaison : contrôle externe (jour)"
+            },
+            "tilt_external_value_night": {
+                "name": "Angle d'inclinaison : contrôle externe (nuit)"
             },
             "temp_threshold": {
                 "name": "Température : seuil de chaleur"
@@ -310,6 +322,7 @@
                 "closed": "Fermé (vertical — bloquer la lumière)",
                 "manual": "Manuel (restaurer l'angle réglé manuellement)",
                 "auto": "Auto (bloquer la lumière directe du soleil)",
+                "external": "Externe (angle d'inclinaison fourni par une entité)",
                 "set_value": "Valeur fixe (angle d'inclinaison fixe)"
             }
         },

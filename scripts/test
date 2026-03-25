@@ -17,6 +17,6 @@ python3 -m mypy custom_components/smart_cover_automation/
 
 # Run the tests
 echo "Running tests..."
-python3 -m pytest tests/ -v --cov=custom_components.smart_cover_automation --cov-report=term-missing
+python3 -m pytest tests/ -v
 
 echo "Test run completed!"

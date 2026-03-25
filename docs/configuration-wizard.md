@@ -60,6 +60,8 @@ In this step of the configuration wizard, you can specify maximum and minimum po
 
 ## Step 4: Tilt Angle Control (Optional)
 
+*New in 2.0.0: external mode*
+
 In this step of the configuration wizard, you can specify how the title angle of covers with adjustable slats is to be controlled. The following options are available:
 
 - **Auto:** Block direct sunlight but allow seeing through as much as possible.
@@ -70,6 +72,12 @@ In this step of the configuration wizard, you can specify how the title angle of
 - **Open:** Keep the slats fully open.
 - **Closed:** Keep the slats fully closed.
 - **Set value:** Keep the slats at a fixed angle.
+- **External:** Set the tilt angle from your own automation.
+  - When this mode is selected, the integration creates additional entities that receive the tilt angle.
+  - The integration-created entities are fully managed, i.e., they're deleted again if the mode is change away from `external`.
+  - The integration-managed tilt angle entities are available globally as well as per cover, depending on where you configured `external` as tilt angle control mode.
+  - The integration only adjusts your covers' tilt angles if the tilt angle entities actually have a value (i.e., not `unknown`).
+  - If both global and per-cover external tilt angle values are specified, the per-cover value takes precendence.
 
 ### Global Tilt Modes for Day and Night
 

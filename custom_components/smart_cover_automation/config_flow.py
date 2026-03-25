@@ -839,6 +839,46 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return dict(self._config_entry.options) if self._config_entry.options else {}
 
     #
+    # _cleanup_external_tilt_value_keys
+    #
+    @staticmethod
+    def _cleanup_external_tilt_value_keys(merged: dict[str, Any], covers_in_input: list[str]) -> None:
+        """Remove external tilt value keys that no longer have matching entities.
+
+        Policy B applies: when an external tilt entity is removed, its stored
+        value must be deleted as well.
+
+        Args:
+            merged: Merged options dict that will be persisted.
+            covers_in_input: Covers currently selected in the integration.
+        """
+
+        if merged.get(ConfKeys.TILT_MODE_DAY.value) != const.TiltMode.EXTERNAL:
+            merged.pop(const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY, None)
+
+        if merged.get(ConfKeys.TILT_MODE_NIGHT.value) != const.TiltMode.EXTERNAL:
+            merged.pop(const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT, None)
+
+        valid_covers = set(covers_in_input)
+        per_cover_suffixes = (
+            (const.COVER_SFX_TILT_MODE_DAY, const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY),
+            (const.COVER_SFX_TILT_MODE_NIGHT, const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT),
+        )
+
+        for mode_suffix, value_suffix in per_cover_suffixes:
+            for cover in valid_covers:
+                mode_key = f"{cover}_{mode_suffix}"
+                value_key = f"{cover}_{value_suffix}"
+                if merged.get(mode_key) != const.TiltMode.EXTERNAL:
+                    merged.pop(value_key, None)
+
+            suffix_with_separator = f"_{value_suffix}"
+            for key in [key for key in merged if key.endswith(suffix_with_separator)]:
+                cover_entity = key[: -len(suffix_with_separator)]
+                if cover_entity not in valid_covers:
+                    merged.pop(key, None)
+
+    #
     # _get_covers
     #
     def _get_covers(self) -> list[str]:
@@ -910,6 +950,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             f"_{const.COVER_SFX_MIN_CLOSURE}",
             f"_{const.COVER_SFX_TILT_MODE_DAY}",
             f"_{const.COVER_SFX_TILT_MODE_NIGHT}",
+            f"_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}",
+            f"_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}",
             f"_{const.COVER_SFX_WINDOW_SENSORS}",
         )
         for key, value in list(merged.items()):
@@ -929,6 +971,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Now remove the keys identified as superfluous
         for key in keys_to_remove:
             merged.pop(key, None)
+
+        self._cleanup_external_tilt_value_keys(merged, covers_in_input)
 
         self._logger.debug(f"Options flow completed. Final configuration being saved: {merged}")
 

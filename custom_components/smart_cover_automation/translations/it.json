@@ -199,6 +199,12 @@
             "covers_min_closure": {
                 "name": "Posizione minima della tapparella:"
             },
+            "cover_tilt_external_value_day": {
+                "name": "{cover_name}: angolo di inclinazione: controllo esterno (giorno)"
+            },
+            "cover_tilt_external_value_night": {
+                "name": "{cover_name}: angolo di inclinazione: controllo esterno (notte)"
+            },
             "manual_override_duration": {
                 "name": "Durata dell'override manuale:"
             },
@@ -207,6 +213,12 @@
             },
             "sun_elevation_threshold": {
                 "name": "Elevazione minima del sole:"
+            },
+            "tilt_external_value_day": {
+                "name": "Angolo di inclinazione: controllo esterno (giorno)"
+            },
+            "tilt_external_value_night": {
+                "name": "Angolo di inclinazione: controllo esterno (notte)"
             },
             "temp_threshold": {
                 "name": "Temperatura: soglia di calore"
@@ -310,6 +322,7 @@
                 "closed": "Chiuso (verticale — bloccare la luce)",
                 "manual": "Manuale (ripristinare l'angolo impostato manualmente)",
                 "auto": "Auto (bloccare la luce solare diretta)",
+                "external": "Esterno (angolo di inclinazione fornito tramite entità)",
                 "set_value": "Valore fisso (angolo di inclinazione fisso)"
             }
         },

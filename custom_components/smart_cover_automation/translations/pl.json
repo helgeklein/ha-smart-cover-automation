@@ -199,6 +199,12 @@
             "covers_min_closure": {
                 "name": "Minimalna pozycja rolety:"
             },
+            "cover_tilt_external_value_day": {
+                "name": "{cover_name}: kąt nachylenia lamel: sterowanie zewnętrzne (dzień)"
+            },
+            "cover_tilt_external_value_night": {
+                "name": "{cover_name}: kąt nachylenia lamel: sterowanie zewnętrzne (noc)"
+            },
             "manual_override_duration": {
                 "name": "Czas trwania ręcznego pominięcia:"
             },
@@ -207,6 +213,12 @@
             },
             "sun_elevation_threshold": {
                 "name": "Minimalna wysokość słońca:"
+            },
+            "tilt_external_value_day": {
+                "name": "Kąt nachylenia lamel: sterowanie zewnętrzne (dzień)"
+            },
+            "tilt_external_value_night": {
+                "name": "Kąt nachylenia lamel: sterowanie zewnętrzne (noc)"
             },
             "temp_threshold": {
                 "name": "Temperatura: próg upału"
@@ -310,6 +322,7 @@
                 "closed": "Zamknięte (pionowo — blokować światło)",
                 "manual": "Ręczne (przywrócić ręcznie ustawiony kąt)",
                 "auto": "Auto (blokować bezpośrednie światło słoneczne)",
+                "external": "Zewnętrzne (kąt nachylenia dostarczany przez encję)",
                 "set_value": "Wartość stała (stały kąt nachylenia)"
             }
         },

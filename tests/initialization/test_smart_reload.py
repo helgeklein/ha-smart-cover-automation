@@ -162,6 +162,69 @@ class TestSmartReload:
         # Verify full reload was NOT called
         mock_hass_with_spec.config_entries.async_reload.assert_not_called()
 
+    async def test_reload_with_global_external_tilt_value_change_only(
+        self,
+        mock_hass_with_spec,
+        mock_config_entry_basic,
+    ) -> None:
+        """Changing only the global external tilt value should refresh, not reload."""
+
+        mock_coordinator = MagicMock()
+        mock_coordinator._merged_config = {"tilt_external_value_day": 25, "covers": ["cover.test"]}
+        mock_coordinator.async_request_refresh = AsyncMock()
+
+        mock_runtime_data = MagicMock(spec=RuntimeData)
+        mock_runtime_data.coordinator = mock_coordinator
+        mock_runtime_data.config = {"tilt_external_value_day": 25, "covers": ["cover.test"]}
+
+        mock_config_entry_basic.runtime_data = mock_runtime_data
+        mock_config_entry_basic.data = {}
+        mock_config_entry_basic.options = {"tilt_external_value_day": 45, "covers": ["cover.test"]}
+
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_reload = AsyncMock()
+
+        await async_reload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        mock_coordinator.async_request_refresh.assert_called_once()
+        mock_hass_with_spec.config_entries.async_reload.assert_not_called()
+
+    async def test_reload_with_per_cover_external_tilt_value_change_only(
+        self,
+        mock_hass_with_spec,
+        mock_config_entry_basic,
+    ) -> None:
+        """Changing only a per-cover external tilt value should refresh, not reload."""
+
+        mock_coordinator = MagicMock()
+        mock_coordinator._merged_config = {
+            "cover.test_cover_cover_tilt_external_value_day": 25,
+            "covers": ["cover.test_cover"],
+        }
+        mock_coordinator.async_request_refresh = AsyncMock()
+
+        mock_runtime_data = MagicMock(spec=RuntimeData)
+        mock_runtime_data.coordinator = mock_coordinator
+        mock_runtime_data.config = {
+            "cover.test_cover_cover_tilt_external_value_day": 25,
+            "covers": ["cover.test_cover"],
+        }
+
+        mock_config_entry_basic.runtime_data = mock_runtime_data
+        mock_config_entry_basic.data = {}
+        mock_config_entry_basic.options = {
+            "cover.test_cover_cover_tilt_external_value_day": 30,
+            "covers": ["cover.test_cover"],
+        }
+
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_reload = AsyncMock()
+
+        await async_reload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        mock_coordinator.async_request_refresh.assert_called_once()
+        mock_hass_with_spec.config_entries.async_reload.assert_not_called()
+
     async def test_reload_with_structural_change_triggers_full_reload(
         self,
         mock_hass_with_spec,

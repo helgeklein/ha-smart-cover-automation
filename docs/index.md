@@ -29,6 +29,7 @@ A Home Assistant integration to automate the control of your smart home's window
     - Automatic: block direct sunlight but allow seeing through as much as possible.
     - Manual: don't change the user's setting.
     - Specific value: open, closed or any angle in between.
+    - External: set the tilt angle from your own automation.
     - Dedicated setting for the night.
     - For all covers that have horizontal slats whose tilt angle can be changed to let light in to varying degrees.
 - **Manual override detection:**

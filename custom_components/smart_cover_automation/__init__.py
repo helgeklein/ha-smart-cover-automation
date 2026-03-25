@@ -8,8 +8,9 @@ https://github.com/helgeklein/ha-smart_cover_automation
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from functools import partial
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.const import Platform
 from homeassistant.core import ServiceCall
@@ -20,11 +21,15 @@ from . import const
 from .config import ConfKeys, is_runtime_configurable_key
 from .config_flow import OptionsFlowHandler
 from .const import (
+    COVER_SFX_TILT_EXTERNAL_VALUE_DAY,
+    COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT,
     DATA_COORDINATORS,
     DOMAIN,
     HA_OPTIONS,
     INTEGRATION_NAME,
     LOGGER,
+    NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
+    NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
     SERVICE_FIELD_LOCK_MODE,
     SERVICE_LOGBOOK_ENTRY,
     SERVICE_SET_LOCK,
@@ -34,6 +39,7 @@ from .const import (
 from .coordinator import DataUpdateCoordinator
 from .data import RuntimeData
 from .log import Log
+from .util import cover_supports_tilt
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -50,6 +56,58 @@ PLATFORMS: list[Platform] = [
 ]
 
 REMOVED_ENTITY_UNIQUE_ID_KEYS: Final[tuple[str, ...]] = ("nighttime_block_opening",)
+
+
+#
+# _get_entry_options_dict
+#
+def _get_entry_options_dict(entry: IntegrationConfigEntry) -> dict[str, Any]:
+    """Return config entry options as a plain dict."""
+
+    raw_options = getattr(entry, HA_OPTIONS, None)
+    if isinstance(raw_options, Mapping):
+        return dict(raw_options)
+    return {}
+
+
+#
+# _get_valid_external_tilt_value_keys
+#
+def _get_valid_external_tilt_value_keys(hass: HomeAssistant, entry: IntegrationConfigEntry) -> set[str]:
+    """Return the external tilt value keys that should exist for this entry."""
+
+    options = _get_entry_options_dict(entry)
+    covers = tuple(options.get(ConfKeys.COVERS.value, ()))
+    valid_keys: set[str] = set()
+
+    if options.get(ConfKeys.TILT_MODE_DAY.value) == const.TiltMode.EXTERNAL:
+        valid_keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY)
+
+    if options.get(ConfKeys.TILT_MODE_NIGHT.value) == const.TiltMode.EXTERNAL:
+        valid_keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT)
+
+    for cover in covers:
+        supports_tilt = cover_supports_tilt(hass, cover)
+        if supports_tilt is False:
+            continue
+
+        if options.get(f"{cover}_{const.COVER_SFX_TILT_MODE_DAY}") == const.TiltMode.EXTERNAL:
+            valid_keys.add(f"{cover}_{COVER_SFX_TILT_EXTERNAL_VALUE_DAY}")
+        if options.get(f"{cover}_{const.COVER_SFX_TILT_MODE_NIGHT}") == const.TiltMode.EXTERNAL:
+            valid_keys.add(f"{cover}_{COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}")
+
+    return valid_keys
+
+
+#
+# _is_external_tilt_value_key
+#
+def _is_external_tilt_value_key(key: str) -> bool:
+    """Return whether the key stores an external tilt value."""
+
+    return key in (NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY, NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT) or key.endswith(
+        (f"_{COVER_SFX_TILT_EXTERNAL_VALUE_DAY}", f"_{COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}")
+    )
 
 
 #
@@ -163,6 +221,24 @@ async def _async_remove_stale_registry_entities(hass: HomeAssistant, entry: Inte
     }
 
     stale_entries = [entity for entity in entries if entity.unique_id in removed_unique_ids]
+    valid_external_tilt_value_keys = _get_valid_external_tilt_value_keys(hass, entry)
+    valid_external_tilt_unique_ids = {f"{entry.entry_id}_{key}" for key in valid_external_tilt_value_keys}
+    stale_entries.extend(
+        entity
+        for entity in entries
+        if entity.unique_id.startswith(f"{entry.entry_id}_")
+        and _is_external_tilt_value_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
+        and entity.unique_id not in valid_external_tilt_unique_ids
+    )
+
+    current_options = _get_entry_options_dict(entry)
+    stale_external_tilt_value_keys = {key for key in current_options if _is_external_tilt_value_key(key)} - valid_external_tilt_value_keys
+    if stale_external_tilt_value_keys:
+        updated_options = dict(current_options)
+        for key in stale_external_tilt_value_keys:
+            updated_options.pop(key, None)
+        hass.config_entries.async_update_entry(entry, options=updated_options)
+
     if not stale_entries:
         return
 
