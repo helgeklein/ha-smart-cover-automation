@@ -199,6 +199,12 @@
             "covers_min_closure": {
                 "name": "Minimale Rollladenposition:"
             },
+            "cover_tilt_external_value_day": {
+                "name": "{cover_name}: Lamellenneigung: externe Steuerung (Tag)"
+            },
+            "cover_tilt_external_value_night": {
+                "name": "{cover_name}: Lamellenneigung: externe Steuerung (Nacht)"
+            },
             "manual_override_duration": {
                 "name": "Dauer der manuellen Übersteuerung:"
             },
@@ -207,6 +213,12 @@
             },
             "sun_elevation_threshold": {
                 "name": "Minimale Sonnenhöhe:"
+            },
+            "tilt_external_value_day": {
+                "name": "Lamellenneigung: externe Steuerung (Tag)"
+            },
+            "tilt_external_value_night": {
+                "name": "Lamellenneigung: externe Steuerung (Nacht)"
             },
             "temp_threshold": {
                 "name": "Temperatur: Hitzeschwelle"
@@ -310,6 +322,7 @@
                 "closed": "Geschlossen (vertikal — Licht blockieren)",
                 "manual": "Manuell (manuell eingestellten Winkel beibehalten)",
                 "auto": "Automatisch (direktes Sonnenlicht blockieren)",
+                "external": "Extern (Lamellenneigung über Entität vorgegeben)",
                 "set_value": "Festwert (fester Neigungswinkel)"
             }
         },

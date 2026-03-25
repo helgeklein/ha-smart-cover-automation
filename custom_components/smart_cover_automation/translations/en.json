@@ -199,6 +199,12 @@
             "covers_min_closure": {
                 "name": "Minimum cover position:"
             },
+            "cover_tilt_external_value_day": {
+                "name": "{cover_name}: Tilt angle: external control (day)"
+            },
+            "cover_tilt_external_value_night": {
+                "name": "{cover_name}: Tilt angle: external control (night)"
+            },
             "manual_override_duration": {
                 "name": "Manual override duration:"
             },
@@ -207,6 +213,12 @@
             },
             "sun_elevation_threshold": {
                 "name": "Minimum sun elevation:"
+            },
+            "tilt_external_value_day": {
+                "name": "Tilt angle: external control (day)"
+            },
+            "tilt_external_value_night": {
+                "name": "Tilt angle: external control (night)"
             },
             "temp_threshold": {
                 "name": "Temperature: heat threshold"
@@ -308,8 +320,9 @@
             "options": {
                 "open": "Open (horizontal — let light in)",
                 "closed": "Closed (vertical — block light)",
-                "manual": "Manual (restore manually set angle)",
+                "manual": "Manual (keep the user-set angle)",
                 "auto": "Auto (block direct sunlight)",
+                "external": "External (tilt angle supplied via entity)",
                 "set_value": "Set value (fixed tilt angle)"
             }
         },

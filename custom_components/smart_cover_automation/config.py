@@ -13,8 +13,12 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
 from custom_components.smart_cover_automation.const import (
+    COVER_SFX_TILT_EXTERNAL_VALUE_DAY,
+    COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT,
     COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL,
     HA_OPTIONS,
+    NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
+    NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
     SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL,
     SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
     EveningClosureMode,
@@ -261,6 +265,8 @@ def get_runtime_configurable_keys() -> set[str]:
     # rather than a full integration reload.
     keys.add(SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL)
     keys.add(SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL)
+    keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY)
+    keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT)
     return keys
 
 
@@ -284,7 +290,9 @@ def is_runtime_configurable_key(key: str) -> bool:
     if key in get_runtime_configurable_keys():
         return True
 
-    return key.endswith(f"_{COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}")
+    return key.endswith(f"_{COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}") or key.endswith(
+        (f"_{COVER_SFX_TILT_EXTERNAL_VALUE_DAY}", f"_{COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}")
+    )
 
 
 # Mapping from ConfKeys.value strings to ResolvedConfig field names.

@@ -11,15 +11,23 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
+from homeassistant.components.cover import CoverEntityFeature
+from homeassistant.const import ATTR_SUPPORTED_FEATURES
+
 from custom_components.smart_cover_automation.number import (
+    CoverExternalTiltDayNumber,
+    CoverExternalTiltNightNumber,
     CoversMaxClosureNumber,
     CoversMinClosureNumber,
+    GlobalExternalTiltDayNumber,
+    GlobalExternalTiltNightNumber,
     ManualOverrideDurationNumber,
     SunAzimuthToleranceNumber,
     SunElevationThresholdNumber,
     TempThresholdNumber,
     async_setup_entry,
 )
+from tests.conftest import set_test_options
 
 if TYPE_CHECKING:
     from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
@@ -141,3 +149,70 @@ async def test_async_setup_entry_with_real_hass_instance(
     assert isinstance(captured[3], SunAzimuthToleranceNumber)
     assert isinstance(captured[4], SunElevationThresholdNumber)
     assert isinstance(captured[5], TempThresholdNumber)
+
+
+async def test_async_setup_entry_adds_external_tilt_numbers_when_modes_external(mock_coordinator_basic: DataUpdateCoordinator) -> None:
+    """Test that dynamic external tilt number entities are added when configured."""
+
+    entry = mock_coordinator_basic.config_entry
+    set_test_options(
+        entry,
+        {
+            **dict(entry.options),
+            "tilt_mode_day": "external",
+            "tilt_mode_night": "external",
+            "cover.test_cover_cover_tilt_mode_day": "external",
+            "cover.test_cover_cover_tilt_mode_night": "external",
+        },
+    )
+    entry.runtime_data.coordinator = mock_coordinator_basic
+    mock_coordinator_basic.hass.states.get.return_value = MagicMock(
+        attributes={ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION}
+    )
+
+    captured = []
+
+    def add_entities(new_entities, update_before_add: bool = False) -> None:  # noqa: ARG001, ANN001
+        captured.extend(list(new_entities))
+
+    await async_setup_entry(mock_coordinator_basic.hass, entry, add_entities)
+
+    assert len(captured) == 10
+    assert isinstance(captured[6], GlobalExternalTiltDayNumber)
+    assert isinstance(captured[7], GlobalExternalTiltNightNumber)
+    assert isinstance(captured[8], CoverExternalTiltDayNumber)
+    assert isinstance(captured[9], CoverExternalTiltNightNumber)
+
+
+async def test_async_setup_entry_skips_per_cover_external_tilt_numbers_without_tilt_support(
+    mock_coordinator_basic: DataUpdateCoordinator,
+) -> None:
+    """Per-cover external tilt numbers should not be created for non-tilt-capable covers."""
+
+    entry = mock_coordinator_basic.config_entry
+    set_test_options(
+        entry,
+        {
+            **dict(entry.options),
+            "tilt_mode_day": "external",
+            "tilt_mode_night": "external",
+            "cover.test_cover_cover_tilt_mode_day": "external",
+            "cover.test_cover_cover_tilt_mode_night": "external",
+        },
+    )
+    entry.runtime_data.coordinator = mock_coordinator_basic
+
+    mock_coordinator_basic.hass.states.get.return_value = MagicMock(attributes={ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION})
+
+    captured = []
+
+    def add_entities(new_entities, update_before_add: bool = False) -> None:  # noqa: ARG001, ANN001
+        captured.extend(list(new_entities))
+
+    await async_setup_entry(mock_coordinator_basic.hass, entry, add_entities)
+
+    assert len(captured) == 8
+    assert isinstance(captured[6], GlobalExternalTiltDayNumber)
+    assert isinstance(captured[7], GlobalExternalTiltNightNumber)
+    assert not any(isinstance(entity, CoverExternalTiltDayNumber) for entity in captured)
+    assert not any(isinstance(entity, CoverExternalTiltNightNumber) for entity in captured)

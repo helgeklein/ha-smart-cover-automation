@@ -84,6 +84,8 @@ COVER_SFX_MIN_CLOSURE: Final[str] = "cover_min_closure"  # Cover minimum closure
 COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL: Final[str] = "cover_weather_hot_external_control"  # Per-cover hot weather override.
 COVER_SFX_TILT_MODE_DAY: Final[str] = "cover_tilt_mode_day"  # Per-cover tilt mode override (day)
 COVER_SFX_TILT_MODE_NIGHT: Final[str] = "cover_tilt_mode_night"  # Per-cover tilt mode override (night)
+COVER_SFX_TILT_EXTERNAL_VALUE_DAY: Final[str] = "cover_tilt_external_value_day"  # Per-cover externally controlled tilt value (day)
+COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT: Final[str] = "cover_tilt_external_value_night"  # Per-cover externally controlled tilt value (night)
 COVER_SFX_WINDOW_SENSORS: Final[str] = "cover_window_sensors"  # Window sensor entity IDs
 
 # Per-cover position history configuration
@@ -123,6 +125,7 @@ class TiltMode(StrEnum):
     CLOSED = "closed"  # Vertical position — block light (tilt = 0)
     MANUAL = "manual"  # Restore manually set angle after cover movement
     AUTO = "auto"  # Dynamically block direct sunlight (day only)
+    EXTERNAL = "external"  # Use a Home Assistant entity to supply the tilt angle
     SET_VALUE = "set_value"  # Fixed user-specified tilt angle
 
 
@@ -154,6 +157,14 @@ NUMBER_KEY_SUN_AZIMUTH_TOLERANCE: Final[str] = "sun_azimuth_tolerance"  # Key fo
 NUMBER_KEY_COVERS_MAX_CLOSURE: Final[str] = "covers_max_closure"  # Key for the covers maximum closure number entity
 NUMBER_KEY_COVERS_MIN_CLOSURE: Final[str] = "covers_min_closure"  # Key for the covers minimum closure number entity
 NUMBER_KEY_MANUAL_OVERRIDE_DURATION: Final[str] = "manual_override_duration"  # Key for the manual override duration number entity
+NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY: Final[str] = "tilt_external_value_day"  # Key for global external tilt value number entity (day)
+NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT: Final[str] = "tilt_external_value_night"  # Key for global external tilt value number entity (night)
+NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_DAY: Final[str] = (
+    "cover_tilt_external_value_day"  # Translation key for per-cover external tilt value number entities (day)
+)
+NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_NIGHT: Final[str] = (
+    "cover_tilt_external_value_night"  # Translation key for per-cover external tilt value number entities (night)
+)
 SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity
 SENSOR_KEY_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Key for the current maximum temperature sensor entity

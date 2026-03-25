@@ -948,6 +948,64 @@ class CoverAutomation:
         return max(0, min(100, round(tilt_percent)))
 
     #
+    # _get_external_tilt_value
+    #
+    def _get_external_tilt_value(self, is_night: bool) -> int | None:
+        """Resolve the active external tilt value for this cover.
+
+        Per-cover external tilt values are only considered when the cover has an
+        explicit per-cover external mode override. Otherwise the matching global
+        external tilt value is used.
+
+        Args:
+            is_night: True when evaluating night/evening closure, False for day.
+
+        Returns:
+            Tilt value between 0 and 100, or None when no external value exists.
+        """
+
+        def _validate_external_tilt_value(raw_value: Any, config_key: str) -> int | None:
+            """Convert and validate one external tilt value.
+
+            Invalid or out-of-range values are ignored so they never reach the
+            service layer.
+            """
+
+            tilt_value = to_int_or_none(raw_value)
+            if tilt_value is None:
+                if raw_value is not None:
+                    self._log_cover_msg(
+                        f"Invalid external tilt value for {config_key}: {raw_value!r}, skipping",
+                        const.LogSeverity.WARNING,
+                    )
+                return None
+
+            if not (const.COVER_POS_FULLY_CLOSED <= tilt_value <= const.COVER_POS_FULLY_OPEN):
+                self._log_cover_msg(
+                    f"External tilt value out of range for {config_key}: {tilt_value}, skipping",
+                    const.LogSeverity.WARNING,
+                )
+                return None
+
+            return tilt_value
+
+        if is_night:
+            per_cover_mode_suffix = const.COVER_SFX_TILT_MODE_NIGHT
+            per_cover_value_suffix = const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT
+            global_value_key = const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT
+        else:
+            per_cover_mode_suffix = const.COVER_SFX_TILT_MODE_DAY
+            per_cover_value_suffix = const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY
+            global_value_key = const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY
+
+        per_cover_mode_key = f"{self.entity_id}_{per_cover_mode_suffix}"
+        if self.config.get(per_cover_mode_key) == const.TiltMode.EXTERNAL:
+            per_cover_value_key = f"{self.entity_id}_{per_cover_value_suffix}"
+            return _validate_external_tilt_value(self.config.get(per_cover_value_key), per_cover_value_key)
+
+        return _validate_external_tilt_value(self.config.get(global_value_key), global_value_key)
+
+    #
     # _apply_tilt
     #
     async def _apply_tilt(
@@ -1008,6 +1066,11 @@ class CoverAutomation:
             else:
                 # Sun not hitting or not sunny — open tilt fully to let in diffuse daylight
                 target_tilt = const.COVER_POS_FULLY_OPEN
+        elif tilt_mode == const.TiltMode.EXTERNAL:
+            target_tilt = self._get_external_tilt_value(is_night)
+            if target_tilt is None:
+                self._log_cover_msg("External tilt mode active but no external value is set, skipping", const.LogSeverity.DEBUG)
+                return
         elif tilt_mode == const.TiltMode.SET_VALUE:
             target_tilt = self.resolved.tilt_set_value_night if is_night else self.resolved.tilt_set_value_day
 

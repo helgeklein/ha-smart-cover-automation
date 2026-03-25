@@ -326,6 +326,19 @@ class TestGetEffectiveTiltMode:
         auto._cover_supports_tilt = True
         assert auto._get_effective_tilt_mode(is_night=True) == TiltMode.OPEN
 
+    #
+    # test_returns_global_external_mode
+    #
+    def test_returns_global_external_mode(self, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger) -> None:
+        """Global external mode should be returned when configured and not overridden."""
+
+        config = {"cover.test_cover_azimuth": 180.0}
+        mock_resolved_config.tilt_mode_day = TiltMode.EXTERNAL
+        auto = _make_automation(mock_resolved_config, config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        assert auto._get_effective_tilt_mode(is_night=False) == TiltMode.EXTERNAL
+
 
 # ───────────────────────────────────────────────────────────────────────
 # Tilt application tests
@@ -334,6 +347,232 @@ class TestGetEffectiveTiltMode:
 
 class TestApplyTilt:
     """Tests for _apply_tilt method."""
+
+    #
+    # test_external_mode_skips_when_no_value_exists
+    #
+    @pytest.mark.asyncio
+    async def test_external_mode_skips_when_no_value_exists(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """External mode should not change tilt when no external value exists."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.EXTERNAL
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=True, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+        assert cover_state.tilt_target is None
+
+    #
+    # test_external_mode_uses_global_value
+    #
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("mode_attr", "value_key", "target_tilt", "movement_reason", "sun_hitting"),
+        [
+            ("tilt_mode_day", "tilt_external_value_day", 42, CoverMovementReason.OPENING_LET_LIGHT_IN, True),
+            ("tilt_mode_night", "tilt_external_value_night", 23, CoverMovementReason.CLOSING_AFTER_SUNSET, False),
+        ],
+    )
+    async def test_external_mode_uses_global_value(
+        self,
+        mock_resolved_config,
+        basic_config,
+        mock_cover_pos_history_mgr,
+        mock_ha_interface,
+        mock_logger,
+        tilt_features,
+        sensor_data,
+        mode_attr,
+        value_key,
+        target_tilt,
+        movement_reason,
+        sun_hitting,
+    ) -> None:
+        """External mode should use the matching global external tilt value."""
+
+        setattr(mock_resolved_config, mode_attr, TiltMode.EXTERNAL)
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=target_tilt)
+        config = {**basic_config, value_key: target_tilt}
+        auto = _make_automation(mock_resolved_config, config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=sun_hitting, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, movement_reason, False)
+
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", target_tilt, tilt_features)
+        assert cover_state.tilt_target == target_tilt
+
+    #
+    # test_external_mode_prefers_per_cover_value
+    #
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        (
+            "global_mode_attr",
+            "global_value_key",
+            "per_cover_mode_key",
+            "per_cover_value_key",
+            "global_value",
+            "per_cover_value",
+            "movement_reason",
+            "sun_hitting",
+        ),
+        [
+            (
+                "tilt_mode_day",
+                "tilt_external_value_day",
+                "cover.test_cover_tilt_mode_day",
+                "cover.test_cover_tilt_external_value_day",
+                42,
+                17,
+                CoverMovementReason.OPENING_LET_LIGHT_IN,
+                True,
+            ),
+            (
+                "tilt_mode_night",
+                "tilt_external_value_night",
+                "cover.test_cover_tilt_mode_night",
+                "cover.test_cover_tilt_external_value_night",
+                42,
+                19,
+                CoverMovementReason.CLOSING_AFTER_SUNSET,
+                False,
+            ),
+        ],
+    )
+    async def test_external_mode_prefers_per_cover_value(
+        self,
+        mock_resolved_config,
+        basic_config,
+        mock_cover_pos_history_mgr,
+        mock_ha_interface,
+        mock_logger,
+        tilt_features,
+        sensor_data,
+        global_mode_attr,
+        global_value_key,
+        per_cover_mode_key,
+        per_cover_value_key,
+        global_value,
+        per_cover_value,
+        movement_reason,
+        sun_hitting,
+    ) -> None:
+        """Explicit per-cover external mode should use the matching per-cover value."""
+
+        setattr(mock_resolved_config, global_mode_attr, TiltMode.EXTERNAL)
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=per_cover_value)
+        config = {
+            **basic_config,
+            global_value_key: global_value,
+            per_cover_mode_key: TiltMode.EXTERNAL,
+            per_cover_value_key: per_cover_value,
+        }
+        auto = _make_automation(mock_resolved_config, config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=sun_hitting, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, movement_reason, False)
+
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", per_cover_value, tilt_features)
+        assert cover_state.tilt_target == per_cover_value
+
+    #
+    # test_external_mode_skips_non_numeric_value
+    #
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("mode_attr", "value_key", "movement_reason", "sun_hitting", "log_key"),
+        [
+            ("tilt_mode_day", "tilt_external_value_day", CoverMovementReason.OPENING_LET_LIGHT_IN, True, "tilt_external_value_day"),
+            (
+                "tilt_mode_night",
+                "tilt_external_value_night",
+                CoverMovementReason.CLOSING_AFTER_SUNSET,
+                False,
+                "tilt_external_value_night",
+            ),
+        ],
+    )
+    async def test_external_mode_skips_non_numeric_value(
+        self,
+        mock_resolved_config,
+        basic_config,
+        mock_cover_pos_history_mgr,
+        mock_ha_interface,
+        mock_logger,
+        tilt_features,
+        sensor_data,
+        mode_attr,
+        value_key,
+        movement_reason,
+        sun_hitting,
+        log_key,
+    ) -> None:
+        """External mode should ignore non-numeric values before service dispatch."""
+
+        setattr(mock_resolved_config, mode_attr, TiltMode.EXTERNAL)
+        config = {**basic_config, value_key: "not-a-number"}
+        auto = _make_automation(mock_resolved_config, config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=sun_hitting, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, movement_reason, False)
+
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+        assert cover_state.tilt_target is None
+        mock_logger.warning.assert_any_call(f"[cover.test] Invalid external tilt value for {log_key}: 'not-a-number', skipping")
+
+    #
+    # test_external_mode_skips_out_of_range_value
+    #
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("mode_attr", "value_key", "movement_reason", "sun_hitting", "log_key"),
+        [
+            ("tilt_mode_day", "tilt_external_value_day", CoverMovementReason.OPENING_LET_LIGHT_IN, True, "tilt_external_value_day"),
+            (
+                "tilt_mode_night",
+                "tilt_external_value_night",
+                CoverMovementReason.CLOSING_AFTER_SUNSET,
+                False,
+                "tilt_external_value_night",
+            ),
+        ],
+    )
+    async def test_external_mode_skips_out_of_range_value(
+        self,
+        mock_resolved_config,
+        basic_config,
+        mock_cover_pos_history_mgr,
+        mock_ha_interface,
+        mock_logger,
+        tilt_features,
+        sensor_data,
+        mode_attr,
+        value_key,
+        movement_reason,
+        sun_hitting,
+        log_key,
+    ) -> None:
+        """External mode should ignore out-of-range values before service dispatch."""
+
+        setattr(mock_resolved_config, mode_attr, TiltMode.EXTERNAL)
+        config = {**basic_config, value_key: 101}
+        auto = _make_automation(mock_resolved_config, config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=sun_hitting, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, movement_reason, False)
+
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+        assert cover_state.tilt_target is None
+        mock_logger.warning.assert_any_call(f"[cover.test] External tilt value out of range for {log_key}: 101, skipping")
 
     #
     # test_skips_tilt_when_cover_fully_open_no_movement

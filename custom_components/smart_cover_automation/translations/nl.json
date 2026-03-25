@@ -199,6 +199,12 @@
             "covers_min_closure": {
                 "name": "Minimale positie van het rolluik:"
             },
+            "cover_tilt_external_value_day": {
+                "name": "{cover_name}: kantelhoek: externe besturing (dag)"
+            },
+            "cover_tilt_external_value_night": {
+                "name": "{cover_name}: kantelhoek: externe besturing (nacht)"
+            },
             "manual_override_duration": {
                 "name": "Duur van de handmatige override:"
             },
@@ -207,6 +213,12 @@
             },
             "sun_elevation_threshold": {
                 "name": "Minimale zonshoogte:"
+            },
+            "tilt_external_value_day": {
+                "name": "Kantelhoek: externe besturing (dag)"
+            },
+            "tilt_external_value_night": {
+                "name": "Kantelhoek: externe besturing (nacht)"
             },
             "temp_threshold": {
                 "name": "Temperatuur: hittedrempel"
@@ -310,6 +322,7 @@
                 "closed": "Gesloten (verticaal — licht blokkeren)",
                 "manual": "Handmatig (handmatig ingestelde hoek herstellen)",
                 "auto": "Auto (direct zonlicht blokkeren)",
+                "external": "Extern (kantelhoek aangeleverd via entiteit)",
                 "set_value": "Vaste waarde (vaste kantelhoek)"
             }
         },

@@ -199,6 +199,12 @@
             "covers_min_closure": {
                 "name": "Lägsta läge för persienn:"
             },
+            "cover_tilt_external_value_day": {
+                "name": "{cover_name}: lamellvinkel: extern styrning (dag)"
+            },
+            "cover_tilt_external_value_night": {
+                "name": "{cover_name}: lamellvinkel: extern styrning (natt)"
+            },
             "manual_override_duration": {
                 "name": "Manuell åsidosättningsvaraktighet:"
             },
@@ -207,6 +213,12 @@
             },
             "sun_elevation_threshold": {
                 "name": "Minsta solhöjd:"
+            },
+            "tilt_external_value_day": {
+                "name": "Lamellvinkel: extern styrning (dag)"
+            },
+            "tilt_external_value_night": {
+                "name": "Lamellvinkel: extern styrning (natt)"
             },
             "temp_threshold": {
                 "name": "Temperatur: värmetröskel"
@@ -310,6 +322,7 @@
                 "closed": "Stängd (vertikal — blockera ljus)",
                 "manual": "Manuell (återställ manuellt inställd vinkel)",
                 "auto": "Auto (blockera direkt solljus)",
+                "external": "Extern (lamellvinkel anges via entitet)",
                 "set_value": "Fast värde (fast lutningsvinkel)"
             }
         },

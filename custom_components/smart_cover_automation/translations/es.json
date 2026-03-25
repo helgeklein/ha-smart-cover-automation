@@ -199,6 +199,12 @@
             "covers_min_closure": {
                 "name": "Posición mínima de la persiana:"
             },
+            "cover_tilt_external_value_day": {
+                "name": "{cover_name}: Ángulo de inclinación: control externo (día)"
+            },
+            "cover_tilt_external_value_night": {
+                "name": "{cover_name}: Ángulo de inclinación: control externo (noche)"
+            },
             "manual_override_duration": {
                 "name": "Duración de anulación manual:"
             },
@@ -207,6 +213,12 @@
             },
             "sun_elevation_threshold": {
                 "name": "Elevación mínima del sol:"
+            },
+            "tilt_external_value_day": {
+                "name": "Ángulo de inclinación: control externo (día)"
+            },
+            "tilt_external_value_night": {
+                "name": "Ángulo de inclinación: control externo (noche)"
             },
             "temp_threshold": {
                 "name": "Temperatura: umbral de calor"
@@ -310,6 +322,7 @@
                 "closed": "Cerrado (vertical — bloquear la luz)",
                 "manual": "Manual (restaurar el ángulo configurado manualmente)",
                 "auto": "Auto (bloquear la luz solar directa)",
+                "external": "Externo (ángulo de inclinación suministrado por una entidad)",
                 "set_value": "Valor fijo (ángulo de inclinación fijo)"
             }
         },
