@@ -39,7 +39,7 @@ jobs:
 
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
         with:
           # Enable the workflow to access the repository
           token: ${{ secrets.GITHUB_TOKEN }}
