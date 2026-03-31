@@ -30,7 +30,8 @@ jobs:
       - name: Check Python lockfile is up to date
         run: |
           python -m pip install pip-tools==7.5.3
-          python -m piptools compile --generate-hashes --resolver=backtracking --output-file /tmp/requirements-lock.txt requirements.txt requirements-test.txt
+          export CUSTOM_COMPILE_COMMAND='pip-compile --generate-hashes --allow-unsafe --resolver=backtracking --output-file=requirements-lock.txt requirements.txt requirements-test.txt'
+          python -m piptools compile --generate-hashes --allow-unsafe --resolver=backtracking --output-file /tmp/requirements-lock.txt requirements.txt requirements-test.txt
           diff -u requirements-lock.txt /tmp/requirements-lock.txt
 
       - name: Install dependencies
