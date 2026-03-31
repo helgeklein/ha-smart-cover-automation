@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 # GitHub Pages compatible gems
-gem "github-pages", "~> 231", group: :jekyll_plugins
+gem "github-pages", "~> 232", group: :jekyll_plugins
 
 # Theme - using remote theme for GitHub Pages compatibility
 gem "jekyll-remote-theme", "~> 0.4.3"
