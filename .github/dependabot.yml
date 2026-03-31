@@ -1,10 +1,19 @@
 # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
-# Only github-actions is monitored. Python dependencies are mostly tied to the
-# pinned Home Assistant version and must be updated manually in lockstep.
+# GitHub Actions, Python, and docs Ruby dependencies are monitored.
+# Python updates still need review because Home Assistant-related dependencies
+# often need to move in lockstep.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/docs"
+    schedule:
+      interval: "weekly"
