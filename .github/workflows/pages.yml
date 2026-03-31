@@ -25,21 +25,29 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    env:
+      BUNDLE_FROZEN: "true"
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@e5517072e87f198d9533967ae13d97c11b604005 # v1.99.0
         with:
-          ruby-version: '3.3'
+          ruby-version: '3.1.1'
           bundler-cache: true
           cache-version: 0
           working-directory: '${{ github.workspace }}/docs'
 
+      - name: Check Ruby lockfile is up to date
+        run: |
+          bundle lock --print > /tmp/Gemfile.lock
+          diff -u Gemfile.lock /tmp/Gemfile.lock
+        working-directory: ./docs
+
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v6
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
         with:
           # Enable the workflow to access the repository
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -48,11 +56,12 @@ jobs:
         run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
         working-directory: ./docs
         env:
+          BUNDLE_FROZEN: "true"
           JEKYLL_ENV: production
           PAGES_REPO_NWO: ${{ github.repository }}
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: docs/_site/
 
@@ -66,6 +75,6 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

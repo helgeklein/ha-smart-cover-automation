@@ -10,6 +10,7 @@ RUBY_VERSION=$(ruby -e 'puts "#{RUBY_VERSION[0..2]}.0"')
 export PATH="$PATH:/home/vscode/.local/share/gem/ruby/${RUBY_VERSION}/bin"
 export GEM_HOME="/home/vscode/.local/share/gem/ruby/${RUBY_VERSION}"
 export GEM_PATH="$GEM_HOME"
+export BUNDLE_FROZEN=true
 
 # Check if bundle is available
 if ! command -v bundle &> /dev/null; then
