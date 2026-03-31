@@ -10,6 +10,7 @@ gem "jekyll-remote-theme", "~> 0.4.3"
 gem "jekyll-feed", "~> 0.15"
 gem "jekyll-sitemap", "~> 1.4"
 gem "jekyll-seo-tag", "~> 2.8"
+gem "json", ">= 2.19.2"
 
 # Ruby 3.0+ compatibility
 gem "webrick", "~> 1.8"
