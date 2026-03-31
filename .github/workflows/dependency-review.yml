@@ -71,8 +71,7 @@ jobs:
         uses: ruby/setup-ruby@e5517072e87f198d9533967ae13d97c11b604005 # v1.99.0
         with:
           ruby-version: '3.1.1'
-          bundler-cache: true
-          cache-version: 0
+          bundler: none
           working-directory: '${{ github.workspace }}/docs'
 
       - name: Audit pinned Ruby dependencies
