@@ -1189,9 +1189,9 @@ hass-nabucasa==0.111.2 \
     --hash=sha256:9060fec79c05826dfb34a1e0838c4aa6be1fcf0e643ad98a742947a5ccffe4bb \
     --hash=sha256:976cefec89ea3ad8febfc6dfe8763801733ddffb411d49aab60904cf5ddbecff
     # via homeassistant
-home-assistant-bluetooth==1.13.1 \
-    --hash=sha256:0ae0e2a8491cc762ee9e694b8bc7665f1e2b4618926f63969a23a2e3a48ce55e \
-    --hash=sha256:cdf13b5b45f7744165677831e309ee78fbaf0c2866c6b5931e14d1e4e7dae5d7
+home-assistant-bluetooth==2.0.0 \
+    --hash=sha256:3febd16b194812b156024d9bc8ce8ec7622cdd8d159047cac504cc77ca034ea1 \
+    --hash=sha256:8d7c2ac48c303adacad73cb6cdfe7710f2fccd2a367d4c3106acf301b0d22b91
     # via homeassistant
 homeassistant==2025.8.2 \
     --hash=sha256:75636e28e78f0718f223891ea72f802f819108df821a4942f2734d4019fe48dd \
