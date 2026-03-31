@@ -248,9 +248,9 @@ audioop-lts==0.2.1 \
     # via
     #   homeassistant
     #   standard-aifc
-awesomeversion==25.5.0 \
-    --hash=sha256:34a676ae10e10d3a96829fcc890a1d377fe1a7a2b98ee19951631951c2aebff6 \
-    --hash=sha256:d64c9f3579d2f60a5aa506a9dd0b38a74ab5f45e04800f943a547c1102280f31
+awesomeversion==25.8.0 \
+    --hash=sha256:1c314683abfcc3e26c62af9e609b585bbcbf2ec19568df2f60ff1034fb1dae28 \
+    --hash=sha256:e6cd08c90292a11f30b8de401863dcde7bc66a671d8173f9066ebd15d9310453
     # via
     #   go2rtc-client
     #   homeassistant
