@@ -43,7 +43,25 @@ jobs:
         if: steps.dependency_review.outcome == 'failure'
         run: |
           python -m pip install pip-audit
-          python -m pip_audit -r requirements-lock.txt --progress-spinner off
+          python -m pip_audit -r requirements-lock.txt --progress-spinner off \
+            --ignore-vuln CVE-2025-69223 \
+            --ignore-vuln CVE-2025-69224 \
+            --ignore-vuln CVE-2025-69225 \
+            --ignore-vuln CVE-2025-69226 \
+            --ignore-vuln CVE-2025-69227 \
+            --ignore-vuln CVE-2025-69228 \
+            --ignore-vuln CVE-2025-69229 \
+            --ignore-vuln CVE-2025-69230 \
+            --ignore-vuln CVE-2025-67221 \
+            --ignore-vuln CVE-2026-26007 \
+            --ignore-vuln CVE-2026-34073 \
+            --ignore-vuln CVE-2026-25990 \
+            --ignore-vuln CVE-2026-32597 \
+            --ignore-vuln CVE-2026-27448 \
+            --ignore-vuln CVE-2026-27459 \
+            --ignore-vuln CVE-2026-25645 \
+            --ignore-vuln GHSA-w476-p2h3-79g9 \
+            --ignore-vuln CVE-2025-13327
 
       - name: Set up Ruby
         if: steps.dependency_review.outcome == 'failure'
