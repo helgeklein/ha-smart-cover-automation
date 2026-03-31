@@ -1,0 +1,63 @@
+# This workflow updates the coverage badge after the test workflow succeeds.
+#
+# Note: To enable automatic badge updates on protected branches:
+# 1) create a fine-grained Personal Access Token (PAT) with the permission
+#   'contents: read and write'
+# 2) add your role (e.g., admin) as a bypass in the branch protection rule
+# 3) add the PAT as a repository secret named 'PAT_TOKEN'.
+# Without this, the badge will only update manually or the branch protection
+# rules must allow GitHub Actions to bypass status checks for commits with [skip ci].
+name: Coverage Badge
+
+on:
+  workflow_run:
+    workflows:
+      - Tests
+    types:
+      - completed
+
+jobs:
+  update-badge:
+    name: Update Coverage Badge
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Generate coverage badge
+        run: python scripts/generate_coverage_badge.py
+
+      - name: Commit coverage badge
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .github/badges/coverage.svg
+          if git diff --staged --quiet; then
+            echo "No changes to coverage badge"
+          else
+            git commit -m "Update coverage badge [skip ci]"
+            git push
+          fi
