@@ -74,13 +74,11 @@ The entities in this section control at which temperatures and sun positions the
 
 ### Weather: Hot? (External Control)
 
-*New in 2.0.0*
-
 #### Global Entity
 
 This binary switch is disabled by default. If you enable it, the integration stops using the weather forecast to determine if it's hot. In its stead, it uses the state of this switch. To go back to the weather forecast, simply disable it again.
 
-Use case: you want to create your own logic for determining when it's "hot enough" to close the covers, e.g., based on indoor temperature.
+**Use case:** you want to create your own logic for determining when it's "hot enough" to close the covers, e.g., based on indoor temperature.
 
 #### Per-Cover Entity
 
@@ -94,9 +92,13 @@ The integration determines a cover's **Weather: hot?** state by checking the fol
 
 ### Weather: Sunny? (External Control)
 
+This entity allows you to set the sunny state much more accurately through an external source than is possible by way of the weather forecast.
+
 This binary switch is disabled by default. If you enable it, the integration stops using the weather forecast to determine if it's sunny. In its stead, it uses the state of this switch. To go back to the weather forecast, simply disable it again.
 
-Use case: you have your own pyranometer or luxmeter and want to use its measurements to tell this integration when it's "sunny enough" to close the covers.
+**Use case:** you have your own pyranometer or luxmeter and want to use its measurements to tell this integration when it's "sunny enough" to close the covers.
+
+**Practical example:** [use your PV to determine if the sun is shining]({{ '/weather-sunny-external-pv/' | relative_url }}).
 
 ## Next Steps
 
