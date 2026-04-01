@@ -199,9 +199,9 @@ if TYPE_CHECKING:  # pragma: no cover - type checking only
 # Central registry of settings with defaults and coercion (type conversion).
 # This is the single source of truth for all settings keys and their types.
 CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
-    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
-    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(6, 0, 0), converter=_Converters.to_time),
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(8, 0, 0), converter=_Converters.to_time),
     ConfKeys.EVENING_CLOSURE_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.EVENING_CLOSURE_MODE: _ConfSpec(default=EveningClosureMode.AFTER_SUNSET, converter=EveningClosureMode),
     ConfKeys.EVENING_CLOSURE_TIME: _ConfSpec(default=time(0, 15, 0), converter=_Converters.to_time),
