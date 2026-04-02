@@ -390,6 +390,10 @@ class TriStateExternalControlSwitch(IntegrationEntity, SwitchEntity):  # pyright
     async def async_will_remove_from_hass(self) -> None:
         """Clean up the persisted override when the entity is disabled."""
 
+        registry_entry = getattr(self, "registry_entry", None)
+        if registry_entry is not None and getattr(registry_entry, "disabled_by", None) is None:
+            return
+
         entry = self.coordinator.config_entry
         current_options = dict(entry.options or {})
         if self._config_key in current_options:

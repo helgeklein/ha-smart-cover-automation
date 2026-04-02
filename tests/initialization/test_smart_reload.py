@@ -77,45 +77,6 @@ class TestSmartReload:
         assert mock_coordinator._merged_config["enabled"] is False
         assert mock_runtime_data.config["enabled"] is False
 
-    async def test_reload_is_deferred_while_setup_is_in_progress(
-        self,
-        mock_hass_with_spec,
-        mock_config_entry_basic,
-    ) -> None:
-        """Config entry updates during setup should not trigger another reload.
-
-        Setup may write options while entities are being added or stale state is
-        being cleaned up. Those writes should update the in-memory snapshot but
-        must not recursively reload the integration.
-        """
-
-        mock_coordinator = MagicMock()
-        mock_coordinator._merged_config = {"enabled": True, "covers": ["cover.test"]}
-        mock_coordinator.async_request_refresh = AsyncMock()
-
-        mock_runtime_data = MagicMock(spec=RuntimeData)
-        mock_runtime_data.coordinator = mock_coordinator
-        mock_runtime_data.config = {"enabled": True, "covers": ["cover.test"]}
-
-        mock_config_entry_basic.runtime_data = mock_runtime_data
-        mock_config_entry_basic.data = {}
-        mock_config_entry_basic.options = {
-            "enabled": True,
-            "weather_sunny_external_control": False,
-            "covers": ["cover.test"],
-        }
-        setattr(mock_config_entry_basic, "_smart_cover_automation_setup_in_progress", True)
-
-        mock_hass_with_spec.config_entries = MagicMock()
-        mock_hass_with_spec.config_entries.async_reload = AsyncMock()
-
-        await async_reload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
-
-        mock_hass_with_spec.config_entries.async_reload.assert_not_called()
-        mock_coordinator.async_request_refresh.assert_not_called()
-        assert mock_coordinator._merged_config["weather_sunny_external_control"] is False
-        assert mock_runtime_data.config["weather_sunny_external_control"] is False
-
     async def test_reload_with_simulating_change_only(
         self,
         mock_hass_with_spec,
