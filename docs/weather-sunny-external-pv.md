@@ -16,13 +16,13 @@ Using a fixed watt threshold is too simplistic because clear-sky PV output depen
 
 This guide shows how to implement that logic in Home Assistant and then feed the resulting sunny/not-sunny signal into Smart Cover Automation via its **Weather: sunny? (external control)** switch.
 
-The model intentionally ignores azimuth. That makes it simple and often good enough if your PV system has a broad exposure.
+Many systems are not perfectly symmetric around solar noon. East- or west-facing arrays, mixed roof orientations, and local shading can make the PV curve rise more gently in one half of the day and fall more steeply in the other. In that case, using one shape factor for the morning and another for the afternoon often gives a better estimate.
 
 ## Requirements
 
 - A PV system whose power curve is reasonably smooth and has a single broad peak on a sunny day.
 - A Home Assistant sensor that reports your current PV power generation in watts.
-- The Home Assistant `sun` integration enabled so that `sun.sun` provides the current elevation.
+- The Home Assistant `sun` integration enabled so that `sun.sun` provides the current elevation and azimuth.
 - Smart Cover Automation installed.
 - The Smart Cover Automation entity **Weather: sunny? (external control)** enabled.
 
@@ -42,6 +42,14 @@ where:
 - `P_peak` is the absolute clear-sky maximum power of your PV system
 - `k` is a shape factor
 
+Lower `k` makes the curve broader: the estimate rises earlier in the morning, stays higher in the shoulders, and falls later in the evening. Higher `k` makes the curve narrower: the estimate stays lower in the shoulders and drops faster away from the daily peak.
+
+If your PV output is asymmetric, a single value of `k` may not fit both halves of the day well. A practical solution is to blend between a morning exponent and an afternoon exponent using the sun's azimuth:
+
+`k_eff = blend(k_morning, k_afternoon, azimuth)`
+
+This keeps the model simple while allowing a broader morning curve and a steeper afternoon curve.
+
 Then calculate the current normalized PV percentage as:
 
 `PV% = 100 * P_current / max(P_max(alpha), P_floor)`
@@ -51,19 +59,24 @@ The minimum reference power `P_floor` avoids unrealistic percentages close to su
 Recommended starting values:
 
 - `P_peak`: highest power your PV system generates on sunny days in watts
-- `k`: `1.35`
+- `k_morning`: `1.0`
+- `k_afternoon`: `1.0`
+- Blend start azimuth: `170°`
+- Blend end azimuth: `190°`
 - Minimum sun elevation for the clear-sky estimate: `3°`
 - Minimum sun elevation for the sunny decision: `8°`
 - `P_floor`: `300 W`
-- Sunny threshold: `50%`
+- Sunny threshold: `75%`
 
-You should calibrate `P_peak`, `k`, and the sunny threshold from a few clear days of your own data (see tips below).
+If your system is fairly symmetric, you can simply set `k_morning` and `k_afternoon` to the same value.
+
+You should calibrate `P_peak`, `k_morning`, `k_afternoon`, the blend window, and the sunny threshold from a few clear days of your own data (see tips below).
 
 ### Template Sensors
 
 Paste the following into `configuration.yaml`.
 
-Replace `sensor.your_pv_power_generation` with your PV power entity. Also adjust `peak_power_w`, `exponent` (`k` in the formula), and the thresholds to match your installation.
+Replace `sensor.your_pv_power_generation` with your PV power entity. Also adjust `peak_power_w`, `morning_exponent`, `afternoon_exponent`, the azimuth transition window, and the thresholds to match your installation.
 
 {% raw %}
 ```yaml
@@ -76,13 +89,25 @@ template:
         state_class: measurement
         state: >
           {% set elevation_deg = state_attr('sun.sun', 'elevation') | float(0) %}
+          {% set azimuth_deg = state_attr('sun.sun', 'azimuth') | float(0) %}
           {% set peak_power_w = 6000 %}
-          {% set exponent = 1.35 %}
+          {% set morning_exponent = 1.0 %}
+          {% set afternoon_exponent = 1.0 %}
+          {% set transition_start_azimuth_deg = 170 %}
+          {% set transition_end_azimuth_deg = 190 %}
           {% set min_elevation_deg = 3 %}
           {% set deg_to_rad = 0.017453292519943295 %}
           {% if elevation_deg <= min_elevation_deg %}
             0
           {% else %}
+            {% if azimuth_deg <= transition_start_azimuth_deg %}
+              {% set blend_weight = 0 %}
+            {% elif azimuth_deg >= transition_end_azimuth_deg %}
+              {% set blend_weight = 1 %}
+            {% else %}
+              {% set blend_weight = (azimuth_deg - transition_start_azimuth_deg) / (transition_end_azimuth_deg - transition_start_azimuth_deg) %}
+            {% endif %}
+            {% set exponent = (morning_exponent * (1 - blend_weight)) + (afternoon_exponent * blend_weight) %}
             {{ (peak_power_w * ((sin(elevation_deg * deg_to_rad)) ** exponent)) | round(0) }}
           {% endif %}
 
@@ -111,7 +136,7 @@ template:
           minutes: 10
         state: >
           {% set elevation_deg = state_attr('sun.sun', 'elevation') | float(0) %}
-          {% set sunny_threshold_percent = 50 %}
+          {% set sunny_threshold_percent = 75 %}
           {% set min_decision_elevation_deg = 8 %}
           {% set pv_utilization_percent = states('sensor.pv_utilization') | float(0) %}
           {{ elevation_deg >= min_decision_elevation_deg and pv_utilization_percent >= sunny_threshold_percent }}
@@ -120,7 +145,7 @@ template:
 
 This creates three entities:
 
-- **PV Clear-Sky Power Estimate:** estimated maximum current PV power for the present sun elevation.
+- **PV Clear-Sky Power Estimate:** estimated maximum current PV power for the present sun elevation, with a smooth morning-to-afternoon change in curve shape.
 - **PV Utilization:** current PV generation as a percentage of the estimated potential maximum for the present sun elevation.
 - **PV Sunny:** debounced binary sensor that reports whether it is sunny enough according to your threshold. The `delay_on` and `delay_off` settings stabilize the sensor and avoid flapping when a cloud passes over, for example.
 
@@ -132,7 +157,7 @@ Create an automation in Home Assistant and paste the following YAML. Replace `sw
 
 ```yaml
 alias: SCA weather sunny external control from PV
-description: ""
+description: "Set the Smart Cover Automation sunny state according to photovoltaic output."
 triggers:
   - trigger: state
     entity_id:
@@ -157,6 +182,8 @@ actions:
 mode: single
 ```
 
+After adding the automation, run it manually to set the current state of the **Weather: sunny? (external control)** entity as the automation is only triggered on state changes.
+
 ### Calibration
 
 To improve accuracy, calibrate the constants from your own data:
@@ -165,14 +192,18 @@ To improve accuracy, calibrate the constants from your own data:
 - In Home Assistant's History viewer, add the actual power generation and the PV clear-sky estimate.
 - The estimate's graph should trace the general outline of the actual power generation graph.
 - If the estimate's graph is overall too low, increase `peak_power_w` (and vice-versa).
-- If the estimate's graph is too low in the morning and evening, decrease `exponent` slightly (and vice-versa).
+- If the estimate is too low in the morning, decrease `morning_exponent` slightly. If it is too high, increase `morning_exponent`.
+- If the estimate falls too slowly in the afternoon, increase `afternoon_exponent`. If it falls too quickly, decrease `afternoon_exponent`.
+- If the turnover from morning to afternoon happens too early or too late, move the azimuth blend window accordingly.
 - Adjust `sunny_threshold_percent` until the **PV Sunny** sensor matches your local observation.
 
 Typical useful ranges:
 
 - `peak_power_w`: your system-specific value
-- `exponent`: `1.2` to `1.5`
-- `sunny_threshold_percent`: `40` to `80`
+- `morning_exponent` and `afternoon_exponent`: `0.5` to `1.5`
+- `transition_start_azimuth_deg`: `160` to `180`
+- `transition_end_azimuth_deg`: `180` to `200`
+- `sunny_threshold_percent`: `60` to `85`
 - `minimum_reference_power_w`: `200` to `500`
 
 ## Test
