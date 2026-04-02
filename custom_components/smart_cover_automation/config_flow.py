@@ -580,28 +580,6 @@ class FlowHelper:
             )
         ] = selector.TimeSelector()
 
-        # Evening closure: cover list
-        evening_closure_schema_dict[
-            vol.Required(
-                ConfKeys.EVENING_CLOSURE_COVER_LIST.value,
-                default=list(resolved_settings.evening_closure_cover_list),
-            )
-        ] = selector.EntitySelector(
-            selector.EntitySelectorConfig(
-                domain=Platform.COVER,
-                multiple=True,
-                include_entities=covers,
-            )
-        )
-
-        # Ignore manual override during evening closure if requested
-        evening_closure_schema_dict[
-            vol.Required(
-                ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value,
-                default=resolved_settings.evening_closure_ignore_manual_override_duration,
-            )
-        ] = selector.BooleanSelector()
-
         # Morning opening mode: relative to sunrise, fixed time, or external entity.
         morning_opening_mode_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.MorningOpeningMode]
         evening_closure_schema_dict[
@@ -624,6 +602,28 @@ class FlowHelper:
                 default=resolved_settings.morning_opening_time,
             )
         ] = selector.TimeSelector()
+
+        # Evening closure: cover list
+        evening_closure_schema_dict[
+            vol.Required(
+                ConfKeys.EVENING_CLOSURE_COVER_LIST.value,
+                default=list(resolved_settings.evening_closure_cover_list),
+            )
+        ] = selector.EntitySelector(
+            selector.EntitySelectorConfig(
+                domain=Platform.COVER,
+                multiple=True,
+                include_entities=covers,
+            )
+        )
+
+        # Ignore manual override during evening closure if requested
+        evening_closure_schema_dict[
+            vol.Required(
+                ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value,
+                default=resolved_settings.evening_closure_ignore_manual_override_duration,
+            )
+        ] = selector.BooleanSelector()
 
         # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
