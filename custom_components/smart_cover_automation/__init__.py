@@ -58,6 +58,7 @@ PLATFORMS: list[Platform] = [
 ]
 
 REMOVED_ENTITY_UNIQUE_ID_KEYS: Final[tuple[str, ...]] = ("nighttime_block_opening",)
+SETUP_IN_PROGRESS_ATTR: Final[str] = "_smart_cover_automation_setup_in_progress"
 
 
 #
@@ -467,14 +468,15 @@ async def async_setup_entry(
         logger.debug("Verbose logging enabled by configuration (early setup)")
 
     logger.info("Starting integration setup")
-
-    # Migrate unique IDs if needed
-    await _async_migrate_unique_ids(hass, entry)
-
-    # Remove registry entries for entities that no longer exist in this integration.
-    await _async_remove_stale_registry_entities(hass, entry)
+    setattr(entry, SETUP_IN_PROGRESS_ATTR, True)
 
     try:
+        # Migrate unique IDs if needed
+        await _async_migrate_unique_ids(hass, entry)
+
+        # Remove registry entries for entities that no longer exist in this integration.
+        await _async_remove_stale_registry_entities(hass, entry)
+
         # Create the coordinator
         coordinator = DataUpdateCoordinator(hass, entry)
 
@@ -534,6 +536,9 @@ async def async_setup_entry(
     else:
         logger.info(f"{INTEGRATION_NAME} integration setup completed")
         return True
+    finally:
+        if hasattr(entry, SETUP_IN_PROGRESS_ATTR):
+            delattr(entry, SETUP_IN_PROGRESS_ATTR)
 
 
 #
@@ -598,6 +603,17 @@ async def async_reload_entry(
     we only need to refresh the coordinator. For structural changes, we need a full reload.
     """
     logger = Log(entry_id=entry.entry_id)
+
+    if getattr(entry, SETUP_IN_PROGRESS_ATTR, False):
+        new_config = dict(getattr(entry, HA_OPTIONS, {}) or {})
+
+        if hasattr(entry, "runtime_data") and entry.runtime_data:
+            coordinator = entry.runtime_data.coordinator
+            coordinator._merged_config = new_config
+            entry.runtime_data.config = new_config
+
+        logger.debug("Config entry updated during setup; deferring reload")
+        return
 
     # These keys can be changed at runtime via their corresponding entities
     # without requiring a full reload. The list is centrally defined in config.py
