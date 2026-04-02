@@ -18,7 +18,7 @@ All cover movements are logged in Home Assistant's [activity logbook](https://ww
 
 Filter the logbook for entries from this integration's instances by selecting `Smart Cover Automation` as device (or whatever name you chose for your instances).
 
-### Sensors
+### Sensors & Related Entities
 
 The integration comes with the following sensors that help you understand the integration's inner workings:
 
@@ -26,13 +26,11 @@ The integration comes with the following sensors that help you understand the in
 - **Evening closure: mode** Either `After sunset (relative delay)` or `Fixed time of day`.
 - **Evening closure: time** Depending on evening closure mode, an absolute time or the delay after sunset at which to close covers in the evening.
 - **Lock status**: Whether lock mode is enabled or disabled.
-- **Nighttime: block opening?** Whether to block automatic cover opening during nighttime (when the sun is below the horizon).
-- **Status:** Overall status returned by the last automation update.
+- **Status:** whether the integration currently reports a problem.
 - **Sun azimuth:** Current sun azimuth (angle from north).
 - **Sun elevation:** Current sun elevation (angle above the horizon).
 - **Temperature: today's maximum:** Maximum (expected) temperature of the current day. Derived from the configured weather forecast sensor.
-- **Temperature: heat threshold:** The configured temperature at which the automation starts closing covers to protect from heat.
-- **Time range: disabled:** Start and end of a configured time interval during which the automation is disabled. `Off` it this is not configured.
+- **Time range: disabled:** Start and end of a configured time interval during which the automation is disabled. `Off` if this is not configured.
 - **Weather: hot?** Is today's forecast maximum temperature expected to rise above the configured threshold temperature?
   - After 16:00, tomorrow's forecast maximum temperature is used instead of today's.
 - **Weather: sunny?** Is the day expected to be at least partly sunny? Derived from the configured weather forecast sensor.
@@ -41,7 +39,7 @@ The integration comes with the following sensors that help you understand the in
 
 ### Enable Verbose Logging
 
-Make sure to enable verbose (debug) logging when analyzing a problem. This can be done via the UI (see the [Configuration Guide]({{ '/configuration-wizard/' | relative_url }})).
+Make sure to enable verbose (debug) logging when analyzing a problem. This can be done via the UI ([docs]({{ '/ui-configuration-entities/' | relative_url }})).
 
 Note that verbose logging is enabled per integration instance. This facilitates troubleshooting in a multi-instance setup as you'll only see verbose messages from the instance(s) you're interested in.
 
