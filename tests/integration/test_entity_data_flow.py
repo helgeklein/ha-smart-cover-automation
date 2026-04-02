@@ -19,6 +19,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
+from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.smart_cover_automation import DOMAIN
@@ -776,12 +777,113 @@ class TestTimeEntityDataFlow:
         assert state is not None
         assert state.state == "07:45:00"
 
+    # ------------------------------------------------------------------
+    # 2.19  External morning opening time survives reload
+    # ------------------------------------------------------------------
+
+    #
+    # test_morning_opening_external_time_entity_persists_across_reload
+    #
+    async def test_morning_opening_external_time_entity_persists_across_reload(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """The external morning-opening time should remain available after a full reload."""
+
+        entry = _create_config_entry(
+            hass,
+            extra_options={ConfKeys.MORNING_OPENING_MODE.value: "external"},
+        )
+
+        with patch(
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",
+            new_callable=AsyncMock,
+            return_value=HOT_TEMP,
+        ):
+            await _setup_integration(hass, entry)
+
+            entity_id = _entity_id_for_key(hass, entry, TIME_KEY_MORNING_OPENING_EXTERNAL_TIME)
+            assert entity_id is not None, "morning opening external time entity not registered"
+
+            await hass.services.async_call(
+                "time",
+                "set_value",
+                {"entity_id": entity_id, "time": "08:10:00"},
+                blocking=True,
+            )
+            await hass.async_block_till_done()
+
+            assert entry.options[TIME_KEY_MORNING_OPENING_EXTERNAL_TIME] == "08:10:00"
+
+            assert await hass.config_entries.async_reload(entry.entry_id)
+            await hass.async_block_till_done()
+
+        assert entry.state == ConfigEntryState.LOADED
+        reloaded_entity_id = _entity_id_for_key(hass, entry, TIME_KEY_MORNING_OPENING_EXTERNAL_TIME)
+        assert reloaded_entity_id is not None
+        assert reloaded_entity_id == entity_id
+
+        reloaded_state = hass.states.get(reloaded_entity_id)
+        assert reloaded_state is not None
+        assert reloaded_state.state == "08:10:00"
+
+
+class TestMorningOpeningIntegrationFlow:
+    """Verify morning-opening behavior through real integration setup."""
+
+    # ------------------------------------------------------------------
+    # 2.20  Relative morning opening resolves sunrise after full setup
+    # ------------------------------------------------------------------
+
+    #
+    # test_relative_morning_opening_resolves_sunrise_after_setup
+    #
+    async def test_relative_morning_opening_resolves_sunrise_after_setup(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Relative morning opening should resolve its datetime from sunrise after real integration setup."""
+
+        from datetime import date, datetime
+
+        sunrise_time = datetime(2025, 11, 5, 7, 0, 0, tzinfo=dt_util.get_default_time_zone())
+
+        def _astral_event(_hass: HomeAssistant, event: str, target_date: date) -> datetime | None:
+            """Return a deterministic sunrise for the requested morning-opening date."""
+
+            if event == "sunrise":
+                return sunrise_time
+            return None
+
+        entry = _create_config_entry(
+            hass,
+            extra_options={
+                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
+                ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
+                ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [TEST_COVER],
+                ConfKeys.MORNING_OPENING_MODE.value: "relative_to_sunrise",
+                ConfKeys.MORNING_OPENING_TIME.value: "00:00:00",
+            },
+        )
+
+        with patch(
+            "custom_components.smart_cover_automation.automation_engine.get_astral_event_date",
+            side_effect=_astral_event,
+        ):
+            await _setup_integration(hass, entry)
+
+            coordinator = _get_coordinator(hass, entry)
+            resolved_opening = coordinator._automation_engine._get_morning_opening_time_for_date(date(2025, 11, 5))
+
+        assert resolved_opening == sunrise_time
+
 
 class TestEntityRegistration:
     """Verify entity registration and unique_id wiring."""
 
     # ------------------------------------------------------------------
-    # 2.19  All expected entities are registered
+    # 2.21  All expected entities are registered
     # ------------------------------------------------------------------
 
     #
@@ -843,7 +945,7 @@ class TestEntityRegistration:
             assert key in registered_keys, f"Switch '{key}' not registered"
 
     # ------------------------------------------------------------------
-    # 2.20  All entities belong to integration platform
+    # 2.22  All entities belong to integration platform
     # ------------------------------------------------------------------
 
     #
