@@ -897,6 +897,132 @@ class TestCheckSunsetClosing:
 class TestComputePostEveningClosure:
     """Test _compute_post_evening_closure with morning opening settings."""
 
+    @pytest.mark.parametrize(
+        (
+            "morning_mode",
+            "morning_time",
+            "external_time",
+            "sunrise_time",
+            "now_string",
+            "expected",
+        ),
+        [
+            (
+                const.MorningOpeningMode.FIXED_TIME.value,
+                "09:30:00",
+                None,
+                None,
+                "2025-11-05 09:29:59",
+                True,
+            ),
+            (
+                const.MorningOpeningMode.FIXED_TIME.value,
+                "09:30:00",
+                None,
+                None,
+                "2025-11-05 09:30:00",
+                False,
+            ),
+            (
+                const.MorningOpeningMode.RELATIVE_TO_SUNRISE.value,
+                "00:30:00",
+                None,
+                (7, 0, 0),
+                "2025-11-05 07:29:59",
+                True,
+            ),
+            (
+                const.MorningOpeningMode.RELATIVE_TO_SUNRISE.value,
+                "00:30:00",
+                None,
+                (7, 0, 0),
+                "2025-11-05 07:30:00",
+                False,
+            ),
+            (
+                const.MorningOpeningMode.EXTERNAL.value,
+                None,
+                "08:15:00",
+                None,
+                "2025-11-05 08:14:59",
+                True,
+            ),
+            (
+                const.MorningOpeningMode.EXTERNAL.value,
+                None,
+                "08:15:00",
+                None,
+                "2025-11-05 08:15:00",
+                False,
+            ),
+        ],
+        ids=[
+            "fixed-before-cutoff",
+            "fixed-at-cutoff",
+            "relative-before-cutoff",
+            "relative-at-cutoff",
+            "external-before-cutoff",
+            "external-at-cutoff",
+        ],
+    )
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_morning_opening_matrix_releases_carryover_at_resolved_cutoff(
+        self,
+        mock_get_astral,
+        mock_ha_interface,
+        mock_logger,
+        freezer,
+        morning_mode,
+        morning_time,
+        external_time,
+        sunrise_time,
+        now_string,
+        expected,
+    ):
+        """Test carryover boundaries across the supported morning opening modes."""
+
+        from datetime import datetime
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.FIXED_TIME.value,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+            ConfKeys.MORNING_OPENING_MODE.value: morning_mode,
+        }
+        if morning_time is not None:
+            config[ConfKeys.MORNING_OPENING_TIME.value] = morning_time
+        if external_time is not None:
+            config[const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME] = external_time
+
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        if sunrise_time is not None:
+            hour, minute, second = sunrise_time
+            mock_get_astral.return_value = datetime(
+                2025,
+                11,
+                5,
+                hour,
+                minute,
+                second,
+                tzinfo=dt_util.get_default_time_zone(),
+            )
+        else:
+            mock_get_astral.return_value = None
+
+        freezer.move_to(now_string)
+
+        assert engine._compute_post_evening_closure() is expected
+
     def test_fixed_morning_opening_keeps_block_until_time(self, mock_ha_interface, mock_logger, freezer):
         """Test that fixed morning opening keeps the block active until the configured time."""
 

@@ -40,6 +40,7 @@ from custom_components.smart_cover_automation.const import (
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
+    TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
     LockMode,
 )
 
@@ -736,11 +737,51 @@ class TestSwitchEntityDataFlow:
         assert entry.options.get(ConfKeys.SIMULATION_MODE.value) is True
 
 
+class TestTimeEntityDataFlow:
+    """Verify time entities reflect config and persist changes."""
+
+    # ------------------------------------------------------------------
+    # 2.18  External morning opening time persists through real HA service
+    # ------------------------------------------------------------------
+
+    #
+    # test_morning_opening_external_time_entity_persists_new_value
+    #
+    async def test_morning_opening_external_time_entity_persists_new_value(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Setting the external morning-opening time entity should update options and entity state."""
+
+        entry = _create_config_entry(
+            hass,
+            extra_options={ConfKeys.MORNING_OPENING_MODE.value: "external"},
+        )
+        await _setup_integration(hass, entry)
+
+        entity_id = _entity_id_for_key(hass, entry, TIME_KEY_MORNING_OPENING_EXTERNAL_TIME)
+        assert entity_id is not None, "morning opening external time entity not registered"
+
+        await hass.services.async_call(
+            "time",
+            "set_value",
+            {"entity_id": entity_id, "time": "07:45:00"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        assert entry.options[TIME_KEY_MORNING_OPENING_EXTERNAL_TIME] == "07:45:00"
+
+        state = hass.states.get(entity_id)
+        assert state is not None
+        assert state.state == "07:45:00"
+
+
 class TestEntityRegistration:
     """Verify entity registration and unique_id wiring."""
 
     # ------------------------------------------------------------------
-    # 2.18  All expected entities are registered
+    # 2.19  All expected entities are registered
     # ------------------------------------------------------------------
 
     #
@@ -802,7 +843,7 @@ class TestEntityRegistration:
             assert key in registered_keys, f"Switch '{key}' not registered"
 
     # ------------------------------------------------------------------
-    # 2.19  All entities belong to integration platform
+    # 2.20  All entities belong to integration platform
     # ------------------------------------------------------------------
 
     #
