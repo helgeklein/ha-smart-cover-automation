@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
+from unittest.mock import MagicMock
 
-from custom_components.smart_cover_automation.util import to_float_or_none, to_int_or_none
+import pytest
+from homeassistant.components.cover import CoverEntityFeature
+from homeassistant.const import ATTR_SUPPORTED_FEATURES
+
+from custom_components.smart_cover_automation.util import cover_supports_tilt, to_float_or_none, to_int_or_none
 
 
 class TestToFloatOrNone:
@@ -131,3 +135,59 @@ class TestToIntOrNone:
         else:
             assert result == expected_result, f"Expected {expected_result} for {test_description}, got {result}"
             assert isinstance(result, int), f"Result should be int for {test_description}"
+
+
+class TestCoverSupportsTilt:
+    """Test suite for the cover_supports_tilt utility function."""
+
+    @pytest.mark.parametrize(
+        ("supported_features", "expected_result", "description"),
+        [
+            (int(CoverEntityFeature.SET_TILT_POSITION), True, "tilt feature only"),
+            (
+                int(CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.SET_TILT_POSITION),
+                True,
+                "tilt feature among other supported features",
+            ),
+            (int(CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE), False, "cover without tilt support"),
+            ("invalid", None, "invalid supported_features value"),
+            ([], None, "unsupported supported_features type"),
+        ],
+    )
+    def test_cover_supports_tilt_feature_interpretation(self, supported_features, expected_result, description) -> None:
+        """Test tilt support detection from supported_features values."""
+
+        hass = MagicMock()
+        state = MagicMock()
+        state.attributes = {ATTR_SUPPORTED_FEATURES: supported_features}
+        hass.states.get.return_value = state
+
+        result = cover_supports_tilt(hass, "cover.test")
+
+        assert result is expected_result, f"Unexpected tilt detection result for {description}"
+
+    def test_cover_supports_tilt_returns_none_without_states(self) -> None:
+        """Test tilt support is unknown when hass has no states attribute."""
+
+        hass = MagicMock()
+        hass.states = None
+
+        assert cover_supports_tilt(hass, "cover.test") is None
+
+    def test_cover_supports_tilt_returns_none_when_state_missing(self) -> None:
+        """Test tilt support is unknown when the cover state is missing."""
+
+        hass = MagicMock()
+        hass.states.get.return_value = None
+
+        assert cover_supports_tilt(hass, "cover.test") is None
+
+    def test_cover_supports_tilt_returns_none_when_supported_features_missing(self) -> None:
+        """Test tilt support is unknown when supported_features is absent."""
+
+        hass = MagicMock()
+        state = MagicMock()
+        state.attributes = {}
+        hass.states.get.return_value = state
+
+        assert cover_supports_tilt(hass, "cover.test") is None

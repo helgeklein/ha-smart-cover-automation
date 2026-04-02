@@ -627,25 +627,29 @@ class TestRuntimeBehavior:
     async def test_nighttime_blocks_opening(self, hass: HomeAssistant) -> None:
         """Cover does not open after evening closure overnight.
 
-        With evening closure enabled, a closed cover should stay closed even if
-        temperature is comfortable (no heat protection would open it) when the
-        sun is below the horizon.
+        This test focuses on the runtime behavior once the scheduler has
+        determined that the overnight post-evening-closure block is active.
         """
 
         entry = _create_config_entry(
             hass,
             extra_options={
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [TEST_COVER_1],
             },
         )
-        await _setup_integration(
-            hass,
-            entry,
-            temp_max=COMFORTABLE_TEMP,
-            sun_elevation=SUN_BELOW_HORIZON_ELEVATION,
-            sun_azimuth=SUN_DIRECT_AZIMUTH,
-            cover_positions={TEST_COVER_1: COVER_POS_FULLY_CLOSED},
-        )
+        with patch(
+            "custom_components.smart_cover_automation.automation_engine.AutomationEngine._compute_post_evening_closure",
+            return_value=True,
+        ):
+            await _setup_integration(
+                hass,
+                entry,
+                temp_max=COMFORTABLE_TEMP,
+                sun_elevation=SUN_BELOW_HORIZON_ELEVATION,
+                sun_azimuth=SUN_DIRECT_AZIMUTH,
+                cover_positions={TEST_COVER_1: COVER_POS_FULLY_CLOSED},
+            )
 
         coordinator = _get_coordinator(hass, entry)
         cover_data = coordinator.data.covers.get(TEST_COVER_1)

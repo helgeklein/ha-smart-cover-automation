@@ -133,6 +133,28 @@ class TestGatherSensorData:
         assert sensor_data is not None
         assert sensor_data.weather_sunny is False
 
+    async def test_gather_sensor_data_weather_hot_external_control_overrides_forecast(self, automation_engine, mock_ha_interface):
+        """Test that external hot control overrides the forecast-derived temperature state."""
+        mock_ha_interface.get_max_temperature.return_value = 15.0
+        automation_engine.config[const.SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL] = True
+
+        sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.temp_hot is True
+        assert message == ""
+
+    async def test_gather_sensor_data_weather_sunny_external_control_overrides_weather_entity(self, automation_engine, mock_ha_interface):
+        """Test that external sunny control overrides the weather entity state."""
+        mock_ha_interface.get_weather_condition.return_value = "cloudy"
+        automation_engine.config[const.SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL] = True
+
+        sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.weather_sunny is True
+        assert message == ""
+
     async def test_gather_sensor_data_sun_unavailable(self, automation_engine, mock_ha_interface):
         """Test handling of unavailable sun data."""
         from custom_components.smart_cover_automation.ha_interface import InvalidSensorReadingError
@@ -244,6 +266,182 @@ class TestCheckGlobalConditions:
             assert "disabled for the current time period" in message
             assert "22:00:00 - 06:00:00" in message
             assert severity == const.LogSeverity.DEBUG
+
+
+class TestTimeCalculationHelpers:
+    """Test helper methods that compute daily schedule datetimes."""
+
+    def test_get_local_datetime_for_date_uses_target_date_and_time(self, automation_engine, freezer):
+        """Test local datetime construction for one date/time pair."""
+        freezer.move_to("2025-11-05 08:00:00")
+
+        result = automation_engine._get_local_datetime_for_date(dt_util.now().date(), time(21, 15))
+
+        assert result.year == 2025
+        assert result.month == 11
+        assert result.day == 5
+        assert result.hour == 21
+        assert result.minute == 15
+        assert result.tzinfo is not None
+
+    def test_get_evening_closure_time_for_date_fixed_time(self, mock_ha_interface, mock_logger, freezer):
+        """Test evening closure datetime calculation in fixed-time mode."""
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
+            ConfKeys.EVENING_CLOSURE_TIME.value: "21:15:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        freezer.move_to("2025-11-05 08:00:00")
+        result = engine._get_evening_closure_time_for_date(dt_util.now().date())
+
+        assert result is not None
+        assert result.hour == 21
+        assert result.minute == 15
+
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_get_evening_closure_time_for_date_after_sunset_applies_delay(self, mock_get_astral, mock_ha_interface, mock_logger):
+        """Test evening closure datetime calculation in after-sunset mode."""
+        from datetime import date, datetime
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        mock_get_astral.return_value = datetime(2025, 11, 5, 18, 30, 0, tzinfo=dt_util.get_default_time_zone())
+
+        result = engine._get_evening_closure_time_for_date(date(2025, 11, 5))
+
+        assert result == datetime(2025, 11, 5, 18, 45, 0, tzinfo=dt_util.get_default_time_zone())
+
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_get_evening_closure_time_for_date_returns_none_when_sunset_unavailable(self, mock_get_astral, mock_ha_interface, mock_logger):
+        """Test evening closure datetime calculation when sunset data is unavailable."""
+        from datetime import date
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        mock_get_astral.return_value = None
+
+        assert engine._get_evening_closure_time_for_date(date(2025, 11, 5)) is None
+
+    def test_get_morning_opening_time_for_date_external_valid(self, mock_ha_interface, mock_logger, freezer):
+        """Test morning opening datetime calculation in external mode with a valid entity time."""
+        from datetime import date
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.MORNING_OPENING_MODE.value: "external",
+            const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "08:20:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        freezer.move_to("2025-11-05 06:00:00")
+        result = engine._get_morning_opening_time_for_date(date(2025, 11, 5))
+
+        assert result is not None
+        assert result.hour == 8
+        assert result.minute == 20
+
+    def test_get_morning_opening_time_for_date_external_missing_returns_none(self, mock_ha_interface, mock_logger):
+        """Test morning opening datetime calculation in external mode without an entity time."""
+        from datetime import date
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.MORNING_OPENING_MODE.value: "external",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        assert engine._get_morning_opening_time_for_date(date(2025, 11, 5)) is None
+
+    def test_get_morning_opening_time_for_date_external_invalid_returns_none(self, mock_ha_interface, mock_logger):
+        """Test morning opening datetime calculation in external mode with an invalid entity time."""
+        from datetime import date
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.MORNING_OPENING_MODE.value: "external",
+            const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "not-a-time",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        assert engine._get_morning_opening_time_for_date(date(2025, 11, 5)) is None
+
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_get_morning_opening_time_for_date_relative_returns_none_when_sunrise_unavailable(
+        self, mock_get_astral, mock_ha_interface, mock_logger
+    ):
+        """Test relative morning opening when sunrise data is unavailable."""
+        from datetime import date
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        mock_get_astral.return_value = None
+
+        assert engine._get_morning_opening_time_for_date(date(2025, 11, 5)) is None
 
 
 class TestInTimePeriodAutomationDisabled:
@@ -471,6 +669,87 @@ class TestRunMethod:
         assert "cover.test" in result.covers
         assert result.covers["cover.test"].pos_target_desired is None
 
+    async def test_run_logs_debug_on_first_unavailable_sensor_iteration(self, automation_engine, mock_ha_interface):
+        """Test first unavailable sensor iteration is logged at debug severity."""
+        from custom_components.smart_cover_automation.ha_interface import InvalidSensorReadingError
+
+        mock_ha_interface.get_sun_data.side_effect = InvalidSensorReadingError("sun.sun", "unavailable")
+
+        await automation_engine.run({"cover.test": MagicMock()})  # type: ignore[arg-type]
+
+        automation_engine._logger.debug.assert_called()
+        automation_engine._logger.warning.assert_not_called()
+
+    async def test_run_logs_warning_on_second_unavailable_sensor_iteration(self, automation_engine, mock_ha_interface):
+        """Test repeated unavailable sensor iterations are logged at warning severity."""
+        from custom_components.smart_cover_automation.ha_interface import InvalidSensorReadingError
+
+        mock_ha_interface.get_sun_data.side_effect = InvalidSensorReadingError("sun.sun", "unavailable")
+
+        await automation_engine.run({"cover.test": MagicMock()})  # type: ignore[arg-type]
+        await automation_engine.run({"cover.test": MagicMock()})  # type: ignore[arg-type]
+
+        automation_engine._logger.warning.assert_called()
+
+    async def test_run_logs_lock_state_when_active(self, mock_ha_interface, mock_logger):
+        """Test that an active lock mode is logged during run()."""
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.LOCK_MODE.value: "hold_position",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        cover_state = MagicMock()
+        cover_state.state = "open"
+        cover_state.attributes = {}
+
+        await engine.run({"cover.test": cover_state})  # type: ignore[arg-type]
+
+        mock_logger.warning.assert_any_call(f"Cover lock active: {const.LockMode.HOLD_POSITION}")
+
+    @patch("custom_components.smart_cover_automation.automation_engine.CoverAutomation.process", new_callable=AsyncMock)
+    async def test_run_global_block_stops_cover_processing(self, mock_process, automation_engine):
+        """Test that global blocking returns early before any cover is processed."""
+        with patch.object(
+            automation_engine,
+            "_check_global_conditions",
+            return_value=(False, "blocked", const.LogSeverity.DEBUG),
+        ):
+            result = await automation_engine.run({"cover.test": MagicMock()})  # type: ignore[arg-type]
+
+        assert result.covers == {}
+        mock_process.assert_not_called()
+
+    @patch("custom_components.smart_cover_automation.automation_engine.CoverAutomation.process", new_callable=AsyncMock)
+    async def test_run_processes_multiple_covers(self, mock_process, mock_ha_interface, mock_logger):
+        """Test that run() processes every configured cover state."""
+        config = {
+            ConfKeys.COVERS.value: ["cover.test_1", "cover.test_2"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        mock_process.side_effect = [MagicMock(name="cover_1_result"), MagicMock(name="cover_2_result")]
+
+        result = await engine.run(
+            {"cover.test_1": MagicMock(), "cover.test_2": None}  # type: ignore[arg-type]
+        )
+
+        assert set(result.covers) == {"cover.test_1", "cover.test_2"}
+        assert mock_process.await_count == 2
+
 
 class TestLogAutomationResult:
     """Test _log_automation_result method."""
@@ -582,6 +861,38 @@ class TestCheckSunsetClosing:
         result = engine._check_evening_closure()
         assert result is True
 
+    def test_check_evening_closure_fixed_time_window_lifecycle(self, mock_ha_interface, mock_logger, freezer):
+        """Test the fixed-time evening closure window before, during, and after the active period."""
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
+            ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        freezer.move_to("2025-11-04 20:55:00")
+        assert engine._check_evening_closure() is False
+
+        freezer.move_to("2025-11-04 21:05:00")
+        assert engine._check_evening_closure() is True
+
+        freezer.move_to("2025-11-04 21:06:00")
+        assert engine._check_evening_closure() is False
+        assert engine._evening_covers_closed is True
+
+        freezer.move_to("2025-11-04 21:15:00")
+        assert engine._check_evening_closure() is False
+        assert engine._evening_covers_closed is False
+
 
 class TestComputePostEveningClosure:
     """Test _compute_post_evening_closure with morning opening settings."""
@@ -633,6 +944,63 @@ class TestComputePostEveningClosure:
 
         freezer.move_to("2025-11-05 07:30:00")
         assert engine._compute_post_evening_closure() is False
+
+    def test_missing_morning_opening_keeps_block_until_today_evening_closure(self, mock_ha_interface, mock_logger, freezer):
+        """Test missing morning opening keeps the carryover block active until today's close time."""
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
+            ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+            ConfKeys.MORNING_OPENING_MODE.value: "external",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        freezer.move_to("2025-11-05 08:00:00")
+
+        assert engine._compute_post_evening_closure() is True
+
+    def test_missing_morning_opening_keeps_block_when_today_evening_closure_unavailable(self, mock_ha_interface, mock_logger, freezer):
+        """Test missing morning opening keeps the carryover block active when today's close time is unavailable."""
+        from datetime import datetime
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
+            ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+            ConfKeys.MORNING_OPENING_MODE.value: "external",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        freezer.move_to("2025-11-05 08:00:00")
+        yesterday_closure = datetime(2025, 11, 4, 21, 0, 0, tzinfo=dt_util.get_default_time_zone())
+
+        with (
+            patch.object(engine, "_get_morning_opening_time_for_date", return_value=None),
+            patch.object(
+                engine,
+                "_get_evening_closure_time_for_date",
+                side_effect=[yesterday_closure, None, None],
+            ),
+        ):
+            assert engine._compute_post_evening_closure() is True
 
     #
     # test_check_sunset_closing_inside_window_already_closed
