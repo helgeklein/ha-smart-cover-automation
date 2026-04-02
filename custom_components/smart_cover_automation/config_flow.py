@@ -602,6 +602,29 @@ class FlowHelper:
             )
         ] = selector.BooleanSelector()
 
+        # Morning opening mode: relative to sunrise, fixed time, or external entity.
+        morning_opening_mode_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.MorningOpeningMode]
+        evening_closure_schema_dict[
+            vol.Required(
+                ConfKeys.MORNING_OPENING_MODE.value,
+                default=resolved_settings.morning_opening_mode,
+            )
+        ] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=morning_opening_mode_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="morning_opening_mode",
+            )
+        )
+
+        # Morning opening: delay after sunrise or absolute time of day.
+        evening_closure_schema_dict[
+            vol.Required(
+                ConfKeys.MORNING_OPENING_TIME.value,
+                default=resolved_settings.morning_opening_time,
+            )
+        ] = selector.TimeSelector()
+
         # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
             vol.Schema(evening_closure_schema_dict),
@@ -879,6 +902,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     merged.pop(key, None)
 
     #
+    # _cleanup_external_morning_opening_keys
+    #
+    @staticmethod
+    def _cleanup_external_morning_opening_keys(merged: dict[str, Any]) -> None:
+        """Remove the external morning opening time when the matching entity no longer exists."""
+
+        if merged.get(ConfKeys.MORNING_OPENING_MODE.value) != const.MorningOpeningMode.EXTERNAL:
+            merged.pop(const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME, None)
+
+    #
     # _get_covers
     #
     def _get_covers(self) -> list[str]:
@@ -973,6 +1006,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             merged.pop(key, None)
 
         self._cleanup_external_tilt_value_keys(merged, covers_in_input)
+        self._cleanup_external_morning_opening_keys(merged)
 
         self._logger.debug(f"Options flow completed. Final configuration being saved: {merged}")
 

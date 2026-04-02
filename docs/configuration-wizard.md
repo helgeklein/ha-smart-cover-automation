@@ -60,8 +60,6 @@ In this step of the configuration wizard, you can specify maximum and minimum po
 
 ## Step 4: Tilt Angle Control (Optional)
 
-*New in 2.0.0: external mode*
-
 In this step of the configuration wizard, you can specify how the title angle of covers with adjustable slats is to be controlled. The following options are available:
 
 - **Auto:** Block direct sunlight but allow seeing through as much as possible.
@@ -107,18 +105,25 @@ Blocked time range settings:
 
 ### Evening Closure
 
-Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening, either at a fixed time or with a certain delay after sunset.
+Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening, either at a fixed time or with a certain delay after sunset. The same covers are reopened in the morning, either at a fixed time, a certain delay after sunrise or at an externally controlled time.
 
 **Notes:**
 
 - The evening closure function is active in a 10 minute time window that starts at the configured point in time. If the integration is not running during that time window, the covers will not be closed.
-- Covers closed by the evening closure function stay closed until sunset the next morning or until the end of the blocked time range - whichever is later.
+- Covers closed by the evening closure function stay closed until the specified morning opening time or until the end of the blocked time range - whichever is later.
 
 Evening closure settings:
 
 - **Close covers in the evening:** Enable or disable the evening closure function.
-- **Mode:** Choose whether to close at a fixed time or relative to sunset.
-- **Time:** Depending on the selected mode: delay after sunset, or fixed time of day.
+- **Evening closure: mode:** Choose whether to close at a fixed time or relative to sunset.
+- **Evening closure: time:** Depending on the selected mode: delay after sunset, or fixed time of day.
+- **Morning opening: mode:**
+  - **Absolute time:** When this mode is selected, the previously closed covers are reopened at a fixed time of day.
+  - **Relative to sunrise:** When this mode is selected, the previously closed covers are reopened at a specified delay after sunrise.
+  - **External:** Set the reopening time from your own automation.
+    - When this mode is selected, the integration creates an additional entity that receives the opening time.
+    - The integration-created entity is fully managed, i.e., it's deleted again if the mode is change away from `external`.
+- **Morning opening: time:** Depending on the selected mode: delay after sunrise, or fixed time of day. This setting is ignored if `Morning opening: mode` is `external`.
 - **Covers:** Subset of covers to close after sunset.
 - **Ignore manual override duration:** When enabled, the evening closure can move selected covers even if a manual override pause is still active.
 

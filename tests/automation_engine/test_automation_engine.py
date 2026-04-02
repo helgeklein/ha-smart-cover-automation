@@ -581,11 +581,58 @@ class TestCheckSunsetClosing:
         # First call: should return True
         result = engine._check_evening_closure()
         assert result is True
-        assert engine._evening_covers_closed is True
 
-        # Second call: should return False (already closed)
-        result = engine._check_evening_closure()
-        assert result is False
+
+class TestComputePostEveningClosure:
+    """Test _compute_post_evening_closure with morning opening settings."""
+
+    def test_fixed_morning_opening_keeps_block_until_time(self, mock_ha_interface, mock_logger, freezer):
+        """Test that fixed morning opening keeps the block active until the configured time."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
+            ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+            ConfKeys.MORNING_OPENING_MODE.value: "fixed_time",
+            ConfKeys.MORNING_OPENING_TIME.value: "09:30:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+
+        freezer.move_to("2025-11-05 08:00:00")
+        assert engine._compute_post_evening_closure() is True
+
+        freezer.move_to("2025-11-05 10:00:00")
+        assert engine._compute_post_evening_closure() is False
+
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_relative_morning_opening_matches_sunrise_by_default(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
+        """Test that the default relative morning opening releases at sunrise."""
+
+        from datetime import datetime
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
+            ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+
+        sunrise = datetime(2025, 11, 5, 7, 0, 0, tzinfo=dt_util.get_default_time_zone())
+        mock_get_astral.return_value = sunrise
+
+        freezer.move_to("2025-11-05 06:30:00")
+        assert engine._compute_post_evening_closure() is True
+
+        freezer.move_to("2025-11-05 07:30:00")
+        assert engine._compute_post_evening_closure() is False
 
     #
     # test_check_sunset_closing_inside_window_already_closed

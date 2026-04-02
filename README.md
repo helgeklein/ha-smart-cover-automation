@@ -28,10 +28,10 @@ A Home Assistant integration to automate the control of your smart home's window
     - Detect manual cover position adjustments and pause automation to avoid conflicts.
 - **Lockout protection:**
     - Pause automations for a cover if the door/window is open.
-- **Evening closure** & **night silence**:
+- **Evening closure**, **night silence** & **morning opening**:
     - Close all or a subset of covers in the evening for privacy.
-    - Don't move the covers when people are sleeping.
-    - Don't open the covers when the sun is below the horizon.
+    - Don't move any covers when people are sleeping.
+    - Reopen the closed covers in the morning.
 - **Plant light:**
     - Define min/max positions for the covers so that plants on the windowsill receive enough light.
 - **Lock mode** for wind or hail protection, and other scenarios:
