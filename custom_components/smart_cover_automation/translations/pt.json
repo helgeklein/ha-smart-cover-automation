@@ -111,17 +111,21 @@
                         "name": "Fecho ao entardecer",
                         "data": {
                             "close_covers_after_sunset": "Fechar persianas ao anoitecer:",
-                            "close_covers_after_sunset_mode": "Modo:",
-                            "close_covers_after_sunset_delay": "Hora:",
+                            "close_covers_after_sunset_mode": "Fecho ao entardecer: modo:",
+                            "close_covers_after_sunset_delay": "Fecho ao entardecer: hora:",
                             "close_covers_after_sunset_cover_list": "Persianas:",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar a duração da sobreposição manual:"
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar a duração da sobreposição manual:",
+                            "morning_opening_mode": "Abertura matinal: modo:",
+                            "morning_opening_time": "Abertura matinal: hora:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Quando ativada, as persianas serão fechadas automaticamente ao anoitecer.",
                             "close_covers_after_sunset_mode": "Escolha se deve fechar a uma hora fixa ou relativamente ao pôr do sol.",
                             "close_covers_after_sunset_delay": "Consoante o modo selecionado: atraso após o pôr do sol ou hora fixa do dia.",
                             "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas ao anoitecer.",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Quando ativada, o fecho ao entardecer pode mover as persianas selecionadas mesmo que uma pausa por controlo manual ainda esteja ativa."
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Quando ativada, o fecho ao entardecer pode mover as persianas selecionadas mesmo que uma pausa por controlo manual ainda esteja ativa.",
+                            "morning_opening_mode": "Escolha se a abertura matinal é relativa ao nascer do sol, usa uma hora absoluta ou é fornecida por uma entidade.",
+                            "morning_opening_time": "Consoante o modo selecionado: atraso após o nascer do sol ou hora fixa do dia. Ignorado no modo externo."
                         }
                     }
                 }
@@ -190,6 +194,11 @@
             },
             "temp_current_max": {
                 "name": "Temperatura: máximo de hoje"
+            }
+        },
+        "time": {
+            "morning_opening_external_time": {
+                "name": "Abertura matinal: hora externa"
             }
         },
         "number": {
@@ -330,6 +339,13 @@
             "options": {
                 "after_sunset": "Após o pôr do sol (atraso relativo)",
                 "fixed_time": "Hora fixa do dia"
+            }
+        },
+        "morning_opening_mode": {
+            "options": {
+                "relative_to_sunrise": "Relativa ao nascer do sol",
+                "fixed_time": "Hora fixa do dia",
+                "external": "Externo (hora fornecida por uma entidade)"
             }
         }
     }

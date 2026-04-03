@@ -298,6 +298,22 @@ class TestConfigurationResolution:
 
         assert rs.evening_closure_ignore_manual_override_duration is True
 
+    def test_resolve_morning_opening_defaults_and_fixed_time(self):
+        """Test morning opening defaults and fixed-time resolution."""
+
+        rs_default = resolve({})
+        assert rs_default.morning_opening_mode.value == "relative_to_sunrise"
+        assert rs_default.morning_opening_time == time(0, 0, 0)
+
+        rs_fixed = resolve(
+            {
+                ConfKeys.MORNING_OPENING_MODE.value: "fixed_time",
+                ConfKeys.MORNING_OPENING_TIME.value: "08:15:00",
+            }
+        )
+        assert rs_fixed.morning_opening_mode.value == "fixed_time"
+        assert rs_fixed.morning_opening_time == time(8, 15, 0)
+
 
 # =============================================================================
 # Covers Configuration Tests

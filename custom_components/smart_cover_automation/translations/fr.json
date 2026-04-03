@@ -111,17 +111,21 @@
                         "name": "Fermeture du soir",
                         "data": {
                             "close_covers_after_sunset": "Fermer les volets le soir :",
-                            "close_covers_after_sunset_mode": "Mode :",
-                            "close_covers_after_sunset_delay": "Heure :",
+                            "close_covers_after_sunset_mode": "Fermeture du soir : mode :",
+                            "close_covers_after_sunset_delay": "Fermeture du soir : heure :",
                             "close_covers_after_sunset_cover_list": "Volets :",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignorer la durée de la commande manuelle :"
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignorer la durée de la commande manuelle :",
+                            "morning_opening_mode": "Ouverture matinale : mode :",
+                            "morning_opening_time": "Ouverture matinale : heure :"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Lorsqu'elle est activée, les volets se fermeront automatiquement le soir.",
                             "close_covers_after_sunset_mode": "Choisissez de fermer à une heure fixe ou par rapport au coucher du soleil.",
                             "close_covers_after_sunset_delay": "Selon le mode choisi : délai après le coucher du soleil ou heure fixe.",
                             "close_covers_after_sunset_cover_list": "Sélectionnez les volets qui doivent se fermer le soir.",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Lorsqu'elle est activée, la fermeture du soir peut déplacer les volets sélectionnés même si une pause due à une commande manuelle est encore active."
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Lorsqu'elle est activée, la fermeture du soir peut déplacer les volets sélectionnés même si une pause due à une commande manuelle est encore active.",
+                            "morning_opening_mode": "Choisissez si l'ouverture matinale est relative au lever du soleil, utilise une heure absolue ou est fournie par une entité.",
+                            "morning_opening_time": "Selon le mode choisi : délai après le lever du soleil ou heure fixe. Ignoré en mode externe."
                         }
                     }
                 }
@@ -190,6 +194,11 @@
             },
             "temp_current_max": {
                 "name": "Température : maximum du jour"
+            }
+        },
+        "time": {
+            "morning_opening_external_time": {
+                "name": "Ouverture matinale : heure externe"
             }
         },
         "number": {
@@ -330,6 +339,13 @@
             "options": {
                 "after_sunset": "Après le coucher du soleil (délai relatif)",
                 "fixed_time": "Heure fixe"
+            }
+        },
+        "morning_opening_mode": {
+            "options": {
+                "relative_to_sunrise": "Relative au lever du soleil",
+                "fixed_time": "Heure fixe",
+                "external": "Externe (heure fournie par une entité)"
             }
         }
     }

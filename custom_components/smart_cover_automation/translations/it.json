@@ -111,17 +111,21 @@
                         "name": "Chiusura serale",
                         "data": {
                             "close_covers_after_sunset": "Chiudere le tapparelle di sera:",
-                            "close_covers_after_sunset_mode": "Modalità:",
-                            "close_covers_after_sunset_delay": "Orario:",
+                            "close_covers_after_sunset_mode": "Chiusura serale: modalità:",
+                            "close_covers_after_sunset_delay": "Chiusura serale: orario:",
                             "close_covers_after_sunset_cover_list": "Tapparelle:",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignora la durata dell'override manuale:"
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignora la durata dell'override manuale:",
+                            "morning_opening_mode": "Apertura mattutina: modalità:",
+                            "morning_opening_time": "Apertura mattutina: ora:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Quando attivata, le tapparelle verranno chiuse automaticamente di sera.",
                             "close_covers_after_sunset_mode": "Scegli se chiudere a un orario fisso o in modo relativo al tramonto.",
                             "close_covers_after_sunset_delay": "A seconda della modalità scelta: ritardo dopo il tramonto oppure orario fisso.",
                             "close_covers_after_sunset_cover_list": "Seleziona le tapparelle che devono essere chiuse di sera.",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Quando attivata, la chiusura serale può muovere le tapparelle selezionate anche se è ancora attiva una pausa dovuta all'override manuale."
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Quando attivata, la chiusura serale può muovere le tapparelle selezionate anche se è ancora attiva una pausa dovuta all'override manuale.",
+                            "morning_opening_mode": "Scegli se l'apertura mattutina è relativa all'alba, usa un orario assoluto oppure è fornita da un'entità.",
+                            "morning_opening_time": "A seconda della modalità scelta: ritardo dopo l'alba oppure orario fisso. Ignorato in modalità esterna."
                         }
                     }
                 }
@@ -190,6 +194,11 @@
             },
             "temp_current_max": {
                 "name": "Temperatura: massimo di oggi"
+            }
+        },
+        "time": {
+            "morning_opening_external_time": {
+                "name": "Apertura mattutina: ora esterna"
             }
         },
         "number": {
@@ -330,6 +339,13 @@
             "options": {
                 "after_sunset": "Dopo il tramonto (ritardo relativo)",
                 "fixed_time": "Orario fisso"
+            }
+        },
+        "morning_opening_mode": {
+            "options": {
+                "relative_to_sunrise": "Relativa all'alba",
+                "fixed_time": "Orario fisso",
+                "external": "Esterno (orario fornito da un'entità)"
             }
         }
     }

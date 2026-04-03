@@ -13,6 +13,7 @@ Tests cover:
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
@@ -327,12 +328,25 @@ class TestCoverWeatherHotOverrideSwitchToggle:
 class TestWeatherSunnyOverrideSwitchRemoval:
     """Test WeatherSunnyExternalControlSwitch cleanup on entity removal."""
 
+    async def test_reload_unload_does_not_clear_override_key(self, override_switch) -> None:
+        """Normal unload during integration reload must not remove the override."""
+
+        entry = override_switch.coordinator.config_entry
+        entry.options[SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL] = True
+        override_switch.registry_entry = SimpleNamespace(disabled_by=None)
+        override_switch.coordinator.hass.config_entries.async_update_entry = Mock()
+
+        await override_switch.async_will_remove_from_hass()
+
+        override_switch.coordinator.hass.config_entries.async_update_entry.assert_not_called()
+
     async def test_removal_clears_override_key(self, override_switch) -> None:
         """Test that disabling/removing the entity removes the override key from options."""
 
         entry = override_switch.coordinator.config_entry
         # Simulate the override being previously set
         entry.options[SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL] = True
+        override_switch.registry_entry = SimpleNamespace(disabled_by="user")
         override_switch.coordinator.hass.config_entries.async_update_entry = Mock()
 
         await override_switch.async_will_remove_from_hass()
@@ -362,6 +376,7 @@ class TestWeatherHotOverrideSwitchRemoval:
 
         entry = hot_override_switch.coordinator.config_entry
         entry.options[SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL] = True
+        hot_override_switch.registry_entry = SimpleNamespace(disabled_by="user")
         hot_override_switch.coordinator.hass.config_entries.async_update_entry = Mock()
 
         await hot_override_switch.async_will_remove_from_hass()
@@ -381,6 +396,7 @@ class TestCoverWeatherHotOverrideSwitchRemoval:
         entry = cover_hot_override_switch.coordinator.config_entry
         key = f"cover.test_cover_{COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"
         entry.options[key] = True
+        cover_hot_override_switch.registry_entry = SimpleNamespace(disabled_by="user")
         cover_hot_override_switch.coordinator.hass.config_entries.async_update_entry = Mock()
 
         await cover_hot_override_switch.async_will_remove_from_hass()

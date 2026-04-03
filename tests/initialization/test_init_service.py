@@ -241,6 +241,36 @@ class TestServiceHandler:
 
             mock_coordinator._ha_interface.add_logbook_entry.assert_called_once()
 
+    async def test_service_handler_invalid_config_entry_id_falls_back_to_cover_match(self, mock_hass_with_spec, mock_service_call) -> None:
+        """Test service handler falls back to cover matching if config_entry_id does not resolve."""
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_coordinator_1 = MagicMock()
+            mock_coordinator_1.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator_1._ha_interface.add_logbook_entry = AsyncMock()
+            mock_coordinator_1.data = CoordinatorData(covers={})
+
+            mock_coordinator_2 = MagicMock()
+            mock_coordinator_2._ha_interface.add_logbook_entry = AsyncMock()
+            mock_coordinator_2.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: {}})
+
+            mock_coordinator_class.return_value = mock_coordinator_1
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+            mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS]["other_entry_id"] = mock_coordinator_2
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
+            mock_service_call.data["config_entry_id"] = "missing_entry_id"
+
+            await service_handler(mock_service_call)
+
+            mock_coordinator_1._ha_interface.add_logbook_entry.assert_not_called()
+            mock_coordinator_2._ha_interface.add_logbook_entry.assert_called_once()
+
     async def test_service_handler_routes_by_cover_entity(self, mock_hass_with_spec, mock_service_call) -> None:
         """Test service handler finds coordinator by cover entity ID."""
         mock_config_entry = MockConfigEntry(create_temperature_config())
@@ -291,6 +321,35 @@ class TestServiceHandler:
 
             # Should use the only available coordinator
             mock_coordinator._ha_interface.add_logbook_entry.assert_called_once()
+
+    async def test_service_handler_skips_coordinator_with_none_data(self, mock_hass_with_spec, mock_service_call) -> None:
+        """Test service handler skips coordinators whose runtime data is None during cover matching."""
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_coordinator_1 = MagicMock()
+            mock_coordinator_1.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator_1._ha_interface.add_logbook_entry = AsyncMock()
+            mock_coordinator_1.data = None
+
+            mock_coordinator_2 = MagicMock()
+            mock_coordinator_2._ha_interface.add_logbook_entry = AsyncMock()
+            mock_coordinator_2.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: {}})
+
+            mock_coordinator_class.return_value = mock_coordinator_1
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+            mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS]["other_entry_id"] = mock_coordinator_2
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[0][0][2]
+
+            await service_handler(mock_service_call)
+
+            mock_coordinator_1._ha_interface.add_logbook_entry.assert_not_called()
+            mock_coordinator_2._ha_interface.add_logbook_entry.assert_called_once()
 
     async def test_service_handler_no_coordinator_found(self, mock_hass_with_spec, mock_service_call, caplog) -> None:
         """Test service handler when no coordinator can be located."""

@@ -21,8 +21,10 @@ from custom_components.smart_cover_automation.const import (
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
     SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL,
     SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
+    TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
     EveningClosureMode,
     LockMode,
+    MorningOpeningMode,
     TiltMode,
 )
 
@@ -67,6 +69,8 @@ class ConfKeys(StrEnum):
     EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION = (
         "close_covers_after_sunset_ignore_manual_override_duration"  # Evening closure: ignore manual override duration.
     )
+    MORNING_OPENING_MODE = "morning_opening_mode"  # Morning opening: timing mode.
+    MORNING_OPENING_TIME = "morning_opening_time"  # Morning opening: time value.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_CLOSURE = "covers_min_closure"  # Minimum closure position (0 = fully closed, 100 = fully open)
@@ -199,7 +203,7 @@ if TYPE_CHECKING:  # pragma: no cover - type checking only
 # Central registry of settings with defaults and coercion (type conversion).
 # This is the single source of truth for all settings keys and their types.
 CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
-    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(8, 0, 0), converter=_Converters.to_time),
     ConfKeys.EVENING_CLOSURE_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
@@ -207,6 +211,11 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.EVENING_CLOSURE_TIME: _ConfSpec(default=time(0, 15, 0), converter=_Converters.to_time),
     ConfKeys.EVENING_CLOSURE_COVER_LIST: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.MORNING_OPENING_MODE: _ConfSpec(
+        default=MorningOpeningMode.RELATIVE_TO_SUNRISE,
+        converter=MorningOpeningMode,
+    ),
+    ConfKeys.MORNING_OPENING_TIME: _ConfSpec(default=time(0, 0, 0), converter=_Converters.to_time),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int, runtime_configurable=True),
@@ -267,6 +276,7 @@ def get_runtime_configurable_keys() -> set[str]:
     keys.add(SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL)
     keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY)
     keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT)
+    keys.add(TIME_KEY_MORNING_OPENING_EXTERNAL_TIME)
     return keys
 
 
@@ -304,6 +314,8 @@ _VALUE_TO_FIELD: dict[str, str] = {
     "close_covers_after_sunset_delay": "evening_closure_time",
     "close_covers_after_sunset_cover_list": "evening_closure_cover_list",
     "close_covers_after_sunset_ignore_manual_override_duration": "evening_closure_ignore_manual_override_duration",
+    "morning_opening_mode": "morning_opening_mode",
+    "morning_opening_time": "morning_opening_time",
 }
 
 
@@ -329,6 +341,8 @@ class ResolvedConfig:
     evening_closure_time: time
     evening_closure_cover_list: tuple[str, ...]
     evening_closure_ignore_manual_override_duration: bool
+    morning_opening_mode: MorningOpeningMode
+    morning_opening_time: time
     covers: tuple[str, ...]
     covers_max_closure: int
     covers_min_closure: int

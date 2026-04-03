@@ -116,6 +116,17 @@ class EveningClosureMode(StrEnum):
 
 
 #
+# MorningOpeningMode
+#
+class MorningOpeningMode(StrEnum):
+    """Morning opening timing mode."""
+
+    RELATIVE_TO_SUNRISE = "relative_to_sunrise"  # Open relative to sunrise
+    FIXED_TIME = "fixed_time"  # Open at a fixed time of day
+    EXTERNAL = "external"  # Open at a time supplied via entity
+
+
+#
 # TiltMode
 #
 class TiltMode(StrEnum):
@@ -164,6 +175,9 @@ NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_DAY: Final[str] = (
 )
 NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_NIGHT: Final[str] = (
     "cover_tilt_external_value_night"  # Translation key for per-cover external tilt value number entities (night)
+)
+TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: Final[str] = (
+    "morning_opening_external_time"  # Key for the global external morning opening time entity
 )
 SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity
