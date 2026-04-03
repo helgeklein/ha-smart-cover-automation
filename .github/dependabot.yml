@@ -11,6 +11,8 @@ updates:
     versioning-strategy: increase-if-necessary
     allow:
       - dependency-type: all
+    ignore:
+      - dependency-name: homeassistant
     cooldown:
       default-days: 7
       semver-major-days: 30
