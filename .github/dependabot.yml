@@ -1,0 +1,51 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '05:00'
+      timezone: UTC
+    open-pull-requests-limit: 3
+    versioning-strategy: increase-if-necessary
+    allow:
+      - dependency-type: all
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      python-version-updates:
+        applies-to: version-updates
+        patterns:
+          - '*'
+      python-security-updates:
+        applies-to: security-updates
+        patterns:
+          - '*'
+    commit-message:
+      prefix: build(deps)
+      prefix-development: build(deps-dev)
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '05:30'
+      timezone: UTC
+    open-pull-requests-limit: 3
+    groups:
+      github-actions-version-updates:
+        applies-to: version-updates
+        patterns:
+          - '*'
+      github-actions-security-updates:
+        applies-to: security-updates
+        patterns:
+          - '*'
+    commit-message:
+      prefix: ci(deps)
