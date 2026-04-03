@@ -21,15 +21,6 @@ updates:
       semver-major-days: 30
       semver-minor-days: 7
       semver-patch-days: 3
-    groups:
-      python-version-updates:
-        applies-to: version-updates
-        patterns:
-          - '*'
-      python-security-updates:
-        applies-to: security-updates
-        patterns:
-          - '*'
     commit-message:
       prefix: build(deps)
       prefix-development: build(deps-dev)

@@ -5,9 +5,9 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-# Install locked dependencies
+# Install locked dependencies.
 echo "Installing locked Python dependencies..."
-python3 -m pip install --require-hashes -r requirements-lock.txt --quiet
+python3 -m pip install --require-hashes -r requirements-lock.txt -r requirements-test-lock.txt --quiet
 
 # Run static type checking
 echo "Running static type checking..."
