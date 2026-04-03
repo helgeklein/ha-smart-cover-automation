@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "Generating runtime lockfile..."
+python3 -m piptools compile \
+  --strip-extras \
+  --generate-hashes \
+  --allow-unsafe \
+  --resolver=backtracking \
+  --output-file=requirements-lock.txt \
+  requirements.txt
+
+echo "Generating test lockfile..."
+python3 -m piptools compile \
+  --strip-extras \
+  --generate-hashes \
+  --allow-unsafe \
+  --resolver=backtracking \
+  --output-file=requirements-test-lock.txt \
+  requirements-test.txt
+
+echo "Lockfiles updated!"
