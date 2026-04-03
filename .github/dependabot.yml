@@ -1,31 +1,5 @@
 version: 2
 updates:
-  - package-ecosystem: pip
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: '05:00'
-      timezone: UTC
-    open-pull-requests-limit: 3
-    versioning-strategy: increase-if-necessary
-    allow:
-      - dependency-type: direct
-    ignore:
-      - dependency-name: homeassistant
-      - dependency-name: aiodns
-      - dependency-name: pycares
-      - dependency-name: pytest-homeassistant-custom-component
-    cooldown:
-      default-days: 7
-      semver-major-days: 30
-      semver-minor-days: 7
-      semver-patch-days: 3
-    commit-message:
-      prefix: build(deps)
-      prefix-development: build(deps-dev)
-      include: scope
-
   - package-ecosystem: github-actions
     directory: /
     schedule:
