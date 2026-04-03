@@ -97,7 +97,8 @@ In this step of the configuration wizard, the following settings can be configur
 
 ### Blocked Time Range
 
-Blocked time range allows you to disable the automation in a certain time range, e.g., when you sleep.
+Blocked time range allows you to disable the automation in a certain time range, e.g., when you sleep. It delays the cover opening in the morning until the end of the configured time range. So, if you configure the blocked time range as 22:00 to 7:00, the covers will not open before 7 am.
+
 
 Blocked time range settings:
 
