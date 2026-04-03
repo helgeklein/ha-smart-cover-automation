@@ -2504,9 +2504,9 @@ pytest-freezer==0.4.9 \
     --hash=sha256:21bf16bc9cc46bf98f94382c4b5c3c389be7056ff0be33029111ae11b3f1c82a \
     --hash=sha256:8b6c50523b7d4aec4590b52bfa5ff766d772ce506e2bf4846c88041ea9ccae59
     # via pytest-homeassistant-custom-component
-pytest-github-actions-annotate-failures==0.3.0 \
-    --hash=sha256:41ea558ba10c332c0bfc053daeee0c85187507b2034e990f21e4f7e5fef044cf \
-    --hash=sha256:d4c3177c98046c3900a7f8ddebb22ea54b9f6822201b5d3ab8fcdea51e010db7
+pytest-github-actions-annotate-failures==0.4.0 \
+    --hash=sha256:285fed86e16b0b7a8eac6acdcde31913798fb739b15ef5b86895b4f5e32bf237 \
+    --hash=sha256:77d6baa29c8c61c2dacc494fa76eb95a185f0ee61666714ac43fb12ea672d217
     # via pytest-homeassistant-custom-component
 pytest-homeassistant-custom-component==0.13.271 \
     --hash=sha256:1a0be0c600c0eca5eb86b04e4c84b359b24fc9c8f6815d549b2e004e95582257 \
