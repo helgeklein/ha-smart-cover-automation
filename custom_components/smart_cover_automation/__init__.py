@@ -33,6 +33,7 @@ from .const import (
     SERVICE_FIELD_LOCK_MODE,
     SERVICE_LOGBOOK_ENTRY,
     SERVICE_SET_LOCK,
+    TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
     TRANSL_LOGBOOK_REASON_HEAT_PROTECTION,
     TRANSL_LOGBOOK_VERB_OPENING,
 )
@@ -53,6 +54,7 @@ PLATFORMS: list[Platform] = [
     Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,
+    Platform.TIME,
 ]
 
 REMOVED_ENTITY_UNIQUE_ID_KEYS: Final[tuple[str, ...]] = ("nighttime_block_opening",)
@@ -108,6 +110,28 @@ def _is_external_tilt_value_key(key: str) -> bool:
     return key in (NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY, NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT) or key.endswith(
         (f"_{COVER_SFX_TILT_EXTERNAL_VALUE_DAY}", f"_{COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}")
     )
+
+
+#
+# _get_valid_external_morning_opening_keys
+#
+def _get_valid_external_morning_opening_keys(entry: IntegrationConfigEntry) -> set[str]:
+    """Return the external morning opening time keys that should exist for this entry."""
+
+    options = _get_entry_options_dict(entry)
+    if options.get(ConfKeys.MORNING_OPENING_MODE.value) == const.MorningOpeningMode.EXTERNAL:
+        return {TIME_KEY_MORNING_OPENING_EXTERNAL_TIME}
+
+    return set()
+
+
+#
+# _is_external_morning_opening_key
+#
+def _is_external_morning_opening_key(key: str) -> bool:
+    """Return whether the key stores an external morning opening time."""
+
+    return key == TIME_KEY_MORNING_OPENING_EXTERNAL_TIME
 
 
 #
@@ -222,20 +246,27 @@ async def _async_remove_stale_registry_entities(hass: HomeAssistant, entry: Inte
 
     stale_entries = [entity for entity in entries if entity.unique_id in removed_unique_ids]
     valid_external_tilt_value_keys = _get_valid_external_tilt_value_keys(hass, entry)
-    valid_external_tilt_unique_ids = {f"{entry.entry_id}_{key}" for key in valid_external_tilt_value_keys}
+    valid_external_morning_opening_keys = _get_valid_external_morning_opening_keys(entry)
+    valid_auto_managed_keys = valid_external_tilt_value_keys | valid_external_morning_opening_keys
+    valid_auto_managed_unique_ids = {f"{entry.entry_id}_{key}" for key in valid_auto_managed_keys}
     stale_entries.extend(
         entity
         for entity in entries
         if entity.unique_id.startswith(f"{entry.entry_id}_")
-        and _is_external_tilt_value_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
-        and entity.unique_id not in valid_external_tilt_unique_ids
+        and (
+            _is_external_tilt_value_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
+            or _is_external_morning_opening_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
+        )
+        and entity.unique_id not in valid_auto_managed_unique_ids
     )
 
     current_options = _get_entry_options_dict(entry)
-    stale_external_tilt_value_keys = {key for key in current_options if _is_external_tilt_value_key(key)} - valid_external_tilt_value_keys
-    if stale_external_tilt_value_keys:
+    stale_auto_managed_option_keys = {
+        key for key in current_options if _is_external_tilt_value_key(key) or _is_external_morning_opening_key(key)
+    } - valid_auto_managed_keys
+    if stale_auto_managed_option_keys:
         updated_options = dict(current_options)
-        for key in stale_external_tilt_value_keys:
+        for key in stale_auto_managed_option_keys:
             updated_options.pop(key, None)
         hass.config_entries.async_update_entry(entry, options=updated_options)
 

@@ -111,17 +111,21 @@
                         "name": "Evening closure",
                         "data": {
                             "close_covers_after_sunset": "Close covers in the evening:",
-                            "close_covers_after_sunset_mode": "Mode:",
-                            "close_covers_after_sunset_delay": "Time:",
+                            "close_covers_after_sunset_mode": "Evening closure: mode:",
+                            "close_covers_after_sunset_delay": "Evening closure: time:",
                             "close_covers_after_sunset_cover_list": "Covers:",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignore manual override duration:"
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignore manual override duration:",
+                            "morning_opening_mode": "Morning opening: mode:",
+                            "morning_opening_time": "Morning opening: time:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "When enabled, covers will be closed automatically in the evening.",
                             "close_covers_after_sunset_mode": "Choose whether to close at a fixed time or relative to sunset.",
                             "close_covers_after_sunset_delay": "Depending on the selected mode: delay after sunset, or fixed time of day.",
                             "close_covers_after_sunset_cover_list": "Select the covers that should be closed in the evening.",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active."
+                            "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active.",
+                            "morning_opening_mode": "Choose whether morning opening is relative to sunrise, uses an absolute time, or is supplied by an entity.",
+                            "morning_opening_time": "Depending on the selected mode: delay after sunrise or fixed time of day. Ignored in external mode."
                         }
                     }
                 }
@@ -190,6 +194,11 @@
             },
             "temp_current_max": {
                 "name": "Temperature: today's maximum"
+            }
+        },
+        "time": {
+            "morning_opening_external_time": {
+                "name": "Morning opening: external time"
             }
         },
         "number": {
@@ -330,6 +339,13 @@
             "options": {
                 "after_sunset": "After sunset (relative delay)",
                 "fixed_time": "Fixed time of day"
+            }
+        },
+        "morning_opening_mode": {
+            "options": {
+                "relative_to_sunrise": "Relative to sunrise",
+                "fixed_time": "Absolute time",
+                "external": "External (time supplied via entity)"
             }
         }
     }

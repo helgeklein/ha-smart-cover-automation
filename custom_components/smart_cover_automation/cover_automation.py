@@ -338,9 +338,8 @@ class CoverAutomation:
         """Check if opening block after evening closure should prevent cover opening.
 
         This prevents automatic cover opening once the evening closure time has
-        passed (regardless of whether the sun is still above the horizon). The
-        block then remains active overnight and is cleared once the sun is no
-        longer below the horizon on the following day.
+        passed. The block then remains active until the configured morning
+        opening time is reached.
 
         Returns:
             True if block is active and should prevent opening, False otherwise
@@ -615,7 +614,9 @@ class CoverAutomation:
                 movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
         else:
             # Let light in mode - check if opening block after evening closure is active
-            if self._is_opening_block_after_evening_closure_active(sensor_data):
+            if self.entity_id in self.resolved.evening_closure_cover_list and self._is_opening_block_after_evening_closure_active(
+                sensor_data
+            ):
                 # Opening block active - keep current position (no movement)
                 desired_pos = current_pos
                 desired_pos_friendly_name = "unchanged (opening block after evening closure active)"

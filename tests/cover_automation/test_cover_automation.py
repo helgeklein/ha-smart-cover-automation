@@ -1140,6 +1140,7 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         """Test that opening block prevents opening but keeps current position."""
 
         mock_resolved_config.covers_min_closure = 100
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
         # Conditions would normally open covers
         sensor_data = SensorData(
@@ -1157,6 +1158,28 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=30)
         assert position == 30  # Keeps current position
         assert reason is None  # No movement reason
+        assert lockout_active is False
+
+    def test_calculate_desired_position_block_does_not_apply_to_other_covers(self, cover_automation, mock_resolved_config):
+        """Test that morning opening only affects covers in the evening closure list."""
+
+        mock_resolved_config.covers_min_closure = 100
+        mock_resolved_config.evening_closure_cover_list = ("cover.other",)
+
+        sensor_data = SensorData(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=True,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=30)
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
         assert lockout_active is False
 
     def test_calculate_desired_position_block_allows_closing(self, cover_automation, mock_resolved_config):

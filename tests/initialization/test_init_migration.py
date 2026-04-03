@@ -23,8 +23,13 @@ from homeassistant.components.cover import CoverEntityFeature
 from custom_components.smart_cover_automation import (
     _async_migrate_unique_ids,
     _async_remove_stale_registry_entities,
+    _get_entry_options_dict,
+    _get_valid_external_morning_opening_keys,
+    _get_valid_external_tilt_value_keys,
+    _is_external_morning_opening_key,
     const,
 )
+from custom_components.smart_cover_automation.config import ConfKeys
 
 
 class TestAsyncMigrateUniqueIds:
@@ -931,3 +936,173 @@ class TestAsyncRemoveStaleRegistryEntities:
         mock_hass.config_entries.async_update_entry.assert_called_once()
         updated_options = mock_hass.config_entries.async_update_entry.call_args.kwargs["options"]
         assert f"cover.test_cover_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}" not in updated_options
+
+    async def test_stale_external_morning_opening_entity_and_value_are_deleted(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Cleanup should remove stale external morning opening entities and stored values."""
+
+        stale_entity = MagicMock()
+        stale_entity.unique_id = f"{mock_entry.entry_id}_{const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME}"
+        stale_entity.entity_id = "time.smart_cover_automation_morning_opening_external_time"
+        mock_entry.options = {
+            const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "08:15:00",
+            ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.FIXED_TIME,
+        }
+        mock_hass.config_entries = MagicMock()
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[stale_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        mock_registry.async_remove.assert_called_once_with(stale_entity.entity_id)
+        mock_hass.config_entries.async_update_entry.assert_called_once()
+        updated_options = mock_hass.config_entries.async_update_entry.call_args.kwargs["options"]
+        assert const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME not in updated_options
+
+    async def test_external_morning_opening_entity_is_preserved_when_mode_is_external(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Cleanup should keep the external morning opening entity when it is still configured."""
+
+        external_entity = MagicMock()
+        external_entity.unique_id = f"{mock_entry.entry_id}_{const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME}"
+        external_entity.entity_id = "time.smart_cover_automation_morning_opening_external_time"
+        mock_entry.options = {
+            const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "08:15:00",
+            ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.EXTERNAL,
+        }
+        mock_hass.config_entries = MagicMock()
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[external_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        mock_registry.async_remove.assert_not_called()
+        mock_hass.config_entries.async_update_entry.assert_not_called()
+
+    async def test_registry_access_failure_returns_early(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+    ) -> None:
+        """Cleanup should return early when entity registry access fails."""
+
+        with patch("custom_components.smart_cover_automation.er.async_get", side_effect=ValueError("registry unavailable")):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+    async def test_stale_entity_removal_failure_is_logged(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Cleanup should log a warning when removing a stale registry entity fails."""
+        import logging
+
+        caplog.set_level(logging.WARNING, logger="custom_components.smart_cover_automation")
+
+        stale_entity = MagicMock()
+        stale_entity.unique_id = f"{mock_entry.entry_id}_{const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME}"
+        stale_entity.entity_id = "time.smart_cover_automation_morning_opening_external_time"
+        mock_entry.options = {
+            ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.FIXED_TIME,
+            const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "08:15:00",
+        }
+        mock_hass.config_entries = MagicMock()
+        mock_registry.async_remove.side_effect = ValueError("remove failed")
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[stale_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        assert "Failed to remove stale entity-registry entry" in caplog.text
+
+
+class TestInitHelperFunctions:
+    """Test small helper functions in __init__.py that drive cleanup behavior."""
+
+    def test_get_entry_options_dict_returns_copy_for_mapping(self) -> None:
+        """Options should be returned as a plain copied dict when they are a mapping."""
+
+        entry = MagicMock()
+        entry.options = {"enabled": True}
+
+        result = _get_entry_options_dict(entry)
+
+        assert result == {"enabled": True}
+        assert result is not entry.options
+
+    def test_get_entry_options_dict_returns_empty_for_non_mapping(self) -> None:
+        """Non-mapping option values should be treated as empty."""
+
+        entry = MagicMock()
+        entry.options = "not-a-mapping"
+
+        assert _get_entry_options_dict(entry) == {}
+
+    def test_get_valid_external_morning_opening_keys_for_external_mode(self) -> None:
+        """External morning opening mode should keep the runtime time key."""
+
+        entry = MagicMock()
+        entry.options = {ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.EXTERNAL}
+
+        assert _get_valid_external_morning_opening_keys(entry) == {const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME}
+
+    def test_is_external_morning_opening_key(self) -> None:
+        """The morning opening entity key helper should identify only the dedicated time key."""
+
+        assert _is_external_morning_opening_key(const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME) is True
+        assert _is_external_morning_opening_key("something_else") is False
+
+    def test_get_valid_external_tilt_value_keys_includes_global_and_supported_per_cover(self) -> None:
+        """Valid external tilt keys should include global and tilt-capable per-cover keys only."""
+
+        hass = MagicMock()
+        entry = MagicMock()
+        entry.options = {
+            ConfKeys.COVERS.value: ["cover.one", "cover.two"],
+            ConfKeys.TILT_MODE_DAY.value: const.TiltMode.EXTERNAL,
+            ConfKeys.TILT_MODE_NIGHT.value: const.TiltMode.EXTERNAL,
+            f"cover.one_{const.COVER_SFX_TILT_MODE_DAY}": const.TiltMode.EXTERNAL,
+            f"cover.two_{const.COVER_SFX_TILT_MODE_NIGHT}": const.TiltMode.EXTERNAL,
+        }
+
+        with patch("custom_components.smart_cover_automation.cover_supports_tilt", side_effect=[True, False]):
+            result = _get_valid_external_tilt_value_keys(hass, entry)
+
+        assert const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY in result
+        assert const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT in result
+        assert f"cover.one_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}" in result
+        assert f"cover.two_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}" not in result

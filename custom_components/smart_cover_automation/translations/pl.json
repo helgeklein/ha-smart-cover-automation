@@ -111,17 +111,21 @@
                         "name": "Zamykanie wieczorne",
                         "data": {
                             "close_covers_after_sunset": "Zamykanie rolet wieczorem:",
-                            "close_covers_after_sunset_mode": "Tryb:",
-                            "close_covers_after_sunset_delay": "Godzina:",
+                            "close_covers_after_sunset_mode": "Zamykanie wieczorne: tryb:",
+                            "close_covers_after_sunset_delay": "Zamykanie wieczorne: godzina:",
                             "close_covers_after_sunset_cover_list": "Rolety:",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignoruj czas ręcznego nadpisania:"
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Ignoruj czas ręcznego nadpisania:",
+                            "morning_opening_mode": "Poranne otwieranie: tryb:",
+                            "morning_opening_time": "Poranne otwieranie: godzina:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Po włączeniu rolety zostaną automatycznie zamknięte wieczorem.",
                             "close_covers_after_sunset_mode": "Wybierz, czy zamykać o stałej godzinie, czy względem zachodu słońca.",
                             "close_covers_after_sunset_delay": "W zależności od wybranego trybu: opóźnienie po zachodzie słońca lub stała godzina.",
                             "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem.",
-                            "close_covers_after_sunset_ignore_manual_override_duration": "Po włączeniu zamykanie wieczorne może poruszyć wybrane rolety, nawet jeśli nadal trwa pauza po ręcznym nadpisaniu."
+                            "close_covers_after_sunset_ignore_manual_override_duration": "Po włączeniu zamykanie wieczorne może poruszyć wybrane rolety, nawet jeśli nadal trwa pauza po ręcznym nadpisaniu.",
+                            "morning_opening_mode": "Wybierz, czy poranne otwieranie ma być względem wschodu słońca, korzystać ze stałej godziny czy być dostarczane przez encję.",
+                            "morning_opening_time": "W zależności od wybranego trybu: opóźnienie po wschodzie słońca lub stała godzina dnia. Ignorowane w trybie zewnętrznym."
                         }
                     }
                 }
@@ -190,6 +194,11 @@
             },
             "temp_current_max": {
                 "name": "Temperatura: dzisiejsze maksimum"
+            }
+        },
+        "time": {
+            "morning_opening_external_time": {
+                "name": "Poranne otwieranie: czas zewnętrzny"
             }
         },
         "number": {
@@ -330,6 +339,13 @@
             "options": {
                 "after_sunset": "Po zachodzie słońca (opóźnienie względne)",
                 "fixed_time": "Stała godzina"
+            }
+        },
+        "morning_opening_mode": {
+            "options": {
+                "relative_to_sunrise": "Względem wschodu słońca",
+                "fixed_time": "Stała godzina",
+                "external": "Zewnętrzne (czas dostarczany przez encję)"
             }
         }
     }
