@@ -984,8 +984,9 @@ fnv-hash-fast==1.5.0 \
     # via
     #   -c requirements-lock.txt
     #   homeassistant
-fnvhash==0.1.0 \
-    --hash=sha256:3e82d505054f9f3987b2b5b649f7e7b6f48349f6af8a1b8e4d66779699c85a8e
+fnvhash==0.2.1 \
+    --hash=sha256:00fab14bec841e4cb29b4fd2ed9358f8bf9f4600d9d8149cde27a191193a33e8 \
+    --hash=sha256:0c7e885f44c8f06de07f442befebc590ee9ca0cc88846681f608496284ce9cd5
     # via
     #   -c requirements-lock.txt
     #   fnv-hash-fast
