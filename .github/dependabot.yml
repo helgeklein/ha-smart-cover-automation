@@ -10,7 +10,7 @@ updates:
     open-pull-requests-limit: 3
     versioning-strategy: increase-if-necessary
     allow:
-      - dependency-type: all
+      - dependency-type: direct
     ignore:
       - dependency-name: homeassistant
       - dependency-name: aiodns
