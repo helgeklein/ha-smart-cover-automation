@@ -2,7 +2,7 @@
     "name": "smart_cover_automation",
     "image": "mcr.microsoft.com/devcontainers/python:3.14",
     // Install Ruby for Jekyll documentation
-    "onCreateCommand": "sudo apt-get update && sudo apt-get install -y ruby-full build-essential zlib1g-dev",
+    "onCreateCommand": "sudo apt-get update && sudo apt-get install -y ruby-full build-essential zlib1g-dev ripgrep",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [
         8123,

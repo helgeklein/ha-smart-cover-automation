@@ -4,5 +4,7 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+python3 scripts/check_ha_version_sync.py
+
 ruff format .
 ruff check . --fix
