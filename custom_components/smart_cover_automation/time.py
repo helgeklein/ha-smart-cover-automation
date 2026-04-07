@@ -78,7 +78,7 @@ class IntegrationTime(IntegrationEntity, TimeEntity):  # pyright: ignore[reportI
 
         try:
             return _Converters.to_time(raw_value)
-        except (AttributeError, TypeError, ValueError):
+        except AttributeError, TypeError, ValueError:
             return None
 
     async def async_set_value(self, value: time) -> None:

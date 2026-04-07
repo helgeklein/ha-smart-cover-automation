@@ -10,7 +10,8 @@ from __future__ import annotations
 import logging
 from collections.abc import Mapping
 from functools import partial
-from typing import TYPE_CHECKING, Any, Final
+from inspect import isawaitable
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from homeassistant.const import Platform
 from homeassistant.core import ServiceCall
@@ -312,7 +313,11 @@ async def _async_register_lock_service(hass: HomeAssistant) -> None:
         lock_mode = call.data[SERVICE_FIELD_LOCK_MODE]
 
         # Extract target config entry IDs from the service call (if any)
-        target_entry_ids = await service.async_extract_config_entry_ids(hass, call)
+        extracted_target_entry_ids = service.async_extract_config_entry_ids(call)
+        if isawaitable(extracted_target_entry_ids):
+            target_entry_ids = await cast(Any, extracted_target_entry_ids)
+        else:
+            target_entry_ids = cast(set[str], extracted_target_entry_ids)
 
         LOGGER.info(f"Service call: set_lock(lock_mode={lock_mode}, targets={len(target_entry_ids)})")
 
@@ -396,7 +401,7 @@ async def _handle_logbook_entry_service(hass: HomeAssistant, call: ServiceCall) 
 
     try:
         target_pos_int = int(target_position)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         LOGGER.warning("Invalid target_position '%s' provided to logbook service", target_position)
         return
 

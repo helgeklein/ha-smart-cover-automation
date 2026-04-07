@@ -211,7 +211,7 @@ class AutomationEngine:
         try:
             temp_max = await self._ha_interface.get_max_temperature(self.resolved.weather_entity_id)
             weather_condition = self._ha_interface.get_weather_condition(self.resolved.weather_entity_id)
-        except (InvalidSensorReadingError, WeatherEntityNotFoundError):
+        except InvalidSensorReadingError, WeatherEntityNotFoundError:
             message = (
                 "Weather data unavailable on startup, skipping first iteration"
                 if is_first_run
@@ -339,7 +339,7 @@ class AutomationEngine:
                 from .config import _Converters
 
                 resolved_time = _Converters.to_time(external_time_raw)
-            except (AttributeError, TypeError, ValueError):
+            except AttributeError, TypeError, ValueError:
                 self._logger.debug("Invalid external morning opening time: %r", external_time_raw)
                 return None
 

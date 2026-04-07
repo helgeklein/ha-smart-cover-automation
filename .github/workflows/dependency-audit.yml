@@ -28,50 +28,13 @@ jobs:
       - name: Audit pinned Python dependencies
         run: |
           python -m pip install pip-audit
+          # Home Assistant 2026.4.1 pins cryptography 46.0.5 and PyJWT 2.10.1.
           python -m pip_audit -r requirements-lock.txt --require-hashes --progress-spinner off \
-            --ignore-vuln CVE-2025-69223 \
-            --ignore-vuln CVE-2025-69224 \
-            --ignore-vuln CVE-2025-69225 \
-            --ignore-vuln CVE-2025-69226 \
-            --ignore-vuln CVE-2025-69227 \
-            --ignore-vuln CVE-2025-69228 \
-            --ignore-vuln CVE-2025-69229 \
-            --ignore-vuln CVE-2025-69230 \
-            --ignore-vuln CVE-2025-67221 \
-            --ignore-vuln CVE-2025-62172 \
-            --ignore-vuln CVE-2026-26007 \
-            --ignore-vuln CVE-2026-33044 \
-            --ignore-vuln CVE-2026-33045 \
             --ignore-vuln CVE-2026-34073 \
-            --ignore-vuln CVE-2026-25990 \
-            --ignore-vuln CVE-2026-32597 \
-            --ignore-vuln CVE-2026-27448 \
-            --ignore-vuln CVE-2026-27459 \
-            --ignore-vuln CVE-2026-25645 \
-            --ignore-vuln GHSA-w476-p2h3-79g9 \
-            --ignore-vuln CVE-2025-13327
+            --ignore-vuln CVE-2026-32597
           python -m pip_audit -r requirements-test-lock.txt --require-hashes --progress-spinner off \
-            --ignore-vuln CVE-2025-69223 \
-            --ignore-vuln CVE-2025-69224 \
-            --ignore-vuln CVE-2025-69225 \
-            --ignore-vuln CVE-2025-69226 \
-            --ignore-vuln CVE-2025-69227 \
-            --ignore-vuln CVE-2025-69228 \
-            --ignore-vuln CVE-2025-69229 \
-            --ignore-vuln CVE-2025-69230 \
-            --ignore-vuln CVE-2025-67221 \
-            --ignore-vuln CVE-2025-62172 \
-            --ignore-vuln CVE-2026-26007 \
-            --ignore-vuln CVE-2026-33044 \
-            --ignore-vuln CVE-2026-33045 \
             --ignore-vuln CVE-2026-34073 \
-            --ignore-vuln CVE-2026-25990 \
-            --ignore-vuln CVE-2026-32597 \
-            --ignore-vuln CVE-2026-27448 \
-            --ignore-vuln CVE-2026-27459 \
-            --ignore-vuln CVE-2026-25645 \
-            --ignore-vuln GHSA-w476-p2h3-79g9 \
-            --ignore-vuln CVE-2025-13327
+            --ignore-vuln CVE-2026-32597
 
   ruby-audit:
     name: Ruby Dependency Audit

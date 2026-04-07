@@ -20,7 +20,7 @@ type IntegrationConfigEntry = ConfigEntry[RuntimeData]
 #
 # CoordinatorData
 #
-@dataclass
+@dataclass(slots=True)
 class CoordinatorData:
     """Type-safe structure for coordinator data.
 
@@ -51,7 +51,7 @@ class CoordinatorData:
     weather_sunny: bool | None = None
 
 
-@dataclass
+@dataclass(slots=True)
 class RuntimeData:
     """Data for the integration."""
 
