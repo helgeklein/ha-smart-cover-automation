@@ -22,6 +22,7 @@ coverage.json
 # Home Assistant configuration
 config/*
 !config/configuration.yaml
+!config/.HA_VERSION
 
 # Jekyll build artifacts and dependencies
 docs/_site/

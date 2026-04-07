@@ -66,6 +66,9 @@ def read_hacs_homeassistant_version() -> str:
 def read_local_homeassistant_version() -> str:
     """Read the local dev Home Assistant version used by the config directory."""
 
+    if not LOCAL_HA_VERSION_PATH.is_file():
+        raise ValueError(f"Expected tracked Home Assistant version file at {LOCAL_HA_VERSION_PATH.relative_to(ROOT_DIR)}.")
+
     version = LOCAL_HA_VERSION_PATH.read_text(encoding="utf-8").strip()
     if not version:
         raise ValueError(f"Expected a non-empty version in {LOCAL_HA_VERSION_PATH}.")
