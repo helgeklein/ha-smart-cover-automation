@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Iterator
 
 from . import const
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class PositionEntry:
     """A single position entry with timestamp."""
 
@@ -19,7 +19,7 @@ class PositionEntry:
     timestamp: datetime
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class RecentAutomationAction:
     """Short-lived tracking for expected position drift after recent automation."""
 
@@ -28,9 +28,11 @@ class RecentAutomationAction:
     expires_at: datetime
 
 
-@dataclass
+@dataclass(slots=True)
 class CoverPositionHistory:
     """Tracks position history for a single cover."""
+
+    _entries: deque[PositionEntry] = field(init=False)
 
     def __post_init__(self) -> None:
         """Initialize the deque after the object is created."""
@@ -80,6 +82,8 @@ class CoverPositionHistory:
 #
 class CoverPositionHistoryManager:
     """Manages position history for all covers in the coordinator."""
+
+    __slots__ = ("_cover_position_history", "_recent_automation_actions")
 
     def __init__(self) -> None:
         """Initialize the position history manager."""

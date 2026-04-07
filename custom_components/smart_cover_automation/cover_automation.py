@@ -38,7 +38,7 @@ class CoverMovementReason(Enum):
     CLOSING_AFTER_SUNSET = "closing_after_sunset"
 
 
-@dataclass
+@dataclass(slots=True)
 class SensorData:
     """Encapsulates sensor data gathered for an automation run."""
 
@@ -52,7 +52,7 @@ class SensorData:
     post_evening_closure: bool
 
 
-@dataclass
+@dataclass(slots=True)
 class CoverState:
     """Type-safe container for cover automation state.
 

@@ -39,7 +39,7 @@ def cover_supports_tilt(hass: HomeAssistant, cover_entity_id: str) -> bool | Non
 
     try:
         return bool(int(features) & CoverEntityFeature.SET_TILT_POSITION)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
 
 
@@ -52,7 +52,7 @@ def to_float_or_none(raw: Any) -> float | None:
     if isinstance(raw, (int, float, str)):
         try:
             return float(raw)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
     return None
 
@@ -68,6 +68,6 @@ def to_int_or_none(raw: Any) -> int | None:
     if isinstance(raw, (int, float, str)):
         try:
             return int(raw)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
     return None

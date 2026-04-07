@@ -5,7 +5,23 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+export PIP_DISABLE_PIP_VERSION_CHECK=1
+
+if git rev-parse --git-dir >/dev/null 2>&1; then
+	echo "Configuring repository Git hooks..."
+	git config core.hooksPath .githooks
+fi
+
 echo "Installing locked Python dependencies..."
 python3 -m pip install --require-hashes --requirement requirements-lock.txt
+
+echo "Installing locked Python test dependencies..."
+python3 -m pip install --require-hashes --requirement requirements-test-lock.txt
+
+echo "Installing pinned Python lint dependencies..."
+python3 -m pip install --requirement requirements-ruff.txt
+
+echo "Installing pinned Python dependency tooling..."
+python3 -m pip install --requirement requirements-devtools.txt
 
 echo "Setup completed!"
