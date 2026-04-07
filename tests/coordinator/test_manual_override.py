@@ -70,10 +70,13 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
         )  # Mock position history: last recorded position was 50% (different from current 75%)
         # and it was recorded 10 minutes ago (within override period)
         last_entry = self._create_position_history_entry(position=50, minutes_ago=10)
-        coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry = MagicMock(return_value=last_entry)
-
-        # Run automation
-        result = await coordinator._async_update_data()
+        with patch.object(
+            type(coordinator._automation_engine._cover_pos_history_mgr),
+            "get_latest_entry",
+            return_value=last_entry,
+        ):
+            # Run automation
+            result = await coordinator._async_update_data()
 
         # Verify current position is recorded but no target position is set
         cover_result = result.covers[MOCK_COVER_ENTITY_ID]
@@ -107,13 +110,17 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         # Mock position history: position changed 40 minutes ago (beyond override period)
         last_entry = self._create_position_history_entry(position=50, minutes_ago=40)
-        coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry = MagicMock(return_value=last_entry)
 
         # Mock the set_cover_position method to avoid actual service calls
         coordinator._ha_interface.set_cover_position = AsyncMock(return_value=0)  # Return target position
 
-        # Run automation
-        result = await coordinator._async_update_data()
+        with patch.object(
+            type(coordinator._automation_engine._cover_pos_history_mgr),
+            "get_latest_entry",
+            return_value=last_entry,
+        ):
+            # Run automation
+            result = await coordinator._async_update_data()
 
         # Verify target position was calculated (hot + sunny + sun hitting = close)
         cover_result = result.covers[MOCK_COVER_ENTITY_ID]
@@ -146,13 +153,17 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         # Mock position history: same position as current (no change)
         last_entry = self._create_position_history_entry(position=current_position, minutes_ago=5, cover_moved=False)
-        coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry = MagicMock(return_value=last_entry)
 
         # Mock the set_cover_position method
         coordinator._ha_interface.set_cover_position = AsyncMock(return_value=0)
 
-        # Run automation
-        result = await coordinator._async_update_data()
+        with patch.object(
+            type(coordinator._automation_engine._cover_pos_history_mgr),
+            "get_latest_entry",
+            return_value=last_entry,
+        ):
+            # Run automation
+            result = await coordinator._async_update_data()
 
         # Verify automation proceeded normally
         cover_result = result.covers[MOCK_COVER_ENTITY_ID]
