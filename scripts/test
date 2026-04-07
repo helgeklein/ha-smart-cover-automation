@@ -5,6 +5,9 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+echo "Checking Home Assistant version metadata..."
+python3 scripts/check_ha_version_sync.py
+
 # Install locked dependencies.
 echo "Installing locked Python dependencies..."
 python3 -m pip install --require-hashes -r requirements-lock.txt -r requirements-test-lock.txt --quiet
