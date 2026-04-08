@@ -38,7 +38,16 @@ from custom_components.smart_cover_automation import (
     async_setup_entry,
     async_unload_entry,
 )
+from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+
+
+@pytest.fixture(autouse=True)
+def patch_entity_registry_entries():
+    """Avoid exercising Home Assistant entity-registry internals in mocked setup tests."""
+
+    with patch("custom_components.smart_cover_automation.er.async_entries_for_config_entry", return_value=[]):
+        yield
 
 
 class TestIntegrationSetup:
@@ -96,6 +105,31 @@ class TestIntegrationSetup:
         assert result is True
         mock_coordinator.async_config_entry_first_refresh.assert_called_once()
         mock_hass_with_spec.config_entries.async_forward_entry_setups.assert_called_once()
+
+    async def test_setup_entry_enables_verbose_logging_early(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
+        """Verbose logging should be enabled before the rest of setup proceeds."""
+
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
+        mock_config_entry_basic.options[ConfKeys.VERBOSE_LOGGING.value] = True
+
+        with (
+            patch("custom_components.smart_cover_automation.Log") as mock_log_class,
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_logger = MagicMock()
+            mock_log_class.return_value = mock_logger
+
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        assert result is True
+        mock_logger.setLevel.assert_called_once_with(__import__("logging").DEBUG)
+        mock_logger.debug.assert_any_call("Verbose logging enabled by configuration (early setup)")
 
     @pytest.mark.parametrize(
         "failure_point, exception_type, exception_message, mock_setup",

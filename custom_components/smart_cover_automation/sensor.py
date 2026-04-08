@@ -21,6 +21,7 @@ from .const import (
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
+    SENSOR_KEY_TEMP_CURRENT_MIN,
 )
 from .entity import IntegrationEntity
 
@@ -60,6 +61,7 @@ async def async_setup_entry(
         SunAzimuthSensor(coordinator),
         SunElevationSensor(coordinator),
         TempCurrentMaxSensor(coordinator),
+        TempCurrentMinSensor(coordinator),
     ]
 
     async_add_entities(entities)
@@ -343,5 +345,41 @@ class TempCurrentMaxSensor(IntegrationSensor):
         """
         if self.coordinator.data:
             return self.coordinator.data.temp_current_max
+        else:
+            return None
+
+
+#
+# TempCurrentMinSensor
+#
+class TempCurrentMinSensor(IntegrationSensor):
+    """Sensor that reports the current minimum temperature."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+        entity_description = SensorEntityDescription(
+            key=SENSOR_KEY_TEMP_CURRENT_MIN,
+            translation_key=SENSOR_KEY_TEMP_CURRENT_MIN,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            icon="mdi:thermometer-chevron-down",
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def native_value(self) -> float | None:  # pyright: ignore
+        """Return the current minimum temperature.
+
+        Returns:
+            Float representing the current minimum temperature in degrees Celsius,
+            or None if that is unavailable.
+        """
+        if self.coordinator.data:
+            return self.coordinator.data.temp_current_min
         else:
             return None

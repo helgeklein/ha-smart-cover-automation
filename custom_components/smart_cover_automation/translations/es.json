@@ -194,6 +194,9 @@
             },
             "temp_current_max": {
                 "name": "Temperatura: máximo de hoy"
+            },
+            "temp_current_min": {
+                "name": "Temperatura: mínima de hoy"
             }
         },
         "time": {
@@ -229,8 +232,11 @@
             "tilt_external_value_night": {
                 "name": "Ángulo de inclinación: control externo (noche)"
             },
-            "temp_threshold": {
-                "name": "Temperatura: umbral de calor"
+            "daily_max_temperature_threshold": {
+                "name": "Protección contra el calor: mín. temperatura máxima diaria"
+            },
+            "daily_min_temperature_threshold": {
+                "name": "Protección contra el calor: mín. temperatura mínima diaria"
             }
         },
         "switch": {

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from datetime import datetime, time, timedelta, timezone
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
 import pytest
 from homeassistant.components.cover import ATTR_POSITION, ATTR_TILT_POSITION, CoverEntityFeature
@@ -863,6 +863,230 @@ class TestGetMaxTemperature:
         assert result == pytest.approx(27.0)
 
 
+class TestGetDailyTemperatureExtrema:
+    """Test get_daily_temperature_extrema method."""
+
+    #
+    # test_get_daily_temperature_extrema_success
+    #
+    async def test_get_daily_temperature_extrema_success(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test successfully retrieving maximum and minimum temperatures from forecast."""
+
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {}
+        mock_hass.states.get.return_value = mock_weather_state
+        forecast_list = [{"datetime": "2026-04-08T00:00:00+00:00", "native_temperature": 28.5, "native_templow": 18.0}]
+
+        with (
+            patch.object(
+                ha_interface,
+                "_get_forecast_list",
+                new=AsyncMock(return_value=forecast_list),
+            ),
+            patch.object(
+                ha_interface,
+                "_find_day_forecast",
+                side_effect=[
+                    ("today", {"native_temperature": 28.5, "native_templow": 18.0}),
+                    ("today", {"native_temperature": 28.5, "native_templow": 18.0}),
+                ],
+            ) as mock_find_day_forecast,
+        ):
+            result = await ha_interface.get_daily_temperature_extrema(MOCK_WEATHER_ENTITY_ID)
+
+        assert result == (28.5, 18.0)
+        assert mock_find_day_forecast.call_args_list == [
+            call(forecast_list, "max"),
+            call(forecast_list, "min"),
+        ]
+
+    #
+    # test_get_daily_temperature_extrema_missing_min
+    #
+    async def test_get_daily_temperature_extrema_missing_min(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+        mock_logger: MagicMock,
+    ) -> None:
+        """Test fallback when the forecast low temperature is unavailable."""
+
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {}
+        mock_hass.states.get.return_value = mock_weather_state
+        forecast_list = [{"datetime": "2026-04-08T00:00:00+00:00", "native_temperature": 28.5}]
+
+        with (
+            patch.object(
+                ha_interface,
+                "_get_forecast_list",
+                new=AsyncMock(return_value=forecast_list),
+            ),
+            patch.object(
+                ha_interface,
+                "_find_day_forecast",
+                side_effect=[
+                    ("today", {"native_temperature": 28.5}),
+                    ("today", {"native_temperature": 28.5}),
+                ],
+            ),
+        ):
+            result = await ha_interface.get_daily_temperature_extrema(MOCK_WEATHER_ENTITY_ID)
+
+        assert result == (28.5, None)
+        mock_logger.warning.assert_any_call(
+            "Could not extract forecast minimum temperature from %s for %s. Continuing with daily max only.",
+            MOCK_WEATHER_ENTITY_ID,
+            "today",
+        )
+
+    async def test_get_daily_temperature_extrema_missing_max_day_forecast(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Test error when no applicable daily maximum forecast can be selected."""
+
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {}
+        mock_hass.states.get.return_value = mock_weather_state
+        forecast_list = [{"datetime": "2026-04-08T00:00:00+00:00", "native_temperature": 28.5}]
+
+        with (
+            patch.object(
+                ha_interface,
+                "_get_forecast_list",
+                new=AsyncMock(return_value=forecast_list),
+            ),
+            patch.object(
+                ha_interface,
+                "_find_day_forecast",
+                return_value=None,
+            ),
+        ):
+            with pytest.raises(InvalidSensorReadingError, match="Forecast temperature unavailable"):
+                await ha_interface.get_daily_temperature_extrema(MOCK_WEATHER_ENTITY_ID)
+
+    async def test_get_daily_temperature_extrema_max_forecast_without_temperature(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+        mock_logger: MagicMock,
+    ) -> None:
+        """Test error when the selected max-temperature forecast lacks a usable high value."""
+
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {}
+        mock_hass.states.get.return_value = mock_weather_state
+        forecast_list = [{"datetime": "2026-04-08T00:00:00+00:00", "native_templow": 18.0}]
+
+        with (
+            patch.object(
+                ha_interface,
+                "_get_forecast_list",
+                new=AsyncMock(return_value=forecast_list),
+            ),
+            patch.object(
+                ha_interface,
+                "_find_day_forecast",
+                side_effect=[("today", {"native_templow": 18.0})],
+            ),
+        ):
+            with pytest.raises(InvalidSensorReadingError, match="Forecast temperature unavailable"):
+                await ha_interface.get_daily_temperature_extrema(MOCK_WEATHER_ENTITY_ID)
+
+        mock_logger.warning.assert_any_call(
+            "Could not extract forecast maximum temperature from %s for %s. max=%s",
+            MOCK_WEATHER_ENTITY_ID,
+            "today",
+            None,
+        )
+
+    async def test_get_daily_temperature_extrema_missing_min_day_forecast(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+        mock_logger: MagicMock,
+    ) -> None:
+        """Test fallback when no applicable daily minimum forecast can be selected."""
+
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {}
+        mock_hass.states.get.return_value = mock_weather_state
+        forecast_list = [{"datetime": "2026-04-08T00:00:00+00:00", "native_temperature": 28.5}]
+
+        with (
+            patch.object(
+                ha_interface,
+                "_get_forecast_list",
+                new=AsyncMock(return_value=forecast_list),
+            ),
+            patch.object(
+                ha_interface,
+                "_find_day_forecast",
+                side_effect=[("today", {"native_temperature": 28.5}), None],
+            ),
+        ):
+            result = await ha_interface.get_daily_temperature_extrema(MOCK_WEATHER_ENTITY_ID)
+
+        assert result == (28.5, None)
+        mock_logger.warning.assert_any_call(
+            "Could not extract forecast minimum temperature from %s for %s. Continuing with daily max only.",
+            MOCK_WEATHER_ENTITY_ID,
+            "unknown",
+        )
+
+
+class TestGetMinTemperature:
+    """Test get_min_temperature method."""
+
+    async def test_get_min_temperature_success(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test successfully retrieving minimum temperature from forecast."""
+
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {}
+        mock_hass.states.get.return_value = mock_weather_state
+
+        with patch.object(ha_interface, "_get_forecast_min_temp", new=AsyncMock(return_value=18.5)):
+            result = await ha_interface.get_min_temperature(MOCK_WEATHER_ENTITY_ID)
+
+        assert result == 18.5
+
+    async def test_get_min_temperature_entity_not_found(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test error when weather entity does not exist."""
+
+        mock_hass.states.get.return_value = None
+
+        with pytest.raises(WeatherEntityNotFoundError, match=MOCK_WEATHER_ENTITY_ID):
+            await ha_interface.get_min_temperature(MOCK_WEATHER_ENTITY_ID)
+
+    async def test_get_min_temperature_forecast_unavailable(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test error when the minimum forecast is unavailable."""
+
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {}
+        mock_hass.states.get.return_value = mock_weather_state
+
+        with patch.object(ha_interface, "_get_forecast_min_temp", new=AsyncMock(return_value=None)):
+            with pytest.raises(InvalidSensorReadingError, match="Forecast temperature unavailable"):
+                await ha_interface.get_min_temperature(MOCK_WEATHER_ENTITY_ID)
+
+    async def test_get_min_temperature_fahrenheit(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Test minimum-temperature conversion from Fahrenheit forecast units."""
+
+        from homeassistant.components.weather.const import ATTR_WEATHER_TEMPERATURE_UNIT
+        from homeassistant.const import UnitOfTemperature
+
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {ATTR_WEATHER_TEMPERATURE_UNIT: UnitOfTemperature.FAHRENHEIT}
+        mock_hass.states.get.return_value = mock_weather_state
+
+        with patch.object(ha_interface, "_get_forecast_min_temp", new=AsyncMock(return_value=59.0)):
+            result = await ha_interface.get_min_temperature(MOCK_WEATHER_ENTITY_ID)
+
+        assert result == pytest.approx(15.0)
+
+
 #
 # TestFindDayForecast
 #
@@ -930,6 +1154,151 @@ class TestFindDayForecast:
         day_name, forecast = result
         assert day_name == "tomorrow"
         assert forecast["native_temperature"] == 30.0
+
+    @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date")
+    def test_find_day_forecast_min_today_before_sunrise_cutover(
+        self,
+        mock_get_sunrise: MagicMock,
+        ha_interface: HomeAssistantInterface,
+    ) -> None:
+        """Minimum temperature should use today's forecast before sunrise minus 30 minutes."""
+
+        now = datetime(2023, 1, 1, 5, 45, tzinfo=timezone.utc)
+        today = now.date()
+        forecast_datetime = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
+        mock_get_sunrise.return_value = datetime(2023, 1, 1, 6, 30, tzinfo=timezone.utc)
+
+        forecast_list = [{"datetime": forecast_datetime.isoformat(), "native_templow": 4.0}]
+
+        with patch("homeassistant.util.dt.now") as mock_now:
+            mock_now.return_value = now
+
+            result = ha_interface._find_day_forecast(forecast_list, "min")
+
+        assert result is not None
+        day_name, forecast = result
+        assert day_name == "today"
+        assert forecast["native_templow"] == 4.0
+
+    @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date")
+    def test_find_day_forecast_min_tomorrow_after_sunrise_cutover(
+        self,
+        mock_get_sunrise: MagicMock,
+        ha_interface: HomeAssistantInterface,
+    ) -> None:
+        """Minimum temperature should use tomorrow's forecast after sunrise minus 30 minutes."""
+
+        now = datetime(2023, 1, 1, 6, 15, tzinfo=timezone.utc)
+        tomorrow = now.date() + timedelta(days=1)
+        forecast_datetime = datetime.combine(tomorrow, datetime.min.time(), tzinfo=timezone.utc)
+        mock_get_sunrise.return_value = datetime(2023, 1, 1, 6, 30, tzinfo=timezone.utc)
+
+        forecast_list = [{"datetime": forecast_datetime.isoformat(), "native_templow": 3.0}]
+
+        with patch("homeassistant.util.dt.now") as mock_now:
+            mock_now.return_value = now
+
+            result = ha_interface._find_day_forecast(forecast_list, "min")
+
+        assert result is not None
+        day_name, forecast = result
+        assert day_name == "tomorrow"
+        assert forecast["native_templow"] == 3.0
+
+    @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date", return_value=None)
+    def test_find_day_forecast_min_falls_back_to_max_cutover_when_sunrise_unavailable(
+        self,
+        _mock_get_sunrise: MagicMock,
+        ha_interface: HomeAssistantInterface,
+        mock_resolved_config: MagicMock,  # type: ignore[type-arg]
+        mock_logger: MagicMock,
+    ) -> None:
+        """Minimum temperature should fall back to the max cutover time if sunrise is unavailable."""
+
+        mock_resolved_config.weather_hot_cutover_time = time(16, 0)
+        now = datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc)
+        tomorrow = now.date() + timedelta(days=1)
+        forecast_datetime = datetime.combine(tomorrow, datetime.min.time(), tzinfo=timezone.utc)
+        forecast_list = [{"datetime": forecast_datetime.isoformat(), "native_templow": 2.0}]
+
+        with patch("homeassistant.util.dt.now") as mock_now:
+            mock_now.return_value = now
+
+            result = ha_interface._find_day_forecast(forecast_list, "min")
+
+        assert result is not None
+        day_name, forecast = result
+        assert day_name == "tomorrow"
+        assert forecast["native_templow"] == 2.0
+        mock_logger.debug.assert_any_call(
+            "Could not determine sunrise-based min temperature cutover for %s; falling back to max temperature cutover time",
+            "2023-01-01",
+        )
+
+    @patch(
+        "custom_components.smart_cover_automation.ha_interface.get_astral_event_date",
+        side_effect=AttributeError("missing config"),
+    )
+    def test_find_day_forecast_min_falls_back_to_max_cutover_when_sunrise_lookup_errors(
+        self,
+        _mock_get_sunrise: MagicMock,
+        ha_interface: HomeAssistantInterface,
+        mock_resolved_config: MagicMock,  # type: ignore[type-arg]
+        mock_logger: MagicMock,
+    ) -> None:
+        """Minimum temperature should fall back cleanly when sunrise lookup raises."""
+
+        mock_resolved_config.weather_hot_cutover_time = time(16, 0)
+        now = datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc)
+        tomorrow = now.date() + timedelta(days=1)
+        forecast_datetime = datetime.combine(tomorrow, datetime.min.time(), tzinfo=timezone.utc)
+        forecast_list = [{"datetime": forecast_datetime.isoformat(), "native_templow": 2.0}]
+
+        with patch("homeassistant.util.dt.now") as mock_now:
+            mock_now.return_value = now
+
+            result = ha_interface._find_day_forecast(forecast_list, "min")
+
+        assert result is not None
+        day_name, forecast = result
+        assert day_name == "tomorrow"
+        assert forecast["native_templow"] == 2.0
+        mock_logger.debug.assert_any_call(
+            "Could not determine sunrise time for %s while resolving min temperature cutover: %s",
+            "2023-01-01",
+            ANY,
+        )
+
+    @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date", return_value=MagicMock())
+    def test_find_day_forecast_min_falls_back_to_max_cutover_when_sunrise_lookup_returns_unexpected_type(
+        self,
+        _mock_get_sunrise: MagicMock,
+        ha_interface: HomeAssistantInterface,
+        mock_resolved_config: MagicMock,  # type: ignore[type-arg]
+        mock_logger: MagicMock,
+    ) -> None:
+        """Minimum temperature should fall back cleanly when sunrise lookup returns a non-datetime."""
+
+        mock_resolved_config.weather_hot_cutover_time = time(16, 0)
+        now = datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc)
+        tomorrow = now.date() + timedelta(days=1)
+        forecast_datetime = datetime.combine(tomorrow, datetime.min.time(), tzinfo=timezone.utc)
+        forecast_list = [{"datetime": forecast_datetime.isoformat(), "native_templow": 2.0}]
+
+        with patch("homeassistant.util.dt.now") as mock_now:
+            mock_now.return_value = now
+
+            result = ha_interface._find_day_forecast(forecast_list, "min")
+
+        assert result is not None
+        day_name, forecast = result
+        assert day_name == "tomorrow"
+        assert forecast["native_templow"] == 2.0
+        mock_logger.debug.assert_any_call(
+            "Could not determine sunrise time for %s while resolving min temperature cutover: unexpected type %s",
+            "2023-01-01",
+            "MagicMock",
+        )
 
     #
     # test_find_day_forecast_empty_list
@@ -1100,6 +1469,34 @@ class TestExtractMaxTemperature:
         result = ha_interface._extract_max_temperature("not a dict")  # type: ignore[arg-type]
 
         assert result is None
+
+
+class TestExtractMinTemperature:
+    """Test _extract_min_temperature method."""
+
+    #
+    # test_extract_min_temperature_native_templow
+    #
+    def test_extract_min_temperature_native_templow(self, ha_interface: HomeAssistantInterface) -> None:
+        """Test extracting low temperature from native_templow field."""
+
+        forecast = {"native_templow": 17.5}
+
+        result = ha_interface._extract_min_temperature(forecast)
+
+        assert result == 17.5
+
+    #
+    # test_extract_min_temperature_temp_min
+    #
+    def test_extract_min_temperature_temp_min(self, ha_interface: HomeAssistantInterface) -> None:
+        """Test extracting low temperature from temp_min field."""
+
+        forecast = {"temp_min": 12.0}
+
+        result = ha_interface._extract_min_temperature(forecast)
+
+        assert result == 12.0
 
 
 #
@@ -1291,5 +1688,54 @@ class TestGetForecastMaxTemp:
         mock_hass.services.async_call.side_effect = RuntimeError("Unexpected error")
 
         result = await ha_interface._get_forecast_max_temp(MOCK_WEATHER_ENTITY_ID)
+
+        assert result is None
+
+    async def test_get_forecast_max_temp_missing_max(self, ha_interface: HomeAssistantInterface, mock_logger: MagicMock) -> None:
+        """Test warning path when maximum temperature cannot be extracted."""
+
+        with patch.object(
+            ha_interface,
+            "_get_day_forecast",
+            new=AsyncMock(return_value=("today", {"native_templow": 16.5})),
+        ):
+            result = await ha_interface._get_forecast_max_temp(MOCK_WEATHER_ENTITY_ID)
+
+        assert result is None
+        mock_logger.warning.assert_called_with(f"Could not extract max temperature from today's forecast for {MOCK_WEATHER_ENTITY_ID}")
+
+
+class TestGetForecastMinTemp:
+    """Test _get_forecast_min_temp method."""
+
+    async def test_get_forecast_min_temp_success(self, ha_interface: HomeAssistantInterface) -> None:
+        """Test successfully retrieving forecast minimum temperature."""
+
+        with patch.object(
+            ha_interface,
+            "_get_day_forecast",
+            new=AsyncMock(return_value=("today", {"native_templow": 16.5})),
+        ):
+            result = await ha_interface._get_forecast_min_temp(MOCK_WEATHER_ENTITY_ID)
+
+        assert result == 16.5
+
+    async def test_get_forecast_min_temp_missing_min(self, ha_interface: HomeAssistantInterface) -> None:
+        """Test warning path when minimum temperature cannot be extracted."""
+
+        with patch.object(
+            ha_interface,
+            "_get_day_forecast",
+            new=AsyncMock(return_value=("today", {"native_temperature": 27.5})),
+        ):
+            result = await ha_interface._get_forecast_min_temp(MOCK_WEATHER_ENTITY_ID)
+
+        assert result is None
+
+    async def test_get_forecast_min_temp_no_forecast(self, ha_interface: HomeAssistantInterface) -> None:
+        """Test handling when no applicable forecast is available."""
+
+        with patch.object(ha_interface, "_get_day_forecast", new=AsyncMock(return_value=None)):
+            result = await ha_interface._get_forecast_min_temp(MOCK_WEATHER_ENTITY_ID)
 
         assert result is None

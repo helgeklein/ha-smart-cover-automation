@@ -2,11 +2,11 @@
 layout: default
 title: "Weather: Sunny? via PV Output"
 nav_order: 10
-description: "How to determine whether it is sunny from your photovoltaic power output."
+description: "How to determine if the sun is shining from your photovoltaic power output."
 permalink: /weather-sunny-external-pv/
 ---
 
-# How to Determine Whether It Is Sunny from Photovoltaic Power Output
+# How to Determine if the Sun is Shining from Photovoltaic Power Output
 
 ## Description
 

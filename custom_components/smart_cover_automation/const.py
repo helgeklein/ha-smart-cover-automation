@@ -182,9 +182,16 @@ TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: Final[str] = (
 SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity
 SENSOR_KEY_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Key for the current maximum temperature sensor entity
+SENSOR_KEY_TEMP_CURRENT_MIN: Final[str] = "temp_current_min"  # Key for the current minimum temperature sensor entity
 SENSOR_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode sensor entity
 SELECT_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode select entity
-NUMBER_KEY_TEMP_THRESHOLD: Final[str] = "temp_threshold"  # Key for the temperature threshold number entity
+LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD: Final[str] = "temp_threshold"  # Legacy key for the old heat-protection max threshold option
+NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD: Final[str] = (
+    "daily_max_temperature_threshold"  # Key for the daily max temperature threshold number entity
+)
+NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD: Final[str] = (
+    "daily_min_temperature_threshold"  # Key for the daily min temperature threshold number entity
+)
 NUMBER_KEY_SUN_ELEVATION_THRESHOLD: Final[str] = "sun_elevation_threshold"  # Key for the sun elevation threshold number entity
 
 # Options flow translation keys

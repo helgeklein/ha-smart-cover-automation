@@ -194,6 +194,9 @@
             },
             "temp_current_max": {
                 "name": "温度：今日最高值"
+            },
+            "temp_current_min": {
+                "name": "温度：今日最低值"
             }
         },
         "time": {
@@ -229,8 +232,11 @@
             "tilt_external_value_night": {
                 "name": "叶片倾角：外部控制（夜间）"
             },
-            "temp_threshold": {
-                "name": "温度：高温阈值"
+            "daily_max_temperature_threshold": {
+                "name": "高温防护：每日最高温度下限"
+            },
+            "daily_min_temperature_threshold": {
+                "name": "高温防护：每日最低温度下限"
             }
         },
         "switch": {

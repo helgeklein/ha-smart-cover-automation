@@ -113,6 +113,7 @@ class AutomationEngine:
         result.sun_azimuth = sensor_data.sun_azimuth
         result.sun_elevation = sensor_data.sun_elevation
         result.temp_current_max = sensor_data.temp_max
+        result.temp_current_min = sensor_data.temp_min
         result.temp_hot = sensor_data.temp_hot
         result.weather_sunny = sensor_data.weather_sunny
 
@@ -121,6 +122,7 @@ class AutomationEngine:
             "sun_azimuth": result.sun_azimuth,
             "sun_elevation": result.sun_elevation,
             "temp_current_max": result.temp_current_max,
+            "temp_current_min": result.temp_current_min,
             "temp_hot": result.temp_hot,
             "weather_sunny": result.weather_sunny,
         }
@@ -132,7 +134,8 @@ class AutomationEngine:
             "covers_min_position_delta": self.resolved.covers_min_position_delta,
             "sun_azimuth_tolerance": self.resolved.sun_azimuth_tolerance,
             "sun_elevation_threshold": self.resolved.sun_elevation_threshold,
-            "temp_threshold": self.resolved.temp_threshold,
+            "daily_max_temperature_threshold": self.resolved.daily_max_temperature_threshold,
+            "daily_min_temperature_threshold": self.resolved.daily_min_temperature_threshold,
             "weather_hot_cutover_time": self.resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
             "manual_override_duration": self.resolved.manual_override_duration,
             "automation_disabled_time_range": self.resolved.automation_disabled_time_range,
@@ -209,7 +212,7 @@ class AutomationEngine:
 
         # Get weather data
         try:
-            temp_max = await self._ha_interface.get_max_temperature(self.resolved.weather_entity_id)
+            temp_max, temp_min = await self._ha_interface.get_daily_temperature_extrema(self.resolved.weather_entity_id)
             weather_condition = self._ha_interface.get_weather_condition(self.resolved.weather_entity_id)
         except InvalidSensorReadingError, WeatherEntityNotFoundError:
             message = (
@@ -224,8 +227,11 @@ class AutomationEngine:
             return (None, f"Unexpected error getting weather data: {err}")
 
         # Calculate derived values
-        temp_hot = temp_max > self.resolved.temp_threshold
-        hot_source = "forecast threshold"
+        meets_daily_max_threshold = temp_max >= self.resolved.daily_max_temperature_threshold
+        # Missing forecast lows should not disable the whole automation cycle.
+        meets_daily_min_threshold = temp_min >= self.resolved.daily_min_temperature_threshold if temp_min is not None else None
+        temp_hot = meets_daily_max_threshold and (meets_daily_min_threshold is not False)
+        hot_source = "forecast thresholds" if temp_min is not None else "forecast daily max threshold"
 
         weather_hot_external_control = self.config.get(const.SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL)
         if weather_hot_external_control is not None:
@@ -242,7 +248,15 @@ class AutomationEngine:
             # External control disabled - determine sunny state based on weather condition
             weather_sunny = weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS
             sunny_source = "weather entity"
-        self._logger.debug(f"Current weather temperature state: {'hot' if temp_hot else 'not hot'} (source: {hot_source})")
+        self._logger.debug(
+            "Current weather temperature state: %s (source: %s, daily_max=%s, daily_min=%s, max_threshold_met=%s, min_threshold_met=%s)",
+            "hot" if temp_hot else "not hot",
+            hot_source,
+            temp_max,
+            temp_min,
+            meets_daily_max_threshold,
+            meets_daily_min_threshold,
+        )
         self._logger.debug(f"Current weather condition: {'sunny' if weather_sunny else 'not sunny'} (source: {sunny_source})")
 
         # Check for evening closure and handle delayed cover closing
@@ -257,6 +271,7 @@ class AutomationEngine:
                 sun_azimuth=sun_azimuth,
                 sun_elevation=sun_elevation,
                 temp_max=temp_max,
+                temp_min=temp_min,
                 temp_hot=temp_hot,
                 weather_condition=weather_condition,
                 weather_sunny=weather_sunny,

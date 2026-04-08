@@ -6,7 +6,7 @@ setup, including service call handling, parameter validation, and coordinator ro
 
 from __future__ import annotations
 
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -19,6 +19,23 @@ from custom_components.smart_cover_automation.const import (
 )
 from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
 from tests.conftest import MOCK_COVER_ENTITY_ID, MockConfigEntry, create_temperature_config
+
+if TYPE_CHECKING:
+    from custom_components.smart_cover_automation.cover_automation import CoverState
+
+
+def _cover_state_stub() -> CoverState:
+    """Return a minimal typed cover-state stub for coordinator-data tests."""
+
+    return cast("CoverState", {})
+
+
+@pytest.fixture(autouse=True)
+def patch_entity_registry_entries():
+    """Avoid exercising Home Assistant entity-registry internals in mocked setup tests."""
+
+    with patch("custom_components.smart_cover_automation.er.async_entries_for_config_entry", return_value=[]):
+        yield
 
 
 class TestServiceRegistration:
@@ -98,7 +115,7 @@ class TestServiceHandler:
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
-            mock_coordinator.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: {}})
+            mock_coordinator.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: _cover_state_stub()})
             mock_coordinator_class.return_value = mock_coordinator
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
@@ -256,7 +273,7 @@ class TestServiceHandler:
 
             mock_coordinator_2 = MagicMock()
             mock_coordinator_2._ha_interface.add_logbook_entry = AsyncMock()
-            mock_coordinator_2.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: {}})
+            mock_coordinator_2.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: _cover_state_stub()})
 
             mock_coordinator_class.return_value = mock_coordinator_1
 
@@ -282,7 +299,7 @@ class TestServiceHandler:
             mock_coordinator = MagicMock()
             mock_coordinator.async_config_entry_first_refresh = AsyncMock()
             mock_coordinator._ha_interface.add_logbook_entry = AsyncMock()
-            mock_coordinator.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: {}})
+            mock_coordinator.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: _cover_state_stub()})
             mock_coordinator_class.return_value = mock_coordinator
 
             await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
@@ -337,7 +354,7 @@ class TestServiceHandler:
 
             mock_coordinator_2 = MagicMock()
             mock_coordinator_2._ha_interface.add_logbook_entry = AsyncMock()
-            mock_coordinator_2.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: {}})
+            mock_coordinator_2.data = CoordinatorData(covers={MOCK_COVER_ENTITY_ID: _cover_state_stub()})
 
             mock_coordinator_class.return_value = mock_coordinator_1
 
@@ -599,11 +616,11 @@ class TestSetLockServiceHandler:
             schema({"lock_mode": "unlocked"})
 
             # Missing lock_mode should raise error
-            with pytest.raises(vol.error.MultipleInvalid):
+            with pytest.raises(vol.MultipleInvalid):
                 schema({})
 
             # Extra fields should be rejected
-            with pytest.raises(vol.error.MultipleInvalid):
+            with pytest.raises(vol.MultipleInvalid):
                 schema({"lock_mode": "unlocked", "extra_field": "value"})
 
     async def test_set_lock_no_coordinators_registered(self, mock_hass_with_spec, caplog) -> None:
@@ -709,6 +726,40 @@ class TestSetLockServiceHandler:
             await service_handler(call)
 
             # Verify only the targeted coordinator was called
+            mock_coordinator1.async_set_lock_mode.assert_not_called()
+            mock_coordinator2.async_set_lock_mode.assert_called_once_with("hold_position")
+
+    async def test_set_lock_targets_specific_entry_ids_with_awaitable_target_extraction(self, mock_hass_with_spec) -> None:
+        """Test set_lock handles async target extraction helpers."""
+
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+            patch("homeassistant.helpers.service.async_extract_config_entry_ids", new=AsyncMock(return_value={"second_entry_id"})),
+        ):
+            mock_coordinator1 = MagicMock()
+            mock_coordinator1.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator1.async_set_lock_mode = AsyncMock()
+
+            mock_coordinator2 = MagicMock()
+            mock_coordinator2.async_config_entry_first_refresh = AsyncMock()
+            mock_coordinator2.async_set_lock_mode = AsyncMock()
+
+            mock_coordinator_class.return_value = mock_coordinator1
+
+            await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+            mock_hass_with_spec.data[DOMAIN][DATA_COORDINATORS]["second_entry_id"] = mock_coordinator2
+
+            service_handler = mock_hass_with_spec.services.async_register.call_args_list[1][0][2]
+
+            call = MagicMock()
+            call.data = {"lock_mode": "hold_position"}
+
+            await service_handler(call)
+
             mock_coordinator1.async_set_lock_mode.assert_not_called()
             mock_coordinator2.async_set_lock_mode.assert_called_once_with("hold_position")
 

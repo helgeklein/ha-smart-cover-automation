@@ -90,9 +90,12 @@ The entities in this section control at which temperatures and sun positions the
 
 **Minimal sun elevation:** The automation starts operating when the sun's elevation is above this threshold (degrees above the horizon).
 
-### Temperature: Heat Threshold
+### Heat Protection Temperature Thresholds
 
-**Temperature: heat threshold:** The temperature at which the automation starts closing covers to protect from heat (degrees Celsius).
+The integration uses both the daily minimum and maximum temperatures to determine whether the weather is hot enough to require heat protection. Configure minimum and maximum temperature thresholds via the following entities:
+
+- **Heat protection: min. daily high temperature**
+- **Heat protection: min. daily low temperature**
 
 ### Weather: Hot? (External Control)
 

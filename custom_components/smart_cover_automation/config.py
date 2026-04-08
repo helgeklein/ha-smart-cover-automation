@@ -17,6 +17,9 @@ from custom_components.smart_cover_automation.const import (
     COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT,
     COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL,
     HA_OPTIONS,
+    LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD,
+    NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
+    NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
     SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL,
@@ -79,9 +82,14 @@ class ConfKeys(StrEnum):
     LOCK_MODE = "lock_mode"  # Current lock mode for all covers.
     MANUAL_OVERRIDE_DURATION = "manual_override_duration"  # Duration (seconds) to skip a cover's automation after manual cover move.
     SIMULATION_MODE = "simulation_mode"  # If enabled, no actual cover commands are sent.
+    DAILY_MAX_TEMPERATURE_THRESHOLD = (
+        "daily_max_temperature_threshold"  # Daily high temperature threshold at which heat protection can activate (°C).
+    )
+    DAILY_MIN_TEMPERATURE_THRESHOLD = (
+        "daily_min_temperature_threshold"  # Daily low temperature threshold at which heat protection can activate (°C).
+    )
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
-    TEMP_THRESHOLD = "temp_threshold"  # Temperature threshold at which heat protection activates (°C).
     TILT_MIN_CHANGE_DELTA = "tilt_min_change_delta"  # Minimum tilt change (%) to actually send a service call.
     TILT_MODE_DAY = "tilt_mode_day"  # Global tilt mode during daytime.
     TILT_MODE_NIGHT = "tilt_mode_night"  # Global tilt mode at night / evening closure.
@@ -90,7 +98,7 @@ class ConfKeys(StrEnum):
     TILT_SLAT_OVERLAP_RATIO = "tilt_slat_overlap_ratio"  # Slat spacing/width ratio (d/L) for Auto tilt calculation.
     VERBOSE_LOGGING = "verbose_logging"  # Enable DEBUG logs for this entry.
     WEATHER_ENTITY_ID = "weather_entity_id"  # Weather entity_id.
-    WEATHER_HOT_CUTOVER_TIME = "weather_hot_cutover_time"  # Time of day to switch to next day's forecast for hot weather detection.
+    WEATHER_HOT_CUTOVER_TIME = "weather_hot_cutover_time"  # Time of day to switch max-temperature checks to next day's forecast.
 
 
 class _Converters:
@@ -224,9 +232,10 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.LOCK_MODE: _ConfSpec(default=LockMode.UNLOCKED, converter=LockMode, runtime_configurable=True),
     ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds, runtime_configurable=True),
     ConfKeys.SIMULATION_MODE: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
+    ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD: _ConfSpec(default=24.0, converter=_Converters.to_float, runtime_configurable=True),
+    ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD: _ConfSpec(default=13.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=10.0, converter=_Converters.to_float, runtime_configurable=True),
-    ConfKeys.TEMP_THRESHOLD: _ConfSpec(default=24.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.TILT_MIN_CHANGE_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.TILT_MODE_DAY: _ConfSpec(default=TiltMode.AUTO, converter=TiltMode),
     ConfKeys.TILT_MODE_NIGHT: _ConfSpec(default=TiltMode.CLOSED, converter=TiltMode),
@@ -276,6 +285,8 @@ def get_runtime_configurable_keys() -> set[str]:
     keys.add(SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL)
     keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY)
     keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT)
+    keys.add(NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD)
+    keys.add(NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD)
     keys.add(TIME_KEY_MORNING_OPENING_EXTERNAL_TIME)
     return keys
 
@@ -351,9 +362,10 @@ class ResolvedConfig:
     lock_mode: LockMode
     manual_override_duration: int
     simulation_mode: bool
+    daily_max_temperature_threshold: float
+    daily_min_temperature_threshold: float
     sun_azimuth_tolerance: int
     sun_elevation_threshold: float
-    temp_threshold: float
     tilt_min_change_delta: int
     tilt_mode_day: TiltMode
     tilt_mode_night: TiltMode
@@ -384,6 +396,12 @@ def resolve(options: Mapping[str, Any] | None) -> ResolvedConfig:
         spec = CONF_SPECS[key]
         if key.value in options:
             raw = options[key.value]
+        elif key is ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD and LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD in options:
+            # Backward-compatibility for entries that have not been rewritten by
+            # _async_migrate_temperature_threshold_keys yet. Remove this fallback
+            # together with that migration once upgrades from pre-rename versions
+            # are no longer supported.
+            raw = options[LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD]
         else:
             raw = spec.default
         try:

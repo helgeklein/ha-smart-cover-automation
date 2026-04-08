@@ -28,16 +28,18 @@ The integration needs to determine:
 - Is the **weather hot** enough to require sun protection?
 - Is the **sun** currently **shining**?
 
-This is done with the help of a weather forecast sensor. Home Assistant provides various weather integrations that should work well. See this [official list of weather integrations](https://www.home-assistant.io/integrations/#weather) and this [community guide to weather integrations](https://community.home-assistant.io/t/definitive-guide-to-weather-integrations/736419/1) for help choosing one.
+This is done with the help of a weather forecast sensor by default (various alternatives exist, see [UI configuration entities]({{ '/ui-configuration-entities/' | relative_url }})).
 
-I've **tested** the following weather integrations successfully:
+Home Assistant provides various weather integrations that should work well. See this [official list of weather integrations](https://www.home-assistant.io/integrations/#weather) and this [community guide to weather integrations](https://community.home-assistant.io/t/definitive-guide-to-weather-integrations/736419/1) for help choosing one.
+
+The following weather integrations have been **tested** successfully:
 
 - [Met.no](https://www.home-assistant.io/integrations/met/)
 - [Open-Meteo](https://www.home-assistant.io/integrations/open_meteo/)
 
-To determine if the **weather is hot enough** to require sun protection, the integration needs today's maximum temperature. Unfortunately, some weather forecast services only provide the maximum temperature for the remaining hours of the day. To compensate, this integration switches to the next day's temperature reading starting at 16:00 (afternoon).
+To determine if the **weather is hot enough** to require sun protection, the integration uses both the daily minimum and maximum temperatures. If both are above their respective [thresholds]({{ '/ui-configuration-entities/#sun--temperature-settings' | relative_url }}), the weather is considered to be hot.
 
-The maximum temperature received from the weather forecast service is compared with the heat threshold (see below). If the forecast temperature is above the threshold, the integration considers the weather to be hot.
+Some weather forecast services only provide minimum/maximum temperatures for the remaining hours of the day. To compensate, this integration switches to the next day's temperature reading starting at 16:00 (afternoon) to determine the maximum, and 30 minutes before sunrise to determine the minimum.
 
 The integration considers the following current weather conditions as the **sun is shining** (as reported by the weather forecast service):
 
@@ -50,9 +52,9 @@ Select the covers the integration should automate.
 
 ## Step 2: Cover Azimuth
 
-In this step of the configuration wizard, specify each cover's azimuth, aka the direction, as an angle from north. This is necessary so that the integration can calculate when the sun is shining on a window.
+In this step of the configuration wizard, specify each cover's azimuth (the direction), as an angle from north. This is necessary so that the integration can calculate when the sun is shining on a window.
 
-There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). [This website](https://doc.forecast.solar/find_your_azimuth) has instructions for both.
+There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). You can find instructions for both on [this website](https://doc.forecast.solar/find_your_azimuth).
 
 ## Step 3: Per-Cover Max/Min Positions (Optional)
 
@@ -63,11 +65,9 @@ In this step of the configuration wizard, you can specify maximum and minimum po
 In this step of the configuration wizard, you can specify how the tilt angle of covers with adjustable slats is to be controlled. The following options are available:
 
 - **Auto:** Block direct sunlight but allow seeing through as much as possible.
-  - Notes:
-    - This mode takes cloudy conditions and the sun's position into account.
-    - Not available in night mode.
-  - Only direct sunlight is blocked.
+  - Only direct sunlight is blocked (cloudy conditions and the sun's position is taken into account).
   - If the sun is not shining on a window, the slats are kept in open mode to allow indirect light through.
+  - Not available in night mode.
 - **Manual:** Don't change the user's manual setting.
 - **Open:** Keep the slats fully open.
 - **Closed:** Keep the slats fully closed.

@@ -27,7 +27,7 @@ def mock_ha_interface():
     """Create a mock Home Assistant interface."""
     ha_interface = MagicMock()
     ha_interface.get_sun_data = MagicMock(return_value=(180.0, 45.0))
-    ha_interface.get_max_temperature = AsyncMock(return_value=25.0)
+    ha_interface.get_daily_temperature_extrema = AsyncMock(return_value=(25.0, 18.0))
     ha_interface.get_weather_condition = MagicMock(return_value="sunny")
     ha_interface.get_sun_state = MagicMock(return_value="above_horizon")
     return ha_interface
@@ -39,7 +39,8 @@ def basic_config():
     return {
         ConfKeys.COVERS.value: ["cover.test"],
         ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-        ConfKeys.TEMP_THRESHOLD.value: 20.0,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 20.0,
+        ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value: 15.0,
     }
 
 
@@ -70,7 +71,7 @@ class TestAutomationEngineInitialization:
         config = {
             ConfKeys.COVERS.value: ["cover.living_room", "cover.bedroom"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.home",
-            ConfKeys.TEMP_THRESHOLD.value: 25.0,
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 25.0,
         }
         resolved = resolve(config)
         engine = AutomationEngine(
@@ -80,7 +81,7 @@ class TestAutomationEngineInitialization:
             logger=mock_logger,
         )
 
-        assert engine.resolved.temp_threshold == 25.0
+        assert engine.resolved.daily_max_temperature_threshold == 25.0
         assert len(engine.resolved.covers) == 2
         assert "cover.living_room" in engine.resolved.covers
 
@@ -92,7 +93,7 @@ class TestGatherSensorData:
         """Test successful sensor data gathering."""
         # Configure mocks
         mock_ha_interface.get_sun_data.return_value = (180.0, 45.0)
-        mock_ha_interface.get_max_temperature.return_value = 28.0
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, 18.0)
         mock_ha_interface.get_weather_condition.return_value = "sunny"
 
         # Call method
@@ -104,22 +105,68 @@ class TestGatherSensorData:
         assert sensor_data.sun_azimuth == 180.0
         assert sensor_data.sun_elevation == 45.0
         assert sensor_data.temp_max == 28.0
+        assert sensor_data.temp_min == 18.0
         assert sensor_data.temp_hot is True  # 28.0 > 20.0 threshold
         assert sensor_data.weather_condition == "sunny"
         assert sensor_data.weather_sunny is True
         assert message == ""
 
+    async def test_gather_sensor_data_temp_hot_when_both_thresholds_equal(self, automation_engine, mock_ha_interface):
+        """Test sensor data when both daily extrema equal the configured thresholds."""
+
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (20.0, 15.0)
+
+        sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.temp_hot is True
+        assert message == ""
+
     async def test_gather_sensor_data_temp_not_hot(self, automation_engine, mock_ha_interface):
         """Test sensor data when temperature is below threshold."""
         # Configure mocks
-        mock_ha_interface.get_max_temperature.return_value = 15.0
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (15.0, 16.0)
 
         # Call method
         sensor_data, message = await automation_engine._gather_sensor_data()
 
         # Verify results
         assert sensor_data is not None
-        assert sensor_data.temp_hot is False  # 15.0 < 20.0 threshold
+        assert sensor_data.temp_hot is False  # 15.0 < daily max threshold
+
+    async def test_gather_sensor_data_daily_min_threshold_not_met(self, automation_engine, mock_ha_interface):
+        """Test sensor data when the daily minimum temperature is below threshold."""
+
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, 10.0)
+
+        sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.temp_hot is False
+        assert message == ""
+
+    async def test_gather_sensor_data_missing_daily_min_uses_daily_max_only(self, automation_engine, mock_ha_interface):
+        """Test that a missing forecast low falls back to the daily max threshold."""
+
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, None)
+
+        sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.temp_min is None
+        assert sensor_data.temp_hot is True
+        assert message == ""
+
+    async def test_gather_sensor_data_temp_not_hot_when_daily_min_below_equal_max(self, automation_engine, mock_ha_interface):
+        """Test sensor data when max equals threshold but daily minimum stays below it."""
+
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (20.0, 14.5)
+
+        sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.temp_hot is False
+        assert message == ""
 
     async def test_gather_sensor_data_weather_not_sunny(self, automation_engine, mock_ha_interface):
         """Test sensor data with non-sunny weather."""
@@ -135,7 +182,7 @@ class TestGatherSensorData:
 
     async def test_gather_sensor_data_weather_hot_external_control_overrides_forecast(self, automation_engine, mock_ha_interface):
         """Test that external hot control overrides the forecast-derived temperature state."""
-        mock_ha_interface.get_max_temperature.return_value = 15.0
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (15.0, 16.0)
         automation_engine.config[const.SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL] = True
 
         sensor_data, message = await automation_engine._gather_sensor_data()
@@ -174,7 +221,7 @@ class TestGatherSensorData:
         from custom_components.smart_cover_automation.ha_interface import WeatherEntityNotFoundError
 
         # Configure mock to raise error
-        mock_ha_interface.get_max_temperature.side_effect = WeatherEntityNotFoundError("Weather entity not found")
+        mock_ha_interface.get_daily_temperature_extrema.side_effect = WeatherEntityNotFoundError("Weather entity not found")
 
         # Call method
         sensor_data, message = await automation_engine._gather_sensor_data()
@@ -209,7 +256,7 @@ class TestGatherSensorData:
     async def test_gather_sensor_data_unexpected_weather_error(self, automation_engine, mock_ha_interface):
         """Test handling of unexpected errors when getting weather data."""
         # Configure mock to raise unexpected error
-        mock_ha_interface.get_max_temperature.side_effect = RuntimeError("Unexpected weather error")
+        mock_ha_interface.get_daily_temperature_extrema.side_effect = RuntimeError("Unexpected weather error")
 
         # Call method
         sensor_data, message = await automation_engine._gather_sensor_data()
@@ -624,7 +671,7 @@ class TestRunMethod:
         """Test that sensor data is stored in the result."""
         # Configure mocks
         mock_ha_interface.get_sun_data.return_value = (180.0, 45.0)
-        mock_ha_interface.get_max_temperature.return_value = 25.0
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (25.0, 18.0)
         mock_ha_interface.get_weather_condition.return_value = "sunny"
 
         # Call run

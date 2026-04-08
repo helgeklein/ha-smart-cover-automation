@@ -194,6 +194,9 @@
             },
             "temp_current_max": {
                 "name": "Temperature: today's maximum"
+            },
+            "temp_current_min": {
+                "name": "Temperature: today's minimum"
             }
         },
         "time": {
@@ -229,8 +232,11 @@
             "tilt_external_value_night": {
                 "name": "Tilt angle: external control (night)"
             },
-            "temp_threshold": {
-                "name": "Temperature: heat threshold"
+            "daily_max_temperature_threshold": {
+                "name": "Heat protection: min. daily high temperature"
+            },
+            "daily_min_temperature_threshold": {
+                "name": "Heat protection: min. daily low temperature"
             }
         },
         "switch": {

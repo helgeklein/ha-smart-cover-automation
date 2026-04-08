@@ -351,7 +351,7 @@ async def test_invalid_direction_string_skips_cover_in_sun_only(
 
     # Create combined sun/temperature automation with invalid direction
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
-    config[ConfKeys.TEMP_THRESHOLD.value] = 24.0  # Add temperature automation
+    config[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value] = 24.0  # Add temperature automation
     config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = invalid_direction  # Invalid value
     entry = MockConfigEntry(config)
 

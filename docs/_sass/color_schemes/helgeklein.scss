@@ -127,19 +127,115 @@ a:active,
 .aux-nav-list-item a:active {
     color: $hk-link !important;
 }
+
+// Keyboard focus styling
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible,
+.nav-list-link:focus-visible,
+.nav-list-expander:focus-visible,
+.site-button:focus-visible,
+.site-title:focus-visible,
+.search-input:focus-visible,
+.search-result:focus-visible {
+    outline: 2px solid $hk-h3;
+}
+
+.btn:focus,
+.btn:focus:hover,
+.btn.selected:focus {
+    box-shadow: 0 0 0 3px rgba($hk-h3, 0.35);
+}
+
+.btn-outline:focus,
+.btn-outline:focus:hover,
+.btn-outline.selected:focus {
+    box-shadow: inset 0 0 0 2px #5c5962, 0 0 0 3px rgba($hk-h3, 0.35);
+}
+
+div.highlighter-rouge>button:focus,
+div.listingblock>div.content>button:focus,
+figure.highlight>button:focus {
+    outline: 2px solid $hk-h3;
+}
+
+a.skip-to-main:focus,
+a.skip-to-main:active {
+    border-color: $hk-h3;
+}
+
 // Rouge syntax highlighting colors
 .highlight {
     background-color: $hk-code-bg;
-    .c { color: #999988; font-style: italic; } // Comment
-    .k { color: #000000; font-weight: bold; } // Keyword
-    .o { color: #000000; font-weight: bold; } // Operator
-    .kt { color: #445588; font-weight: bold; } // Keyword.Type
-    .m { color: #009999; } // Literal.Number
-    .s { color: #d01040; } // Literal.String
-    .na { color: #008080; } // Name.Attribute
-    .nb { color: #0086B3; } // Name.Builtin
-    .nc { color: #445588; font-weight: bold; } // Name.Class
-    .nf { color: #990000; font-weight: bold; } // Name.Function
-    .nt { color: #000080; } // Name.Tag
-    .nv { color: #008080; } // Name.Variable
+
+    .c {
+        color: #999988;
+        font-style: italic;
+    }
+
+    // Comment
+    .k {
+        color: #000000;
+        font-weight: bold;
+    }
+
+    // Keyword
+    .o {
+        color: #000000;
+        font-weight: bold;
+    }
+
+    // Operator
+    .kt {
+        color: #445588;
+        font-weight: bold;
+    }
+
+    // Keyword.Type
+    .m {
+        color: #009999;
+    }
+
+    // Literal.Number
+    .s {
+        color: #d01040;
+    }
+
+    // Literal.String
+    .na {
+        color: #008080;
+    }
+
+    // Name.Attribute
+    .nb {
+        color: #0086B3;
+    }
+
+    // Name.Builtin
+    .nc {
+        color: #445588;
+        font-weight: bold;
+    }
+
+    // Name.Class
+    .nf {
+        color: #990000;
+        font-weight: bold;
+    }
+
+    // Name.Function
+    .nt {
+        color: #000080;
+    }
+
+    // Name.Tag
+    .nv {
+        color: #008080;
+    }
+
+    // Name.Variable
 }

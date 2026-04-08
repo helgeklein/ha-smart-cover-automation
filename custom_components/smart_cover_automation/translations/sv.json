@@ -194,6 +194,9 @@
             },
             "temp_current_max": {
                 "name": "Temperatur: dagens högsta"
+            },
+            "temp_current_min": {
+                "name": "Temperatur: dagens lägsta"
             }
         },
         "time": {
@@ -229,8 +232,11 @@
             "tilt_external_value_night": {
                 "name": "Lamellvinkel: extern styrning (natt)"
             },
-            "temp_threshold": {
-                "name": "Temperatur: värmetröskel"
+            "daily_max_temperature_threshold": {
+                "name": "Värmeskydd: min. daglig högsta temperatur"
+            },
+            "daily_min_temperature_threshold": {
+                "name": "Värmeskydd: min. daglig lägsta temperatur"
             }
         },
         "switch": {

@@ -26,10 +26,11 @@ from .const import (
     NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_NIGHT,
     NUMBER_KEY_COVERS_MAX_CLOSURE,
     NUMBER_KEY_COVERS_MIN_CLOSURE,
+    NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
+    NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
     NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
     NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
-    NUMBER_KEY_TEMP_THRESHOLD,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
     TiltMode,
@@ -73,7 +74,8 @@ async def async_setup_entry(
         ManualOverrideDurationNumber(coordinator),
         SunAzimuthToleranceNumber(coordinator),
         SunElevationThresholdNumber(coordinator),
-        TempThresholdNumber(coordinator),
+        DailyMaxTemperatureThresholdNumber(coordinator),
+        DailyMinTemperatureThresholdNumber(coordinator),
     ]
 
     if resolved.tilt_mode_day == TiltMode.EXTERNAL:
@@ -356,31 +358,59 @@ class CoversMinClosureNumber(IntegrationNumber):
 
 
 #
-# TempThresholdNumber
+# DailyMaxTemperatureThresholdNumber
 #
-class TempThresholdNumber(IntegrationNumber):
-    """Number entity for controlling the temperature threshold for heat protection."""
+class DailyMaxTemperatureThresholdNumber(IntegrationNumber):
+    """Number entity for controlling the daily max temperature threshold for heat protection."""
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the temperature threshold number entity.
+        """Initialize the daily max temperature threshold number entity.
 
         Args:
             coordinator: The DataUpdateCoordinator that manages automation logic
                          and provides state management for this number entity
         """
         entity_description = NumberEntityDescription(
-            key=NUMBER_KEY_TEMP_THRESHOLD,
-            translation_key=NUMBER_KEY_TEMP_THRESHOLD,
+            key=NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
+            translation_key=NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
             entity_category=EntityCategory.CONFIG,
             device_class=NumberDeviceClass.TEMPERATURE,
-            icon="mdi:thermometer-lines",
+            icon="mdi:thermometer-high",
             native_min_value=-100,
             native_max_value=100,
             native_step=0.5,
             mode=NumberMode.BOX,
             native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         )
-        super().__init__(coordinator, entity_description, ConfKeys.TEMP_THRESHOLD.value)
+        super().__init__(coordinator, entity_description, ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value)
+
+
+#
+# DailyMinTemperatureThresholdNumber
+#
+class DailyMinTemperatureThresholdNumber(IntegrationNumber):
+    """Number entity for controlling the daily min temperature threshold for heat protection."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the daily min temperature threshold number entity.
+
+        Args:
+            coordinator: The DataUpdateCoordinator that manages automation logic
+                         and provides state management for this number entity
+        """
+        entity_description = NumberEntityDescription(
+            key=NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
+            translation_key=NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
+            entity_category=EntityCategory.CONFIG,
+            device_class=NumberDeviceClass.TEMPERATURE,
+            icon="mdi:thermometer-low",
+            native_min_value=-100,
+            native_max_value=100,
+            native_step=0.5,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        )
+        super().__init__(coordinator, entity_description, ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value)
 
 
 #
