@@ -416,7 +416,7 @@ class TestWeatherSunnyOverrideInEngine:
 
         ha_interface = MagicMock()
         ha_interface.get_sun_data = MagicMock(return_value=(180.0, 45.0))
-        ha_interface.get_max_temperature = AsyncMock(return_value=28.0)
+        ha_interface.get_daily_temperature_extrema = AsyncMock(return_value=(28.0, 18.0))
         ha_interface.get_weather_condition = MagicMock(return_value="cloudy")
         return ha_interface
 
@@ -427,7 +427,8 @@ class TestWeatherSunnyOverrideInEngine:
         return {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
-            ConfKeys.TEMP_THRESHOLD.value: 20.0,
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 20.0,
+            ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value: 15.0,
         }
 
     async def test_override_sunny_true_overrides_cloudy_forecast(self, mock_ha_interface, basic_config, mock_logger) -> None:
@@ -529,7 +530,7 @@ class TestWeatherHotOverrideInEngine:
 
         ha_interface = MagicMock()
         ha_interface.get_sun_data = MagicMock(return_value=(180.0, 45.0))
-        ha_interface.get_max_temperature = AsyncMock(return_value=18.0)
+        ha_interface.get_daily_temperature_extrema = AsyncMock(return_value=(18.0, 16.0))
         ha_interface.get_weather_condition = MagicMock(return_value="cloudy")
         return ha_interface
 
@@ -540,7 +541,8 @@ class TestWeatherHotOverrideInEngine:
         return {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
-            ConfKeys.TEMP_THRESHOLD.value: 20.0,
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 20.0,
+            ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value: 15.0,
         }
 
     async def test_override_hot_true_overrides_cool_forecast(self, mock_ha_interface, basic_config, mock_logger) -> None:
@@ -568,7 +570,7 @@ class TestWeatherHotOverrideInEngine:
 
         from custom_components.smart_cover_automation.automation_engine import AutomationEngine
 
-        mock_ha_interface.get_max_temperature.return_value = 28.0
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, 18.0)
         config_with_override = {**basic_config, SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL: False}
         resolved = resolve(basic_config)
 
@@ -601,4 +603,12 @@ class TestWeatherHotOverrideInEngine:
 
         await engine._gather_sensor_data()
 
-        mock_logger.debug.assert_any_call("Current weather temperature state: hot (source: external control)")
+        mock_logger.debug.assert_any_call(
+            "Current weather temperature state: %s (source: %s, daily_max=%s, daily_min=%s, max_threshold_met=%s, min_threshold_met=%s)",
+            "hot",
+            "external control",
+            18.0,
+            16.0,
+            False,
+            True,
+        )

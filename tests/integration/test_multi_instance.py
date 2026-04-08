@@ -124,7 +124,7 @@ def _create_entry(
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-        ConfKeys.TEMP_THRESHOLD.value: 24.0,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 24.0,
         f"{cover}_{COVER_SFX_AZIMUTH}": 180.0,
     }
     if extra_options:
@@ -204,9 +204,9 @@ async def _setup_two_instances(
     entry_b = _create_entry(hass, COVER_B, WEATHER_B, ENTRY_ID_B)
 
     with patch(
-        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",
+        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
         new_callable=AsyncMock,
-        return_value=30.0,
+        return_value=(30.0, 18.0),
     ):
         # Load the first entry via async_setup_component
         assert await async_setup_component(hass, DOMAIN, {})

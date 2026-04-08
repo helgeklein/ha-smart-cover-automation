@@ -22,8 +22,17 @@ from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverMovementReason,
     CoverState,
-    SensorData,
 )
+from custom_components.smart_cover_automation.cover_automation import (
+    SensorData as CoverSensorData,
+)
+
+
+def make_sensor_data(*, temp_min: float = 18.0, **kwargs):
+    """Create sensor data with a default daily minimum temperature for tests."""
+
+    return CoverSensorData(temp_min=temp_min, **kwargs)
+
 
 # ───────────────────────────────────────────────────────────────────────
 # Fixtures
@@ -108,7 +117,7 @@ def tilt_features():
 def sensor_data():
     """Create sample sensor data for a sunny day with sun hitting south."""
 
-    return SensorData(
+    return make_sensor_data(
         sun_azimuth=180.0,
         sun_elevation=45.0,
         temp_max=30.0,
@@ -733,7 +742,7 @@ class TestApplyTilt:
         auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
         auto._cover_supports_tilt = True
 
-        data = SensorData(
+        data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=20.0,
             temp_max=30.0,
@@ -971,7 +980,7 @@ class TestProcessWithTilt:
             ATTR_CURRENT_TILT_POSITION: 50,
             "supported_features": tilt_features,
         }
-        data = SensorData(
+        data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,
@@ -1014,7 +1023,7 @@ class TestProcessWithTilt:
             ATTR_CURRENT_TILT_POSITION: 100,
             "supported_features": tilt_features,
         }
-        data = SensorData(
+        data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=10.0,
             temp_max=20.0,

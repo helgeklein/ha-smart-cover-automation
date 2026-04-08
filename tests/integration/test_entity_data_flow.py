@@ -34,13 +34,15 @@ from custom_components.smart_cover_automation.const import (
     DATA_COORDINATORS,
     NUMBER_KEY_COVERS_MAX_CLOSURE,
     NUMBER_KEY_COVERS_MIN_CLOSURE,
+    NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
+    NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
     NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
-    NUMBER_KEY_TEMP_THRESHOLD,
     SELECT_KEY_LOCK_MODE,
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
+    SENSOR_KEY_TEMP_CURRENT_MIN,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
     LockMode,
 )
@@ -127,7 +129,7 @@ def _create_config_entry(
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-        ConfKeys.TEMP_THRESHOLD.value: 24.0,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 24.0,
         f"{TEST_COVER}_{COVER_SFX_AZIMUTH}": SUN_AZIMUTH,
     }
 
@@ -195,9 +197,9 @@ async def _setup_integration(
 
     # Patch the forecast retrieval
     with patch(
-        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",
+        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
         new_callable=AsyncMock,
-        return_value=temp_max,
+        return_value=(temp_max, 18.0),
     ):
         assert await async_setup_component(hass, DOMAIN, {})
         await hass.async_block_till_done()
@@ -305,7 +307,7 @@ class TestBinarySensorDataFlow:
         self,
         hass: HomeAssistant,
     ) -> None:
-        """temp_hot binary sensor is ON when forecast exceeds threshold.
+        """temp_hot binary sensor is ON when forecast meets or exceeds thresholds.
 
         Default threshold is 24 °C.  With ``HOT_TEMP = 30``, the sensor
         should report ON.
@@ -319,7 +321,29 @@ class TestBinarySensorDataFlow:
 
         state = hass.states.get(entity_id)
         assert state is not None
-        assert state.state == "on", f"temp_hot should be 'on' with {HOT_TEMP}°C > threshold, got '{state.state}'"
+        assert state.state == "on", f"temp_hot should be 'on' with {HOT_TEMP}°C >= threshold, got '{state.state}'"
+
+    async def test_temp_hot_sensor_turns_on_when_forecast_equals_thresholds(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """temp_hot binary sensor is ON when both forecast extrema equal the thresholds."""
+
+        entry = _create_config_entry(
+            hass,
+            {
+                ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: HOT_TEMP,
+                ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value: 18.0,
+            },
+        )
+        await _setup_integration(hass, entry, temp_max=HOT_TEMP)
+
+        entity_id = _entity_id_for_key(hass, entry, BINARY_SENSOR_KEY_TEMP_HOT)
+        assert entity_id is not None, "temp_hot binary sensor not registered"
+
+        state = hass.states.get(entity_id)
+        assert state is not None
+        assert state.state == "on", "temp_hot should be 'on' when forecast extrema equal both thresholds"
 
     # ------------------------------------------------------------------
     # 2.3  weather_sunny binary sensor
@@ -472,6 +496,26 @@ class TestSensorDataFlow:
         assert state is not None
         assert float(state.state) == HOT_TEMP
 
+    # ------------------------------------------------------------------
+    # 2.9  Current min temperature sensor
+    # ------------------------------------------------------------------
+
+    async def test_temp_current_min_sensor_value(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """temp_current_min sensor shows the forecast min temperature."""
+
+        entry = _create_config_entry(hass)
+        await _setup_integration(hass, entry, temp_max=HOT_TEMP)
+
+        entity_id = _entity_id_for_key(hass, entry, SENSOR_KEY_TEMP_CURRENT_MIN)
+        assert entity_id is not None, "temp_current_min sensor not registered"
+
+        state = hass.states.get(entity_id)
+        assert state is not None
+        assert float(state.state) == 18.0
+
 
 class TestNumberEntityDataFlow:
     """Verify number entities read from config and persist changes."""
@@ -492,8 +536,8 @@ class TestNumberEntityDataFlow:
         entry = _create_config_entry(hass)
         await _setup_integration(hass, entry)
 
-        entity_id = _entity_id_for_key(hass, entry, NUMBER_KEY_TEMP_THRESHOLD)
-        assert entity_id is not None, "temp_threshold number entity not registered"
+        entity_id = _entity_id_for_key(hass, entry, NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD)
+        assert entity_id is not None, "daily max temperature threshold number entity not registered"
 
         state = hass.states.get(entity_id)
         assert state is not None
@@ -513,14 +557,14 @@ class TestNumberEntityDataFlow:
     ) -> None:
         """Setting a number entity value persists to config entry options.
 
-        Calls ``number.set_value`` service on the temp_threshold entity and
+        Calls ``number.set_value`` service on the daily max temperature threshold entity and
         verifies the new value appears in ``entry.options``.
         """
 
         entry = _create_config_entry(hass)
         await _setup_integration(hass, entry)
 
-        entity_id = _entity_id_for_key(hass, entry, NUMBER_KEY_TEMP_THRESHOLD)
+        entity_id = _entity_id_for_key(hass, entry, NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD)
         assert entity_id is not None
 
         new_value = 28.0
@@ -533,7 +577,7 @@ class TestNumberEntityDataFlow:
         await hass.async_block_till_done()
 
         # Verify persisted in config options
-        assert entry.options.get(ConfKeys.TEMP_THRESHOLD.value) == new_value
+        assert entry.options.get(ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value) == new_value
 
     # ------------------------------------------------------------------
     # 2.11  Multiple number entities reflect their respective config keys
@@ -553,7 +597,8 @@ class TestNumberEntityDataFlow:
 
         # Map of entity key → expected default value
         expected_values = {
-            NUMBER_KEY_TEMP_THRESHOLD: 24.0,
+            NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD: 24.0,
+            NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD: 13.0,
             NUMBER_KEY_SUN_ELEVATION_THRESHOLD: 10.0,
             NUMBER_KEY_SUN_AZIMUTH_TOLERANCE: 90.0,
             NUMBER_KEY_COVERS_MAX_CLOSURE: 0.0,
@@ -796,9 +841,9 @@ class TestTimeEntityDataFlow:
         )
 
         with patch(
-            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
             new_callable=AsyncMock,
-            return_value=HOT_TEMP,
+            return_value=(HOT_TEMP, 18.0),
         ):
             await _setup_integration(hass, entry)
 
@@ -921,12 +966,14 @@ class TestEntityRegistration:
             SENSOR_KEY_SUN_AZIMUTH,
             SENSOR_KEY_SUN_ELEVATION,
             SENSOR_KEY_TEMP_CURRENT_MAX,
+            SENSOR_KEY_TEMP_CURRENT_MIN,
         ):
             assert key in registered_keys, f"Sensor '{key}' not registered"
 
         # Number entities
         for key in (
-            NUMBER_KEY_TEMP_THRESHOLD,
+            NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
+            NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
             NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
             NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
             NUMBER_KEY_COVERS_MAX_CLOSURE,

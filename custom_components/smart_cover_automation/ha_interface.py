@@ -6,7 +6,7 @@ encapsulating all direct interactions with the HA core system.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.cover import ATTR_POSITION, ATTR_TILT_POSITION, CoverEntityFeature
@@ -21,16 +21,20 @@ from homeassistant.const import (
     SERVICE_OPEN_COVER_TILT,
     SERVICE_SET_COVER_POSITION,
     SERVICE_SET_COVER_TILT_POSITION,
+    SUN_EVENT_SUNRISE,
     Platform,
     UnitOfTemperature,
 )
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as ha_entity_registry
 from homeassistant.helpers import translation
+from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.util import dt as dt_util
 
 from . import const
 from .log import Log
+
+MIN_TEMPERATURE_CUTOVER_OFFSET = timedelta(minutes=30)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -358,6 +362,67 @@ class HomeAssistantInterface:
         return entity.state
 
     #
+    # get_daily_temperature_extrema
+    #
+    async def get_daily_temperature_extrema(self, entity_id: str) -> tuple[float, float | None]:
+        """Get today's forecasted maximum and minimum temperatures.
+
+        Args:
+            entity_id: Entity ID of the weather entity
+
+        Returns:
+            Tuple of (daily_max_temperature, daily_min_temperature) in degrees Celsius.
+            The daily minimum temperature is None when the forecast low is unavailable.
+
+        Raises:
+            WeatherEntityNotFoundError: If the weather entity doesn't exist
+            InvalidSensorReadingError: If the forecast maximum temperature is unavailable
+        """
+
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            raise WeatherEntityNotFoundError(entity_id)
+
+        forecast_list = await self._get_forecast_list(entity_id)
+        if forecast_list is None:
+            raise InvalidSensorReadingError(entity_id, "Forecast temperature unavailable")
+
+        max_forecast_result = self._find_day_forecast(forecast_list, "max")
+        if max_forecast_result is None:
+            raise InvalidSensorReadingError(entity_id, "Forecast temperature unavailable")
+
+        applicable_day, max_day_forecast = max_forecast_result
+        max_temp = self._extract_max_temperature(max_day_forecast)
+        if max_temp is None:
+            self._logger.warning(
+                "Could not extract forecast maximum temperature from %s for %s. max=%s",
+                entity_id,
+                applicable_day,
+                max_temp,
+            )
+            raise InvalidSensorReadingError(entity_id, "Forecast temperature unavailable")
+
+        min_forecast_result = self._find_day_forecast(forecast_list, "min")
+        min_temp = None
+        if min_forecast_result is not None:
+            min_applicable_day, min_day_forecast = min_forecast_result
+            min_temp = self._extract_min_temperature(min_day_forecast)
+        else:
+            min_applicable_day = "unknown"
+
+        if min_temp is None:
+            self._logger.warning(
+                "Could not extract forecast minimum temperature from %s for %s. Continuing with daily max only.",
+                entity_id,
+                min_applicable_day,
+            )
+
+        return (
+            self._convert_forecast_temperature_to_celsius(state, max_temp),
+            self._convert_forecast_temperature_to_celsius(state, min_temp) if min_temp is not None else None,
+        )
+
+    #
     # get_max_temperature
     #
     async def get_max_temperature(self, entity_id: str) -> float:
@@ -380,35 +445,66 @@ class HomeAssistantInterface:
 
         forecast_temp = await self._get_forecast_max_temp(entity_id)
         if forecast_temp is not None:
-            # Convert Fahrenheit to Celsius if necessary
-            # The integration logic expects Celsius
-            unit = state.attributes.get(ATTR_WEATHER_TEMPERATURE_UNIT)
-            if unit == UnitOfTemperature.FAHRENHEIT:
-                celsius_temp = (forecast_temp - 32) * 5.0 / 9.0
-                self._logger.debug(f"Converted forecast temperature from {forecast_temp}° Fahrenheit to {celsius_temp}° Celsius")
-                return celsius_temp
-            return forecast_temp
+            return self._convert_forecast_temperature_to_celsius(state, forecast_temp)
 
         # If forecast is not available, raise an error
         raise InvalidSensorReadingError(entity_id, "Forecast temperature unavailable")
 
     #
-    # _get_forecast_max_temp
+    # get_min_temperature
     #
-    async def _get_forecast_max_temp(self, entity_id: str) -> float | None:
-        """Get the max temperature from today's weather forecast."""
+    async def get_min_temperature(self, entity_id: str) -> float:
+        """Get today's minimum temperature value from a weather forecast.
+
+        Args:
+            entity_id: Entity ID of the weather entity
+
+        Returns:
+            The forecasted minimum temperature in degrees Celsius
+
+        Raises:
+            WeatherEntityNotFoundError: If the weather entity doesn't exist
+            InvalidSensorReadingError: If the forecast is unavailable
+        """
+
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            raise WeatherEntityNotFoundError(entity_id)
+
+        forecast_temp = await self._get_forecast_min_temp(entity_id)
+        if forecast_temp is not None:
+            return self._convert_forecast_temperature_to_celsius(state, forecast_temp)
+
+        raise InvalidSensorReadingError(entity_id, "Forecast temperature unavailable")
+
+    #
+    # _convert_forecast_temperature_to_celsius
+    #
+    def _convert_forecast_temperature_to_celsius(self, state: Any, forecast_temp: float) -> float:
+        """Convert a forecast temperature to Celsius when required."""
+
+        unit = state.attributes.get(ATTR_WEATHER_TEMPERATURE_UNIT)
+        if unit == UnitOfTemperature.FAHRENHEIT:
+            celsius_temp = (forecast_temp - 32) * 5.0 / 9.0
+            self._logger.debug(f"Converted forecast temperature from {forecast_temp}° Fahrenheit to {celsius_temp}° Celsius")
+            return celsius_temp
+
+        return forecast_temp
+
+    #
+    # _get_day_forecast
+    #
+    async def _get_forecast_list(self, entity_id: str) -> list[Any] | None:
+        """Return the validated daily forecast list for a weather entity."""
 
         try:
-            # Use the modern weather forecast service
             service_data = {"entity_id": entity_id, "type": "daily"}
             response = await self.hass.services.async_call(
                 Platform.WEATHER, SERVICE_GET_FORECASTS, service_data, blocking=True, return_response=True
             )
 
-            # Debug logging to understand the response structure
             self._logger.debug(f"Weather forecast service response for {entity_id}: {response}")
 
-            # Extract today's forecast data with proper type checking
             if not (response and isinstance(response, dict) and entity_id in response):
                 self._logger.warning(f"Invalid or empty forecast response for {entity_id}: {response}")
                 return None
@@ -427,19 +523,7 @@ class HomeAssistantInterface:
                 )
                 return None
 
-            # Find today's forecast and extract the max temperature
-            forecast_result = self._find_day_forecast(forecast_list)
-            if forecast_result is None:
-                return None
-
-            applicable_day, day_forecast = forecast_result
-
-            max_temp = self._extract_max_temperature(day_forecast)
-            if max_temp is not None:
-                self._logger.debug(f"Forecast max temperature: {max_temp} °C for {applicable_day}")
-                return max_temp
-            else:
-                self._logger.warning(f"Could not extract max temperature from today's forecast for {entity_id}")
+            return forecast_list
 
         except HomeAssistantError as err:
             self._logger.warning(f"Failed to call weather forecast service for {entity_id}: {err}")
@@ -449,9 +533,61 @@ class HomeAssistantInterface:
         return None
 
     #
+    # _get_day_forecast
+    #
+    async def _get_day_forecast(self, entity_id: str, temperature_kind: str = "max") -> tuple[str, dict[str, Any]] | None:
+        """Return the applicable daily forecast entry for today or tomorrow."""
+
+        forecast_list = await self._get_forecast_list(entity_id)
+        if forecast_list is None:
+            return None
+
+        return self._find_day_forecast(forecast_list, temperature_kind)
+
+    #
+    # _get_forecast_max_temp
+    #
+    async def _get_forecast_max_temp(self, entity_id: str) -> float | None:
+        """Get the max temperature from today's weather forecast."""
+
+        forecast_result = await self._get_day_forecast(entity_id, "max")
+        if forecast_result is None:
+            return None
+
+        applicable_day, day_forecast = forecast_result
+        max_temp = self._extract_max_temperature(day_forecast)
+        if max_temp is not None:
+            self._logger.debug(f"Forecast max temperature: {max_temp} °C for {applicable_day}")
+            return max_temp
+
+        self._logger.warning(f"Could not extract max temperature from today's forecast for {entity_id}")
+
+        return None
+
+    #
+    # _get_forecast_min_temp
+    #
+    async def _get_forecast_min_temp(self, entity_id: str) -> float | None:
+        """Get the min temperature from today's weather forecast."""
+
+        forecast_result = await self._get_day_forecast(entity_id, "min")
+        if forecast_result is None:
+            return None
+
+        applicable_day, day_forecast = forecast_result
+        min_temp = self._extract_min_temperature(day_forecast)
+        if min_temp is not None:
+            self._logger.debug(f"Forecast min temperature: {min_temp} °C for {applicable_day}")
+            return min_temp
+
+        self._logger.warning(f"Could not extract min temperature from today's forecast for {entity_id}")
+
+        return None
+
+    #
     # _find_day_forecast
     #
-    def _find_day_forecast(self, forecast_list: list[Any]) -> tuple[str, dict[str, Any]] | None:
+    def _find_day_forecast(self, forecast_list: list[Any], temperature_kind: str = "max") -> tuple[str, dict[str, Any]] | None:
         """Find the applicable daily forecast from the forecast list.
 
         Args:
@@ -465,21 +601,8 @@ class HomeAssistantInterface:
             self._logger.warning("Forecast list is empty")
             return None
 
-        # Get the cutover time from configuration
-        resolved = self._resolved_settings_callback()
-        cutover_time = resolved.weather_hot_cutover_time
-
-        # Determine which day's forecast to use based on current time in local timezone
         now_local = dt_util.now()
-        current_time = now_local.time()
-
-        # If current time is after cutover time, use tomorrow's forecast
-        if current_time >= cutover_time:
-            applicable_day = (now_local + timedelta(days=1)).date()
-            applicable_day_friendly = "tomorrow"
-        else:
-            applicable_day = now_local.date()
-            applicable_day_friendly = "today"
+        applicable_day, applicable_day_friendly = self._get_applicable_forecast_day(now_local, temperature_kind)
 
         # Try to find forecast entry for applicable day by datetime
         for forecast in forecast_list:
@@ -513,6 +636,60 @@ class HomeAssistantInterface:
         return None
 
     #
+    # _get_applicable_forecast_day
+    #
+    def _get_applicable_forecast_day(self, now_local: datetime, temperature_kind: str) -> tuple[date, str]:
+        """Return the applicable forecast day for maximum or minimum temperatures."""
+
+        resolved = self._resolved_settings_callback()
+
+        if temperature_kind == "min":
+            min_cutover = self._get_min_temperature_cutover_datetime(now_local.date())
+            if min_cutover is not None:
+                if now_local >= min_cutover:
+                    return ((now_local + timedelta(days=1)).date(), "tomorrow")
+                return (now_local.date(), "today")
+
+            self._logger.debug(
+                "Could not determine sunrise-based min temperature cutover for %s; falling back to max temperature cutover time",
+                now_local.date().isoformat(),
+            )
+
+        if now_local.time() >= resolved.weather_hot_cutover_time:
+            return ((now_local + timedelta(days=1)).date(), "tomorrow")
+
+        return (now_local.date(), "today")
+
+    #
+    # _get_min_temperature_cutover_datetime
+    #
+    def _get_min_temperature_cutover_datetime(self, target_date: date) -> datetime | None:
+        """Return the min-temperature cutover datetime, 30 minutes before sunrise."""
+
+        try:
+            sunrise_time = get_astral_event_date(self.hass, SUN_EVENT_SUNRISE, target_date)
+        except (AttributeError, KeyError, TypeError, ValueError) as err:
+            self._logger.debug(
+                "Could not determine sunrise time for %s while resolving min temperature cutover: %s",
+                target_date.isoformat(),
+                err,
+            )
+            return None
+
+        if sunrise_time is None:
+            return None
+
+        if not isinstance(sunrise_time, datetime):
+            self._logger.debug(
+                "Could not determine sunrise time for %s while resolving min temperature cutover: unexpected type %s",
+                target_date.isoformat(),
+                type(sunrise_time).__name__,
+            )
+            return None
+
+        return dt_util.as_local(sunrise_time - MIN_TEMPERATURE_CUTOVER_OFFSET)
+
+    #
     # _extract_max_temperature
     #
     def _extract_max_temperature(self, forecast: dict[str, Any]) -> float | None:
@@ -525,9 +702,6 @@ class HomeAssistantInterface:
             Maximum temperature value or None if not found
         """
 
-        if not isinstance(forecast, dict):
-            return None
-
         # Temperature field names in order of preference
         temp_fields = [
             "native_temperature",  # Official HA field
@@ -538,6 +712,35 @@ class HomeAssistantInterface:
             "high",
             "max_temp",
         ]
+
+        return self._extract_temperature(forecast, temp_fields)
+
+    #
+    # _extract_min_temperature
+    #
+    def _extract_min_temperature(self, forecast: dict[str, Any]) -> float | None:
+        """Extract minimum temperature from forecast entry."""
+
+        temp_fields = [
+            "native_templow",
+            "templow",
+            "temp_low",
+            "temp_min",
+            "low",
+            "min_temp",
+            "minimum_temperature",
+        ]
+
+        return self._extract_temperature(forecast, temp_fields)
+
+    #
+    # _extract_temperature
+    #
+    def _extract_temperature(self, forecast: dict[str, Any], temp_fields: list[str]) -> float | None:
+        """Extract a temperature value from a forecast entry using a priority list."""
+
+        if not isinstance(forecast, dict):
+            return None
 
         for field_name in temp_fields:
             if field_name in forecast:

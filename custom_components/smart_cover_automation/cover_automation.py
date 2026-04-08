@@ -45,6 +45,7 @@ class SensorData:
     sun_azimuth: float
     sun_elevation: float
     temp_max: float
+    temp_min: float | None
     temp_hot: bool
     weather_condition: str
     weather_sunny: bool

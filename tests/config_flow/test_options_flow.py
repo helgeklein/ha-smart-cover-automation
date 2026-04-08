@@ -341,7 +341,7 @@ class TestOptionsFlowIntegration:
             ConfKeys.SIMULATION_MODE.value: True,
             ConfKeys.ENABLED.value: False,
             ConfKeys.VERBOSE_LOGGING.value: True,
-            ConfKeys.TEMP_THRESHOLD.value: 25.0,
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 25.0,
             ConfKeys.COVERS_MIN_POSITION_DELTA.value: 10,
         }
         mock_entry = _create_mock_entry(data=existing_data)
@@ -384,7 +384,7 @@ class TestOptionsFlowIntegration:
         assert data[ConfKeys.SIMULATION_MODE.value] is True
         assert data[ConfKeys.ENABLED.value] is False
         assert data[ConfKeys.VERBOSE_LOGGING.value] is True
-        assert data[ConfKeys.TEMP_THRESHOLD.value] == 25.0
+        assert data[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value] == 25.0
         assert data[ConfKeys.COVERS_MIN_POSITION_DELTA.value] == 10
 
     async def test_removes_orphaned_max_closure_settings(self, mock_hass_with_covers: MagicMock) -> None:
@@ -755,7 +755,7 @@ class TestOptionsFlowHelperMethods:
             ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
             ConfKeys.COVERS_MAX_CLOSURE.value: 0,  # Use default value from config.py
             ConfKeys.COVERS_MIN_CLOSURE.value: 100,  # Use default value from config.py
-            ConfKeys.TEMP_THRESHOLD.value: 23,
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 23,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
             ConfKeys.TILT_MODE_DAY.value: "auto",
             ConfKeys.TILT_MODE_NIGHT.value: "closed",
@@ -821,7 +821,7 @@ class TestOptionsFlowHelperMethods:
             ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90,
             ConfKeys.COVERS_MAX_CLOSURE.value: 0,  # Use default value from config.py
             ConfKeys.COVERS_MIN_CLOSURE.value: 100,  # Use default value from config.py
-            ConfKeys.TEMP_THRESHOLD.value: 23,
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 23,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
         }
         mock_entry = _create_mock_entry(data=existing_data)
@@ -853,17 +853,17 @@ class TestOptionsFlowHelperMethods:
             # Step 5: Continue with window sensors (now proceeds to step 6)
             await flow.async_step_5({})
 
-            # Step 6: Complete flow with changed temp_threshold and sun_elevation_threshold
+            # Step 6: Complete flow with changed daily max temperature threshold and sun_elevation_threshold
             result = await flow.async_step_6(
                 {
-                    ConfKeys.TEMP_THRESHOLD.value: 25,  # Changed from 23
+                    ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 25,  # Changed from 23
                     ConfKeys.SUN_ELEVATION_THRESHOLD.value: 10,  # Changed from 5
                 }
             )
 
             # Check that changed settings were logged
             assert "2 changed settings:" in caplog.text
-            assert "temp_threshold" in caplog.text
+            assert "daily_max_temperature_threshold" in caplog.text
             assert "sun_elevation_threshold" in caplog.text
 
         result_dict = _as_dict(result)

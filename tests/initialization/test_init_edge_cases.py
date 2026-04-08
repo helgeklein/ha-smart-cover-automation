@@ -25,6 +25,14 @@ from custom_components.smart_cover_automation import (
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
 
+@pytest.fixture(autouse=True)
+def patch_entity_registry_entries():
+    """Avoid exercising Home Assistant entity-registry internals in mocked setup tests."""
+
+    with patch("custom_components.smart_cover_automation.er.async_entries_for_config_entry", return_value=[]):
+        yield
+
+
 @pytest.mark.parametrize(
     "exception_type,mock_target,exception_message,test_description",
     [
@@ -33,6 +41,12 @@ from custom_components.smart_cover_automation.data import IntegrationConfigEntry
             "custom_components.smart_cover_automation.async_get_loaded_integration",
             "Unexpected setup error",
             "setup exception from async_get_loaded_integration",
+        ),
+        (
+            AttributeError,
+            "custom_components.smart_cover_automation.async_get_loaded_integration",
+            "Missing integration attribute",
+            "setup exception from async_get_loaded_integration attribute error",
         ),
         (
             ValueError,

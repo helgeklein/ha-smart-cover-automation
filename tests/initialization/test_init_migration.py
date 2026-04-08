@@ -21,6 +21,7 @@ import pytest
 from homeassistant.components.cover import CoverEntityFeature
 
 from custom_components.smart_cover_automation import (
+    _async_migrate_temperature_threshold_keys,
     _async_migrate_unique_ids,
     _async_remove_stale_registry_entities,
     _get_entry_options_dict,
@@ -766,10 +767,155 @@ class TestAsyncMigrateUniqueIds:
         ):
             await _async_migrate_unique_ids(mock_hass, entry)
 
+
+class TestAsyncMigrateTemperatureThresholdKeys:
+    """Test suite for the heat-protection threshold rename migration."""
+
+    @pytest.fixture
+    def mock_hass(self) -> MagicMock:
+        """Create a mock Home Assistant instance for migration tests."""
+
+        hass = MagicMock()
+        hass.data = {}
+        hass.config_entries = MagicMock()
+        return hass
+
+    @pytest.fixture
+    def mock_entry(self) -> MagicMock:
+        """Create a mock config entry for threshold migration tests."""
+
+        entry = MagicMock()
+        entry.entry_id = "abc123def456"
+        entry.domain = const.DOMAIN
+        entry.options = {
+            const.LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD: 24.0,
+            ConfKeys.COVERS.value: ["cover.test"],
+        }
+        return entry
+
+    @pytest.fixture
+    def mock_registry(self) -> MagicMock:
+        """Create a mock entity registry."""
+
+        registry = MagicMock()
+        registry.async_update_entity = MagicMock()
+        return registry
+
+    async def test_migrates_legacy_option_key_and_seeds_daily_min_threshold(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Legacy temp_threshold should migrate to daily max and seed the new daily min threshold."""
+
+        with (
+            patch("custom_components.smart_cover_automation.er.async_get", return_value=mock_registry),
+            patch("custom_components.smart_cover_automation.er.async_entries_for_config_entry", return_value=[]),
+        ):
+            await _async_migrate_temperature_threshold_keys(mock_hass, mock_entry)
+
+        mock_hass.config_entries.async_update_entry.assert_called_once()
+        updated_options = mock_hass.config_entries.async_update_entry.call_args.kwargs["options"]
+        assert const.LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD not in updated_options
+        assert updated_options[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value] == 24.0
+        assert updated_options[ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value] == 13.0
+
+    async def test_migrates_legacy_threshold_entity_unique_id(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Legacy threshold entity unique IDs should migrate to the renamed daily max threshold key."""
+
+        legacy_entity = MagicMock()
+        legacy_entity.entity_id = "number.sca_temp_threshold"
+        legacy_entity.unique_id = f"{mock_entry.entry_id}_{const.LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD}"
+
+        with (
+            patch("custom_components.smart_cover_automation.er.async_get", return_value=mock_registry),
+            patch("custom_components.smart_cover_automation.er.async_entries_for_config_entry", return_value=[legacy_entity]),
+        ):
+            await _async_migrate_temperature_threshold_keys(mock_hass, mock_entry)
+
         mock_registry.async_update_entity.assert_called_once_with(
-            legacy_entity.entity_id,
-            new_unique_id="abc_status",
+            "number.sca_temp_threshold",
+            new_unique_id=f"{mock_entry.entry_id}_{const.NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD}",
         )
+
+    async def test_warns_when_legacy_threshold_entity_unique_id_cannot_be_migrated(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Unique ID migration should warn and continue on entity registry collisions."""
+
+        legacy_entity = MagicMock()
+        legacy_entity.entity_id = "number.sca_temp_threshold"
+        legacy_entity.unique_id = f"{mock_entry.entry_id}_{const.LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD}"
+        mock_registry.async_update_entity.side_effect = ValueError("already exists")
+
+        with (
+            patch("custom_components.smart_cover_automation.Log") as mock_log_class,
+            patch("custom_components.smart_cover_automation.er.async_get", return_value=mock_registry),
+            patch("custom_components.smart_cover_automation.er.async_entries_for_config_entry", return_value=[legacy_entity]),
+        ):
+            mock_logger = MagicMock()
+            mock_log_class.return_value = mock_logger
+
+            await _async_migrate_temperature_threshold_keys(mock_hass, mock_entry)
+
+        mock_logger.warning.assert_called_once()
+
+    async def test_warns_when_unexpected_error_occurs_during_threshold_entity_migration(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Unexpected registry update errors during threshold migration should be logged and ignored."""
+
+        legacy_entity = MagicMock()
+        legacy_entity.entity_id = "number.sca_temp_threshold"
+        legacy_entity.unique_id = f"{mock_entry.entry_id}_{const.LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD}"
+        mock_registry.async_update_entity.side_effect = RuntimeError("boom")
+
+        with (
+            patch("custom_components.smart_cover_automation.Log") as mock_log_class,
+            patch("custom_components.smart_cover_automation.er.async_get", return_value=mock_registry),
+            patch("custom_components.smart_cover_automation.er.async_entries_for_config_entry", return_value=[legacy_entity]),
+        ):
+            mock_logger = MagicMock()
+            mock_log_class.return_value = mock_logger
+
+            await _async_migrate_temperature_threshold_keys(mock_hass, mock_entry)
+
+        mock_logger.warning.assert_any_call(
+            "Unexpected error migrating temperature threshold entity unique_id for %s: %s",
+            "number.sca_temp_threshold",
+            mock_registry.async_update_entity.side_effect,
+        )
+
+    async def test_skips_registry_migration_when_entity_registry_access_fails(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+    ) -> None:
+        """Registry access failures should not break option migration."""
+
+        with (
+            patch("custom_components.smart_cover_automation.Log") as mock_log_class,
+            patch("custom_components.smart_cover_automation.er.async_get", side_effect=AttributeError("registry unavailable")),
+        ):
+            mock_logger = MagicMock()
+            mock_log_class.return_value = mock_logger
+
+            await _async_migrate_temperature_threshold_keys(mock_hass, mock_entry)
+
+        mock_hass.config_entries.async_update_entry.assert_called_once()
+        mock_logger.debug.assert_called_once()
 
 
 class TestAsyncRemoveStaleRegistryEntities:
@@ -1106,3 +1252,18 @@ class TestInitHelperFunctions:
         assert const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT in result
         assert f"cover.one_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}" in result
         assert f"cover.two_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}" not in result
+
+    def test_get_valid_external_tilt_value_keys_includes_supported_per_cover_night_key(self) -> None:
+        """Tilt-capable covers with per-cover external night mode should keep the night key."""
+
+        hass = MagicMock()
+        entry = MagicMock()
+        entry.options = {
+            ConfKeys.COVERS.value: ["cover.one"],
+            f"cover.one_{const.COVER_SFX_TILT_MODE_NIGHT}": const.TiltMode.EXTERNAL,
+        }
+
+        with patch("custom_components.smart_cover_automation.cover_supports_tilt", return_value=True):
+            result = _get_valid_external_tilt_value_keys(hass, entry)
+
+        assert f"cover.one_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}" in result

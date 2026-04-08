@@ -253,7 +253,7 @@ def mock_config_entry() -> MagicMock:
     """
     data = {
         ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
-        ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: CONF_SPECS[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD].default,
     }
     return create_mock_config_entry(data, "test_entry_id")
 
@@ -637,7 +637,8 @@ def create_sun_config(
         ConfKeys.COVERS.value: covers or [MOCK_COVER_ENTITY_ID],
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: threshold,
         # Since both automations are now always configured, include temp defaults
-        ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: CONF_SPECS[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD].default,
+        ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value: CONF_SPECS[ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD].default,
         ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,  # Use weather entity
     }
     # Add directions for each cover
@@ -649,7 +650,8 @@ def create_sun_config(
 
 def create_temperature_config(
     covers: list[str] | None = None,
-    temp_threshold: float = CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
+    daily_max_temperature_threshold: float = CONF_SPECS[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD].default,
+    daily_min_temperature_threshold: float = CONF_SPECS[ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD].default,
 ) -> dict[str, Any]:
     """Create a configuration dictionary for temperature-based automation.
 
@@ -658,7 +660,8 @@ def create_temperature_config(
 
     Args:
         covers: List of cover entity IDs to automate (defaults to single test cover)
-        temp_threshold: Temperature threshold in Celsius (defaults to config spec)
+        daily_max_temperature_threshold: Daily max temperature threshold in Celsius (defaults to config spec)
+        daily_min_temperature_threshold: Daily min temperature threshold in Celsius (defaults to config spec)
 
     Returns:
         Complete configuration dictionary with temperature settings and default sun settings
@@ -667,7 +670,8 @@ def create_temperature_config(
     config = {
         ConfKeys.COVERS.value: cover_list,
         ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,  # Use weather entity for temperature
-        ConfKeys.TEMP_THRESHOLD.value: temp_threshold,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: daily_max_temperature_threshold,
+        ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value: daily_min_temperature_threshold,
         # Since both automations are now always configured, include sun defaults
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
     }
@@ -810,7 +814,7 @@ def create_combined_and_scenario(
     # Create config with both temperature and sun automation
     config = {
         ConfKeys.COVERS.value: [cover_id],
-        ConfKeys.TEMP_THRESHOLD.value: 23.0,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 23.0,
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
         ConfKeys.COVERS_MAX_CLOSURE.value: covers_max_closure,
         ConfKeys.COVERS_MIN_CLOSURE.value: covers_min_closure,
@@ -865,7 +869,9 @@ def create_mock_weather_service():
                         {
                             "datetime": forecast_datetime.isoformat(),
                             "native_temperature": _CURRENT_WEATHER_TEMP,
+                            "native_templow": 18.0,
                             "temp_max": _CURRENT_WEATHER_TEMP,
+                            "temp_min": 18.0,
                         }
                     ]
                 }
@@ -927,7 +933,9 @@ def create_weather_service_with_cover_error(cover_error_type: type[Exception], *
                         {
                             "datetime": forecast_datetime.isoformat(),
                             "native_temperature": _CURRENT_WEATHER_TEMP,
+                            "native_templow": 18.0,
                             "temp_max": _CURRENT_WEATHER_TEMP,
+                            "temp_min": 18.0,
                         }
                     ]
                 }
@@ -1030,7 +1038,8 @@ def mock_config_entry_extended() -> MagicMock:
     config_entry.options = {
         ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
         ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
-        ConfKeys.TEMP_THRESHOLD.value: CONF_SPECS[ConfKeys.TEMP_THRESHOLD].default,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: CONF_SPECS[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD].default,
+        ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value: CONF_SPECS[ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD].default,
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: CONF_SPECS[ConfKeys.SUN_ELEVATION_THRESHOLD].default,
         f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}": 180.0,
         f"{MOCK_COVER_ENTITY_ID_2}_{COVER_SFX_AZIMUTH}": 90.0,

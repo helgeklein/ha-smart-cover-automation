@@ -241,7 +241,7 @@ class TestConfigurationResolution:
         """
         # Setup test data with options
         options = {
-            ConfKeys.TEMP_THRESHOLD.value: "20.0",  # String that will be coerced to float
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: "20.0",  # String that will be coerced to float
             ConfKeys.ENABLED.value: 0,  # Integer that will be coerced to boolean
             ConfKeys.COVERS_MIN_POSITION_DELTA.value: "not-an-int",  # Invalid -> falls back to default
         }
@@ -249,7 +249,7 @@ class TestConfigurationResolution:
         rs: ResolvedConfig = resolve(options)
 
         # Coercion success: string to float
-        assert rs.temp_threshold == 20.0
+        assert rs.daily_max_temperature_threshold == 20.0
 
         # Coercion success: integer to boolean
         # 0 -> False (integer to boolean coercion)
@@ -281,7 +281,7 @@ class TestConfigurationResolution:
         entry = SimpleNamespace(
             options={
                 ConfKeys.ENABLED.value: False,
-                ConfKeys.TEMP_THRESHOLD.value: 22,
+                ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 22,
             },
             data={},  # Empty (only marks integration as installed)
         )
@@ -289,7 +289,7 @@ class TestConfigurationResolution:
         # resolve_entry() should extract and resolve configuration from the entry
         rs = resolve_entry(entry)
         assert rs.enabled is False  # From options
-        assert rs.temp_threshold == 22.0  # From options (coerced to float)
+        assert rs.daily_max_temperature_threshold == 22.0  # From options (coerced to float)
 
     def test_resolve_evening_closure_ignore_manual_override_duration(self):
         """Test resolving the evening closure manual override bypass option."""
@@ -457,12 +457,12 @@ class TestConfigurationAccessors:
         rs = resolve(
             {
                 ConfKeys.ENABLED.value: True,  # Boolean configuration
-                ConfKeys.TEMP_THRESHOLD.value: 30,  # Numeric configuration (will be coerced to float)
+                ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 30,  # Numeric configuration (will be coerced to float)
             }
         )
 
         # get() method reads configuration values by enum key
-        assert rs.get(ConfKeys.TEMP_THRESHOLD) == 30.0
+        assert rs.get(ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD) == 30.0
 
         # as_enum_dict() returns complete mapping by enum for all configuration options
         enum_dict = rs.as_enum_dict()

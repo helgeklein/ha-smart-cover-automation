@@ -36,6 +36,7 @@ class CoordinatorData:
         sun_azimuth: Current sun azimuth angle in degrees (0° to 360°)
         sun_elevation: Current sun elevation angle in degrees (-90° to +90°)
         temp_current_max: Current maximum temperature forecast in degrees Celsius
+        temp_current_min: Current minimum temperature forecast in degrees Celsius
         temp_hot: Whether the temperature is above threshold (hot day indicator)
         weather_sunny: Whether the weather condition is sunny or partly cloudy
     """
@@ -47,6 +48,7 @@ class CoordinatorData:
     sun_azimuth: float | None = None
     sun_elevation: float | None = None
     temp_current_max: float | None = None
+    temp_current_min: float | None = None
     temp_hot: bool | None = None
     weather_sunny: bool | None = None
 

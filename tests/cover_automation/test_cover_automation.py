@@ -35,9 +35,17 @@ from custom_components.smart_cover_automation.const import LockMode
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverMovementReason,
-    SensorData,
+)
+from custom_components.smart_cover_automation.cover_automation import (
+    SensorData as CoverSensorData,
 )
 from custom_components.smart_cover_automation.cover_position_history import PositionEntry, RecentAutomationAction
+
+
+def make_sensor_data(*, temp_min: float = 18.0, **kwargs):
+    """Create sensor data with a default daily minimum temperature for tests."""
+
+    return CoverSensorData(temp_min=temp_min, **kwargs)
 
 
 @pytest.fixture
@@ -104,7 +112,7 @@ def cover_automation(mock_resolved_config, basic_config, mock_cover_pos_history_
 @pytest.fixture
 def sensor_data():
     """Create sample sensor data."""
-    return SensorData(
+    return make_sensor_data(
         sun_azimuth=180.0,
         sun_elevation=45.0,
         temp_max=30.0,
@@ -692,7 +700,7 @@ class TestCalculateDesiredPosition:
         """Test desired position for heat protection (closing)."""
         mock_resolved_config.covers_max_closure = 0
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,
@@ -712,7 +720,7 @@ class TestCalculateDesiredPosition:
         """Test desired position for letting light in (opening)."""
         mock_resolved_config.covers_min_closure = 100
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -732,7 +740,7 @@ class TestCalculateDesiredPosition:
         mock_resolved_config.covers_max_closure = 30
         basic_config["cover.test_cover_max_closure"] = 20
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,
@@ -752,7 +760,7 @@ class TestCalculateDesiredPosition:
         mock_resolved_config.covers_min_closure = 80
         basic_config["cover.test_cover_min_closure"] = 90
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -777,7 +785,7 @@ class TestCalculateDesiredPosition:
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
         # Sensor data with both sunset flag and heat protection conditions
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,
@@ -802,7 +810,7 @@ class TestCalculateDesiredPosition:
         mock_resolved_config.evening_closure_cover_list = ("cover.other",)
 
         # Sensor data with sunset flag but cover not in list
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,
@@ -826,7 +834,7 @@ class TestCalculateDesiredPosition:
         mock_resolved_config.covers_max_closure = 0
         mock_resolved_config.evening_closure_cover_list = ()  # Empty list
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,
@@ -852,7 +860,7 @@ class TestCalculateDesiredPosition:
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
         # Conditions would normally open covers (not hot, not sunny)
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=90.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -877,7 +885,7 @@ class TestCalculateDesiredPosition:
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
         # Conditions for opening
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=90.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -901,7 +909,7 @@ class TestCalculateDesiredPosition:
         mock_resolved_config.covers_max_closure = 30
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,
@@ -926,7 +934,7 @@ class TestCalculateDesiredPosition:
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
         basic_config["cover.test_cover_max_closure"] = 20  # Per-cover override
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=25.0,
@@ -951,7 +959,7 @@ class TestCalculateDesiredPositionLockout:
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = STATE_ON  # Window is open
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,
@@ -975,7 +983,7 @@ class TestCalculateDesiredPositionLockout:
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = "off"  # Window is closed
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,
@@ -1000,7 +1008,7 @@ class TestCalculateDesiredPositionLockout:
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = STATE_ON  # Window is open
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -1025,7 +1033,7 @@ class TestCalculateDesiredPositionLockout:
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = "off"  # Window is closed
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -1049,7 +1057,7 @@ class TestCalculateDesiredPositionLockout:
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = STATE_ON  # Window is open
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=90.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -1080,7 +1088,7 @@ class TestCalculateDesiredPositionLockout:
 
         mock_ha_interface.get_entity_state.side_effect = get_state
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,
@@ -1105,7 +1113,7 @@ class TestIsOpeningBlockAfterEveningClosureActive:
     def test_block_tracks_post_evening_closure_true(self, cover_automation, mock_resolved_config):
         """Test block when post_evening_closure is True."""
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -1122,7 +1130,7 @@ class TestIsOpeningBlockAfterEveningClosureActive:
     def test_block_tracks_post_evening_closure_false(self, cover_automation, mock_resolved_config):
         """Test block when post_evening_closure is False."""
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -1143,7 +1151,7 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
         # Conditions would normally open covers
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -1166,7 +1174,7 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         mock_resolved_config.covers_min_closure = 100
         mock_resolved_config.evening_closure_cover_list = ("cover.other",)
 
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=20.0,
@@ -1188,7 +1196,7 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         mock_resolved_config.covers_max_closure = 0
 
         # Conditions for heat protection closing
-        sensor_data = SensorData(
+        sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
             temp_max=30.0,

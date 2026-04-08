@@ -9,6 +9,8 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from custom_components.smart_cover_automation import async_setup_entry, async_unload_entry
 from custom_components.smart_cover_automation.const import (
     DATA_COORDINATORS,
@@ -17,6 +19,14 @@ from custom_components.smart_cover_automation.const import (
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import MockConfigEntry, create_temperature_config
+
+
+@pytest.fixture(autouse=True)
+def patch_entity_registry_entries():
+    """Avoid exercising Home Assistant entity-registry internals in mocked setup tests."""
+
+    with patch("custom_components.smart_cover_automation.er.async_entries_for_config_entry", return_value=[]):
+        yield
 
 
 class TestUnloadServiceCleanup:

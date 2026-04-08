@@ -152,7 +152,7 @@ async def _create_and_load_entry(
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-        ConfKeys.TEMP_THRESHOLD.value: 24.0,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 24.0,
     }
     for cover in covers:
         options[f"{cover}_{COVER_SFX_AZIMUTH}"] = 180.0
@@ -179,9 +179,9 @@ async def _create_and_load_entry(
 
     # Patch forecast and load
     with patch(
-        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",
+        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
         new_callable=AsyncMock,
-        return_value=30.0,
+        return_value=(30.0, 18.0),
     ):
         assert await async_setup_component(hass, DOMAIN, {})
         await hass.async_block_till_done()
@@ -221,7 +221,7 @@ class TestSmartReload:
         """Changing a runtime-configurable key refreshes the coordinator
         without a full reload cycle.
 
-        ``temp_threshold`` is ``runtime_configurable=True``, so changing it
+        ``daily_max_temperature_threshold`` is ``runtime_configurable=True``, so changing it
         should update the coordinator's config and trigger a refresh while
         the entry remains ``LOADED`` throughout.
         """
@@ -233,12 +233,12 @@ class TestSmartReload:
         original_coordinator_id = id(coordinator)
 
         # Change a runtime-configurable key
-        new_options = {**entry.options, ConfKeys.TEMP_THRESHOLD.value: 30.0}
+        new_options = {**entry.options, ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 30.0}
 
         with patch(
-            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
             new_callable=AsyncMock,
-            return_value=30.0,
+            return_value=(30.0, 18.0),
         ):
             hass.config_entries.async_update_entry(entry, options=new_options)
             await hass.async_block_till_done()
@@ -251,7 +251,7 @@ class TestSmartReload:
         assert id(current_coordinator) == original_coordinator_id
 
         # Coordinator config should have the new threshold
-        assert current_coordinator._merged_config.get(ConfKeys.TEMP_THRESHOLD.value) == 30.0
+        assert current_coordinator._merged_config.get(ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value) == 30.0
 
     # ------------------------------------------------------------------
     # 4.2  Multiple runtime keys in one update → coordinator refresh
@@ -275,15 +275,15 @@ class TestSmartReload:
         # Change multiple runtime-configurable keys at once
         new_options = {
             **entry.options,
-            ConfKeys.TEMP_THRESHOLD.value: 28.0,
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 28.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 15.0,
             ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 60.0,
         }
 
         with patch(
-            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
             new_callable=AsyncMock,
-            return_value=30.0,
+            return_value=(30.0, 18.0),
         ):
             hass.config_entries.async_update_entry(entry, options=new_options)
             await hass.async_block_till_done()
@@ -295,7 +295,7 @@ class TestSmartReload:
 
         # All values updated
         cfg = current_coordinator._merged_config
-        assert cfg.get(ConfKeys.TEMP_THRESHOLD.value) == 28.0
+        assert cfg.get(ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value) == 28.0
         assert cfg.get(ConfKeys.SUN_ELEVATION_THRESHOLD.value) == 15.0
         assert cfg.get(ConfKeys.SUN_AZIMUTH_TOLERANCE.value) == 60.0
 
@@ -324,9 +324,9 @@ class TestSmartReload:
         new_options = {**entry.options, ConfKeys.LOCK_MODE.value: LockMode.FORCE_OPEN}
 
         with patch(
-            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
             new_callable=AsyncMock,
-            return_value=30.0,
+            return_value=(30.0, 18.0),
         ):
             hass.config_entries.async_update_entry(entry, options=new_options)
             await hass.async_block_till_done()

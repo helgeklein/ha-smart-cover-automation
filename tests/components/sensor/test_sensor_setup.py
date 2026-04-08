@@ -18,6 +18,7 @@ from custom_components.smart_cover_automation.sensor import (
     SunAzimuthSensor,
     SunElevationSensor,
     TempCurrentMaxSensor,
+    TempCurrentMinSensor,
     async_setup_entry,
 )
 
@@ -59,8 +60,8 @@ async def test_async_setup_entry_creates_all_sensors(mock_coordinator_basic: Dat
     # Get the list of entities that were passed to async_add_entities
     entities_list = mock_add_entities.call_args[0][0]
 
-    # Verify we have exactly 6 entities
-    assert len(entities_list) == 6
+    # Verify we have exactly 7 entities
+    assert len(entities_list) == 7
 
     # Verify each entity type is present
     entity_types = [type(entity) for entity in entities_list]
@@ -70,6 +71,7 @@ async def test_async_setup_entry_creates_all_sensors(mock_coordinator_basic: Dat
     assert SunAzimuthSensor in entity_types
     assert SunElevationSensor in entity_types
     assert TempCurrentMaxSensor in entity_types
+    assert TempCurrentMinSensor in entity_types
 
 
 async def test_async_setup_entry_entities_use_coordinator(mock_coordinator_basic: DataUpdateCoordinator) -> None:
@@ -117,7 +119,7 @@ async def test_async_setup_entry_with_real_hass_instance() -> None:
         "sun_azimuth": 180.0,
         "sun_elevation": 45.0,
         "temp_current_max": 25.0,
-        "temp_threshold": 22.0,
+        "daily_max_temperature_threshold": 22.0,
         "covers": {},
     }
 
@@ -139,8 +141,8 @@ async def test_async_setup_entry_with_real_hass_instance() -> None:
         async_add_entities=capture_entities,
     )
 
-    # Verify we captured 6 entities
-    assert len(added_entities) == 6
+    # Verify we captured 7 entities
+    assert len(added_entities) == 7
 
     # Verify entities are the correct types
     assert any(isinstance(e, AutomationDisabledTimeRangeSensor) for e in added_entities)
@@ -149,3 +151,4 @@ async def test_async_setup_entry_with_real_hass_instance() -> None:
     assert any(isinstance(e, SunAzimuthSensor) for e in added_entities)
     assert any(isinstance(e, SunElevationSensor) for e in added_entities)
     assert any(isinstance(e, TempCurrentMaxSensor) for e in added_entities)
+    assert any(isinstance(e, TempCurrentMinSensor) for e in added_entities)

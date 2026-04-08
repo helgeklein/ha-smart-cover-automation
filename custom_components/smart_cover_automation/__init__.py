@@ -19,7 +19,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import async_get_loaded_integration
 
 from . import const
-from .config import ConfKeys, is_runtime_configurable_key
+from .config import CONF_SPECS, ConfKeys, is_runtime_configurable_key
 from .config_flow import OptionsFlowHandler
 from .const import (
     COVER_SFX_TILT_EXTERNAL_VALUE_DAY,
@@ -28,7 +28,9 @@ from .const import (
     DOMAIN,
     HA_OPTIONS,
     INTEGRATION_NAME,
+    LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD,
     LOGGER,
+    NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
     SERVICE_FIELD_LOCK_MODE,
@@ -133,6 +135,73 @@ def _is_external_morning_opening_key(key: str) -> bool:
     """Return whether the key stores an external morning opening time."""
 
     return key == TIME_KEY_MORNING_OPENING_EXTERNAL_TIME
+
+
+#
+# _async_migrate_temperature_threshold_keys
+#
+async def _async_migrate_temperature_threshold_keys(hass: HomeAssistant, entry: IntegrationConfigEntry) -> None:
+    """Migrate renamed heat-protection threshold options and entity unique IDs.
+
+    Keep this migration while direct upgrades from versions that still stored the
+    legacy ``temp_threshold`` option or entity unique ID are supported. Once such
+    upgrades are no longer supported, this migration and the related legacy
+    fallback in config resolution can be removed together.
+    """
+
+    logger = Log(entry_id=entry.entry_id)
+    current_options = _get_entry_options_dict(entry)
+    updated_options = dict(current_options)
+    changed = False
+    default_daily_min_threshold = CONF_SPECS[ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD].default
+
+    if LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD in updated_options:
+        legacy_value = updated_options.pop(LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD)
+        if ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value not in updated_options:
+            updated_options[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value] = legacy_value
+        changed = True
+
+    if ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value not in updated_options:
+        updated_options[ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value] = default_daily_min_threshold
+        changed = True
+
+    if changed:
+        logger.info("Migrating temperature threshold options to daily max/min heat protection")
+        hass.config_entries.async_update_entry(entry, options=updated_options)
+
+    try:
+        registry = er.async_get(hass)
+        entries = er.async_entries_for_config_entry(registry, entry.entry_id)
+    except (AttributeError, KeyError, TypeError, ValueError) as err:
+        logger.debug("Skipping temperature threshold entity migration for entry %s: %s", entry.entry_id, err)
+        return
+
+    old_unique_ids = {
+        f"{entry.entry_id}_{LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD}",
+        f"{const.DOMAIN}_{LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD}",
+    }
+    new_unique_id = f"{entry.entry_id}_{NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD}"
+
+    for entity in entries:
+        if entity.unique_id not in old_unique_ids:
+            continue
+
+        logger.info(
+            "Migrating entity %s unique_id from %s to %s",
+            entity.entity_id,
+            entity.unique_id,
+            new_unique_id,
+        )
+        try:
+            registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
+        except ValueError as err:
+            logger.warning("Could not migrate temperature threshold entity unique_id for %s: %s", entity.entity_id, err)
+        except Exception as err:
+            logger.warning(
+                "Unexpected error migrating temperature threshold entity unique_id for %s: %s",
+                entity.entity_id,
+                err,
+            )
 
 
 #
@@ -473,13 +542,15 @@ async def async_setup_entry(
 
     logger.info("Starting integration setup")
 
-    # Migrate unique IDs if needed
-    await _async_migrate_unique_ids(hass, entry)
-
-    # Remove registry entries for entities that no longer exist in this integration.
-    await _async_remove_stale_registry_entities(hass, entry)
-
     try:
+        await _async_migrate_temperature_threshold_keys(hass, entry)
+
+        # Migrate unique IDs if needed
+        await _async_migrate_unique_ids(hass, entry)
+
+        # Remove registry entries for entities that no longer exist in this integration.
+        await _async_remove_stale_registry_entities(hass, entry)
+
         # Create the coordinator
         coordinator = DataUpdateCoordinator(hass, entry)
 

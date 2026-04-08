@@ -194,6 +194,9 @@
             },
             "temp_current_max": {
                 "name": "Temperatuur: maximum van vandaag"
+            },
+            "temp_current_min": {
+                "name": "Temperatuur: minimum van vandaag"
             }
         },
         "time": {
@@ -229,8 +232,11 @@
             "tilt_external_value_night": {
                 "name": "Kantelhoek: externe besturing (nacht)"
             },
-            "temp_threshold": {
-                "name": "Temperatuur: hittedrempel"
+            "daily_max_temperature_threshold": {
+                "name": "Hittebescherming: min. dagelijkse maximumtemperatuur"
+            },
+            "daily_min_temperature_threshold": {
+                "name": "Hittebescherming: min. dagelijkse minimumtemperatuur"
             }
         },
         "switch": {

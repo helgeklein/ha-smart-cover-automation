@@ -194,6 +194,9 @@
             },
             "temp_current_max": {
                 "name": "Temperatur: Tagesmaximum"
+            },
+            "temp_current_min": {
+                "name": "Temperatur: Tagesminimum"
             }
         },
         "time": {
@@ -229,8 +232,11 @@
             "tilt_external_value_night": {
                 "name": "Lamellenneigung: externe Steuerung (Nacht)"
             },
-            "temp_threshold": {
-                "name": "Temperatur: Hitzeschwelle"
+            "daily_max_temperature_threshold": {
+                "name": "Hitzeschutz: min. Tageshöchsttemperatur"
+            },
+            "daily_min_temperature_threshold": {
+                "name": "Hitzeschutz: min. Tagestiefsttemperatur"
             }
         },
         "switch": {

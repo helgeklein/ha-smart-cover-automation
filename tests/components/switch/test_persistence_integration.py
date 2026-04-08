@@ -98,7 +98,7 @@ async def test_switch_persistence_across_simulated_restart(mock_coordinator_basi
         ConfKeys.ENABLED.value: True,  # This came from the switch persistence
         ConfKeys.COVERS.value: ["cover.test_cover"],
         ConfKeys.WEATHER_ENTITY_ID.value: "weather.forecast",
-        ConfKeys.TEMP_THRESHOLD.value: 25.0,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 25.0,
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 35.0,
         ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: 1800,
@@ -187,7 +187,7 @@ async def test_simulation_mode_persistence_across_simulated_restart(mock_coordin
         ConfKeys.ENABLED.value: True,
         ConfKeys.COVERS.value: ["cover.test_cover"],
         ConfKeys.WEATHER_ENTITY_ID.value: "weather.forecast",
-        ConfKeys.TEMP_THRESHOLD.value: 25.0,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 25.0,
         ConfKeys.SUN_ELEVATION_THRESHOLD.value: 35.0,
         ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: 1800,

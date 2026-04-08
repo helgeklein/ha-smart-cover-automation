@@ -43,11 +43,14 @@ A Home Assistant integration to automate the control of your smart home's window
 - **Sunshine status from weather forecast or any other source:**
     - The integration needs to know if the sun is shining.
     - It'll automatically query your weather forecast entity for an approximate value.
-    - If you have your own hardware, you can use it instead for better accuracy.
+    - If you have a luxmeter or pyranometer, you can use it instead for better accuracy.
+    - Or [use your PV to determine if the sun is shining]({{ '/weather-sunny-external-pv/' | relative_url }}).
 - **Comfort:**
     - Micro-adjustments are avoided.
-- **Supported covers:** Works with any cover entity that supports open/close or position control.
-- **Rich language support:** UI translations available for Chinese, Dutch, English, French, German, Italian, Polish, Portuguese, Spanish, Swedish.
+- **Supported covers:**
+    - Works with any cover entity that supports open/close or position control.
+- **Rich language support:**
+    - UI translations available for Chinese, Dutch, English, French, German, Italian, Polish, Portuguese, Spanish, Swedish.
 
 ## Configuration Options
 

@@ -216,7 +216,7 @@ def _create_config_entry(
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,
         ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-        ConfKeys.TEMP_THRESHOLD.value: 24.0,
+        ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 24.0,
     }
 
     # Per-cover azimuths (south-facing by default)
@@ -257,8 +257,8 @@ async def _setup_integration(
 
     The ``weather.get_forecasts`` HA service requires a real weather
     platform entity (not just a state), so we patch
-    ``HomeAssistantInterface._get_forecast_max_temp`` to return the desired
-    temperature directly.  Everything else in the chain — coordinator,
+    ``HomeAssistantInterface.get_daily_temperature_extrema`` to return the desired
+    forecast temperatures directly. Everything else in the chain — coordinator,
     automation engine, cover automation, and cover service calls — runs
     through real HA code.
 
@@ -301,9 +301,9 @@ async def _setup_integration(
     # The rest of the chain (coordinator → engine → cover automation → HA service calls)
     # runs unpatched through real HA code.
     with patch(
-        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface._get_forecast_max_temp",
+        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
         new_callable=AsyncMock,
-        return_value=temp_max,
+        return_value=(temp_max, 18.0),
     ):
         assert await async_setup_component(hass, DOMAIN, {})
         await hass.async_block_till_done()
@@ -500,11 +500,13 @@ class TestRuntimeBehavior:
         assert data.sun_azimuth is not None, "sun_azimuth should be populated"
         assert data.sun_elevation is not None, "sun_elevation should be populated"
         assert data.temp_current_max is not None, "temp_current_max should be populated"
+        assert data.temp_current_min is not None, "temp_current_min should be populated"
         assert data.temp_hot is not None, "temp_hot should be populated"
         assert data.weather_sunny is not None, "weather_sunny should be populated"
 
         # Validate actual values match what we injected
         assert data.temp_current_max == pytest.approx(HOT_TEMP, abs=0.1)
+        assert data.temp_current_min == pytest.approx(COLD_TEMP, abs=0.1)
         assert data.temp_hot is True
         assert data.weather_sunny is True
 
@@ -718,9 +720,9 @@ class TestRuntimeBehavior:
 
             with patch.object(
                 HomeAssistantInterface,
-                "_get_forecast_max_temp",
+                "get_daily_temperature_extrema",
                 new_callable=AsyncMock,
-                return_value=COMFORTABLE_TEMP,
+                return_value=(COMFORTABLE_TEMP, 18.0),
             ):
                 await _trigger_coordinator_update(hass)
 
@@ -798,9 +800,9 @@ class TestRuntimeBehavior:
         # Now change the weather forecast to hot by patching the forecast method
         with patch.object(
             HomeAssistantInterface,
-            "_get_forecast_max_temp",
+            "get_daily_temperature_extrema",
             new_callable=AsyncMock,
-            return_value=HOT_TEMP,
+            return_value=(HOT_TEMP, 18.0),
         ):
             # Trigger a coordinator update cycle
             await _trigger_coordinator_update(hass)
@@ -862,9 +864,9 @@ class TestRuntimeBehavior:
 
         with patch.object(
             HomeAssistantInterface,
-            "_get_forecast_max_temp",
+            "get_daily_temperature_extrema",
             new_callable=AsyncMock,
-            return_value=COMFORTABLE_TEMP,
+            return_value=(COMFORTABLE_TEMP, 18.0),
         ):
             await _trigger_coordinator_update(hass)
 

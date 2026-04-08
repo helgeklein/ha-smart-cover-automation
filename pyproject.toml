@@ -8,6 +8,7 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--cov=custom_components.smart_cover_automation",
+    "--cov-branch",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",
@@ -21,6 +22,7 @@ asyncio_mode = "auto"
 
 [tool.coverage.run]
 source = ["custom_components.smart_cover_automation"]
+branch = true
 omit = [
     "tests/*",
     "*/tests/*",

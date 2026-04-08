@@ -1,8 +1,8 @@
 ---
 layout: default
-title: Troubleshooting
+title: Troubleshooting & Sensors
 nav_order: 6
-description: "Common issues and solutions for Smart Cover Automation for Home Assistant."
+description: "Monitoring, Troubleshooting, Sensors for Smart Cover Automation for Home Assistant."
 permalink: /troubleshooting/
 ---
 

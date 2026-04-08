@@ -128,7 +128,7 @@ class TestLockModeValidation:
             {
                 "lock_mode": LockMode.UNLOCKED,
                 "covers": ["cover.test"],
-                "temp_threshold": 25,
+                "daily_max_temperature_threshold": 25,
             },
         )
 
@@ -141,4 +141,4 @@ class TestLockModeValidation:
 
         assert new_options["lock_mode"] == new_mode
         assert new_options["covers"] == ["cover.test"]
-        assert new_options["temp_threshold"] == 25
+        assert new_options["daily_max_temperature_threshold"] == 25
