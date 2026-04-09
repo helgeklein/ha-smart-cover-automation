@@ -1,5 +1,8 @@
 {
     "python.defaultInterpreterPath": "/usr/local/bin/python3",
+    "python-envs.workspaceSearchPaths": [
+        "./examples/weather-sunny-external-pv/.venv"
+    ],
     "python.testing.pytestArgs": [
         "tests"
     ],
