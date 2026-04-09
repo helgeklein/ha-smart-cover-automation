@@ -8,13 +8,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from homeassistant.components.number import (
+from homeassistant.components.number import (  # pyright: ignore[reportMissingImports]
     NumberDeviceClass,
     NumberEntity,
     NumberEntityDescription,
     NumberMode,
 )
-from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
+from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime  # pyright: ignore[reportMissingImports]
 
 from .config import ConfKeys
 from .const import (
@@ -24,8 +24,6 @@ from .const import (
     COVER_SFX_TILT_MODE_NIGHT,
     NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_NIGHT,
-    NUMBER_KEY_COVERS_MAX_CLOSURE,
-    NUMBER_KEY_COVERS_MIN_CLOSURE,
     NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
@@ -39,8 +37,8 @@ from .entity import IntegrationEntity
 from .util import cover_supports_tilt, to_int_or_none
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
-    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+    from homeassistant.core import HomeAssistant  # pyright: ignore[reportMissingImports]
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback  # pyright: ignore[reportMissingImports]
 
     from .coordinator import DataUpdateCoordinator
     from .data import IntegrationConfigEntry
@@ -69,8 +67,6 @@ async def async_setup_entry(
 
     # Create all number entities
     entities = [
-        CoversMaxClosureNumber(coordinator),
-        CoversMinClosureNumber(coordinator),
         ManualOverrideDurationNumber(coordinator),
         SunAzimuthToleranceNumber(coordinator),
         SunElevationThresholdNumber(coordinator),
@@ -252,33 +248,6 @@ class ExternalTiltNumber(IntegrationNumber):
 
 
 #
-# CoversMaxClosureNumber
-#
-class CoversMaxClosureNumber(IntegrationNumber):
-    """Number entity for controlling the maximum closure position for covers."""
-
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the covers maximum closure number entity.
-
-        Args:
-            coordinator: The DataUpdateCoordinator that manages automation logic
-                        and provides state management for this number entity
-        """
-        entity_description = NumberEntityDescription(
-            key=NUMBER_KEY_COVERS_MAX_CLOSURE,
-            translation_key=NUMBER_KEY_COVERS_MAX_CLOSURE,
-            entity_category=EntityCategory.CONFIG,
-            icon="mdi:window-shutter",
-            native_min_value=0,
-            native_max_value=100,
-            native_step=1,
-            mode=NumberMode.BOX,
-            native_unit_of_measurement="%",
-        )
-        super().__init__(coordinator, entity_description, ConfKeys.COVERS_MAX_CLOSURE.value)
-
-
-#
 # ManualOverrideDurationNumber
 #
 class ManualOverrideDurationNumber(IntegrationNumber):
@@ -328,33 +297,6 @@ class ManualOverrideDurationNumber(IntegrationNumber):
         """
         seconds = int(value * 60)
         await self._async_persist_option(ConfKeys.MANUAL_OVERRIDE_DURATION.value, seconds)
-
-
-#
-# CoversMinClosureNumber
-#
-class CoversMinClosureNumber(IntegrationNumber):
-    """Number entity for controlling the minimum closure position for covers."""
-
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the covers minimum closure number entity.
-
-        Args:
-            coordinator: The DataUpdateCoordinator that manages automation logic
-                        and provides state management for this number entity
-        """
-        entity_description = NumberEntityDescription(
-            key=NUMBER_KEY_COVERS_MIN_CLOSURE,
-            translation_key=NUMBER_KEY_COVERS_MIN_CLOSURE,
-            entity_category=EntityCategory.CONFIG,
-            icon="mdi:window-shutter-open",
-            native_min_value=0,
-            native_max_value=100,
-            native_step=1,
-            mode=NumberMode.BOX,
-            native_unit_of_measurement="%",
-        )
-        super().__init__(coordinator, entity_description, ConfKeys.COVERS_MIN_CLOSURE.value)
 
 
 #

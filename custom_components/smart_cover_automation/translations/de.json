@@ -36,11 +36,13 @@
                 "description": "Konfigurieren Sie die **Min/Max**-Positionen der Rollläden (optional).\nGlobale Einstellungen gelten für alle Rollläden, sofern sie nicht pro Rollladen überschrieben werden.\n(0 = vollständig geschlossen, 100 = vollständig geöffnet)",
                 "data": {
                     "covers_max_closure": "Maximale Rollladenposition (global):",
-                    "covers_min_closure": "Minimale Rollladenposition (global):"
+                    "covers_min_closure": "Minimale Rollladenposition (global):",
+                    "close_covers_after_sunset_max_closure": "Rollladenposition für Abendschließung (global):"
                 },
                 "data_description": {
                     "covers_max_closure": "Die maximale geschlossene Position für alle Rollläden, sofern sie nicht pro Rollladen überschrieben wird.",
-                    "covers_min_closure": "Die minimale offene Position für alle Rollläden, sofern sie nicht pro Rollladen überschrieben wird."
+                    "covers_min_closure": "Die minimale offene Position für alle Rollläden, sofern sie nicht pro Rollladen überschrieben wird.",
+                    "close_covers_after_sunset_max_closure": "Die Rollladenposition für die Abendschließung, sofern sie nicht pro Rollladen überschrieben wird."
                 },
                 "sections": {
                     "section_max_closure": {
@@ -48,6 +50,9 @@
                     },
                     "section_min_closure": {
                         "name": "Minimale Rollladenpositionen (pro Rollladen)"
+                    },
+                    "section_evening_max_closure": {
+                        "name": "Rollladenpositionen für Abendschließung (pro Rollladen)"
                     }
                 }
             },
@@ -205,12 +210,6 @@
             }
         },
         "number": {
-            "covers_max_closure": {
-                "name": "Maximale Rollladenposition:"
-            },
-            "covers_min_closure": {
-                "name": "Minimale Rollladenposition:"
-            },
             "cover_tilt_external_value_day": {
                 "name": "{cover_name}: Lamellenneigung: externe Steuerung (Tag)"
             },
@@ -218,13 +217,13 @@
                 "name": "{cover_name}: Lamellenneigung: externe Steuerung (Nacht)"
             },
             "manual_override_duration": {
-                "name": "Dauer der manuellen Übersteuerung:"
+                "name": "Dauer der manuellen Übersteuerung"
             },
             "sun_azimuth_tolerance": {
-                "name": "Sonnen-Azimut-Toleranz:"
+                "name": "Sonnen-Azimut-Toleranz"
             },
             "sun_elevation_threshold": {
-                "name": "Minimale Sonnenhöhe:"
+                "name": "Minimale Sonnenhöhe"
             },
             "tilt_external_value_day": {
                 "name": "Lamellenneigung: externe Steuerung (Tag)"

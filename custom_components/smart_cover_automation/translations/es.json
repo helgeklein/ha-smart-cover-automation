@@ -36,11 +36,13 @@
                 "description": "Configure las posiciones **mín/máx** de las persianas (opcional).\nLa configuración global se aplica a todas las persianas salvo que se sobrescriba por persiana.\n(0 = totalmente cerrada, 100 = totalmente abierta)",
                 "data": {
                     "covers_max_closure": "Posición máxima de la persiana (global):",
-                    "covers_min_closure": "Posición mínima de la persiana (global):"
+                    "covers_min_closure": "Posición mínima de la persiana (global):",
+                    "close_covers_after_sunset_max_closure": "Posición de la persiana para cierre vespertino (global):"
                 },
                 "data_description": {
                     "covers_max_closure": "La posición máxima de cierre para todas las persianas salvo que se sobrescriba por persiana.",
-                    "covers_min_closure": "La posición mínima de apertura para todas las persianas salvo que se sobrescriba por persiana."
+                    "covers_min_closure": "La posición mínima de apertura para todas las persianas salvo que se sobrescriba por persiana.",
+                    "close_covers_after_sunset_max_closure": "La posición de la persiana usada para el cierre vespertino salvo que se sobrescriba por persiana."
                 },
                 "sections": {
                     "section_max_closure": {
@@ -48,6 +50,9 @@
                     },
                     "section_min_closure": {
                         "name": "Posiciones mínimas de la persiana (por persiana)"
+                    },
+                    "section_evening_max_closure": {
+                        "name": "Posiciones de la persiana para cierre vespertino (por persiana)"
                     }
                 }
             },
@@ -205,12 +210,6 @@
             }
         },
         "number": {
-            "covers_max_closure": {
-                "name": "Posición máxima de la persiana:"
-            },
-            "covers_min_closure": {
-                "name": "Posición mínima de la persiana:"
-            },
             "cover_tilt_external_value_day": {
                 "name": "{cover_name}: Ángulo de inclinación: control externo (día)"
             },
@@ -218,13 +217,13 @@
                 "name": "{cover_name}: Ángulo de inclinación: control externo (noche)"
             },
             "manual_override_duration": {
-                "name": "Duración de anulación manual:"
+                "name": "Duración de anulación manual"
             },
             "sun_azimuth_tolerance": {
-                "name": "Tolerancia de azimut solar:"
+                "name": "Tolerancia de azimut solar"
             },
             "sun_elevation_threshold": {
-                "name": "Elevación mínima del sol:"
+                "name": "Elevación mínima del sol"
             },
             "tilt_external_value_day": {
                 "name": "Ángulo de inclinación: control externo (día)"

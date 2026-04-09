@@ -46,6 +46,7 @@ def mock_resolved_config():
     resolved = MagicMock()
     resolved.covers_max_closure = 0
     resolved.covers_min_closure = 100
+    resolved.evening_closure_max_closure = 0
     resolved.sun_elevation_threshold = 10.0
     resolved.sun_azimuth_tolerance = 90.0
     resolved.manual_override_duration = 3600
@@ -490,6 +491,76 @@ class TestApplyTilt:
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", per_cover_value, tilt_features)
         assert cover_state.tilt_target == per_cover_value
+
+    #
+    # test_external_mode_ignores_per_cover_value_without_per_cover_mode_override
+    #
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        (
+            "global_mode_attr",
+            "global_value_key",
+            "per_cover_value_key",
+            "global_value",
+            "per_cover_value",
+            "movement_reason",
+            "sun_hitting",
+        ),
+        [
+            (
+                "tilt_mode_day",
+                "tilt_external_value_day",
+                "cover.test_cover_tilt_external_value_day",
+                42,
+                17,
+                CoverMovementReason.OPENING_LET_LIGHT_IN,
+                True,
+            ),
+            (
+                "tilt_mode_night",
+                "tilt_external_value_night",
+                "cover.test_cover_tilt_external_value_night",
+                23,
+                19,
+                CoverMovementReason.CLOSING_AFTER_SUNSET,
+                False,
+            ),
+        ],
+    )
+    async def test_external_mode_ignores_per_cover_value_without_per_cover_mode_override(
+        self,
+        mock_resolved_config,
+        basic_config,
+        mock_cover_pos_history_mgr,
+        mock_ha_interface,
+        mock_logger,
+        tilt_features,
+        sensor_data,
+        global_mode_attr,
+        global_value_key,
+        per_cover_value_key,
+        global_value,
+        per_cover_value,
+        movement_reason,
+        sun_hitting,
+    ) -> None:
+        """Per-cover external values should be ignored unless the per-cover mode is also EXTERNAL."""
+
+        setattr(mock_resolved_config, global_mode_attr, TiltMode.EXTERNAL)
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=global_value)
+        config = {
+            **basic_config,
+            global_value_key: global_value,
+            per_cover_value_key: per_cover_value,
+        }
+        auto = _make_automation(mock_resolved_config, config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=sun_hitting, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, movement_reason, False)
+
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", global_value, tilt_features)
+        assert cover_state.tilt_target == global_value
 
     #
     # test_external_mode_skips_non_numeric_value
@@ -956,6 +1027,37 @@ class TestProcessWithTilt:
         cover_state = await auto.process(mock_state, sensor_data)
 
         assert cover_state.tilt_current == 50  # From mock_state fixture
+
+    #
+    # test_process_reuses_cached_tilt_support
+    #
+    @pytest.mark.asyncio
+    async def test_process_reuses_cached_tilt_support(
+        self,
+        mock_resolved_config,
+        basic_config,
+        mock_cover_pos_history_mgr,
+        mock_ha_interface,
+        mock_logger,
+        sensor_data,
+    ) -> None:
+        """Process should honor the cached tilt-support flag on later cycles."""
+
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        state = MagicMock()
+        state.state = STATE_OPEN
+        state.attributes = {
+            ATTR_CURRENT_POSITION: 80,
+            ATTR_CURRENT_TILT_POSITION: 33,
+            "supported_features": CoverEntityFeature.SET_POSITION,
+        }
+
+        cover_state = await auto.process(state, sensor_data)
+
+        assert cover_state.supported_features == CoverEntityFeature.SET_POSITION
+        assert cover_state.tilt_current == 33
 
     #
     # test_process_applies_tilt_after_position_move

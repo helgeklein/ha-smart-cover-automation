@@ -595,7 +595,7 @@ class CoverAutomation:
                 movement_reason = None  # No movement when lockout active
             else:
                 # No lockout - close the cover
-                max_closure_limit = self._get_cover_closure_limit(get_max=True)
+                max_closure_limit = self._get_cover_closure_limit(get_max=True, evening_closure=True)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
                 desired_pos_friendly_name = "evening closure state (closed)"
                 movement_reason = CoverMovementReason.CLOSING_AFTER_SUNSET
@@ -667,19 +667,23 @@ class CoverAutomation:
     #
     # _get_cover_closure_limit
     #
-    def _get_cover_closure_limit(self, get_max: bool) -> int:
+    def _get_cover_closure_limit(self, get_max: bool, evening_closure: bool = False) -> int:
         """Get the closure limit for this cover.
 
         Checks for per-cover override first, then falls back to global config.
 
         Args:
             get_max: If True, get max closure limit (for closing), otherwise min (for opening)
+            evening_closure: If True, use the evening-closure-specific max setting path.
 
         Returns:
             Closure limit position (0-100)
         """
 
-        if get_max:
+        if get_max and evening_closure:
+            per_cover_key = f"{self.entity_id}_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}"
+            global_default = self.resolved.evening_closure_max_closure
+        elif get_max:
             per_cover_key = f"{self.entity_id}_{const.COVER_SFX_MAX_CLOSURE}"
             global_default = self.resolved.covers_max_closure
         else:

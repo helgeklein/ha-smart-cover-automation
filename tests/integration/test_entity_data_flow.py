@@ -32,8 +32,6 @@ from custom_components.smart_cover_automation.const import (
     COVER_POS_FULLY_OPEN,
     COVER_SFX_AZIMUTH,
     DATA_COORDINATORS,
-    NUMBER_KEY_COVERS_MAX_CLOSURE,
-    NUMBER_KEY_COVERS_MIN_CLOSURE,
     NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
@@ -601,8 +599,6 @@ class TestNumberEntityDataFlow:
             NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD: 13.0,
             NUMBER_KEY_SUN_ELEVATION_THRESHOLD: 10.0,
             NUMBER_KEY_SUN_AZIMUTH_TOLERANCE: 90.0,
-            NUMBER_KEY_COVERS_MAX_CLOSURE: 0.0,
-            NUMBER_KEY_COVERS_MIN_CLOSURE: 100.0,
         }
 
         for key, expected in expected_values.items():
@@ -976,8 +972,6 @@ class TestEntityRegistration:
             NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
             NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
             NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
-            NUMBER_KEY_COVERS_MAX_CLOSURE,
-            NUMBER_KEY_COVERS_MIN_CLOSURE,
         ):
             assert key in registered_keys, f"Number entity '{key}' not registered"
 

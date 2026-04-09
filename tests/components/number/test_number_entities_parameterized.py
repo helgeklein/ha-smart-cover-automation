@@ -18,8 +18,6 @@ from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
-    NUMBER_KEY_COVERS_MAX_CLOSURE,
-    NUMBER_KEY_COVERS_MIN_CLOSURE,
     NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
@@ -29,8 +27,6 @@ from custom_components.smart_cover_automation.const import (
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.number import (
-    CoversMaxClosureNumber,
-    CoversMinClosureNumber,
     DailyMaxTemperatureThresholdNumber,
     DailyMinTemperatureThresholdNumber,
     ManualOverrideDurationNumber,
@@ -45,48 +41,6 @@ if TYPE_CHECKING:
 
 # Entity configuration for parameterized tests
 ENTITY_CONFIGS = [
-    {
-        "id": "covers_max_closure",
-        "class": CoversMaxClosureNumber,
-        "key": NUMBER_KEY_COVERS_MAX_CLOSURE,
-        "config_key": ConfKeys.COVERS_MAX_CLOSURE.value,
-        "translation_key": NUMBER_KEY_COVERS_MAX_CLOSURE,
-        "icon": "mdi:window-shutter",
-        "entity_category": EntityCategory.CONFIG,
-        "device_class": None,
-        "min_value": 0,
-        "max_value": 100,
-        "step": 1,
-        "mode": NumberMode.BOX,
-        "unit": "%",
-        "default_value": 0.0,
-        "test_values": [0, 10, 25, 50, 75, 100],
-        "boundary_min": 0,
-        "boundary_max": 100,
-        "entity_index": 0,  # Position in async_setup_entry list
-        "has_conversion": False,  # No unit conversion needed
-    },
-    {
-        "id": "covers_min_closure",
-        "class": CoversMinClosureNumber,
-        "key": NUMBER_KEY_COVERS_MIN_CLOSURE,
-        "config_key": ConfKeys.COVERS_MIN_CLOSURE.value,
-        "translation_key": NUMBER_KEY_COVERS_MIN_CLOSURE,
-        "icon": "mdi:window-shutter-open",
-        "entity_category": EntityCategory.CONFIG,
-        "device_class": None,
-        "min_value": 0,
-        "max_value": 100,
-        "step": 1,
-        "mode": NumberMode.BOX,
-        "unit": "%",
-        "default_value": 100.0,
-        "test_values": [0, 10, 25, 50, 75, 100],
-        "boundary_min": 0,
-        "boundary_max": 100,
-        "entity_index": 1,
-        "has_conversion": False,
-    },
     {
         "id": "manual_override_duration",
         "class": ManualOverrideDurationNumber,
@@ -106,7 +60,7 @@ ENTITY_CONFIGS = [
         "boundary_min": 0,
         "boundary_max": 86400,  # 24 hours in seconds
         "boundary_max_displayed": 1440.0,  # 24 hours in minutes
-        "entity_index": 2,
+        "entity_index": 0,
         "has_conversion": True,  # Converts seconds to/from minutes
         "conversion_factor": 60,
     },
@@ -128,7 +82,7 @@ ENTITY_CONFIGS = [
         "test_values": [0, 20, 45, 90, 135, 180],
         "boundary_min": 0,
         "boundary_max": 180,
-        "entity_index": 3,
+        "entity_index": 1,
         "has_conversion": False,
     },
     {
@@ -149,7 +103,7 @@ ENTITY_CONFIGS = [
         "test_values": [0, 10, 30, 45, 60, 90],
         "boundary_min": 0,
         "boundary_max": 90,
-        "entity_index": 4,
+        "entity_index": 2,
         "has_conversion": False,
     },
     {
@@ -170,7 +124,7 @@ ENTITY_CONFIGS = [
         "test_values": [-100.0, -10.0, 0.0, 24.0, 50.0, 100.0],
         "boundary_min": -100.0,
         "boundary_max": 100.0,
-        "entity_index": 5,
+        "entity_index": 3,
         "has_conversion": False,
     },
     {
@@ -191,7 +145,7 @@ ENTITY_CONFIGS = [
         "test_values": [-100.0, -10.0, 0.0, 13.0, 50.0, 100.0],
         "boundary_min": -100.0,
         "boundary_max": 100.0,
-        "entity_index": 6,
+        "entity_index": 4,
         "has_conversion": False,
     },
 ]

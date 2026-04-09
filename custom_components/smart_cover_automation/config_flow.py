@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-import voluptuous as vol
-from homeassistant import config_entries
-from homeassistant.components.weather.const import WeatherEntityFeature
-from homeassistant.const import STATE_UNAVAILABLE, Platform
-from homeassistant.data_entry_flow import section
-from homeassistant.helpers import selector
+import voluptuous as vol  # pyright: ignore[reportMissingImports]
+from homeassistant import config_entries  # pyright: ignore[reportMissingImports]
+from homeassistant.components.weather.const import WeatherEntityFeature  # pyright: ignore[reportMissingImports]
+from homeassistant.const import STATE_UNAVAILABLE, Platform  # pyright: ignore[reportMissingImports]
+from homeassistant.data_entry_flow import section  # pyright: ignore[reportMissingImports]
+from homeassistant.helpers import selector  # pyright: ignore[reportMissingImports]
 
 from . import const
-from .config import ConfKeys, ResolvedConfig, resolve
+from .config import CONF_SPECS, ConfKeys, ResolvedConfig, resolve
 from .log import Log
 from .util import to_float_or_none, to_int_or_none
 
@@ -195,6 +195,22 @@ class FlowHelper:
             )
         )
 
+        # Global cover position setting for evening closure only.
+        schema_dict[
+            vol.Required(
+                ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value,
+                default=resolved_settings.evening_closure_max_closure,
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=100,
+                step=1,
+                unit_of_measurement="%",
+                mode=selector.NumberSelectorMode.BOX,
+            )
+        )
+
         # Build schema dict for min closure positions and group inside collapsible section
         min_schema_dict = FlowHelper._build_schema_cover_positions(covers, const.COVER_SFX_MIN_CLOSURE, defaults)
         if min_schema_dict:
@@ -208,6 +224,17 @@ class FlowHelper:
         if max_schema_dict:
             schema_dict[vol.Optional(const.STEP_3_SECTION_MAX_CLOSURE)] = section(
                 vol.Schema(max_schema_dict),
+                {"collapsed": True},
+            )
+
+        evening_max_schema_dict = FlowHelper._build_schema_cover_positions(
+            covers,
+            const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
+            defaults,
+        )
+        if evening_max_schema_dict:
+            schema_dict[vol.Optional(const.STEP_3_SECTION_EVENING_MAX_CLOSURE)] = section(
+                vol.Schema(evening_max_schema_dict),
                 {"collapsed": True},
             )
 
@@ -279,7 +306,7 @@ class FlowHelper:
             Schema for step 4 form
         """
 
-        from homeassistant.components.cover import CoverEntityFeature
+        from homeassistant.components.cover import CoverEntityFeature  # pyright: ignore[reportMissingImports]
 
         schema_dict: dict[vol.Marker, object] = {}
 
@@ -685,7 +712,8 @@ class FlowHelper:
 #
 # FlowHandler
 #
-class FlowHandler(config_entries.ConfigFlow, domain=const.DOMAIN):
+@config_entries.HANDLERS.register(const.DOMAIN)
+class FlowHandler(config_entries.ConfigFlow):
     """Config flow for the integration."""
 
     # Schema version
@@ -793,8 +821,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             Dictionary with normalized per-cover settings for this section
         """
         # Determine which section names are possible based on the suffix
-        if suffix in (const.COVER_SFX_MIN_CLOSURE, const.COVER_SFX_MAX_CLOSURE):
-            section_names = {const.STEP_3_SECTION_MIN_CLOSURE, const.STEP_3_SECTION_MAX_CLOSURE}
+        if suffix in (
+            const.COVER_SFX_MIN_CLOSURE,
+            const.COVER_SFX_MAX_CLOSURE,
+            const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
+        ):
+            section_names = {
+                const.STEP_3_SECTION_MIN_CLOSURE,
+                const.STEP_3_SECTION_MAX_CLOSURE,
+                const.STEP_3_SECTION_EVENING_MAX_CLOSURE,
+            }
         elif suffix in (const.COVER_SFX_TILT_MODE_DAY, const.COVER_SFX_TILT_MODE_NIGHT):
             section_names = {const.STEP_4_SECTION_TILT_DAY, const.STEP_4_SECTION_TILT_NIGHT}
         elif suffix == const.COVER_SFX_WINDOW_SENSORS:
@@ -981,6 +1017,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             f"_{const.COVER_SFX_AZIMUTH}",
             f"_{const.COVER_SFX_MAX_CLOSURE}",
             f"_{const.COVER_SFX_MIN_CLOSURE}",
+            f"_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}",
             f"_{const.COVER_SFX_TILT_MODE_DAY}",
             f"_{const.COVER_SFX_TILT_MODE_NIGHT}",
             f"_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}",
@@ -1109,6 +1146,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Store global min/max closure settings
         self._config_data[ConfKeys.COVERS_MAX_CLOSURE.value] = int(user_input.get(ConfKeys.COVERS_MAX_CLOSURE.value, 0))
         self._config_data[ConfKeys.COVERS_MIN_CLOSURE.value] = int(user_input.get(ConfKeys.COVERS_MIN_CLOSURE.value, 100))
+        current_evening_max = to_int_or_none(current_settings.get(ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value))
+        evening_max_default = CONF_SPECS[ConfKeys.EVENING_CLOSURE_MAX_CLOSURE].default
+        submitted_evening_max = int(
+            user_input.get(
+                ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value,
+                current_evening_max if current_evening_max is not None else evening_max_default,
+            )
+        )
+        if current_evening_max is not None or submitted_evening_max != evening_max_default:
+            self._config_data[ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value] = submitted_evening_max
+        else:
+            self._config_data.pop(ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value, None)
 
         # Build complete lists of min and max closure settings for all covers
         min_closure_data = self._build_section_cover_settings(
@@ -1117,10 +1166,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         max_closure_data = self._build_section_cover_settings(
             user_input, const.STEP_3_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers_in_input, current_settings
         )
+        evening_max_closure_data = self._build_section_cover_settings(
+            user_input,
+            const.STEP_3_SECTION_EVENING_MAX_CLOSURE,
+            const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
+            covers_in_input,
+            current_settings,
+        )
 
         # Store the complete min and max per-cover settings
         self._config_data.update(min_closure_data)
         self._config_data.update(max_closure_data)
+        self._config_data.update(evening_max_closure_data)
 
         # Proceed to step 4
         return await self.async_step_4()

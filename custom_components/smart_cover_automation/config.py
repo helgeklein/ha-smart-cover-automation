@@ -69,6 +69,7 @@ class ConfKeys(StrEnum):
     EVENING_CLOSURE_MODE = "close_covers_after_sunset_mode"  # Evening closure: timing mode.
     EVENING_CLOSURE_TIME = "close_covers_after_sunset_delay"  # Evening closure: time value.
     EVENING_CLOSURE_COVER_LIST = "close_covers_after_sunset_cover_list"  # Evening closure: list of covers.
+    EVENING_CLOSURE_MAX_CLOSURE = "close_covers_after_sunset_max_closure"  # Evening closure: cover position.
     EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION = (
         "close_covers_after_sunset_ignore_manual_override_duration"  # Evening closure: ignore manual override duration.
     )
@@ -218,6 +219,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.EVENING_CLOSURE_MODE: _ConfSpec(default=EveningClosureMode.AFTER_SUNSET, converter=EveningClosureMode),
     ConfKeys.EVENING_CLOSURE_TIME: _ConfSpec(default=time(0, 15, 0), converter=_Converters.to_time),
     ConfKeys.EVENING_CLOSURE_COVER_LIST: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
+    ConfKeys.EVENING_CLOSURE_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.MORNING_OPENING_MODE: _ConfSpec(
         default=MorningOpeningMode.RELATIVE_TO_SUNRISE,
@@ -324,6 +326,7 @@ _VALUE_TO_FIELD: dict[str, str] = {
     "close_covers_after_sunset_mode": "evening_closure_mode",
     "close_covers_after_sunset_delay": "evening_closure_time",
     "close_covers_after_sunset_cover_list": "evening_closure_cover_list",
+    "close_covers_after_sunset_max_closure": "evening_closure_max_closure",
     "close_covers_after_sunset_ignore_manual_override_duration": "evening_closure_ignore_manual_override_duration",
     "morning_opening_mode": "morning_opening_mode",
     "morning_opening_time": "morning_opening_time",
@@ -351,6 +354,7 @@ class ResolvedConfig:
     evening_closure_mode: EveningClosureMode
     evening_closure_time: time
     evening_closure_cover_list: tuple[str, ...]
+    evening_closure_max_closure: int
     evening_closure_ignore_manual_override_duration: bool
     morning_opening_mode: MorningOpeningMode
     morning_opening_time: time

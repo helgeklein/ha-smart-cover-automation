@@ -314,6 +314,29 @@ class TestConfigurationResolution:
         assert rs_fixed.morning_opening_mode.value == "fixed_time"
         assert rs_fixed.morning_opening_time == time(8, 15, 0)
 
+    def test_resolve_evening_max_uses_default_when_unset(self):
+        """Test evening closure max uses its own default when unset."""
+
+        rs = resolve(
+            {
+                ConfKeys.COVERS_MAX_CLOSURE.value: 23,
+            }
+        )
+
+        assert rs.covers_max_closure == 23
+        assert rs.evening_closure_max_closure == CONF_SPECS[ConfKeys.EVENING_CLOSURE_MAX_CLOSURE].default
+
+    def test_resolve_evening_max_invalid_value_falls_back_to_default(self):
+        """Test invalid evening closure max input falls back safely to the default."""
+
+        rs = resolve(
+            {
+                ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value: "not-a-number",
+            }
+        )
+
+        assert rs.evening_closure_max_closure == CONF_SPECS[ConfKeys.EVENING_CLOSURE_MAX_CLOSURE].default
+
 
 # =============================================================================
 # Covers Configuration Tests

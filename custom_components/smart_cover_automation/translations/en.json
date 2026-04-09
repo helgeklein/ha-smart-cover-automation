@@ -36,11 +36,13 @@
                 "description": "Configure the cover **min/max** positions (optional).\nGlobal settings apply to all covers unless overridden per cover.\n(0 = fully closed, 100 = fully open)",
                 "data": {
                     "covers_max_closure": "Maximum cover position (global):",
-                    "covers_min_closure": "Minimum cover position (global):"
+                    "covers_min_closure": "Minimum cover position (global):",
+                    "close_covers_after_sunset_max_closure": "Cover position for evening closure (global):"
                 },
                 "data_description": {
                     "covers_max_closure": "The maximum closed position for all covers unless overridden per cover.",
-                    "covers_min_closure": "The minimum open position for all covers unless overridden per cover."
+                    "covers_min_closure": "The minimum open position for all covers unless overridden per cover.",
+                    "close_covers_after_sunset_max_closure": "The cover position used for evening closure unless overridden per cover."
                 },
                 "sections": {
                     "section_max_closure": {
@@ -48,6 +50,9 @@
                     },
                     "section_min_closure": {
                         "name": "Minimum cover positions (per-cover)"
+                    },
+                    "section_evening_max_closure": {
+                        "name": "Cover positions for evening closure (per-cover)"
                     }
                 }
             },
@@ -205,12 +210,6 @@
             }
         },
         "number": {
-            "covers_max_closure": {
-                "name": "Maximum cover position:"
-            },
-            "covers_min_closure": {
-                "name": "Minimum cover position:"
-            },
             "cover_tilt_external_value_day": {
                 "name": "{cover_name}: Tilt angle: external control (day)"
             },
@@ -218,13 +217,13 @@
                 "name": "{cover_name}: Tilt angle: external control (night)"
             },
             "manual_override_duration": {
-                "name": "Manual override duration:"
+                "name": "Manual override duration"
             },
             "sun_azimuth_tolerance": {
-                "name": "Sun azimuth tolerance:"
+                "name": "Sun azimuth tolerance"
             },
             "sun_elevation_threshold": {
-                "name": "Minimum sun elevation:"
+                "name": "Minimum sun elevation"
             },
             "tilt_external_value_day": {
                 "name": "Tilt angle: external control (day)"
