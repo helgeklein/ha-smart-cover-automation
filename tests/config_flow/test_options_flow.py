@@ -16,7 +16,7 @@ from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.smart_cover_automation import const
-from custom_components.smart_cover_automation.config import ConfKeys
+from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
 
 from ..conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2, MOCK_WEATHER_ENTITY_ID
@@ -600,6 +600,148 @@ class TestOptionsFlowIntegration:
         # Options payload should not include the cleared per-cover minimum
         assert f"{cover}_{const.COVER_SFX_MIN_CLOSURE}" not in saved_data
 
+    async def test_default_evening_max_is_not_saved_as_explicit_option(self, mock_hass_with_covers: MagicMock) -> None:
+        """Submitting the default evening max should not persist a redundant explicit option."""
+
+        cover = MOCK_COVER_ENTITY_ID
+        global_max = 25
+        evening_default = CONF_SPECS[ConfKeys.EVENING_CLOSURE_MAX_CLOSURE].default
+        existing_data = {
+            ConfKeys.COVERS.value: [cover],
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            f"{cover}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            ConfKeys.COVERS_MAX_CLOSURE.value: global_max,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 100,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [cover],
+            }
+        )
+
+        await flow.async_step_2(
+            {
+                f"{cover}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            }
+        )
+
+        await flow.async_step_3(
+            {
+                ConfKeys.COVERS_MAX_CLOSURE.value: global_max,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 100,
+                ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value: evening_default,
+            }
+        )
+
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        result = await flow.async_step_6({})
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        assert ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value not in saved_data
+        assert saved_data[ConfKeys.COVERS_MAX_CLOSURE.value] == global_max
+
+    async def test_clearing_per_cover_evening_max_removes_from_options(self, mock_hass_with_covers: MagicMock) -> None:
+        """Clearing a per-cover evening maximum removes it from saved options."""
+
+        cover = MOCK_COVER_ENTITY_ID
+        existing_data = {
+            ConfKeys.COVERS.value: [cover],
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            f"{cover}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            f"{cover}_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}": 12,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [cover],
+            }
+        )
+
+        await flow.async_step_2(
+            {
+                f"{cover}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            }
+        )
+
+        await flow.async_step_3({const.STEP_3_SECTION_EVENING_MAX_CLOSURE: {}})
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        result = await flow.async_step_6({})
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        assert f"{cover}_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}" not in saved_data
+
+    async def test_existing_explicit_evening_max_remains_saved_when_matching_default_value(self, mock_hass_with_covers: MagicMock) -> None:
+        """An already-explicit evening max remains explicit even if it matches the default value."""
+
+        cover = MOCK_COVER_ENTITY_ID
+        day_max = 25
+        evening_default = CONF_SPECS[ConfKeys.EVENING_CLOSURE_MAX_CLOSURE].default
+        existing_data = {
+            ConfKeys.COVERS.value: [cover],
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            f"{cover}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            ConfKeys.COVERS_MAX_CLOSURE.value: day_max,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 100,
+            ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value: evening_default,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [cover],
+            }
+        )
+
+        await flow.async_step_2(
+            {
+                f"{cover}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            }
+        )
+
+        await flow.async_step_3(
+            {
+                ConfKeys.COVERS_MAX_CLOSURE.value: day_max,
+                ConfKeys.COVERS_MIN_CLOSURE.value: 100,
+                ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value: evening_default,
+            }
+        )
+
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        result = await flow.async_step_6({})
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+
+        assert saved_data[ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value] == evening_default
+
 
 class TestOptionsFlowHelperMethods:
     """Test private helper methods of OptionsFlowHandler."""
@@ -740,6 +882,30 @@ class TestOptionsFlowHelperMethods:
         assert const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT in merged
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}" not in merged
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}" in merged
+
+    def test_cleanup_external_morning_opening_keys_keeps_value_in_external_mode(self) -> None:
+        """External morning opening time should be preserved while external mode is active."""
+
+        merged = {
+            ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.EXTERNAL,
+            const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "08:15:00",
+        }
+
+        OptionsFlowHandler._cleanup_external_morning_opening_keys(merged)
+
+        assert const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME in merged
+
+    def test_cleanup_external_morning_opening_keys_removes_value_when_mode_changes(self) -> None:
+        """External morning opening time should be removed once the mode is no longer external."""
+
+        merged = {
+            ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.FIXED_TIME,
+            const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "08:15:00",
+        }
+
+        OptionsFlowHandler._cleanup_external_morning_opening_keys(merged)
+
+        assert const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME not in merged
 
     async def test_options_flow_no_changes_logs_debug(self, mock_hass_with_covers: MagicMock, caplog: Any) -> None:
         """Test that completing flow with no changes logs at debug level."""

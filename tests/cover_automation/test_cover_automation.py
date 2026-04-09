@@ -54,6 +54,7 @@ def mock_resolved_config():
     resolved = MagicMock()
     resolved.covers_max_closure = 0
     resolved.covers_min_closure = 100
+    resolved.evening_closure_max_closure = 0
     resolved.sun_elevation_threshold = 10.0
     resolved.sun_azimuth_tolerance = 30.0
     resolved.manual_override_duration = 3600
@@ -856,6 +857,7 @@ class TestCalculateDesiredPosition:
         """Test evening closure prevents opening for light and respects max closure limit."""
 
         mock_resolved_config.covers_max_closure = 15  # Set max closure limit
+        mock_resolved_config.evening_closure_max_closure = 15
         mock_resolved_config.covers_min_closure = 100
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
@@ -907,6 +909,7 @@ class TestCalculateDesiredPosition:
         """Test evening closure respects max closure limit (global config)."""
 
         mock_resolved_config.covers_max_closure = 30
+        mock_resolved_config.evening_closure_max_closure = 30
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
 
         sensor_data = make_sensor_data(
@@ -925,14 +928,17 @@ class TestCalculateDesiredPosition:
         assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET
 
     #
-    # test_calculate_desired_position_sunset_with_per_cover_closure_limit
+    # test_calculate_desired_position_sunset_with_per_cover_evening_closure_limit
     #
-    def test_calculate_desired_position_sunset_with_per_cover_closure_limit(self, cover_automation, mock_resolved_config, basic_config):
+    def test_calculate_desired_position_sunset_with_per_cover_evening_closure_limit(
+        self, cover_automation, mock_resolved_config, basic_config
+    ):
         """Test evening closure respects per-cover max closure limit override."""
 
         mock_resolved_config.covers_max_closure = 30  # Global limit
+        mock_resolved_config.evening_closure_max_closure = 30
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
-        basic_config["cover.test_cover_max_closure"] = 20  # Per-cover override
+        basic_config[f"cover.test_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}"] = 20  # Per-cover override
 
         sensor_data = make_sensor_data(
             sun_azimuth=180.0,
@@ -1235,6 +1241,31 @@ class TestGetCoverClosureLimit:
         basic_config["cover.test_cover_max_closure"] = 10
         limit = cover_automation._get_cover_closure_limit(get_max=True)
         assert limit == 10
+
+    def test_get_cover_closure_limit_evening_max_global(self, cover_automation, mock_resolved_config):
+        """Test getting the evening closure position from global config."""
+        mock_resolved_config.evening_closure_max_closure = 15
+        limit = cover_automation._get_cover_closure_limit(get_max=True, evening_closure=True)
+        assert limit == 15
+
+    def test_get_cover_closure_limit_evening_max_per_cover(self, cover_automation, mock_resolved_config, basic_config):
+        """Test getting the evening closure position from a per-cover override."""
+        mock_resolved_config.evening_closure_max_closure = 15
+        basic_config[f"cover.test_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}"] = 5
+        limit = cover_automation._get_cover_closure_limit(get_max=True, evening_closure=True)
+        assert limit == 5
+
+    def test_get_cover_closure_limit_evening_max_ignores_daytime_per_cover_max_without_override(
+        self,
+        cover_automation,
+        mock_resolved_config,
+        basic_config,
+    ):
+        """Test evening max uses the evening default when no dedicated evening override exists."""
+        mock_resolved_config.evening_closure_max_closure = 15
+        basic_config["cover.test_cover_max_closure"] = 10
+        limit = cover_automation._get_cover_closure_limit(get_max=True, evening_closure=True)
+        assert limit == 15
 
     def test_get_cover_closure_limit_min_per_cover(self, cover_automation, mock_resolved_config, basic_config):
         """Test getting min closure limit from per-cover override."""

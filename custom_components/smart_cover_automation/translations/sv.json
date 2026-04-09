@@ -36,11 +36,13 @@
                 "description": "Konfigurera **min/max**-lägen för persienner (valfritt).\nGlobala inställningar gäller för alla persienner om de inte åsidosätts per persienn.\n(0 = helt stängd, 100 = helt öppen)",
                 "data": {
                     "covers_max_closure": "Högsta läge för persienn (globalt):",
-                    "covers_min_closure": "Lägsta läge för persienn (globalt):"
+                    "covers_min_closure": "Lägsta läge för persienn (globalt):",
+                    "close_covers_after_sunset_max_closure": "Persiennläge för kvällsstängning (globalt):"
                 },
                 "data_description": {
                     "covers_max_closure": "Det högsta stängda läget för alla persienner om det inte åsidosätts per persienn.",
-                    "covers_min_closure": "Det lägsta öppna läget för alla persienner om det inte åsidosätts per persienn."
+                    "covers_min_closure": "Det lägsta öppna läget för alla persienner om det inte åsidosätts per persienn.",
+                    "close_covers_after_sunset_max_closure": "Persiennläget som används vid kvällsstängning om det inte åsidosätts per persienn."
                 },
                 "sections": {
                     "section_max_closure": {
@@ -48,6 +50,9 @@
                     },
                     "section_min_closure": {
                         "name": "Lägsta persiennlägen (per persienn)"
+                    },
+                    "section_evening_max_closure": {
+                        "name": "Persiennlägen för kvällsstängning (per persienn)"
                     }
                 }
             },
@@ -205,12 +210,6 @@
             }
         },
         "number": {
-            "covers_max_closure": {
-                "name": "Högsta läge för persienn:"
-            },
-            "covers_min_closure": {
-                "name": "Lägsta läge för persienn:"
-            },
             "cover_tilt_external_value_day": {
                 "name": "{cover_name}: lamellvinkel: extern styrning (dag)"
             },
@@ -218,13 +217,13 @@
                 "name": "{cover_name}: lamellvinkel: extern styrning (natt)"
             },
             "manual_override_duration": {
-                "name": "Manuell åsidosättningsvaraktighet:"
+                "name": "Manuell åsidosättningsvaraktighet"
             },
             "sun_azimuth_tolerance": {
-                "name": "Tolerans för solens azimut:"
+                "name": "Tolerans för solens azimut"
             },
             "sun_elevation_threshold": {
-                "name": "Minsta solhöjd:"
+                "name": "Minsta solhöjd"
             },
             "tilt_external_value_day": {
                 "name": "Lamellvinkel: extern styrning (dag)"

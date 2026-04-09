@@ -36,11 +36,13 @@
                 "description": "Configurez les positions **min/max** des volets (facultatif).\nLes réglages globaux s'appliquent à tous les volets, sauf s'ils sont remplacés par volet.\n(0 = totalement fermé, 100 = totalement ouvert)",
                 "data": {
                     "covers_max_closure": "Position maximale du volet (globale) :",
-                    "covers_min_closure": "Position minimale du volet (globale) :"
+                    "covers_min_closure": "Position minimale du volet (globale) :",
+                    "close_covers_after_sunset_max_closure": "Position du volet pour la fermeture du soir (globale) :"
                 },
                 "data_description": {
                     "covers_max_closure": "La position maximale de fermeture pour tous les volets, sauf si elle est remplacée par volet.",
-                    "covers_min_closure": "La position minimale d'ouverture pour tous les volets, sauf si elle est remplacée par volet."
+                    "covers_min_closure": "La position minimale d'ouverture pour tous les volets, sauf si elle est remplacée par volet.",
+                    "close_covers_after_sunset_max_closure": "La position du volet utilisée pour la fermeture du soir, sauf si elle est remplacée par volet."
                 },
                 "sections": {
                     "section_max_closure": {
@@ -48,6 +50,9 @@
                     },
                     "section_min_closure": {
                         "name": "Positions minimales du volet (par volet)"
+                    },
+                    "section_evening_max_closure": {
+                        "name": "Positions du volet pour la fermeture du soir (par volet)"
                     }
                 }
             },
@@ -205,12 +210,6 @@
             }
         },
         "number": {
-            "covers_max_closure": {
-                "name": "Position maximale du volet :"
-            },
-            "covers_min_closure": {
-                "name": "Position minimale du volet :"
-            },
             "cover_tilt_external_value_day": {
                 "name": "{cover_name} : angle d'inclinaison : contrôle externe (jour)"
             },
@@ -218,13 +217,13 @@
                 "name": "{cover_name} : angle d'inclinaison : contrôle externe (nuit)"
             },
             "manual_override_duration": {
-                "name": "Durée de l'override manuel :"
+                "name": "Durée de l'override manuel"
             },
             "sun_azimuth_tolerance": {
-                "name": "Tolérance de l'azimut solaire :"
+                "name": "Tolérance de l'azimut solaire"
             },
             "sun_elevation_threshold": {
-                "name": "Élévation minimale du soleil :"
+                "name": "Élévation minimale du soleil"
             },
             "tilt_external_value_day": {
                 "name": "Angle d'inclinaison : contrôle externe (jour)"

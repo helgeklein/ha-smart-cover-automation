@@ -36,11 +36,13 @@
                 "description": "Configureer de **min/max**-posities van de rolluiken (optioneel).\nGlobale instellingen gelden voor alle rolluiken tenzij per rolluik overschreven.\n(0 = volledig gesloten, 100 = volledig open)",
                 "data": {
                     "covers_max_closure": "Maximale positie van het rolluik (globaal):",
-                    "covers_min_closure": "Minimale positie van het rolluik (globaal):"
+                    "covers_min_closure": "Minimale positie van het rolluik (globaal):",
+                    "close_covers_after_sunset_max_closure": "Positie van het rolluik voor avondsluiting (globaal):"
                 },
                 "data_description": {
                     "covers_max_closure": "De maximale gesloten positie voor alle rolluiken tenzij per rolluik overschreven.",
-                    "covers_min_closure": "De minimale open positie voor alle rolluiken tenzij per rolluik overschreven."
+                    "covers_min_closure": "De minimale open positie voor alle rolluiken tenzij per rolluik overschreven.",
+                    "close_covers_after_sunset_max_closure": "De positie van het rolluik voor avondsluiting tenzij per rolluik overschreven."
                 },
                 "sections": {
                     "section_max_closure": {
@@ -48,6 +50,9 @@
                     },
                     "section_min_closure": {
                         "name": "Minimale posities van het rolluik (per rolluik)"
+                    },
+                    "section_evening_max_closure": {
+                        "name": "Posities van het rolluik voor avondsluiting (per rolluik)"
                     }
                 }
             },
@@ -205,12 +210,6 @@
             }
         },
         "number": {
-            "covers_max_closure": {
-                "name": "Maximale positie van het rolluik:"
-            },
-            "covers_min_closure": {
-                "name": "Minimale positie van het rolluik:"
-            },
             "cover_tilt_external_value_day": {
                 "name": "{cover_name}: kantelhoek: externe besturing (dag)"
             },
@@ -218,13 +217,13 @@
                 "name": "{cover_name}: kantelhoek: externe besturing (nacht)"
             },
             "manual_override_duration": {
-                "name": "Duur van de handmatige override:"
+                "name": "Duur van de handmatige override"
             },
             "sun_azimuth_tolerance": {
-                "name": "Tolerantie voor zonazimut:"
+                "name": "Tolerantie voor zonazimut"
             },
             "sun_elevation_threshold": {
-                "name": "Minimale zonshoogte:"
+                "name": "Minimale zonshoogte"
             },
             "tilt_external_value_day": {
                 "name": "Kantelhoek: externe besturing (dag)"

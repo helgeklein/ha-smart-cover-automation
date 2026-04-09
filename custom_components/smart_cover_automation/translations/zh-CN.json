@@ -36,11 +36,13 @@
                 "description": "配置遮阳设备 **最小/最大** 位置（可选）。\n全局设置适用于所有遮阳设备，除非对单个遮阳设备进行覆盖。\n(0 = 完全关闭，100 = 完全打开)",
                 "data": {
                     "covers_max_closure": "遮阳设备最大位置（全局）：",
-                    "covers_min_closure": "遮阳设备最小位置（全局）："
+                    "covers_min_closure": "遮阳设备最小位置（全局）：",
+                    "close_covers_after_sunset_max_closure": "晚间关闭的遮阳设备位置（全局）："
                 },
                 "data_description": {
                     "covers_max_closure": "所有遮阳设备的最大关闭位置，除非对单个遮阳设备进行覆盖。",
-                    "covers_min_closure": "所有遮阳设备的最小打开位置，除非对单个遮阳设备进行覆盖。"
+                    "covers_min_closure": "所有遮阳设备的最小打开位置，除非对单个遮阳设备进行覆盖。",
+                    "close_covers_after_sunset_max_closure": "晚间关闭使用的遮阳设备位置，除非对单个遮阳设备进行覆盖。"
                 },
                 "sections": {
                     "section_max_closure": {
@@ -48,6 +50,9 @@
                     },
                     "section_min_closure": {
                         "name": "遮阳设备的最小位置（单个遮阳设备）"
+                    },
+                    "section_evening_max_closure": {
+                        "name": "晚间关闭的遮阳设备位置（单个遮阳设备）"
                     }
                 }
             },
@@ -205,12 +210,6 @@
             }
         },
         "number": {
-            "covers_max_closure": {
-                "name": "遮阳设备最大位置："
-            },
-            "covers_min_closure": {
-                "name": "遮阳设备最小位置："
-            },
             "cover_tilt_external_value_day": {
                 "name": "{cover_name}：叶片倾角：外部控制（日间）"
             },
@@ -218,13 +217,13 @@
                 "name": "{cover_name}：叶片倾角：外部控制（夜间）"
             },
             "manual_override_duration": {
-                "name": "手动覆盖持续时间："
+                "name": "手动覆盖持续时间"
             },
             "sun_azimuth_tolerance": {
-                "name": "太阳方位角容差："
+                "name": "太阳方位角容差"
             },
             "sun_elevation_threshold": {
-                "name": "最小太阳仰角："
+                "name": "最小太阳仰角"
             },
             "tilt_external_value_day": {
                 "name": "叶片倾角：外部控制（日间）"

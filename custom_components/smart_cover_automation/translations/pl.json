@@ -36,11 +36,13 @@
                 "description": "Skonfiguruj pozycje **min/max** rolet (opcjonalne).\nUstawienia globalne dotyczą wszystkich rolet, chyba że zostaną nadpisane dla konkretnej rolety.\n(0 = całkowicie zamknięte, 100 = całkowicie otwarte)",
                 "data": {
                     "covers_max_closure": "Maksymalna pozycja rolety (globalnie):",
-                    "covers_min_closure": "Minimalna pozycja rolety (globalnie):"
+                    "covers_min_closure": "Minimalna pozycja rolety (globalnie):",
+                    "close_covers_after_sunset_max_closure": "Pozycja rolety dla zamknięcia wieczornego (globalnie):"
                 },
                 "data_description": {
                     "covers_max_closure": "Maksymalna pozycja zamknięcia dla wszystkich rolet, chyba że zostanie nadpisana dla konkretnej rolety.",
-                    "covers_min_closure": "Minimalna pozycja otwarcia dla wszystkich rolet, chyba że zostanie nadpisana dla konkretnej rolety."
+                    "covers_min_closure": "Minimalna pozycja otwarcia dla wszystkich rolet, chyba że zostanie nadpisana dla konkretnej rolety.",
+                    "close_covers_after_sunset_max_closure": "Pozycja rolety używana dla zamknięcia wieczornego, chyba że zostanie nadpisana dla konkretnej rolety."
                 },
                 "sections": {
                     "section_max_closure": {
@@ -48,6 +50,9 @@
                     },
                     "section_min_closure": {
                         "name": "Minimalne pozycje rolet (per roleta)"
+                    },
+                    "section_evening_max_closure": {
+                        "name": "Pozycje rolet dla zamknięcia wieczornego (per roleta)"
                     }
                 }
             },
@@ -205,12 +210,6 @@
             }
         },
         "number": {
-            "covers_max_closure": {
-                "name": "Maksymalna pozycja rolety:"
-            },
-            "covers_min_closure": {
-                "name": "Minimalna pozycja rolety:"
-            },
             "cover_tilt_external_value_day": {
                 "name": "{cover_name}: kąt nachylenia lamel: sterowanie zewnętrzne (dzień)"
             },
@@ -218,13 +217,13 @@
                 "name": "{cover_name}: kąt nachylenia lamel: sterowanie zewnętrzne (noc)"
             },
             "manual_override_duration": {
-                "name": "Czas trwania ręcznego pominięcia:"
+                "name": "Czas trwania ręcznego pominięcia"
             },
             "sun_azimuth_tolerance": {
-                "name": "Tolerancja azymutu słońca:"
+                "name": "Tolerancja azymutu słońca"
             },
             "sun_elevation_threshold": {
-                "name": "Minimalna wysokość słońca:"
+                "name": "Minimalna wysokość słońca"
             },
             "tilt_external_value_day": {
                 "name": "Kąt nachylenia lamel: sterowanie zewnętrzne (dzień)"

@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import MagicMock
 
+import pytest
 from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.components.weather.const import WeatherEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
@@ -324,13 +325,15 @@ class TestFlowHelperSchemaBuilding:
         # Verify section structure (now includes global settings)
         assert "section_min_closure" in sections
         assert "section_max_closure" in sections
+        assert "section_evening_max_closure" in sections
         # Verify global closure settings are included
         assert ConfKeys.COVERS_MAX_CLOSURE.value in sections
         assert ConfKeys.COVERS_MIN_CLOSURE.value in sections
+        assert ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value in sections
 
         # Verify that fields for all covers exist in the sections
         # (The actual structure is nested, but we're checking the schema was created)
-        assert len(sections) >= 4  # 2 global settings + 2 sections
+        assert len(sections) >= 6  # 3 global settings + 3 sections
 
     def test_build_schema_step_3_with_per_cover_defaults(self) -> None:
         """Test step 3 schema when covers have per-cover min/max closure defaults."""
@@ -357,9 +360,31 @@ class TestFlowHelperSchemaBuilding:
         # Verify both sections exist
         assert "section_min_closure" in sections
         assert "section_max_closure" in sections
+        assert "section_evening_max_closure" in sections
         # Verify global closure settings are included
         assert ConfKeys.COVERS_MAX_CLOSURE.value in sections
         assert ConfKeys.COVERS_MIN_CLOSURE.value in sections
+        assert ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value in sections
+
+    def test_build_schema_step_3_omits_sections_when_cover_position_helper_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Step 3 should keep globals but omit optional sections when no per-cover fields exist."""
+        from custom_components.smart_cover_automation.config import resolve
+
+        monkeypatch.setattr(FlowHelper, "_build_schema_cover_positions", lambda covers, suffix, defaults: {})
+
+        covers = [MOCK_COVER_ENTITY_ID]
+        defaults: dict[str, Any] = {}
+        resolved_settings = resolve(defaults)
+
+        schema = FlowHelper.build_schema_step_3(covers, defaults, resolved_settings)
+        schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
+
+        assert ConfKeys.COVERS_MAX_CLOSURE.value in schema_keys
+        assert ConfKeys.COVERS_MIN_CLOSURE.value in schema_keys
+        assert ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value in schema_keys
+        assert const.STEP_3_SECTION_MIN_CLOSURE not in schema_keys
+        assert const.STEP_3_SECTION_MAX_CLOSURE not in schema_keys
+        assert const.STEP_3_SECTION_EVENING_MAX_CLOSURE not in schema_keys
 
 
 class TestFlowHelperFlattenSection:
@@ -583,3 +608,103 @@ class TestFlowHelperStep4TiltSchema:
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert const.STEP_4_SECTION_TILT_DAY in schema_keys
         assert const.STEP_4_SECTION_TILT_NIGHT in schema_keys
+
+    def test_step_4_works_without_hass_and_omits_per_cover_sections(self) -> None:
+        """Test that step 4 still builds global settings when no hass instance is available."""
+
+        from custom_components.smart_cover_automation.config import resolve
+
+        covers = [MOCK_COVER_ENTITY_ID]
+        defaults: dict[str, Any] = {}
+        resolved_settings = resolve(defaults)
+
+        schema = FlowHelper.build_schema_step_4_tilt(
+            covers=covers,
+            defaults=defaults,
+            resolved_settings=resolved_settings,
+            hass=None,
+        )
+
+        schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
+
+        assert ConfKeys.TILT_MODE_DAY.value in schema_keys
+        assert ConfKeys.TILT_MODE_NIGHT.value in schema_keys
+        assert const.STEP_4_SECTION_TILT_DAY not in schema_keys
+        assert const.STEP_4_SECTION_TILT_NIGHT not in schema_keys
+
+    def test_step_4_ignores_covers_with_missing_state(self) -> None:
+        """Test that covers with missing states are skipped when building per-cover tilt sections."""
+
+        from custom_components.smart_cover_automation.config import resolve
+
+        covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
+        defaults: dict[str, Any] = {}
+        resolved_settings = resolve(defaults)
+
+        hass = MagicMock()
+
+        def mock_get_state(entity_id: str) -> MagicMock | None:
+            if entity_id == MOCK_COVER_ENTITY_ID:
+                return None
+            if entity_id == MOCK_COVER_ENTITY_ID_2:
+                state = MagicMock()
+                state.attributes = {
+                    ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION,
+                }
+                return state
+            return None
+
+        hass.states.get.side_effect = mock_get_state
+
+        schema = FlowHelper.build_schema_step_4_tilt(
+            covers=covers,
+            defaults=defaults,
+            resolved_settings=resolved_settings,
+            hass=hass,
+        )
+
+        schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
+
+        assert const.STEP_4_SECTION_TILT_DAY in schema_keys
+        assert const.STEP_4_SECTION_TILT_NIGHT in schema_keys
+
+    def test_step_4_omits_sections_when_tilt_mode_helper_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Step 4 should omit optional per-cover tilt sections when helper builders return no fields."""
+
+        from custom_components.smart_cover_automation.config import resolve
+
+        monkeypatch.setattr(FlowHelper, "_build_schema_cover_tilt_mode", lambda covers, suffix, defaults, selector: {})
+
+        covers = [MOCK_COVER_ENTITY_ID]
+        hass = self._make_tilt_hass(covers, {MOCK_COVER_ENTITY_ID})
+        defaults: dict[str, Any] = {}
+        resolved_settings = resolve(defaults)
+
+        schema = FlowHelper.build_schema_step_4_tilt(
+            covers=covers,
+            defaults=defaults,
+            resolved_settings=resolved_settings,
+            hass=hass,
+        )
+
+        schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
+
+        assert ConfKeys.TILT_MODE_DAY.value in schema_keys
+        assert ConfKeys.TILT_MODE_NIGHT.value in schema_keys
+        assert const.STEP_4_SECTION_TILT_DAY not in schema_keys
+        assert const.STEP_4_SECTION_TILT_NIGHT not in schema_keys
+
+    def test_build_schema_step_5_omits_window_sensor_section_when_entity_helper_returns_empty(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Step 5 should omit the optional window sensor section when no per-cover entity fields exist."""
+
+        monkeypatch.setattr(FlowHelper, "_build_schema_cover_entities", lambda covers, suffix, defaults: {})
+
+        covers = [MOCK_COVER_ENTITY_ID]
+        defaults: dict[str, Any] = {}
+
+        schema = FlowHelper.build_schema_step_5(covers, defaults)
+        schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
+
+        assert const.STEP_5_SECTION_WINDOW_SENSORS not in schema_keys

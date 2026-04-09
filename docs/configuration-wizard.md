@@ -56,9 +56,23 @@ In this step of the configuration wizard, specify each cover's azimuth (the dire
 
 There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). You can find instructions for both on [this website](https://doc.forecast.solar/find_your_azimuth).
 
-## Step 3: Per-Cover Max/Min Positions (Optional)
+## Step 3: Max/Min Positions (Optional)
 
-In this step of the configuration wizard, you can specify maximum and minimum positions per cover. If configured, these per-cover settings override the global max/min positions.
+In this step of the configuration wizard, you can specify maximum and minimum positions (0 = fully closed, 100 = fully open). These options can be used to always let some light in and/or always provide a minimum of shade.
+
+The following settings are available:
+
+- **Maximum cover position:** The most closed position the integration moves the cover to during regular operation (e.g., for heat protection).
+- **Minimum cover position:** The most open position the integration moves the cover to during regular operation (e.g., to let light in).
+- **Cover position for evening closure:** The position the integration moves the cover to for evening closure.
+
+### Global Position Settings
+
+The above position settings are available as global settings that are applied whenever no per-cover setting is configured.
+
+### Per-Cover Overrides
+
+The global positions can be overridden per cover.
 
 ## Step 4: Tilt Angle Control (Optional)
 

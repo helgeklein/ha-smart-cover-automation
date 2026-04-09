@@ -81,6 +81,9 @@ INTEGRATION_NAME: Final[str] = "Smart Cover Automation"
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
 COVER_SFX_MAX_CLOSURE: Final[str] = "cover_max_closure"  # Cover maximum closure position (%)
 COVER_SFX_MIN_CLOSURE: Final[str] = "cover_min_closure"  # Cover minimum closure position (%)
+COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE: Final[str] = (
+    "cover_evening_closure_max_closure"  # Cover position (%) used specifically for evening closure.
+)
 COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL: Final[str] = "cover_weather_hot_external_control"  # Per-cover hot weather override.
 COVER_SFX_TILT_MODE_DAY: Final[str] = "cover_tilt_mode_day"  # Per-cover tilt mode override (day)
 COVER_SFX_TILT_MODE_NIGHT: Final[str] = "cover_tilt_mode_night"  # Per-cover tilt mode override (night)
@@ -201,6 +204,7 @@ ERROR_NO_COVERS: Final[str] = "no_covers"
 ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"
 STEP_3_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
 STEP_3_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
+STEP_3_SECTION_EVENING_MAX_CLOSURE: Final[str] = "section_evening_max_closure"
 STEP_4_SECTION_TILT_DAY: Final[str] = "section_tilt_day"
 STEP_4_SECTION_TILT_NIGHT: Final[str] = "section_tilt_night"
 STEP_5_SECTION_WINDOW_SENSORS: Final[str] = "section_window_sensors"

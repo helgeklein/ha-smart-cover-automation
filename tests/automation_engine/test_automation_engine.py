@@ -1175,6 +1175,69 @@ class TestComputePostEveningClosure:
         ):
             assert engine._compute_post_evening_closure() is True
 
+    def test_missing_morning_opening_releases_block_after_today_evening_closure(self, mock_ha_interface, mock_logger, freezer):
+        """Test missing morning opening does not keep the carryover block past today's evening closure."""
+        from datetime import datetime
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
+            ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+            ConfKeys.MORNING_OPENING_MODE.value: "external",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        freezer.move_to("2025-11-05 21:05:00")
+        yesterday_closure = datetime(2025, 11, 4, 21, 0, 0, tzinfo=dt_util.get_default_time_zone())
+        today_closure = datetime(2025, 11, 5, 21, 0, 0, tzinfo=dt_util.get_default_time_zone())
+
+        with (
+            patch.object(engine, "_get_morning_opening_time_for_date", return_value=None),
+            patch.object(
+                engine,
+                "_get_evening_closure_time_for_date",
+                side_effect=[yesterday_closure, today_closure, today_closure],
+            ),
+        ):
+            assert engine._compute_post_evening_closure() is True
+
+    def test_post_evening_closure_returns_false_without_yesterday_or_today_closure(self, mock_ha_interface, mock_logger, freezer):
+        """Test post-evening-closure stays false when no closure window exists to carry over."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
+            ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+            ConfKeys.MORNING_OPENING_MODE.value: "external",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        freezer.move_to("2025-11-04 20:30:00")
+
+        with (
+            patch.object(engine, "_get_morning_opening_time_for_date", return_value=None),
+            patch.object(engine, "_get_evening_closure_time_for_date", return_value=None),
+        ):
+            assert engine._compute_post_evening_closure() is False
+
     #
     # test_check_sunset_closing_inside_window_already_closed
     #

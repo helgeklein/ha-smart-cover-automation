@@ -47,15 +47,6 @@ Lock mode can be manually set, but is primarily designed to be triggered as an a
 
 **Manual override duration** specifies how long a cover is skipped after it has been moved manually (0 = no skipping).
 
-### Minimum & Maximum Position
-
-These settings control the minimum and maximum positions to which the automation moves the covers (0 = fully closed, 100 = fully open). These options can be used to always let some light in and/or always provide a minimum of shade.
-
-- **Maximum cover position:** Never close more than this.
-- **Minimum cover position:** Never open more than this.
-
-**Note:** The minimum and maximum positions can also be configured per cover in the configuration wizard.
-
 ### Tilt Angle (External Control)
 
 These entities are only created when you select `External` as tilt angle control mode in the configuration wizard.
