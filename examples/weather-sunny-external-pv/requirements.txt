@@ -1,0 +1,4 @@
+pandas>=2.2
+plotly>=5.24
+nbformat>=5.10
+ipykernel>=6.29
