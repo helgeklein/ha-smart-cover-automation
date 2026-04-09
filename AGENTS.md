@@ -33,6 +33,7 @@
     - Readme.md
     - Testing.md
     - /docs/*.md
+- Don't use agent memory. Store information worth remembering as files in `/developer_docs/`.
 
 ## Git Commits
 
