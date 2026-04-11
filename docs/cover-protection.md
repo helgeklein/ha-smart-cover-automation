@@ -14,7 +14,7 @@ Many types of covers need to be protected from strong winds. In some countries, 
 
 This practical guide shows how to implement a simple but effective system that allows multiple different triggers to lock covers in fully opened position while requiring all of the triggers to be in a safe state before unlocking.
 
-The key idea is that each protection source keeps its own latched safe/unsafe state. That avoids counter drift when a single source crosses the upper threshold more than once before it finally crosses the lower threshold.
+The key idea is that each protection source keeps its own safe/unsafe state. That avoids counter drift when a single source crosses the upper threshold more than once before it finally crosses the lower threshold.
 
 ## Requirements
 
@@ -28,17 +28,15 @@ You can find a Home Assistant sensor configuration for Open-Meteo wind speed dat
 
 ### Per-Source Protection State
 
-Do not use one shared counter for all protection sources. A counter tracks events, but protection needs state. With hysteresis, one source can cross the upper threshold multiple times before it eventually crosses the lower threshold once, which leaves the counter stuck above zero.
+Create one **toggle helper** per protection source (Settings → Devices & Services → Helpers → Create helper → Toggle), e.g.:
 
-Instead, create one **toggle helper** per protection source (Settings → Devices & Services → Helpers → Create helper → Toggle):
-
-- **Name:** `SCA cover protection wind`
-- **Name:** `SCA cover protection hail`
+- **Name:** `SCA cover protection wind: status`
+- **Name:** `SCA cover protection hail: status`
 - Add one more toggle for each additional source
 
 Each toggle represents whether that source is currently unsafe.
 
-### Latch Each Source With Hysteresis
+### Control Each Source Status With Hysteresis
 
 For each protection source, create a single automation that turns its toggle on at the upper threshold and off at the lower threshold.
 
@@ -46,8 +44,8 @@ Example for wind gusts:
 
 {% raw %}
 ```yaml
-alias: SCA cover wind protection latch
-description: "Latch wind protection with hysteresis."
+alias: "SCA cover protection wind: controller"
+description: "Control wind protection status with hysteresis."
 triggers:
   - trigger: numeric_state
     entity_id: sensor.open_meteo_wind_gusts_current
@@ -66,18 +64,18 @@ actions:
         sequence:
           - action: input_boolean.turn_on
             target:
-              entity_id: input_boolean.sca_cover_protection_wind
+              entity_id: input_boolean.sca_cover_protection_wind_status
     default:
       - action: input_boolean.turn_off
         target:
-          entity_id: input_boolean.sca_cover_protection_wind
+          entity_id: input_boolean.sca_cover_protection_wind_status
 mode: single
 ```
 {% endraw %}
 
 This is idempotent: if wind goes to `65`, back to `55`, then to `65` again, the helper is simply turned on again and no state drift occurs. It only turns off after the wind drops below `50`.
 
-Create equivalent latch automations for hail or any other protection source, each writing to its own helper.
+Create equivalent controller automations for hail or any other protection source, each writing to its own helper.
 
 ### Aggregate All Protection Sources
 
@@ -87,13 +85,13 @@ Create one template binary sensor that is on whenever any protection source is a
 ```yaml
 template:
   - binary_sensor:
-      - name: "SCA Cover Protection Active"
+      - name: "SCA cover protection active"
         unique_id: sca_cover_protection_active
         device_class: safety
         state: >
           {{
-            is_state('input_boolean.sca_cover_protection_wind', 'on')
-            or is_state('input_boolean.sca_cover_protection_hail', 'on')
+            is_state('input_boolean.sca_cover_protection_wind_status', 'on')
+            or is_state('input_boolean.sca_cover_protection_hail_status', 'on')
           }}
 ```
 {% endraw %}
@@ -139,8 +137,8 @@ To test the automation, go to **Developer Tools** → **States** and manually se
 
 You should see:
 
-- `input_boolean.sca_cover_protection_wind` turn on above the upper threshold
-- `input_boolean.sca_cover_protection_wind` stay on while the value remains between the thresholds
+- `input_boolean.sca_cover_protection_wind_status` turn on above the upper threshold
+- `input_boolean.sca_cover_protection_wind_status` stay on while the value remains between the thresholds
 - `binary_sensor.sca_cover_protection_active` stay on while any source helper is on
 - Smart Cover Automation remain locked until all source helpers are off
 
