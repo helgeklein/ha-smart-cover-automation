@@ -120,6 +120,7 @@
                             "close_covers_after_sunset_delay": "晚间关闭：时间：",
                             "close_covers_after_sunset_cover_list": "遮阳设备：",
                             "close_covers_after_sunset_ignore_manual_override_duration": "忽略手动覆盖持续时间：",
+                            "close_covers_after_sunset_keep_closed": "保持遮阳设备关闭：",
                             "morning_opening_mode": "晨间开启：模式：",
                             "morning_opening_time": "晨间开启：时间："
                         },
@@ -129,6 +130,7 @@
                             "close_covers_after_sunset_delay": "根据所选模式：日落后延迟时间或固定时刻。",
                             "close_covers_after_sunset_cover_list": "选择需要在晚间关闭的遮阳设备。",
                             "close_covers_after_sunset_ignore_manual_override_duration": "启用后，即使手动覆盖暂停仍然有效，晚间关闭仍可移动所选遮阳设备。",
+                            "close_covers_after_sunset_keep_closed": "启用后，所选遮阳设备如果在夜间晚间关闭时段内被重新打开，将会再次关闭。系统会遵守手动覆盖持续时间。锁定模式优先生效，因此只有在锁定模式被禁用后，遮阳设备才会再次关闭。",
                             "morning_opening_mode": "选择晨间开启是相对于日出、使用绝对时间，还是由某个实体提供。",
                             "morning_opening_time": "根据所选模式：日出后延迟时间或固定时刻。在外部模式下将被忽略。"
                         }
@@ -307,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "在夜间保护隐私",
                     "description": "当遮阳设备在日落后自动关闭时使用的原因。"
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "在夜间保持隐私",
+                    "description": "当遮阳设备在夜间保持关闭期间再次关闭时使用的原因。"
                 }
             }
         },

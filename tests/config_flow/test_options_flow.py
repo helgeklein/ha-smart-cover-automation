@@ -1139,6 +1139,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_TIME.value: "01:30:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True,
+                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True,
             }
         }
 
@@ -1154,6 +1155,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
         assert saved_data[ConfKeys.EVENING_CLOSURE_TIME.value] == "01:30:00"
         assert saved_data[ConfKeys.EVENING_CLOSURE_COVER_LIST.value] == [MOCK_COVER_ENTITY_ID]
         assert saved_data[ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value] is True
+        assert saved_data[ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value] is True
 
     #
     # test_step_6_saves_morning_opening_settings
@@ -1188,6 +1190,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True,
+                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True,
                 ConfKeys.MORNING_OPENING_MODE.value: "fixed_time",
                 ConfKeys.MORNING_OPENING_TIME.value: "08:30:00",
             }
@@ -1246,6 +1249,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
+                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: False,
             }
         }
 
@@ -1302,6 +1306,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [],  # Empty list
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
+                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: False,
             }
         }
 
@@ -1358,6 +1363,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:00:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
+                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: False,
             }
         }
 
@@ -1420,6 +1426,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_TIME.value: "02:00:30",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
+                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: False,
             }
         }
 
@@ -1481,6 +1488,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
                 ConfKeys.EVENING_CLOSURE_TIME.value: "01:15:30",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True,
+                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True,
             }
         }
 
@@ -1499,3 +1507,4 @@ class TestOptionsFlowStep6CloseAfterSunset:
         assert ConfKeys.EVENING_CLOSURE_TIME.value in saved_data
         assert ConfKeys.EVENING_CLOSURE_COVER_LIST.value in saved_data
         assert ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value in saved_data
+        assert ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value in saved_data

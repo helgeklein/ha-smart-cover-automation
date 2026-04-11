@@ -298,6 +298,15 @@ class TestConfigurationResolution:
 
         assert rs.evening_closure_ignore_manual_override_duration is True
 
+    def test_resolve_evening_closure_keep_closed(self):
+        """Test resolving the evening closure keep-closed option."""
+
+        rs_default = resolve({})
+        rs_enabled = resolve({ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True})
+
+        assert rs_default.evening_closure_keep_closed is False
+        assert rs_enabled.evening_closure_keep_closed is True
+
     def test_resolve_morning_opening_defaults_and_fixed_time(self):
         """Test morning opening defaults and fixed-time resolution."""
 

@@ -120,6 +120,7 @@
                             "close_covers_after_sunset_delay": "Avondsluiting: tijd:",
                             "close_covers_after_sunset_cover_list": "Rolluiken:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Duur van handmatige override negeren:",
+                            "close_covers_after_sunset_keep_closed": "Rolluiken gesloten houden:",
                             "morning_opening_mode": "Ochtendopening: modus:",
                             "morning_opening_time": "Ochtendopening: tijd:"
                         },
@@ -129,6 +130,7 @@
                             "close_covers_after_sunset_delay": "Afhankelijk van de gekozen modus: vertraging na zonsondergang of vast tijdstip.",
                             "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die 's avonds moeten worden gesloten.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wanneer ingeschakeld mag de avondsluiting geselecteerde rolluiken bewegen, ook als een pauze door handmatige override nog actief is.",
+                            "close_covers_after_sunset_keep_closed": "Wanneer ingeschakeld worden geselecteerde rolluiken tijdens de nachtelijke avondsluitingsperiode opnieuw gesloten als ze weer worden geopend. De duur van handmatige override wordt gerespecteerd. Vergrendelingsmodus heeft voorrang, dus rolluiken worden pas opnieuw gesloten nadat de vergrendelingsmodus is uitgeschakeld.",
                             "morning_opening_mode": "Kies of de ochtendopening relatief is ten opzichte van zonsopgang, een vaste tijd gebruikt of door een entiteit wordt geleverd.",
                             "morning_opening_time": "Afhankelijk van de gekozen modus: vertraging na zonsopgang of vast tijdstip. Wordt genegeerd in de externe modus."
                         }
@@ -307,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "de privacy 's nachts te beschermen",
                     "description": "Reden die wordt gebruikt wanneer het rolluik automatisch sluit na zonsondergang."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "de privacy 's nachts te behouden",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik opnieuw sluit tijdens de nachtelijke geslotenhoudperiode."
                 }
             }
         },

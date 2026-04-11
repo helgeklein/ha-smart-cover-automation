@@ -120,6 +120,7 @@
                             "close_covers_after_sunset_delay": "Chiusura serale: orario:",
                             "close_covers_after_sunset_cover_list": "Tapparelle:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignora la durata dell'override manuale:",
+                            "close_covers_after_sunset_keep_closed": "Mantieni chiuse le tapparelle:",
                             "morning_opening_mode": "Apertura mattutina: modalità:",
                             "morning_opening_time": "Apertura mattutina: ora:"
                         },
@@ -129,6 +130,7 @@
                             "close_covers_after_sunset_delay": "A seconda della modalità scelta: ritardo dopo il tramonto oppure orario fisso.",
                             "close_covers_after_sunset_cover_list": "Seleziona le tapparelle che devono essere chiuse di sera.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando attivata, la chiusura serale può muovere le tapparelle selezionate anche se è ancora attiva una pausa dovuta all'override manuale.",
+                            "close_covers_after_sunset_keep_closed": "Quando attivata, le tapparelle selezionate vengono richiuse durante il periodo notturno di chiusura serale se vengono riaperte. La durata dell'override manuale viene rispettata. La modalità di blocco ha la precedenza, quindi le tapparelle vengono richiuse solo dopo che la modalità di blocco è stata disattivata.",
                             "morning_opening_mode": "Scegli se l'apertura mattutina è relativa all'alba, usa un orario assoluto oppure è fornita da un'entità.",
                             "morning_opening_time": "A seconda della modalità scelta: ritardo dopo l'alba oppure orario fisso. Ignorato in modalità esterna."
                         }
@@ -307,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "proteggere la privacy di notte",
                     "description": "Motivo usato quando la tapparella si chiude automaticamente dopo il tramonto."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "mantenere la privacy durante la notte",
+                    "description": "Motivo usato quando la tapparella si richiude durante il periodo notturno di mantenimento della chiusura."
                 }
             }
         },

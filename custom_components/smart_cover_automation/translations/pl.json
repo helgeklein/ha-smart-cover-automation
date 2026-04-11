@@ -120,6 +120,7 @@
                             "close_covers_after_sunset_delay": "Zamykanie wieczorne: godzina:",
                             "close_covers_after_sunset_cover_list": "Rolety:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignoruj czas ręcznego nadpisania:",
+                            "close_covers_after_sunset_keep_closed": "Pozostaw rolety zamknięte:",
                             "morning_opening_mode": "Poranne otwieranie: tryb:",
                             "morning_opening_time": "Poranne otwieranie: godzina:"
                         },
@@ -129,6 +130,7 @@
                             "close_covers_after_sunset_delay": "W zależności od wybranego trybu: opóźnienie po zachodzie słońca lub stała godzina.",
                             "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Po włączeniu zamykanie wieczorne może poruszyć wybrane rolety, nawet jeśli nadal trwa pauza po ręcznym nadpisaniu.",
+                            "close_covers_after_sunset_keep_closed": "Po włączeniu wybrane rolety zostaną ponownie zamknięte podczas nocnego okresu wieczornego zamykania, jeśli zostaną ponownie otwarte. Czas ręcznego nadpisania jest respektowany. Tryb blokady ma pierwszeństwo, więc rolety zostaną ponownie zamknięte dopiero po wyłączeniu trybu blokady.",
                             "morning_opening_mode": "Wybierz, czy poranne otwieranie ma być względem wschodu słońca, korzystać ze stałej godziny czy być dostarczane przez encję.",
                             "morning_opening_time": "W zależności od wybranego trybu: opóźnienie po wschodzie słońca lub stała godzina dnia. Ignorowane w trybie zewnętrznym."
                         }
@@ -307,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "chronić prywatność nocą",
                     "description": "Powód używany, gdy roleta zamyka się automatycznie po zachodzie słońca."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "zachować prywatność przez noc",
+                    "description": "Powód używany, gdy roleta zamyka się ponownie podczas nocnego okresu utrzymywania zamknięcia."
                 }
             }
         },

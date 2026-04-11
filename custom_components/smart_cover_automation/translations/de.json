@@ -120,6 +120,7 @@
                             "close_covers_after_sunset_delay": "Abendschließen: Zeit:",
                             "close_covers_after_sunset_cover_list": "Rollläden:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Dauer der manuellen Übersteuerung ignorieren:",
+                            "close_covers_after_sunset_keep_closed": "Rollläden geschlossen halten:",
                             "morning_opening_mode": "Morgendliches Öffnen: Modus:",
                             "morning_opening_time": "Morgendliches Öffnen: Zeit:"
                         },
@@ -129,6 +130,7 @@
                             "close_covers_after_sunset_delay": "Je nach gewähltem Modus: Verzögerung nach Sonnenuntergang oder feste Uhrzeit.",
                             "close_covers_after_sunset_cover_list": "Wählen Sie die Rollläden aus, die abends geschlossen werden sollen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wenn aktiviert, darf das Abendschließen ausgewählte Rollläden trotz aktiver Pause durch manuelle Übersteuerung bewegen.",
+                            "close_covers_after_sunset_keep_closed": "Wenn aktiviert, werden ausgewählte Rollläden während der nächtlichen Abendschließphase erneut geschlossen, wenn sie wieder geöffnet werden. Die Dauer der manuellen Übersteuerung wird berücksichtigt. Der Sperrmodus hat Vorrang, daher werden Rollläden erst erneut geschlossen, nachdem der Sperrmodus deaktiviert wurde.",
                             "morning_opening_mode": "Wählen Sie, ob das morgendliche Öffnen relativ zum Sonnenaufgang erfolgt, eine feste Uhrzeit verwendet oder von einer Entität geliefert wird.",
                             "morning_opening_time": "Je nach gewähltem Modus: Verzögerung nach Sonnenaufgang oder feste Uhrzeit. Im externen Modus ignoriert."
                         }
@@ -307,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "die Privatsphäre nachts zu schützen",
                     "description": "Grund, wenn der Rollladen automatisch nach Sonnenuntergang geschlossen wird."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "die Privatsphäre über Nacht zu wahren",
+                    "description": "Grund, wenn der Rollladen während der nächtlichen Geschlossenhaltung erneut geschlossen wird."
                 }
             }
         },

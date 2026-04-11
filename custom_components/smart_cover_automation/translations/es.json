@@ -120,6 +120,7 @@
                             "close_covers_after_sunset_delay": "Cierre al anochecer: hora:",
                             "close_covers_after_sunset_cover_list": "Persianas:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar la duración de la anulación manual:",
+                            "close_covers_after_sunset_keep_closed": "Mantener las persianas cerradas:",
                             "morning_opening_mode": "Apertura matutina: modo:",
                             "morning_opening_time": "Apertura matutina: hora:"
                         },
@@ -129,6 +130,7 @@
                             "close_covers_after_sunset_delay": "Según el modo seleccionado: retraso tras la puesta de sol u hora fija del día.",
                             "close_covers_after_sunset_cover_list": "Seleccione las persianas que deben cerrarse por la noche.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Cuando está activada, el cierre nocturno puede mover las persianas seleccionadas aunque siga activa una pausa por anulación manual.",
+                            "close_covers_after_sunset_keep_closed": "Cuando está activada, las persianas seleccionadas se vuelven a cerrar durante el periodo nocturno de cierre al anochecer si se vuelven a abrir. Se respeta la duración de la anulación manual. El modo de bloqueo tiene prioridad, por lo que las persianas solo se vuelven a cerrar después de desactivar el modo de bloqueo.",
                             "morning_opening_mode": "Elija si la apertura matutina es relativa al amanecer, usa una hora absoluta o la proporciona una entidad.",
                             "morning_opening_time": "Según el modo seleccionado: retraso tras el amanecer o una hora fija del día. Se ignora en el modo externo."
                         }
@@ -307,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "proteger la privacidad por la noche",
                     "description": "Motivo usado cuando la persiana se cierra automáticamente después del atardecer."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "mantener la privacidad durante la noche",
+                    "description": "Motivo usado cuando la persiana vuelve a cerrarse durante el periodo nocturno de mantener cerrada."
                 }
             }
         },

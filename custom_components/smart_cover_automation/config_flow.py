@@ -652,6 +652,13 @@ class FlowHelper:
             )
         ] = selector.BooleanSelector()
 
+        evening_closure_schema_dict[
+            vol.Required(
+                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value,
+                default=resolved_settings.evening_closure_keep_closed,
+            )
+        ] = selector.BooleanSelector()
+
         # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
             vol.Schema(evening_closure_schema_dict),

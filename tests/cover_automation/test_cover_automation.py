@@ -59,6 +59,7 @@ def mock_resolved_config():
     resolved.sun_azimuth_tolerance = 30.0
     resolved.manual_override_duration = 3600
     resolved.evening_closure_ignore_manual_override_duration = False
+    resolved.evening_closure_keep_closed = False
     resolved.evening_closure_cover_list = ()
     resolved.covers_min_position_delta = 5
     return resolved
@@ -618,6 +619,30 @@ class TestCheckManualOverride:
         result = cover_automation._should_ignore_manual_override(sensor_data)
 
         assert result is False
+
+    def test_should_not_ignore_manual_override_during_post_evening_closure_keep_closed(
+        self, cover_automation, sensor_data, mock_resolved_config
+    ):
+        """Test the sunset-only bypass does not extend into overnight keep-closed mode."""
+        mock_resolved_config.evening_closure_ignore_manual_override_duration = True
+        mock_resolved_config.evening_closure_keep_closed = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.evening_closure = False
+        sensor_data.post_evening_closure = True
+
+        result = cover_automation._should_ignore_manual_override(sensor_data)
+
+        assert result is False
+
+    def test_get_evening_closure_movement_reason_for_keep_closed(self, cover_automation, sensor_data, mock_resolved_config):
+        """Test overnight keep-closed maps to its dedicated evening movement reason."""
+        mock_resolved_config.evening_closure_keep_closed = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.post_evening_closure = True
+
+        result = cover_automation._get_evening_closure_movement_reason(sensor_data)
+
+        assert result == CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE
 
 
 class TestCalculateSunHitting:
@@ -1546,6 +1571,41 @@ class TestProcessMethod:
         mock_resolved_config.evening_closure_ignore_manual_override_duration = True
         mock_resolved_config.evening_closure_cover_list = ("cover.other",)
         sensor_data.evening_closure = True
+        entry = PositionEntry(position=50, timestamp=datetime.now(timezone.utc) - timedelta(seconds=100), cover_moved=True)
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+
+        result = await cover_automation.process(mock_state, sensor_data)
+
+        assert result.pos_current is not None
+        assert result.pos_target_final is None
+
+    async def test_process_recloses_cover_during_post_evening_closure_when_enabled(
+        self, cover_automation, mock_state, sensor_data, mock_resolved_config, mock_ha_interface
+    ):
+        """Test keep-closed re-closes an evening cover during the overnight block."""
+        mock_resolved_config.evening_closure_keep_closed = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.post_evening_closure = True
+        sensor_data.evening_closure = False
+        sensor_data.temp_hot = False
+        sensor_data.weather_sunny = False
+        mock_ha_interface.set_cover_position.return_value = 0
+        mock_state.attributes[ATTR_CURRENT_POSITION] = 100
+
+        result = await cover_automation.process(mock_state, sensor_data)
+
+        assert result.pos_target_desired == 0
+        assert result.pos_target_final == 0
+
+    async def test_process_respects_manual_override_during_post_evening_closure_keep_closed(
+        self, cover_automation, mock_state, sensor_data, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Test keep-closed waits for manual override expiry before re-closing."""
+        mock_resolved_config.manual_override_duration = 3600
+        mock_resolved_config.evening_closure_keep_closed = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.post_evening_closure = True
+        sensor_data.evening_closure = False
         entry = PositionEntry(position=50, timestamp=datetime.now(timezone.utc) - timedelta(seconds=100), cover_moved=True)
         mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
 

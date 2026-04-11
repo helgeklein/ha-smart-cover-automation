@@ -120,6 +120,7 @@
                             "close_covers_after_sunset_delay": "Kvällsstängning: tid:",
                             "close_covers_after_sunset_cover_list": "Persienner:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorera varaktigheten för manuell överstyrning:",
+                            "close_covers_after_sunset_keep_closed": "Håll persienner stängda:",
                             "morning_opening_mode": "Morgonöppning: läge:",
                             "morning_opening_time": "Morgonöppning: tid:"
                         },
@@ -129,6 +130,7 @@
                             "close_covers_after_sunset_delay": "Beroende på valt läge: fördröjning efter solnedgången eller fast tidpunkt.",
                             "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas på kvällen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "När den är aktiverad får kvällsstängningen flytta valda persienner även om en paus från manuell överstyrning fortfarande är aktiv.",
+                            "close_covers_after_sunset_keep_closed": "När funktionen är aktiverad stängs valda persienner igen under den nattliga kvällsstängningsperioden om de öppnas på nytt. Tiden för manuell överstyrning respekteras. Låsläget har företräde, så persiennerna stängs bara igen efter att låsläget har inaktiverats.",
                             "morning_opening_mode": "Välj om morgonöppningen ska vara relativ till soluppgången, använda en absolut tid eller levereras av en entitet.",
                             "morning_opening_time": "Beroende på valt läge: fördröjning efter soluppgången eller fast tidpunkt. Ignoreras i externt läge."
                         }
@@ -307,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "skydda integriteten nattetid",
                     "description": "Orsak som används när persiennen stängs automatiskt efter solnedgången."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "bevara integriteten under natten",
+                    "description": "Orsak som används när persiennen stängs igen under nattens håll-stängd-period."
                 }
             }
         },

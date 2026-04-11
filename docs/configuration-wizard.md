@@ -124,9 +124,8 @@ Blocked time range settings:
 
 Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening, either at a fixed time or with a certain delay after sunset. The same covers become eligible to reopen in the morning if normal automation permits, either at a fixed time, a certain delay after sunrise or at an externally controlled time.
 
-**Notes:**
+**Note:**
 
-- The evening closure function is active in a 10 minute time window that starts at the configured point in time. If the integration is not running during that time window, the covers will not be closed.
 - Covers closed by the evening closure function stay closed until the specified morning opening time or until the end of the blocked time range - whichever is later.
 
 Evening closure settings:
@@ -144,6 +143,7 @@ Evening closure settings:
 - **Morning opening: time:** Depending on the selected mode: delay after sunrise, or fixed time of day. This setting is ignored if `Morning opening: mode` is `external`.
 - **Covers:** Subset of covers to close after sunset.
 - **Ignore manual override duration:** When enabled, the evening closure can move selected covers even if a manual override pause is still active.
+- **Keep covers closed:** When enabled, selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.
 
 ## Next Steps
 
