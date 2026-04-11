@@ -130,7 +130,7 @@
                             "close_covers_after_sunset_delay": "Selon le mode choisi : délai après le coucher du soleil ou heure fixe.",
                             "close_covers_after_sunset_cover_list": "Sélectionnez les volets qui doivent se fermer le soir.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Lorsqu'elle est activée, la fermeture du soir peut déplacer les volets sélectionnés même si une pause due à une commande manuelle est encore active.",
-                            "close_covers_after_sunset_keep_closed": "Lorsqu'elle est activée, les volets configurés pour la fermeture du soir sont refermés pendant le blocage nocturne dès qu'un verrouillage temporaire ou une ouverture manuelle n'est plus actif.",
+                            "close_covers_after_sunset_keep_closed": "Lorsqu'elle est activée, les volets sélectionnés sont refermés pendant la période nocturne de fermeture du soir s'ils sont rouverts. La durée de la commande manuelle est respectée. Le mode verrouillage est prioritaire, donc les volets ne sont refermés qu'après sa désactivation.",
                             "morning_opening_mode": "Choisissez si l'ouverture matinale est relative au lever du soleil, utilise une heure absolue ou est fournie par une entité.",
                             "morning_opening_time": "Selon le mode choisi : délai après le lever du soleil ou heure fixe. Ignoré en mode externe."
                         }

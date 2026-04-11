@@ -130,7 +130,7 @@
                             "close_covers_after_sunset_delay": "A seconda della modalità scelta: ritardo dopo il tramonto oppure orario fisso.",
                             "close_covers_after_sunset_cover_list": "Seleziona le tapparelle che devono essere chiuse di sera.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando attivata, la chiusura serale può muovere le tapparelle selezionate anche se è ancora attiva una pausa dovuta all'override manuale.",
-                            "close_covers_after_sunset_keep_closed": "Quando attivata, le tapparelle configurate per la chiusura serale vengono richiuse durante il blocco notturno non appena termina un blocco temporaneo o un'apertura manuale.",
+                            "close_covers_after_sunset_keep_closed": "Quando attivata, le tapparelle selezionate vengono richiuse durante il periodo notturno di chiusura serale se vengono riaperte. La durata dell'override manuale viene rispettata. La modalità di blocco ha la precedenza, quindi le tapparelle vengono richiuse solo dopo che la modalità di blocco è stata disattivata.",
                             "morning_opening_mode": "Scegli se l'apertura mattutina è relativa all'alba, usa un orario assoluto oppure è fornita da un'entità.",
                             "morning_opening_time": "A seconda della modalità scelta: ritardo dopo l'alba oppure orario fisso. Ignorato in modalità esterna."
                         }

@@ -355,14 +355,25 @@ class CoverAutomation:
 
         return sensor_data.post_evening_closure
 
-    def _should_keep_closed_after_evening_closure(self, sensor_data: SensorData) -> bool:
-        """Return whether the cover should be re-closed during the overnight block."""
+    def _get_evening_closure_movement_reason(self, sensor_data: SensorData) -> CoverMovementReason | None:
+        """Return the evening-closure movement reason for this cover and cycle.
 
-        return (
-            self.resolved.evening_closure_keep_closed
-            and sensor_data.post_evening_closure
-            and self.entity_id in self.resolved.evening_closure_cover_list
-        )
+        The result is limited to covers explicitly included in the evening
+        closure list. The initial evening-closure trigger takes precedence over
+        the overnight keep-closed period because it represents the more specific
+        transition event.
+        """
+
+        if self.entity_id not in self.resolved.evening_closure_cover_list:
+            return None
+
+        if sensor_data.evening_closure:
+            return CoverMovementReason.CLOSING_AFTER_SUNSET
+
+        if self.resolved.evening_closure_keep_closed and sensor_data.post_evening_closure:
+            return CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE
+
+        return None
 
     #
     # _get_cover_position
@@ -538,10 +549,10 @@ class CoverAutomation:
             True if evening closure should bypass manual override for this cover
         """
 
-        return (
-            self.resolved.evening_closure_ignore_manual_override_duration
-            and sensor_data.evening_closure
-            and self.entity_id in self.resolved.evening_closure_cover_list
+        evening_closure_reason = self._get_evening_closure_movement_reason(sensor_data)
+
+        return self.resolved.evening_closure_ignore_manual_override_duration and (
+            evening_closure_reason == CoverMovementReason.CLOSING_AFTER_SUNSET
         )
 
     #
@@ -600,18 +611,11 @@ class CoverAutomation:
 
         lockout_protection_active = False
         effective_temp_hot = self._get_effective_temp_hot(sensor_data)
-        keep_closed_after_evening_closure = self._should_keep_closed_after_evening_closure(sensor_data)
+        evening_closure_reason = self._get_evening_closure_movement_reason(sensor_data)
 
-        if (
-            sensor_data.evening_closure and self.entity_id in self.resolved.evening_closure_cover_list
-        ) or keep_closed_after_evening_closure:
+        if evening_closure_reason is not None:
             # Evening closure mode - check lockout protection first
-            closing_reason = (
-                CoverMovementReason.CLOSING_AFTER_SUNSET
-                if sensor_data.evening_closure
-                else CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE
-            )
-            if self._is_lockout_protection_active(closing_reason):
+            if self._is_lockout_protection_active(evening_closure_reason):
                 # Lockout protection active - keep current position (prevent closing)
                 lockout_protection_active = True
                 desired_pos = current_pos
@@ -622,9 +626,11 @@ class CoverAutomation:
                 max_closure_limit = self._get_cover_closure_limit(get_max=True, evening_closure=True)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
                 desired_pos_friendly_name = (
-                    "evening closure state (closed)" if sensor_data.evening_closure else "post-evening closure state (keep closed)"
+                    "evening closure state (closed)"
+                    if evening_closure_reason == CoverMovementReason.CLOSING_AFTER_SUNSET
+                    else "post-evening closure state (keep closed)"
                 )
-                movement_reason = closing_reason
+                movement_reason = evening_closure_reason
         elif effective_temp_hot and sensor_data.weather_sunny and sun_hitting:
             # Heat protection mode - check lockout protection first
             if self._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION):

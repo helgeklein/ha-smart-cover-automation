@@ -130,7 +130,7 @@
                             "close_covers_after_sunset_delay": "Consoante o modo selecionado: atraso após o pôr do sol ou hora fixa do dia.",
                             "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas ao anoitecer.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando ativada, o fecho ao entardecer pode mover as persianas selecionadas mesmo que uma pausa por controlo manual ainda esteja ativa.",
-                            "close_covers_after_sunset_keep_closed": "Quando ativada, as persianas configuradas para o fecho ao entardecer voltam a fechar durante o bloqueio noturno assim que termina um bloqueio temporário ou uma abertura manual.",
+                            "close_covers_after_sunset_keep_closed": "Quando ativada, as persianas selecionadas voltam a fechar durante o período noturno de fecho ao entardecer se forem reabertas. A duração da sobreposição manual é respeitada. O modo de bloqueio tem prioridade, por isso as persianas só voltam a fechar depois de o modo de bloqueio ser desativado.",
                             "morning_opening_mode": "Escolha se a abertura matinal é relativa ao nascer do sol, usa uma hora absoluta ou é fornecida por uma entidade.",
                             "morning_opening_time": "Consoante o modo selecionado: atraso após o nascer do sol ou hora fixa do dia. Ignorado no modo externo."
                         }

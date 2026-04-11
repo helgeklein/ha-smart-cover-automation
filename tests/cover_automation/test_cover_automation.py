@@ -634,15 +634,15 @@ class TestCheckManualOverride:
 
         assert result is False
 
-    def test_should_keep_closed_after_evening_closure(self, cover_automation, sensor_data, mock_resolved_config):
-        """Test overnight keep-closed applies only to configured evening covers."""
+    def test_get_evening_closure_movement_reason_for_keep_closed(self, cover_automation, sensor_data, mock_resolved_config):
+        """Test overnight keep-closed maps to its dedicated evening movement reason."""
         mock_resolved_config.evening_closure_keep_closed = True
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
         sensor_data.post_evening_closure = True
 
-        result = cover_automation._should_keep_closed_after_evening_closure(sensor_data)
+        result = cover_automation._get_evening_closure_movement_reason(sensor_data)
 
-        assert result is True
+        assert result == CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE
 
 
 class TestCalculateSunHitting:
