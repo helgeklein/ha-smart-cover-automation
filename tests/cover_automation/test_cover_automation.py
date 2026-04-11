@@ -59,6 +59,7 @@ def mock_resolved_config():
     resolved.sun_azimuth_tolerance = 30.0
     resolved.manual_override_duration = 3600
     resolved.evening_closure_ignore_manual_override_duration = False
+    resolved.evening_closure_keep_closed = False
     resolved.evening_closure_cover_list = ()
     resolved.covers_min_position_delta = 5
     return resolved
@@ -618,6 +619,16 @@ class TestCheckManualOverride:
         result = cover_automation._should_ignore_manual_override(sensor_data)
 
         assert result is False
+
+    def test_should_keep_closed_after_evening_closure(self, cover_automation, sensor_data, mock_resolved_config):
+        """Test overnight keep-closed applies only to configured evening covers."""
+        mock_resolved_config.evening_closure_keep_closed = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.post_evening_closure = True
+
+        result = cover_automation._should_keep_closed_after_evening_closure(sensor_data)
+
+        assert result is True
 
 
 class TestCalculateSunHitting:
@@ -1553,6 +1564,24 @@ class TestProcessMethod:
 
         assert result.pos_current is not None
         assert result.pos_target_final is None
+
+    async def test_process_recloses_cover_during_post_evening_closure_when_enabled(
+        self, cover_automation, mock_state, sensor_data, mock_resolved_config, mock_ha_interface
+    ):
+        """Test keep-closed re-closes an evening cover during the overnight block."""
+        mock_resolved_config.evening_closure_keep_closed = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.post_evening_closure = True
+        sensor_data.evening_closure = False
+        sensor_data.temp_hot = False
+        sensor_data.weather_sunny = False
+        mock_ha_interface.set_cover_position.return_value = 0
+        mock_state.attributes[ATTR_CURRENT_POSITION] = 100
+
+        result = await cover_automation.process(mock_state, sensor_data)
+
+        assert result.pos_target_desired == 0
+        assert result.pos_target_final == 0
 
     async def test_process_successful_automation(
         self, cover_automation, mock_state, sensor_data, mock_cover_pos_history_mgr, mock_ha_interface

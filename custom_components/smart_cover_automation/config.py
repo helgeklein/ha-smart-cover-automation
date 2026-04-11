@@ -73,6 +73,7 @@ class ConfKeys(StrEnum):
     EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION = (
         "close_covers_after_sunset_ignore_manual_override_duration"  # Evening closure: ignore manual override duration.
     )
+    EVENING_CLOSURE_KEEP_CLOSED = "close_covers_after_sunset_keep_closed"  # Evening closure: keep covers closed overnight.
     MORNING_OPENING_MODE = "morning_opening_mode"  # Morning opening: timing mode.
     MORNING_OPENING_TIME = "morning_opening_time"  # Morning opening: time value.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
@@ -221,6 +222,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.EVENING_CLOSURE_COVER_LIST: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.EVENING_CLOSURE_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.EVENING_CLOSURE_KEEP_CLOSED: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.MORNING_OPENING_MODE: _ConfSpec(
         default=MorningOpeningMode.RELATIVE_TO_SUNRISE,
         converter=MorningOpeningMode,
@@ -328,6 +330,7 @@ _VALUE_TO_FIELD: dict[str, str] = {
     "close_covers_after_sunset_cover_list": "evening_closure_cover_list",
     "close_covers_after_sunset_max_closure": "evening_closure_max_closure",
     "close_covers_after_sunset_ignore_manual_override_duration": "evening_closure_ignore_manual_override_duration",
+    "close_covers_after_sunset_keep_closed": "evening_closure_keep_closed",
     "morning_opening_mode": "morning_opening_mode",
     "morning_opening_time": "morning_opening_time",
 }
@@ -356,6 +359,7 @@ class ResolvedConfig:
     evening_closure_cover_list: tuple[str, ...]
     evening_closure_max_closure: int
     evening_closure_ignore_manual_override_duration: bool
+    evening_closure_keep_closed: bool
     morning_opening_mode: MorningOpeningMode
     morning_opening_time: time
     covers: tuple[str, ...]

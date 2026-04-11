@@ -735,6 +735,49 @@ class TestRuntimeBehavior:
         assert cover_calls[0].data["entity_id"] == TEST_COVER_1
         assert cover_calls[0].data["position"] == COVER_POS_FULLY_OPEN
 
+    async def test_post_evening_closure_keep_closed_recloses_open_cover(self, hass: HomeAssistant) -> None:
+        """An overnight keep-closed cover is re-closed after being opened."""
+
+        cover_calls: list[ServiceCall] = []
+
+        async def _record_set_cover_position(call: ServiceCall) -> None:
+            """Record real cover service calls issued by the integration."""
+
+            cover_calls.append(call)
+
+        hass.services.async_register("cover", "set_cover_position", _record_set_cover_position)
+
+        entry = _create_config_entry(
+            hass,
+            extra_options={
+                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [TEST_COVER_1],
+                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True,
+            },
+        )
+        with patch(
+            "custom_components.smart_cover_automation.automation_engine.AutomationEngine._compute_post_evening_closure",
+            return_value=True,
+        ):
+            await _setup_integration(
+                hass,
+                entry,
+                temp_max=COMFORTABLE_TEMP,
+                sun_elevation=SUN_HIGH_ELEVATION,
+                sun_azimuth=SUN_INDIRECT_AZIMUTH,
+                cover_positions={TEST_COVER_1: COVER_POS_FULLY_OPEN},
+            )
+
+        coordinator = _get_coordinator(hass, entry)
+        cover_data = coordinator.data.covers.get(TEST_COVER_1)
+
+        assert cover_data is not None
+        assert cover_data.pos_target_desired == COVER_POS_FULLY_CLOSED
+        assert cover_data.pos_target_final == COVER_POS_FULLY_CLOSED
+        assert len(cover_calls) == 1
+        assert cover_calls[0].data["entity_id"] == TEST_COVER_1
+        assert cover_calls[0].data["position"] == COVER_POS_FULLY_CLOSED
+
     # ------------------------------------------------------------------
     # 1.11  Multiple covers processed in single cycle
     # ------------------------------------------------------------------

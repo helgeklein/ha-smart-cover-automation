@@ -348,6 +348,15 @@ class CoverAutomation:
 
         return sensor_data.post_evening_closure
 
+    def _should_keep_closed_after_evening_closure(self, sensor_data: SensorData) -> bool:
+        """Return whether the cover should be re-closed during the overnight block."""
+
+        return (
+            self.resolved.evening_closure_keep_closed
+            and sensor_data.post_evening_closure
+            and self.entity_id in self.resolved.evening_closure_cover_list
+        )
+
     #
     # _get_cover_position
     #
@@ -524,7 +533,7 @@ class CoverAutomation:
 
         return (
             self.resolved.evening_closure_ignore_manual_override_duration
-            and sensor_data.evening_closure
+            and (sensor_data.evening_closure or self._should_keep_closed_after_evening_closure(sensor_data))
             and self.entity_id in self.resolved.evening_closure_cover_list
         )
 
@@ -584,8 +593,11 @@ class CoverAutomation:
 
         lockout_protection_active = False
         effective_temp_hot = self._get_effective_temp_hot(sensor_data)
+        keep_closed_after_evening_closure = self._should_keep_closed_after_evening_closure(sensor_data)
 
-        if sensor_data.evening_closure and self.entity_id in self.resolved.evening_closure_cover_list:
+        if (
+            sensor_data.evening_closure and self.entity_id in self.resolved.evening_closure_cover_list
+        ) or keep_closed_after_evening_closure:
             # Evening closure mode - check lockout protection first
             if self._is_lockout_protection_active(CoverMovementReason.CLOSING_AFTER_SUNSET):
                 # Lockout protection active - keep current position (prevent closing)
@@ -597,7 +609,9 @@ class CoverAutomation:
                 # No lockout - close the cover
                 max_closure_limit = self._get_cover_closure_limit(get_max=True, evening_closure=True)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
-                desired_pos_friendly_name = "evening closure state (closed)"
+                desired_pos_friendly_name = (
+                    "evening closure state (closed)" if sensor_data.evening_closure else "post-evening closure state (keep closed)"
+                )
                 movement_reason = CoverMovementReason.CLOSING_AFTER_SUNSET
         elif effective_temp_hot and sensor_data.weather_sunny and sun_hitting:
             # Heat protection mode - check lockout protection first

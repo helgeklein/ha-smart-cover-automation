@@ -120,6 +120,7 @@
                             "close_covers_after_sunset_delay": "Evening closure: time:",
                             "close_covers_after_sunset_cover_list": "Covers:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignore manual override duration:",
+                            "close_covers_after_sunset_keep_closed": "Keep covers closed:",
                             "morning_opening_mode": "Morning opening: mode:",
                             "morning_opening_time": "Morning opening: time:"
                         },
@@ -129,6 +130,7 @@
                             "close_covers_after_sunset_delay": "Depending on the selected mode: delay after sunset, or fixed time of day.",
                             "close_covers_after_sunset_cover_list": "Select the covers that should be closed in the evening.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active.",
+                            "close_covers_after_sunset_keep_closed": "When enabled, configured evening-closure covers are closed again during the overnight block after temporary lock or manual opening conditions end.",
                             "morning_opening_mode": "Choose whether morning opening is relative to sunrise, uses an absolute time, or is supplied by an entity.",
                             "morning_opening_time": "Depending on the selected mode: delay after sunrise or fixed time of day. Ignored in external mode."
                         }

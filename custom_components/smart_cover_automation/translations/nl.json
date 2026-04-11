@@ -120,6 +120,7 @@
                             "close_covers_after_sunset_delay": "Avondsluiting: tijd:",
                             "close_covers_after_sunset_cover_list": "Rolluiken:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Duur van handmatige override negeren:",
+                            "close_covers_after_sunset_keep_closed": "Rolluiken gesloten houden:",
                             "morning_opening_mode": "Ochtendopening: modus:",
                             "morning_opening_time": "Ochtendopening: tijd:"
                         },
@@ -129,6 +130,7 @@
                             "close_covers_after_sunset_delay": "Afhankelijk van de gekozen modus: vertraging na zonsondergang of vast tijdstip.",
                             "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die 's avonds moeten worden gesloten.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wanneer ingeschakeld mag de avondsluiting geselecteerde rolluiken bewegen, ook als een pauze door handmatige override nog actief is.",
+                            "close_covers_after_sunset_keep_closed": "Wanneer ingeschakeld worden voor avondsluiting geconfigureerde rolluiken tijdens de nachtelijke blokkering opnieuw gesloten zodra een tijdelijke vergrendeling of handmatige opening voorbij is.",
                             "morning_opening_mode": "Kies of de ochtendopening relatief is ten opzichte van zonsopgang, een vaste tijd gebruikt of door een entiteit wordt geleverd.",
                             "morning_opening_time": "Afhankelijk van de gekozen modus: vertraging na zonsopgang of vast tijdstip. Wordt genegeerd in de externe modus."
                         }
