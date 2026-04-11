@@ -620,6 +620,20 @@ class TestCheckManualOverride:
 
         assert result is False
 
+    def test_should_not_ignore_manual_override_during_post_evening_closure_keep_closed(
+        self, cover_automation, sensor_data, mock_resolved_config
+    ):
+        """Test the sunset-only bypass does not extend into overnight keep-closed mode."""
+        mock_resolved_config.evening_closure_ignore_manual_override_duration = True
+        mock_resolved_config.evening_closure_keep_closed = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.evening_closure = False
+        sensor_data.post_evening_closure = True
+
+        result = cover_automation._should_ignore_manual_override(sensor_data)
+
+        assert result is False
+
     def test_should_keep_closed_after_evening_closure(self, cover_automation, sensor_data, mock_resolved_config):
         """Test overnight keep-closed applies only to configured evening covers."""
         mock_resolved_config.evening_closure_keep_closed = True
@@ -1582,6 +1596,23 @@ class TestProcessMethod:
 
         assert result.pos_target_desired == 0
         assert result.pos_target_final == 0
+
+    async def test_process_respects_manual_override_during_post_evening_closure_keep_closed(
+        self, cover_automation, mock_state, sensor_data, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Test keep-closed waits for manual override expiry before re-closing."""
+        mock_resolved_config.manual_override_duration = 3600
+        mock_resolved_config.evening_closure_keep_closed = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.post_evening_closure = True
+        sensor_data.evening_closure = False
+        entry = PositionEntry(position=50, timestamp=datetime.now(timezone.utc) - timedelta(seconds=100), cover_moved=True)
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+
+        result = await cover_automation.process(mock_state, sensor_data)
+
+        assert result.pos_current is not None
+        assert result.pos_target_final is None
 
     async def test_process_successful_automation(
         self, cover_automation, mock_state, sensor_data, mock_cover_pos_history_mgr, mock_ha_interface

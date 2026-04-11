@@ -309,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "die Privatsphäre nachts zu schützen",
                     "description": "Grund, wenn der Rollladen automatisch nach Sonnenuntergang geschlossen wird."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "die Privatsphäre über Nacht zu wahren",
+                    "description": "Grund, wenn der Rollladen während der nächtlichen Geschlossenhaltung erneut geschlossen wird."
                 }
             }
         },

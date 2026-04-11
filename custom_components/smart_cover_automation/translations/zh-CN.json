@@ -309,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "在夜间保护隐私",
                     "description": "当遮阳设备在日落后自动关闭时使用的原因。"
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "在夜间保持隐私",
+                    "description": "当遮阳设备在夜间保持关闭期间再次关闭时使用的原因。"
                 }
             }
         },

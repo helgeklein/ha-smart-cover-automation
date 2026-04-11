@@ -309,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "proteggere la privacy di notte",
                     "description": "Motivo usato quando la tapparella si chiude automaticamente dopo il tramonto."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "mantenere la privacy durante la notte",
+                    "description": "Motivo usato quando la tapparella si richiude durante il periodo notturno di mantenimento della chiusura."
                 }
             }
         },

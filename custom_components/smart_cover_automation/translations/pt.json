@@ -309,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "proteger a privacidade à noite",
                     "description": "Motivo usado quando a persiana fecha automaticamente após o pôr do sol."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "manter a privacidade durante a noite",
+                    "description": "Motivo usado quando a persiana volta a fechar durante o período noturno de manutenção do fecho."
                 }
             }
         },

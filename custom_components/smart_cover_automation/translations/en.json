@@ -309,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "protect privacy at night",
                     "description": "Reason used when the cover closes automatically after sunset."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "keep privacy overnight",
+                    "description": "Reason used when the cover closes again during the overnight keep-closed period."
                 }
             }
         },

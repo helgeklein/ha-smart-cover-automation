@@ -309,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "skydda integriteten nattetid",
                     "description": "Orsak som används när persiennen stängs automatiskt efter solnedgången."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "bevara integriteten under natten",
+                    "description": "Orsak som används när persiennen stängs igen under nattens håll-stängd-period."
                 }
             }
         },

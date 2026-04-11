@@ -309,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "chronić prywatność nocą",
                     "description": "Powód używany, gdy roleta zamyka się automatycznie po zachodzie słońca."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "zachować prywatność przez noc",
+                    "description": "Powód używany, gdy roleta zamyka się ponownie podczas nocnego okresu utrzymywania zamknięcia."
                 }
             }
         },

@@ -309,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "protéger la vie privée la nuit",
                     "description": "Motif utilisé lorsque le volet se ferme automatiquement après le coucher du soleil."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "préserver l'intimité pendant la nuit",
+                    "description": "Motif utilisé lorsque le volet se referme pendant la période nocturne de maintien fermé."
                 }
             }
         },

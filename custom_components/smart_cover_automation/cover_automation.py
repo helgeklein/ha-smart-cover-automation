@@ -36,6 +36,7 @@ class CoverMovementReason(Enum):
     CLOSING_HEAT_PROTECTION = "closing_heat_protection"
     OPENING_LET_LIGHT_IN = "opening_let_light_in"
     CLOSING_AFTER_SUNSET = "closing_after_sunset"
+    CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE = "closing_keep_closed_after_evening_closure"
 
 
 @dataclass(slots=True)
@@ -183,7 +184,9 @@ class CoverAutomation:
         manual_override_remaining = self._get_manual_override_remaining(current_pos)
         if manual_override_remaining is not None:
             if self._should_ignore_manual_override(sensor_data):
-                message = f"Ignoring manual override during evening closure; {manual_override_remaining:.0f} s would otherwise remain"
+                message = (
+                    f"Ignoring manual override during evening-closure trigger; {manual_override_remaining:.0f} s would otherwise remain"
+                )
                 self._log_cover_msg(message, const.LogSeverity.INFO)
             else:
                 message = (
@@ -307,7 +310,11 @@ class CoverAutomation:
         """
 
         # Only apply to closing operations
-        if movement_reason not in (CoverMovementReason.CLOSING_HEAT_PROTECTION, CoverMovementReason.CLOSING_AFTER_SUNSET):
+        if movement_reason not in (
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            CoverMovementReason.CLOSING_AFTER_SUNSET,
+            CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE,
+        ):
             return False
 
         # Get configured window sensors for this cover
@@ -533,7 +540,7 @@ class CoverAutomation:
 
         return (
             self.resolved.evening_closure_ignore_manual_override_duration
-            and (sensor_data.evening_closure or self._should_keep_closed_after_evening_closure(sensor_data))
+            and sensor_data.evening_closure
             and self.entity_id in self.resolved.evening_closure_cover_list
         )
 
@@ -599,7 +606,12 @@ class CoverAutomation:
             sensor_data.evening_closure and self.entity_id in self.resolved.evening_closure_cover_list
         ) or keep_closed_after_evening_closure:
             # Evening closure mode - check lockout protection first
-            if self._is_lockout_protection_active(CoverMovementReason.CLOSING_AFTER_SUNSET):
+            closing_reason = (
+                CoverMovementReason.CLOSING_AFTER_SUNSET
+                if sensor_data.evening_closure
+                else CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE
+            )
+            if self._is_lockout_protection_active(closing_reason):
                 # Lockout protection active - keep current position (prevent closing)
                 lockout_protection_active = True
                 desired_pos = current_pos
@@ -612,7 +624,7 @@ class CoverAutomation:
                 desired_pos_friendly_name = (
                     "evening closure state (closed)" if sensor_data.evening_closure else "post-evening closure state (keep closed)"
                 )
-                movement_reason = CoverMovementReason.CLOSING_AFTER_SUNSET
+                movement_reason = closing_reason
         elif effective_temp_hot and sensor_data.weather_sunny and sun_hitting:
             # Heat protection mode - check lockout protection first
             if self._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION):
@@ -754,6 +766,9 @@ class CoverAutomation:
             elif movement_reason == CoverMovementReason.CLOSING_AFTER_SUNSET:
                 verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
                 reason_key = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+            elif movement_reason == CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE:
+                verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
+                reason_key = const.TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE
             else:
                 # Type checker will fail if a new enum value is added but not handled
                 assert_never(movement_reason)
@@ -1051,7 +1066,10 @@ class CoverAutomation:
         """
 
         # Determine day/night context
-        is_night = movement_reason == CoverMovementReason.CLOSING_AFTER_SUNSET
+        is_night = movement_reason in (
+            CoverMovementReason.CLOSING_AFTER_SUNSET,
+            CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE,
+        )
         tilt_mode = self._get_effective_tilt_mode(is_night)
 
         if tilt_mode is None:

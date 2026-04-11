@@ -309,6 +309,10 @@
                 "reason_close_after_sunset": {
                     "name": "de privacy 's nachts te beschermen",
                     "description": "Reden die wordt gebruikt wanneer het rolluik automatisch sluit na zonsondergang."
+                },
+                "reason_keep_closed_after_evening_closure": {
+                    "name": "de privacy 's nachts te behouden",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik opnieuw sluit tijdens de nachtelijke geslotenhoudperiode."
                 }
             }
         },
