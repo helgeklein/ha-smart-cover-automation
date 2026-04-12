@@ -37,6 +37,7 @@ from custom_components.smart_cover_automation.const import (
     COVER_POS_FULLY_OPEN,
     COVER_SFX_AZIMUTH,
     HA_WEATHER_COND_SUNNY,
+    ReopeningMode,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
@@ -228,6 +229,7 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting(
 
     # Create sun automation with specified window orientation
     config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID], threshold=0)
+    config[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = ReopeningMode.ACTIVE.value
     config[f"{MOCK_COVER_ENTITY_ID}_cover_azimuth"] = window_azimuth
     entry = MockConfigEntry(config)
     coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, entry))

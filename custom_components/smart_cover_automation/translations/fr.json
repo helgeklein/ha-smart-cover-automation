@@ -121,6 +121,7 @@
                             "close_covers_after_sunset_cover_list": "Volets :",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorer la durée de la commande manuelle :",
                             "close_covers_after_sunset_keep_closed": "Garder les volets fermés :",
+                            "automatic_reopening_mode": "Réouverture automatique :",
                             "morning_opening_mode": "Ouverture matinale : mode :",
                             "morning_opening_time": "Ouverture matinale : heure :"
                         },
@@ -131,6 +132,7 @@
                             "close_covers_after_sunset_cover_list": "Sélectionnez les volets qui doivent se fermer le soir.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Lorsqu'elle est activée, la fermeture du soir peut déplacer les volets sélectionnés même si une pause due à une commande manuelle est encore active.",
                             "close_covers_after_sunset_keep_closed": "Lorsqu'elle est activée, les volets sélectionnés sont refermés pendant la période nocturne de fermeture du soir s'ils sont rouverts. La durée de la commande manuelle est respectée. Le mode verrouillage est prioritaire, donc les volets ne sont refermés qu'après sa désactivation.",
+                            "automatic_reopening_mode": "Choisissez comment l'automatisation doit rouvrir les volets lorsque les conditions de fermeture ne s'appliquent plus. Actif rouvre toujours les volets, Passif ne rouvre que les volets précédemment fermés par l'automatisation, et Désactivé désactive la réouverture automatique.",
                             "morning_opening_mode": "Choisissez si l'ouverture matinale est relative au lever du soleil, utilise une heure absolue ou est fournie par une entité.",
                             "morning_opening_time": "Selon le mode choisi : délai après le lever du soleil ou heure fixe. Ignoré en mode externe."
                         }
@@ -170,6 +172,14 @@
             }
         },
         "select": {
+            "automatic_reopening_mode": {
+                "name": "Réouverture automatique",
+                "state": {
+                    "active": "Actif",
+                    "passive": "Passif",
+                    "off": "Désactivé"
+                }
+            },
             "lock_mode": {
                 "name": "Mode de verrouillage",
                 "state": {
@@ -302,6 +312,10 @@
                     "name": "protéger de la chaleur",
                     "description": "Motif utilisé lorsque le volet se déplace pour protéger la pièce de la chaleur."
                 },
+                "reason_end_heat_protection": {
+                    "name": "mettre fin à la protection contre la chaleur",
+                    "description": "Motif utilisé lorsque le volet se rouvre parce que les conditions de protection contre la chaleur ne s'appliquent plus."
+                },
                 "reason_let_light_in": {
                     "name": "laisser entrer la lumière",
                     "description": "Motif utilisé lorsque le volet se déplace pour laisser entrer davantage de lumière."
@@ -309,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "protéger la vie privée la nuit",
                     "description": "Motif utilisé lorsque le volet se ferme automatiquement après le coucher du soleil."
+                },
+                "reason_end_evening_closure": {
+                    "name": "mettre fin à la protection de l'intimité pendant la nuit",
+                    "description": "Motif utilisé lorsque le volet se rouvre parce que la période de fermeture du soir est terminée."
+                },
+                "reason_end_manual_override": {
+                    "name": "mettre fin à l'override manuel",
+                    "description": "Motif utilisé lorsque le volet se rouvre parce que la pause due à l'override manuel est terminée."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "préserver l'intimité pendant la nuit",
@@ -328,6 +350,13 @@
         }
     },
     "selector": {
+        "automatic_reopening_mode": {
+            "options": {
+                "active": "Actif",
+                "passive": "Passif",
+                "off": "Désactivé"
+            }
+        },
         "lock_mode": {
             "options": {
                 "unlocked": "Déverrouillé (automatisation active)",

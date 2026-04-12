@@ -15,12 +15,15 @@ import pytest
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.const import (
+    SELECT_KEY_AUTOMATIC_REOPENING_MODE,
     SELECT_KEY_LOCK_MODE,
     LockMode,
+    ReopeningMode,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.select import (
+    AutomaticReopeningModeSelect,
     LockModeSelect,
     async_setup_entry,
 )
@@ -269,6 +272,84 @@ async def test_lock_mode_select_async_select_option_none_value(mock_hass_with_sp
         mock_logger.error.assert_called_once()
         # Should not call coordinator
         coordinator.async_set_lock_mode.assert_not_called()
+
+
+async def test_automatic_reopening_mode_select_entity_properties(mock_hass_with_spec, mock_config_entry_basic) -> None:
+    """Test AutomaticReopeningModeSelect entity properties."""
+
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    coordinator.last_update_success = True
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+
+    captured: list[Entity] = []
+
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:  # noqa: ARG001
+        captured.extend(list(new_entities))
+
+    await async_setup_entry(
+        mock_hass_with_spec,
+        cast(IntegrationConfigEntry, mock_config_entry_basic),
+        add_entities,
+    )
+
+    automatic_reopening_mode_select = next(entity for entity in captured if isinstance(entity, AutomaticReopeningModeSelect))
+    assert automatic_reopening_mode_select.entity_description.key == SELECT_KEY_AUTOMATIC_REOPENING_MODE
+    assert automatic_reopening_mode_select.entity_description.translation_key == SELECT_KEY_AUTOMATIC_REOPENING_MODE
+    assert automatic_reopening_mode_select.unique_id == f"{mock_config_entry_basic.entry_id}_{SELECT_KEY_AUTOMATIC_REOPENING_MODE}"
+    assert automatic_reopening_mode_select.options == [mode.value for mode in ReopeningMode]
+
+
+async def test_automatic_reopening_mode_select_current_option_returns_coordinator_mode(
+    mock_hass_with_spec, mock_config_entry_basic
+) -> None:
+    """Test that current_option returns the coordinator automatic reopening mode."""
+
+    from custom_components.smart_cover_automation.config import ConfKeys
+
+    mock_config_entry_basic.options[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = ReopeningMode.PASSIVE.value
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+
+    automatic_reopening_mode_select = AutomaticReopeningModeSelect(coordinator)
+
+    assert automatic_reopening_mode_select.current_option == ReopeningMode.PASSIVE.value
+
+
+async def test_automatic_reopening_mode_select_async_select_option_valid(mock_hass_with_spec, mock_config_entry_basic) -> None:
+    """Test async_select_option with valid automatic reopening mode string."""
+
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    coordinator.async_set_automatic_reopening_mode = AsyncMock()
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+
+    automatic_reopening_mode_select = AutomaticReopeningModeSelect(coordinator)
+
+    await automatic_reopening_mode_select.async_select_option(ReopeningMode.OFF.value)
+
+    coordinator.async_set_automatic_reopening_mode.assert_called_once_with(ReopeningMode.OFF)
+
+
+async def test_automatic_reopening_mode_select_async_select_option_invalid(mock_hass_with_spec, mock_config_entry_basic) -> None:
+    """Test async_select_option with invalid automatic reopening mode string."""
+
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    coordinator.async_set_automatic_reopening_mode = AsyncMock()
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+
+    with patch("custom_components.smart_cover_automation.select.Log") as mock_log_class:
+        mock_logger = MagicMock()
+        mock_log_class.return_value = mock_logger
+
+        automatic_reopening_mode_select = AutomaticReopeningModeSelect(coordinator)
+
+        invalid_option = "invalid_automatic_reopening_mode"
+        await automatic_reopening_mode_select.async_select_option(invalid_option)
+
+        mock_logger.error.assert_called_once()
+        error_message = mock_logger.error.call_args[0][0]
+        assert "Invalid automatic reopening mode value" in error_message
+        assert invalid_option in error_message
+        coordinator.async_set_automatic_reopening_mode.assert_not_called()
 
 
 async def test_lock_mode_select_availability(mock_hass_with_spec, mock_config_entry_basic) -> None:

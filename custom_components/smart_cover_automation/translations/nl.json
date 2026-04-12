@@ -121,6 +121,7 @@
                             "close_covers_after_sunset_cover_list": "Rolluiken:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Duur van handmatige override negeren:",
                             "close_covers_after_sunset_keep_closed": "Rolluiken gesloten houden:",
+                            "automatic_reopening_mode": "Automatisch heropenen:",
                             "morning_opening_mode": "Ochtendopening: modus:",
                             "morning_opening_time": "Ochtendopening: tijd:"
                         },
@@ -131,6 +132,7 @@
                             "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die 's avonds moeten worden gesloten.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wanneer ingeschakeld mag de avondsluiting geselecteerde rolluiken bewegen, ook als een pauze door handmatige override nog actief is.",
                             "close_covers_after_sunset_keep_closed": "Wanneer ingeschakeld worden geselecteerde rolluiken tijdens de nachtelijke avondsluitingsperiode opnieuw gesloten als ze weer worden geopend. De duur van handmatige override wordt gerespecteerd. Vergrendelingsmodus heeft voorrang, dus rolluiken worden pas opnieuw gesloten nadat de vergrendelingsmodus is uitgeschakeld.",
+                            "automatic_reopening_mode": "Kies hoe de automatisering rolluiken opnieuw moet openen wanneer de sluitvoorwaarden niet langer van toepassing zijn. Actief opent rolluiken altijd opnieuw, Passief opent alleen rolluiken opnieuw die eerder door de automatisering zijn gesloten en Uit schakelt automatisch heropenen uit.",
                             "morning_opening_mode": "Kies of de ochtendopening relatief is ten opzichte van zonsopgang, een vaste tijd gebruikt of door een entiteit wordt geleverd.",
                             "morning_opening_time": "Afhankelijk van de gekozen modus: vertraging na zonsopgang of vast tijdstip. Wordt genegeerd in de externe modus."
                         }
@@ -170,6 +172,14 @@
             }
         },
         "select": {
+            "automatic_reopening_mode": {
+                "name": "Automatisch heropenen",
+                "state": {
+                    "active": "Actief",
+                    "passive": "Passief",
+                    "off": "Uit"
+                }
+            },
             "lock_mode": {
                 "name": "Vergrendelmodus",
                 "state": {
@@ -302,6 +312,10 @@
                     "name": "te beschermen tegen hitte",
                     "description": "Reden die wordt gebruikt wanneer het rolluik beweegt om de kamer tegen hitte te beschermen."
                 },
+                "reason_end_heat_protection": {
+                    "name": "de hittebescherming te beëindigen",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik weer opent omdat de voorwaarden voor hittebescherming niet langer gelden."
+                },
                 "reason_let_light_in": {
                     "name": "licht binnen te laten",
                     "description": "Reden die wordt gebruikt wanneer het rolluik beweegt om meer licht binnen te laten."
@@ -309,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "de privacy 's nachts te beschermen",
                     "description": "Reden die wordt gebruikt wanneer het rolluik automatisch sluit na zonsondergang."
+                },
+                "reason_end_evening_closure": {
+                    "name": "de nachtelijke privacybescherming te beëindigen",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik weer opent omdat de periode van avondsluiting is afgelopen."
+                },
+                "reason_end_manual_override": {
+                    "name": "de handmatige override te beëindigen",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik weer opent omdat de pauze door handmatige override is afgelopen."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "de privacy 's nachts te behouden",
@@ -328,6 +350,13 @@
         }
     },
     "selector": {
+        "automatic_reopening_mode": {
+            "options": {
+                "active": "Actief",
+                "passive": "Passief",
+                "off": "Uit"
+            }
+        },
         "lock_mode": {
             "options": {
                 "unlocked": "Ontgrendeld (automatisering actief)",

@@ -19,6 +19,7 @@ from custom_components.smart_cover_automation.const import (
     COVER_SFX_AZIMUTH,
     HA_WEATHER_COND_PARTCLOUDY,
     HA_WEATHER_COND_SUNNY,
+    ReopeningMode,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
@@ -230,6 +231,7 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         config = create_sun_config(covers=[MOCK_COVER_ENTITY_ID])
         config[ConfKeys.COVERS_MAX_CLOSURE.value] = max_closure
         config[ConfKeys.COVERS_MIN_CLOSURE.value] = min_closure
+        config[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = ReopeningMode.ACTIVE.value
         config[f"{MOCK_COVER_ENTITY_ID}_{COVER_SFX_AZIMUTH}"] = 180.0  # South-facing cover
 
         config_entry = MockConfigEntry(config)

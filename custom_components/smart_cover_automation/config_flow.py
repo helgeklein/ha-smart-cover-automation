@@ -659,6 +659,20 @@ class FlowHelper:
             )
         ] = selector.BooleanSelector()
 
+        automatic_reopening_mode_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.ReopeningMode]
+        evening_closure_schema_dict[
+            vol.Required(
+                ConfKeys.AUTOMATIC_REOPENING_MODE.value,
+                default=resolved_settings.automatic_reopening_mode,
+            )
+        ] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=automatic_reopening_mode_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="automatic_reopening_mode",
+            )
+        )
+
         # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
             vol.Schema(evening_closure_schema_dict),

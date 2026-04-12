@@ -121,6 +121,7 @@
                             "close_covers_after_sunset_cover_list": "Covers:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignore manual override duration:",
                             "close_covers_after_sunset_keep_closed": "Keep covers closed:",
+                            "automatic_reopening_mode": "Automatic reopening:",
                             "morning_opening_mode": "Morning opening: mode:",
                             "morning_opening_time": "Morning opening: time:"
                         },
@@ -131,6 +132,7 @@
                             "close_covers_after_sunset_cover_list": "Select the covers that should be closed in the evening.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active.",
                             "close_covers_after_sunset_keep_closed": "When enabled, selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.",
+                            "automatic_reopening_mode": "Choose how automation should reopen covers when closing conditions no longer apply. Active always reopens covers, Passive only reopens covers that were previously closed by automation, and Off disables automatic reopening.",
                             "morning_opening_mode": "Choose whether morning opening is relative to sunrise, uses an absolute time, or is supplied by an entity.",
                             "morning_opening_time": "Depending on the selected mode: delay after sunrise or fixed time of day. Ignored in external mode."
                         }
@@ -170,6 +172,14 @@
             }
         },
         "select": {
+            "automatic_reopening_mode": {
+                "name": "Automatic reopening",
+                "state": {
+                    "active": "Active",
+                    "passive": "Passive",
+                    "off": "Off"
+                }
+            },
             "lock_mode": {
                 "name": "Lock mode",
                 "state": {
@@ -302,6 +312,14 @@
                     "name": "protect from heat",
                     "description": "Reason used when the cover moves to protect the room from heat."
                 },
+                "reason_end_heat_protection": {
+                    "name": "end heat protection",
+                    "description": "Reason used when the cover reopens because heat-protection conditions no longer apply."
+                },
+                "reason_end_manual_override": {
+                    "name": "manual override ended",
+                    "description": "Reason used when the cover reopens because the manual override pause has ended."
+                },
                 "reason_let_light_in": {
                     "name": "let light in",
                     "description": "Reason used when the cover moves to let more light inside."
@@ -309,6 +327,10 @@
                 "reason_close_after_sunset": {
                     "name": "protect privacy at night",
                     "description": "Reason used when the cover closes automatically after sunset."
+                },
+                "reason_end_evening_closure": {
+                    "name": "end overnight privacy protection",
+                    "description": "Reason used when the cover reopens because the evening-closure period has ended."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "keep privacy overnight",
@@ -328,6 +350,13 @@
         }
     },
     "selector": {
+        "automatic_reopening_mode": {
+            "options": {
+                "active": "Active",
+                "passive": "Passive",
+                "off": "Off"
+            }
+        },
         "lock_mode": {
             "options": {
                 "unlocked": "Unlocked (automation active)",

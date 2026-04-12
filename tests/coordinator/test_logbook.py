@@ -50,7 +50,10 @@ class TestLogbookEntries:
             f"{base_key}.{const.TRANSL_LOGBOOK_VERB_OPENING}.{const.TRANSL_ATTR_NAME}": "Opening",
             f"{base_key}.{const.TRANSL_LOGBOOK_VERB_CLOSING}.{const.TRANSL_ATTR_NAME}": "Closing",
             f"{base_key}.{const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION}.{const.TRANSL_ATTR_NAME}": "protect from heat",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_END_HEAT_PROTECTION}.{const.TRANSL_ATTR_NAME}": "end heat protection",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_END_MANUAL_OVERRIDE}.{const.TRANSL_ATTR_NAME}": "manual override ended",
             f"{base_key}.{const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN}.{const.TRANSL_ATTR_NAME}": "let light in",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_END_EVENING_CLOSURE}.{const.TRANSL_ATTR_NAME}": "end overnight privacy protection",
             f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}.{const.TRANSL_ATTR_NAME}": "{verb} {entity_id} to {reason}. New position: {position}%.",
         }
 
@@ -237,6 +240,48 @@ class TestLogbookEntries:
             assert "protect from heat" in message
             assert "0%" in message
 
+            mock_log_entry.reset_mock()
+
+            await mock_coordinator._ha_interface.add_logbook_entry(
+                verb_key="verb_opening",
+                entity_id=MOCK_COVER_ENTITY_ID,
+                reason_key="reason_end_heat_protection",
+                target_pos=100,
+            )
+
+            assert mock_log_entry.call_count == 1
+            message = mock_log_entry.call_args.kwargs["message"]
+            assert "Opening" in message
+            assert "end heat protection" in message
+
+            mock_log_entry.reset_mock()
+
+            await mock_coordinator._ha_interface.add_logbook_entry(
+                verb_key="verb_opening",
+                entity_id=MOCK_COVER_ENTITY_ID,
+                reason_key="reason_end_manual_override",
+                target_pos=100,
+            )
+
+            assert mock_log_entry.call_count == 1
+            message = mock_log_entry.call_args.kwargs["message"]
+            assert "Opening" in message
+            assert "manual override ended" in message
+
+            mock_log_entry.reset_mock()
+
+            await mock_coordinator._ha_interface.add_logbook_entry(
+                verb_key="verb_opening",
+                entity_id=MOCK_COVER_ENTITY_ID,
+                reason_key="reason_end_evening_closure",
+                target_pos=100,
+            )
+
+            assert mock_log_entry.call_count == 1
+            message = mock_log_entry.call_args.kwargs["message"]
+            assert "Opening" in message
+            assert "end overnight privacy protection" in message
+
     async def test_logbook_entry_exception_handling(
         self,
         mock_coordinator: DataUpdateCoordinator,
@@ -329,7 +374,10 @@ class TestLogbookEntries:
             f"{base_key}.{const.TRANSL_LOGBOOK_VERB_OPENING}.{const.TRANSL_ATTR_NAME}": "Öffne",
             f"{base_key}.{const.TRANSL_LOGBOOK_VERB_CLOSING}.{const.TRANSL_ATTR_NAME}": "Schließe",
             f"{base_key}.{const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION}.{const.TRANSL_ATTR_NAME}": "vor Hitze zu schützen",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_END_HEAT_PROTECTION}.{const.TRANSL_ATTR_NAME}": "den Hitzeschutz zu beenden",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_END_MANUAL_OVERRIDE}.{const.TRANSL_ATTR_NAME}": "die manuelle Übersteuerung zu beenden",
             f"{base_key}.{const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN}.{const.TRANSL_ATTR_NAME}": "Licht hereinzulassen",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_END_EVENING_CLOSURE}.{const.TRANSL_ATTR_NAME}": "den nächtlichen Sichtschutz zu beenden",
             f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}.{const.TRANSL_ATTR_NAME}": "{verb} {entity_id} um {reason}. Neue Position: {position}%.",
         }
 

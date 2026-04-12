@@ -1100,6 +1100,81 @@ class TestProcessWithTilt:
         mock_ha_interface.set_cover_tilt_position.assert_called_once()
         assert cover_state.tilt_target == 100
 
+    @pytest.mark.asyncio
+    async def test_process_applies_tilt_when_position_already_matches_target(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features
+    ) -> None:
+        """Process should still apply tilt when automation keeps the same position."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.OPEN
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=100)
+
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+
+        state = MagicMock()
+        state.state = STATE_OPEN
+        state.attributes = {
+            ATTR_CURRENT_POSITION: 0,
+            ATTR_CURRENT_TILT_POSITION: 50,
+            "supported_features": tilt_features,
+        }
+        data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        cover_state = await auto.process(state, data)
+
+        mock_ha_interface.set_cover_position.assert_not_called()
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 100, tilt_features)
+        assert cover_state.pos_target_desired == 0
+        assert cover_state.pos_target_final is None
+        assert cover_state.tilt_target == 100
+
+    @pytest.mark.asyncio
+    async def test_process_applies_tilt_when_position_move_is_below_delta(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features
+    ) -> None:
+        """Process should still apply tilt when the position adjustment is skipped as too small."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.OPEN
+        mock_resolved_config.covers_min_position_delta = 10
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=100)
+
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+
+        state = MagicMock()
+        state.state = STATE_OPEN
+        state.attributes = {
+            ATTR_CURRENT_POSITION: 5,
+            ATTR_CURRENT_TILT_POSITION: 50,
+            "supported_features": tilt_features,
+        }
+        data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        cover_state = await auto.process(state, data)
+
+        mock_ha_interface.set_cover_position.assert_not_called()
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 100, tilt_features)
+        assert cover_state.pos_target_desired == 0
+        assert cover_state.pos_target_final is None
+        assert cover_state.tilt_target == 100
+
     #
     # test_process_applies_night_tilt_during_evening_closure_when_opening_block_enabled
     #

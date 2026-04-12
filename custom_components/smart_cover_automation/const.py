@@ -130,6 +130,17 @@ class MorningOpeningMode(StrEnum):
 
 
 #
+# ReopeningMode
+#
+class ReopeningMode(StrEnum):
+    """Automatic reopening behavior after automation-driven closing."""
+
+    ACTIVE = "active"
+    PASSIVE = "passive"
+    OFF = "off"
+
+
+#
 # TiltMode
 #
 class TiltMode(StrEnum):
@@ -188,6 +199,7 @@ SENSOR_KEY_TEMP_CURRENT_MAX: Final[str] = "temp_current_max"  # Key for the curr
 SENSOR_KEY_TEMP_CURRENT_MIN: Final[str] = "temp_current_min"  # Key for the current minimum temperature sensor entity
 SENSOR_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode sensor entity
 SELECT_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode select entity
+SELECT_KEY_AUTOMATIC_REOPENING_MODE: Final[str] = "automatic_reopening_mode"  # Key for the automatic reopening mode select entity
 LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD: Final[str] = "temp_threshold"  # Legacy key for the old heat-protection max threshold option
 NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD: Final[str] = (
     "daily_max_temperature_threshold"  # Key for the daily max temperature threshold number entity
@@ -240,8 +252,11 @@ TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT: Final[str] = "template_cover_movement"
 TRANSL_LOGBOOK_VERB_OPENING: Final[str] = "verb_opening"
 TRANSL_LOGBOOK_VERB_CLOSING: Final[str] = "verb_closing"
 TRANSL_LOGBOOK_REASON_HEAT_PROTECTION: Final[str] = "reason_heat_protection"
+TRANSL_LOGBOOK_REASON_END_HEAT_PROTECTION: Final[str] = "reason_end_heat_protection"
+TRANSL_LOGBOOK_REASON_END_MANUAL_OVERRIDE: Final[str] = "reason_end_manual_override"
 TRANSL_LOGBOOK_REASON_LET_LIGHT_IN: Final[str] = "reason_let_light_in"
 TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET: Final[str] = "reason_close_after_sunset"
+TRANSL_LOGBOOK_REASON_END_EVENING_CLOSURE: Final[str] = "reason_end_evening_closure"
 TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE: Final[str] = "reason_keep_closed_after_evening_closure"
 TRANSL_ATTR_NAME: Final[str] = "name"
 TRANSL_KEY_SERVICES: Final[str] = "services"

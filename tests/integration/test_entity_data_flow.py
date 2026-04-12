@@ -36,6 +36,7 @@ from custom_components.smart_cover_automation.const import (
     NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
     NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
+    SELECT_KEY_AUTOMATIC_REOPENING_MODE,
     SELECT_KEY_LOCK_MODE,
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
@@ -43,6 +44,7 @@ from custom_components.smart_cover_automation.const import (
     SENSOR_KEY_TEMP_CURRENT_MIN,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
     LockMode,
+    ReopeningMode,
 )
 
 # ============================================================================
@@ -670,6 +672,46 @@ class TestSelectEntityDataFlow:
         # Config options should be persisted
         assert entry.options.get(ConfKeys.LOCK_MODE.value) == LockMode.FORCE_OPEN
 
+    async def test_select_reads_default_automatic_reopening_mode(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Automatic reopening select shows PASSIVE by default."""
+
+        entry = _create_config_entry(hass)
+        await _setup_integration(hass, entry)
+
+        entity_id = _entity_id_for_key(hass, entry, SELECT_KEY_AUTOMATIC_REOPENING_MODE)
+        assert entity_id is not None, "automatic_reopening_mode select entity not registered"
+
+        state = hass.states.get(entity_id)
+        assert state is not None
+        assert state.state == ReopeningMode.PASSIVE
+
+    async def test_select_changes_automatic_reopening_mode(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Changing automatic reopening mode via select entity updates config options."""
+
+        entry = _create_config_entry(hass)
+        await _setup_integration(hass, entry)
+
+        entity_id = _entity_id_for_key(hass, entry, SELECT_KEY_AUTOMATIC_REOPENING_MODE)
+        assert entity_id is not None
+
+        await hass.services.async_call(
+            "select",
+            "select_option",
+            {"entity_id": entity_id, "option": ReopeningMode.PASSIVE},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        coordinator = _get_coordinator(hass, entry)
+        assert coordinator.automatic_reopening_mode == ReopeningMode.PASSIVE
+        assert entry.options.get(ConfKeys.AUTOMATIC_REOPENING_MODE.value) == ReopeningMode.PASSIVE
+
 
 class TestSwitchEntityDataFlow:
     """Verify switch entities toggle config and reflect state."""
@@ -977,6 +1019,7 @@ class TestEntityRegistration:
 
         # Select
         assert SELECT_KEY_LOCK_MODE in registered_keys, "Lock mode select not registered"
+        assert SELECT_KEY_AUTOMATIC_REOPENING_MODE in registered_keys, "Automatic reopening mode select not registered"
 
         # Switches
         for key in (

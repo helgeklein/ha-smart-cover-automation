@@ -31,7 +31,7 @@ from homeassistant.const import (
 )
 
 from custom_components.smart_cover_automation import const
-from custom_components.smart_cover_automation.const import LockMode
+from custom_components.smart_cover_automation.const import LockMode, ReopeningMode
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverMovementReason,
@@ -61,6 +61,7 @@ def mock_resolved_config():
     resolved.evening_closure_ignore_manual_override_duration = False
     resolved.evening_closure_keep_closed = False
     resolved.evening_closure_cover_list = ()
+    resolved.automatic_reopening_mode = ReopeningMode.ACTIVE
     resolved.covers_min_position_delta = 5
     return resolved
 
@@ -83,6 +84,13 @@ def mock_cover_pos_history_mgr():
     mgr.get_recent_automation_action = MagicMock(return_value=None)
     mgr.set_recent_automation_action = MagicMock()
     mgr.clear_recent_automation_action = MagicMock()
+    mgr.mark_closed_by_automation = MagicMock()
+    mgr.clear_closed_by_automation = MagicMock()
+    mgr.was_closed_by_automation = MagicMock(return_value=False)
+    mgr.get_closed_by_automation_reason = MagicMock(return_value=None)
+    mgr.mark_manual_override_blocked = MagicMock()
+    mgr.clear_manual_override_blocked = MagicMock()
+    mgr.was_manual_override_blocking = MagicMock(return_value=False)
     mgr.add = MagicMock()
     mgr.get_entries = MagicMock(return_value=[])
     return mgr
@@ -634,6 +642,23 @@ class TestCheckManualOverride:
 
         assert result is False
 
+    async def test_process_clears_automation_closed_marker_on_manual_override(
+        self,
+        cover_automation,
+        mock_cover_pos_history_mgr,
+        mock_state,
+        sensor_data,
+    ):
+        """Manual override should clear passive reopening eligibility."""
+
+        entry = PositionEntry(position=0, timestamp=datetime.now(timezone.utc) - timedelta(seconds=30), cover_moved=True)
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_state.attributes[ATTR_CURRENT_POSITION] = 50
+
+        await cover_automation.process(mock_state, sensor_data)
+
+        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
+
     def test_get_evening_closure_movement_reason_for_keep_closed(self, cover_automation, sensor_data, mock_resolved_config):
         """Test overnight keep-closed maps to its dedicated evening movement reason."""
         mock_resolved_config.evening_closure_keep_closed = True
@@ -760,6 +785,120 @@ class TestCalculateDesiredPosition:
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
         assert position == 100  # Fully open
         assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+
+    def test_calculate_desired_position_passive_reopens_after_automation_closure(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Passive mode reopens covers only when they were previously closed by automation."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
+        assert lockout_active is False
+
+    def test_calculate_desired_position_passive_keeps_position_without_automation_closure(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Passive mode should not reopen covers that were not closed by automation."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = None
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        assert position == 50
+        assert reason is None
+        assert lockout_active is False
+
+    def test_calculate_desired_position_off_never_reopens(self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr):
+        """Off mode should suppress automatic reopening even after automation closures."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.OFF
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        assert position == 50
+        assert reason is None
+        assert lockout_active is False
+
+    def test_calculate_desired_position_after_manual_override_expired(self, cover_automation):
+        """Active mode should use a dedicated reopening reason when manual override just expired."""
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(
+            sensor_data,
+            sun_hitting=False,
+            current_pos=50,
+            manual_override_just_expired=True,
+        )
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_AFTER_MANUAL_OVERRIDE
+        assert lockout_active is False
+
+    def test_calculate_desired_position_reopens_after_evening_closure(self, cover_automation, mock_cover_pos_history_mgr):
+        """Reopening after an evening-closure close should use the evening-closure reopening reason."""
+
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
 
     def test_calculate_desired_position_with_max_closure_limit(self, cover_automation, mock_resolved_config, basic_config):
         """Test desired position with max closure limit."""
@@ -1455,6 +1594,40 @@ class TestMaoveCoverIfNeeded:
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 20, cover_moved=True)
         mock_ha_interface.add_logbook_entry.assert_called_once()
 
+
+class TestNoMovementMessages:
+    """Test admin-facing no-movement explanations."""
+
+    def test_get_no_movement_message_passive_already_open(self, cover_automation, mock_resolved_config, sensor_data):
+        """Passive mode should not mention reopening policy when already at the open target."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+
+        message = cover_automation._get_no_movement_message(
+            sensor_data,
+            current_pos=100,
+            desired_pos=100,
+            lockout_protection_active=False,
+        )
+
+        assert message == "No movement: already at the open target"
+
+    def test_get_no_movement_message_passive_keeps_closed_cover(self, cover_automation, mock_resolved_config, sensor_data):
+        """Passive mode should explain why a closed cover stays closed."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+
+        message = cover_automation._get_no_movement_message(
+            sensor_data,
+            current_pos=0,
+            desired_pos=0,
+            lockout_protection_active=False,
+        )
+
+        assert message == (
+            "No movement: keeping current position because passive reopening only applies after automation closed this cover"
+        )
+
     async def test_move_cover_if_needed_opening_let_light_in(self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr):
         """Test moving cover to let light in."""
         mock_ha_interface.set_cover_position.return_value = 80
@@ -1470,6 +1643,107 @@ class TestMaoveCoverIfNeeded:
         assert actual_pos == 80
         assert message == "Moved cover"
         mock_ha_interface.add_logbook_entry.assert_called_once()
+
+    async def test_move_cover_if_needed_opening_after_heat_protection(
+        self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr
+    ):
+        """Test moving cover when reopening after heat protection ends."""
+
+        mock_ha_interface.set_cover_position.return_value = 80
+
+        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
+            current_pos=20,
+            desired_pos=80,
+            features=CoverEntityFeature.SET_POSITION,
+            movement_reason=CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION,
+        )
+
+        assert movement_needed is True
+        assert actual_pos == 80
+        assert message == "Moved cover"
+        call_kwargs = mock_ha_interface.add_logbook_entry.call_args[1]
+        assert call_kwargs["reason_key"] == const.TRANSL_LOGBOOK_REASON_END_HEAT_PROTECTION
+
+    async def test_move_cover_if_needed_opening_after_evening_closure(
+        self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr
+    ):
+        """Test moving cover when reopening after evening closure ends."""
+
+        mock_ha_interface.set_cover_position.return_value = 80
+
+        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
+            current_pos=20,
+            desired_pos=80,
+            features=CoverEntityFeature.SET_POSITION,
+            movement_reason=CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE,
+        )
+
+        assert movement_needed is True
+        assert actual_pos == 80
+        assert message == "Moved cover"
+        call_kwargs = mock_ha_interface.add_logbook_entry.call_args[1]
+        assert call_kwargs["reason_key"] == const.TRANSL_LOGBOOK_REASON_END_EVENING_CLOSURE
+
+    async def test_move_cover_if_needed_opening_after_manual_override(
+        self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr
+    ):
+        """Test moving cover when reopening after manual override expires."""
+
+        mock_ha_interface.set_cover_position.return_value = 80
+
+        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
+            current_pos=20,
+            desired_pos=80,
+            features=CoverEntityFeature.SET_POSITION,
+            movement_reason=CoverMovementReason.OPENING_AFTER_MANUAL_OVERRIDE,
+        )
+
+        assert movement_needed is True
+        assert actual_pos == 80
+        assert message == "Moved cover"
+        call_kwargs = mock_ha_interface.add_logbook_entry.call_args[1]
+        assert call_kwargs["reason_key"] == const.TRANSL_LOGBOOK_REASON_END_MANUAL_OVERRIDE
+
+    async def test_process_marks_manual_override_blocked_when_skipping(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_state, sensor_data
+    ):
+        """Manual override skips should mark the cover as blocked by manual override."""
+
+        entry = PositionEntry(position=0, timestamp=datetime.now(timezone.utc) - timedelta(seconds=30), cover_moved=True)
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_state.attributes[ATTR_CURRENT_POSITION] = 50
+
+        await cover_automation.process(mock_state, sensor_data)
+
+        mock_cover_pos_history_mgr.mark_manual_override_blocked.assert_called_once_with("cover.test")
+
+    async def test_process_clears_manual_override_block_and_reopens_with_reason(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_state, sensor_data, mock_ha_interface
+    ):
+        """The first cycle after manual override expiry should use the dedicated reopening reason."""
+
+        entry = PositionEntry(position=0, timestamp=datetime.now(timezone.utc) - timedelta(seconds=3700), cover_moved=True)
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_cover_pos_history_mgr.was_manual_override_blocking.return_value = True
+        mock_state.attributes[ATTR_CURRENT_POSITION] = 0
+        mock_ha_interface.set_cover_position.return_value = 100
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        await cover_automation.process(mock_state, sensor_data)
+
+        mock_cover_pos_history_mgr.clear_manual_override_blocked.assert_called_once_with("cover.test")
+        call_kwargs = mock_ha_interface.add_logbook_entry.call_args[1]
+        assert call_kwargs["reason_key"] == const.TRANSL_LOGBOOK_REASON_END_MANUAL_OVERRIDE
 
     async def test_move_cover_if_needed_closing_after_sunset(self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr):
         """Test moving cover after sunset."""

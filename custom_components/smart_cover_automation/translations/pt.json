@@ -121,6 +121,7 @@
                             "close_covers_after_sunset_cover_list": "Persianas:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar a duração da sobreposição manual:",
                             "close_covers_after_sunset_keep_closed": "Manter as persianas fechadas:",
+                            "automatic_reopening_mode": "Reabertura automática:",
                             "morning_opening_mode": "Abertura matinal: modo:",
                             "morning_opening_time": "Abertura matinal: hora:"
                         },
@@ -131,6 +132,7 @@
                             "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas ao anoitecer.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando ativada, o fecho ao entardecer pode mover as persianas selecionadas mesmo que uma pausa por controlo manual ainda esteja ativa.",
                             "close_covers_after_sunset_keep_closed": "Quando ativada, as persianas selecionadas voltam a fechar durante o período noturno de fecho ao entardecer se forem reabertas. A duração da sobreposição manual é respeitada. O modo de bloqueio tem prioridade, por isso as persianas só voltam a fechar depois de o modo de bloqueio ser desativado.",
+                            "automatic_reopening_mode": "Escolha como a automação deve reabrir as persianas quando as condições de fecho deixarem de se aplicar. Ativo reabre sempre as persianas, Passivo só reabre as persianas que foram anteriormente fechadas pela automação e Desativado desativa a reabertura automática.",
                             "morning_opening_mode": "Escolha se a abertura matinal é relativa ao nascer do sol, usa uma hora absoluta ou é fornecida por uma entidade.",
                             "morning_opening_time": "Consoante o modo selecionado: atraso após o nascer do sol ou hora fixa do dia. Ignorado no modo externo."
                         }
@@ -170,6 +172,14 @@
             }
         },
         "select": {
+            "automatic_reopening_mode": {
+                "name": "Reabertura automática",
+                "state": {
+                    "active": "Ativo",
+                    "passive": "Passivo",
+                    "off": "Desativado"
+                }
+            },
             "lock_mode": {
                 "name": "Modo de bloqueio",
                 "state": {
@@ -302,6 +312,10 @@
                     "name": "proteger do calor",
                     "description": "Motivo usado quando a persiana se move para proteger o ambiente do calor."
                 },
+                "reason_end_heat_protection": {
+                    "name": "terminar a proteção contra o calor",
+                    "description": "Motivo usado quando a persiana volta a abrir porque as condições de proteção contra o calor deixaram de se aplicar."
+                },
                 "reason_let_light_in": {
                     "name": "deixar entrar luz",
                     "description": "Motivo usado quando a persiana se move para deixar entrar mais luz."
@@ -309,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "proteger a privacidade à noite",
                     "description": "Motivo usado quando a persiana fecha automaticamente após o pôr do sol."
+                },
+                "reason_end_evening_closure": {
+                    "name": "terminar a proteção de privacidade noturna",
+                    "description": "Motivo usado quando a persiana volta a abrir porque o período de fecho ao entardecer terminou."
+                },
+                "reason_end_manual_override": {
+                    "name": "terminar a substituição manual",
+                    "description": "Motivo usado quando a persiana volta a abrir porque a pausa causada pela substituição manual terminou."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "manter a privacidade durante a noite",
@@ -328,6 +350,13 @@
         }
     },
     "selector": {
+        "automatic_reopening_mode": {
+            "options": {
+                "active": "Ativo",
+                "passive": "Passivo",
+                "off": "Desativado"
+            }
+        },
         "lock_mode": {
             "options": {
                 "unlocked": "Desbloqueado (automação ativa)",

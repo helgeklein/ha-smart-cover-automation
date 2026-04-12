@@ -29,8 +29,10 @@ import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION
 from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 
+from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
     HA_WEATHER_COND_SUNNY,
+    ReopeningMode,
 )
 
 from ..conftest import (
@@ -111,6 +113,7 @@ class TestIntegrationScenarios:
         # Setup coordinator with integrated hass and weather service
         coordinator = create_integration_coordinator()
         hass = cast(MagicMock, coordinator.hass)
+        coordinator.config_entry.options[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = ReopeningMode.ACTIVE.value
 
         # Set the weather forecast temperature for this scenario
         set_weather_forecast_temp(float(temp))
@@ -468,6 +471,7 @@ class TestIntegrationScenarios:
         covers = ["cover.smart", "cover.basic"]
         coordinator = create_integration_coordinator(covers=covers)
         hass = cast(MagicMock, coordinator.hass)
+        coordinator.config_entry.options[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = ReopeningMode.ACTIVE.value
 
         # Setup cold temperature to trigger opening covers (clear automation logic)
         set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold enough to open covers for warmth
