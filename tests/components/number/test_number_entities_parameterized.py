@@ -99,7 +99,7 @@ ENTITY_CONFIGS = [
         "step": 1,
         "mode": NumberMode.BOX,
         "unit": "°",
-        "default_value": 10.0,
+        "default_value": 0.0,
         "test_values": [0, 10, 30, 45, 60, 90],
         "boundary_min": 0,
         "boundary_max": 90,

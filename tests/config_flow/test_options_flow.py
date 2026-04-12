@@ -1089,6 +1089,14 @@ class TestOptionsFlowStep6CloseAfterSunset:
         # The section itself should be in schema
         assert any(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET in key for key in schema_keys)
 
+        section_key = next(key for key in schema.schema if str(key) == const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)
+        section_schema = schema.schema[section_key].schema.schema
+        section_defaults = {key.schema: key.default() for key in section_schema if hasattr(key, "schema") and hasattr(key, "default")}
+
+        assert section_defaults[ConfKeys.MORNING_OPENING_MODE.value] == const.MorningOpeningMode.FIXED_TIME
+        assert section_defaults[ConfKeys.MORNING_OPENING_TIME.value].isoformat() == "08:00:00"
+        assert section_defaults[ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value] is True
+
     #
     # test_step_6_saves_close_after_sunset_settings
     #

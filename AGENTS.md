@@ -42,4 +42,4 @@
 ## Python
 
 - Don't try to create Python environments unless told so explicitly.
-- Use the regular system Python unless an environment exists exactly for the current scenario.
+- Use the default system Python unless an environment exists exactly for the current scenario.

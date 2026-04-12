@@ -302,17 +302,18 @@ class TestConfigurationResolution:
         """Test resolving the evening closure keep-closed option."""
 
         rs_default = resolve({})
-        rs_enabled = resolve({ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True})
+        rs_disabled = resolve({ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: False})
 
-        assert rs_default.evening_closure_keep_closed is False
-        assert rs_enabled.evening_closure_keep_closed is True
+        assert rs_default.evening_closure_keep_closed is True
+        assert rs_disabled.evening_closure_keep_closed is False
 
     def test_resolve_morning_opening_defaults_and_fixed_time(self):
         """Test morning opening defaults and fixed-time resolution."""
 
         rs_default = resolve({})
-        assert rs_default.morning_opening_mode.value == "relative_to_sunrise"
-        assert rs_default.morning_opening_time == time(0, 0, 0)
+        assert rs_default.morning_opening_mode.value == "fixed_time"
+        assert rs_default.morning_opening_time == time(8, 0, 0)
+        assert rs_default.sun_elevation_threshold == 0.0
 
         rs_fixed = resolve(
             {

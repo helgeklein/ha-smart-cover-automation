@@ -119,7 +119,7 @@ def _create_entry(
     options: dict[str, Any] = {
         ConfKeys.WEATHER_ENTITY_ID.value: weather,
         ConfKeys.COVERS.value: [cover],
-        ConfKeys.SUN_ELEVATION_THRESHOLD.value: 10.0,
+        ConfKeys.SUN_ELEVATION_THRESHOLD.value: 0.0,
         ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,

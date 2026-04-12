@@ -122,7 +122,7 @@ def _create_config_entry(
     options: dict[str, Any] = {
         ConfKeys.WEATHER_ENTITY_ID.value: TEST_WEATHER,
         ConfKeys.COVERS.value: [TEST_COVER],
-        ConfKeys.SUN_ELEVATION_THRESHOLD.value: 10.0,
+        ConfKeys.SUN_ELEVATION_THRESHOLD.value: 0.0,
         ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
         ConfKeys.COVERS_MAX_CLOSURE.value: 0,
         ConfKeys.COVERS_MIN_CLOSURE.value: 100,
@@ -597,7 +597,7 @@ class TestNumberEntityDataFlow:
         expected_values = {
             NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD: 24.0,
             NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD: 13.0,
-            NUMBER_KEY_SUN_ELEVATION_THRESHOLD: 10.0,
+            NUMBER_KEY_SUN_ELEVATION_THRESHOLD: 0.0,
             NUMBER_KEY_SUN_AZIMUTH_TOLERANCE: 90.0,
         }
 
