@@ -28,6 +28,7 @@ from custom_components.smart_cover_automation.const import (
     EveningClosureMode,
     LockMode,
     MorningOpeningMode,
+    ReopeningMode,
     TiltMode,
 )
 
@@ -76,6 +77,7 @@ class ConfKeys(StrEnum):
     EVENING_CLOSURE_KEEP_CLOSED = "close_covers_after_sunset_keep_closed"  # Evening closure: keep covers closed overnight.
     MORNING_OPENING_MODE = "morning_opening_mode"  # Morning opening: timing mode.
     MORNING_OPENING_TIME = "morning_opening_time"  # Morning opening: time value.
+    AUTOMATIC_REOPENING_MODE = "automatic_reopening_mode"  # Automatic reopening behavior after automation-driven closures.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_CLOSURE = "covers_min_closure"  # Minimum closure position (0 = fully closed, 100 = fully open)
@@ -228,6 +230,11 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
         converter=MorningOpeningMode,
     ),
     ConfKeys.MORNING_OPENING_TIME: _ConfSpec(default=time(8, 0, 0), converter=_Converters.to_time),
+    ConfKeys.AUTOMATIC_REOPENING_MODE: _ConfSpec(
+        default=ReopeningMode.ACTIVE,
+        converter=ReopeningMode,
+        runtime_configurable=True,
+    ),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int, runtime_configurable=True),
@@ -362,6 +369,7 @@ class ResolvedConfig:
     evening_closure_keep_closed: bool
     morning_opening_mode: MorningOpeningMode
     morning_opening_time: time
+    automatic_reopening_mode: ReopeningMode
     covers: tuple[str, ...]
     covers_max_closure: int
     covers_min_closure: int

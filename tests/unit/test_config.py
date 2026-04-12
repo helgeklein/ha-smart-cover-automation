@@ -42,6 +42,7 @@ from custom_components.smart_cover_automation.config import (
     resolve,
     resolve_entry,
 )
+from custom_components.smart_cover_automation.const import ReopeningMode
 
 # =============================================================================
 # Configuration Registry and Contract Validation Tests
@@ -323,6 +324,15 @@ class TestConfigurationResolution:
         )
         assert rs_fixed.morning_opening_mode.value == "fixed_time"
         assert rs_fixed.morning_opening_time == time(8, 15, 0)
+
+    def test_resolve_automatic_reopening_mode(self):
+        """Test automatic reopening mode defaults and explicit resolution."""
+
+        rs_default = resolve({})
+        rs_passive = resolve({ConfKeys.AUTOMATIC_REOPENING_MODE.value: ReopeningMode.PASSIVE.value})
+
+        assert rs_default.automatic_reopening_mode == ReopeningMode.ACTIVE
+        assert rs_passive.automatic_reopening_mode == ReopeningMode.PASSIVE
 
     def test_resolve_evening_max_uses_default_when_unset(self):
         """Test evening closure max uses its own default when unset."""

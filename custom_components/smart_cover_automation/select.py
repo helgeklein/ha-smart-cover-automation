@@ -12,7 +12,7 @@ from homeassistant.components.select import SelectEntity, SelectEntityDescriptio
 from homeassistant.const import EntityCategory
 
 from . import const
-from .const import SELECT_KEY_LOCK_MODE
+from .const import SELECT_KEY_AUTOMATIC_REOPENING_MODE, SELECT_KEY_LOCK_MODE
 from .entity import IntegrationEntity
 from .log import Log
 
@@ -47,6 +47,7 @@ async def async_setup_entry(
     # Create all select entities
     entities = [
         LockModeSelect(coordinator),
+        AutomaticReopeningModeSelect(coordinator),
     ]
 
     async_add_entities(entities)
@@ -144,3 +145,38 @@ class LockModeSelect(IntegrationSelect):
             return
 
         await self.coordinator.async_set_lock_mode(lock_mode)
+
+
+class AutomaticReopeningModeSelect(IntegrationSelect):
+    """Select entity for choosing the automatic reopening mode."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(
+            coordinator,
+            SelectEntityDescription(
+                key=SELECT_KEY_AUTOMATIC_REOPENING_MODE,
+                translation_key=SELECT_KEY_AUTOMATIC_REOPENING_MODE,
+                icon="mdi:blinds-open",
+                entity_category=EntityCategory.CONFIG,
+            ),
+        )
+
+        self._attr_options = [mode.value for mode in const.ReopeningMode]
+        self._logger = Log(entry_id=coordinator.config_entry.entry_id)
+
+    @property
+    def current_option(self) -> str | None:  # pyright: ignore
+        """Return current automatic reopening mode."""
+
+        return self.coordinator.automatic_reopening_mode
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the automatic reopening mode."""
+
+        try:
+            automatic_reopening_mode = const.ReopeningMode(option)
+        except ValueError:
+            self._logger.error(f"Invalid automatic reopening mode value: {option}")
+            return
+
+        await self.coordinator.async_set_automatic_reopening_mode(automatic_reopening_mode)

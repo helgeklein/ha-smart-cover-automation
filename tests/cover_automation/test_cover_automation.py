@@ -31,7 +31,7 @@ from homeassistant.const import (
 )
 
 from custom_components.smart_cover_automation import const
-from custom_components.smart_cover_automation.const import LockMode
+from custom_components.smart_cover_automation.const import LockMode, ReopeningMode
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverMovementReason,
@@ -61,6 +61,7 @@ def mock_resolved_config():
     resolved.evening_closure_ignore_manual_override_duration = False
     resolved.evening_closure_keep_closed = False
     resolved.evening_closure_cover_list = ()
+    resolved.automatic_reopening_mode = ReopeningMode.ACTIVE
     resolved.covers_min_position_delta = 5
     return resolved
 
@@ -83,6 +84,9 @@ def mock_cover_pos_history_mgr():
     mgr.get_recent_automation_action = MagicMock(return_value=None)
     mgr.set_recent_automation_action = MagicMock()
     mgr.clear_recent_automation_action = MagicMock()
+    mgr.mark_closed_by_automation = MagicMock()
+    mgr.clear_closed_by_automation = MagicMock()
+    mgr.was_closed_by_automation = MagicMock(return_value=False)
     mgr.add = MagicMock()
     mgr.get_entries = MagicMock(return_value=[])
     return mgr
@@ -634,6 +638,23 @@ class TestCheckManualOverride:
 
         assert result is False
 
+    async def test_process_clears_automation_closed_marker_on_manual_override(
+        self,
+        cover_automation,
+        mock_cover_pos_history_mgr,
+        mock_state,
+        sensor_data,
+    ):
+        """Manual override should clear passive reopening eligibility."""
+
+        entry = PositionEntry(position=0, timestamp=datetime.now(timezone.utc) - timedelta(seconds=30), cover_moved=True)
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_state.attributes[ATTR_CURRENT_POSITION] = 50
+
+        await cover_automation.process(mock_state, sensor_data)
+
+        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
+
     def test_get_evening_closure_movement_reason_for_keep_closed(self, cover_automation, sensor_data, mock_resolved_config):
         """Test overnight keep-closed maps to its dedicated evening movement reason."""
         mock_resolved_config.evening_closure_keep_closed = True
@@ -760,6 +781,76 @@ class TestCalculateDesiredPosition:
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
         assert position == 100  # Fully open
         assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+
+    def test_calculate_desired_position_passive_reopens_after_automation_closure(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Passive mode reopens covers only when they were previously closed by automation."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.was_closed_by_automation.return_value = True
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+        assert lockout_active is False
+
+    def test_calculate_desired_position_passive_keeps_position_without_automation_closure(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Passive mode should not reopen covers that were not closed by automation."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.was_closed_by_automation.return_value = False
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        assert position == 50
+        assert reason is None
+        assert lockout_active is False
+
+    def test_calculate_desired_position_off_never_reopens(self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr):
+        """Off mode should suppress automatic reopening even after automation closures."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.OFF
+        mock_cover_pos_history_mgr.was_closed_by_automation.return_value = True
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        assert position == 50
+        assert reason is None
+        assert lockout_active is False
 
     def test_calculate_desired_position_with_max_closure_limit(self, cover_automation, mock_resolved_config, basic_config):
         """Test desired position with max closure limit."""

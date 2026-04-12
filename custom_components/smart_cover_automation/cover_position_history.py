@@ -83,10 +83,11 @@ class CoverPositionHistory:
 class CoverPositionHistoryManager:
     """Manages position history for all covers in the coordinator."""
 
-    __slots__ = ("_cover_position_history", "_recent_automation_actions")
+    __slots__ = ("_automation_closed_markers", "_cover_position_history", "_recent_automation_actions")
 
     def __init__(self) -> None:
         """Initialize the position history manager."""
+        self._automation_closed_markers: set[str] = set()
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
         self._recent_automation_actions: dict[str, RecentAutomationAction] = {}
 
@@ -186,3 +187,18 @@ class CoverPositionHistoryManager:
         """Clear any stored recent automation action for a cover."""
 
         self._recent_automation_actions.pop(entity_id, None)
+
+    def mark_closed_by_automation(self, entity_id: str) -> None:
+        """Mark a cover as currently closed by automation."""
+
+        self._automation_closed_markers.add(entity_id)
+
+    def clear_closed_by_automation(self, entity_id: str) -> None:
+        """Clear the automation-closed marker for a cover."""
+
+        self._automation_closed_markers.discard(entity_id)
+
+    def was_closed_by_automation(self, entity_id: str) -> bool:
+        """Return whether the cover is currently marked as automation-closed."""
+
+        return entity_id in self._automation_closed_markers

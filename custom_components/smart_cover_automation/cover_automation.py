@@ -183,6 +183,7 @@ class CoverAutomation:
         # Check for manual override
         manual_override_remaining = self._get_manual_override_remaining(current_pos)
         if manual_override_remaining is not None:
+            self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
             if self._should_ignore_manual_override(sensor_data):
                 message = (
                     f"Ignoring manual override during evening-closure trigger; {manual_override_remaining:.0f} s would otherwise remain"
@@ -221,11 +222,8 @@ class CoverAutomation:
                 # Movement occurred
                 cover_state.pos_target_final = actual_pos
 
-        # Apply tilt after position handling. Only suppress tilt when an opening
-        # move was blocked after evening closure; the evening-closure cycle itself
-        # must still be allowed to apply the configured night tilt.
-        opening_blocked = movement_reason is None and self._is_opening_block_after_evening_closure_active(sensor_data)
-        if not opening_blocked:
+        # Apply tilt only when an automation movement context is active.
+        if movement_reason is not None:
             await self._apply_tilt(cover_state, sensor_data, features, movement_reason, cover_moved)
 
         # Log per-cover state
@@ -655,11 +653,25 @@ class CoverAutomation:
                 desired_pos_friendly_name = "unchanged (opening block after evening closure active)"
                 movement_reason = None  # No movement reason when block active
             else:
-                # No block - open the cover
-                min_closure_limit = self._get_cover_closure_limit(get_max=False)
-                desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
-                desired_pos_friendly_name = "normal state (open)"
-                movement_reason = CoverMovementReason.OPENING_LET_LIGHT_IN
+                reopening_mode = self.resolved.automatic_reopening_mode
+                if reopening_mode == const.ReopeningMode.ACTIVE:
+                    min_closure_limit = self._get_cover_closure_limit(get_max=False)
+                    desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
+                    desired_pos_friendly_name = "normal state (open)"
+                    movement_reason = CoverMovementReason.OPENING_LET_LIGHT_IN
+                elif reopening_mode == const.ReopeningMode.PASSIVE and self._cover_pos_history_mgr.was_closed_by_automation(self.entity_id):
+                    min_closure_limit = self._get_cover_closure_limit(get_max=False)
+                    desired_pos = min(const.COVER_POS_FULLY_OPEN, min_closure_limit)
+                    desired_pos_friendly_name = "passive reopening state (open after automation closure)"
+                    movement_reason = CoverMovementReason.OPENING_LET_LIGHT_IN
+                elif reopening_mode == const.ReopeningMode.PASSIVE:
+                    desired_pos = current_pos
+                    desired_pos_friendly_name = "unchanged (passive reopening requires prior automation closure)"
+                    movement_reason = None
+                else:
+                    desired_pos = current_pos
+                    desired_pos_friendly_name = "unchanged (automatic reopening disabled)"
+                    movement_reason = None
 
         self._log_cover_msg(
             f"Current position: {current_pos}%, desired position: {desired_pos}%, {desired_pos_friendly_name}", const.LogSeverity.INFO
@@ -748,9 +760,13 @@ class CoverAutomation:
 
         # Determine if cover movement is necessary
         if desired_pos == current_pos:
+            if movement_reason == CoverMovementReason.OPENING_LET_LIGHT_IN:
+                self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
             return False, None, "No movement needed"
 
         if abs(desired_pos - current_pos) < self.resolved.covers_min_position_delta:
+            if movement_reason == CoverMovementReason.OPENING_LET_LIGHT_IN:
+                self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
             return False, None, "Skipped minor adjustment"
 
         # Movement needed
@@ -762,6 +778,15 @@ class CoverAutomation:
             # Add the new position to the history
             self._cover_pos_history_mgr.add(self.entity_id, actual_pos, cover_moved=True)
             self._record_recent_automation_action(actual_pos)
+
+            if movement_reason in (
+                CoverMovementReason.CLOSING_HEAT_PROTECTION,
+                CoverMovementReason.CLOSING_AFTER_SUNSET,
+                CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE,
+            ):
+                self._cover_pos_history_mgr.mark_closed_by_automation(self.entity_id)
+            else:
+                self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
 
             if movement_reason == CoverMovementReason.CLOSING_HEAT_PROTECTION:
                 verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
@@ -814,6 +839,8 @@ class CoverAutomation:
 
         if self.resolved.lock_mode == const.LockMode.UNLOCKED:
             return False
+
+        self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
 
         if self.resolved.lock_mode == const.LockMode.HOLD_POSITION:
             # Just block all automation (including tilt)

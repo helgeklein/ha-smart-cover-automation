@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.smart_cover_automation.const import LockMode
+from custom_components.smart_cover_automation.const import LockMode, ReopeningMode
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 
 from ..conftest import MockConfigEntry, create_temperature_config, set_test_options
@@ -142,3 +142,44 @@ class TestLockModeValidation:
         assert new_options["lock_mode"] == new_mode
         assert new_options["covers"] == ["cover.test"]
         assert new_options["daily_max_temperature_threshold"] == 25
+
+
+class TestAutomaticReopeningModeValidation:
+    """Test automatic reopening mode validation in DataUpdateCoordinator."""
+
+    @pytest.fixture
+    def mock_hass(self):
+        """Create a mock Home Assistant instance."""
+        hass = MagicMock()
+        hass.config_entries = MagicMock()
+        hass.config_entries.async_update_entry = MagicMock()
+        hass.states = MagicMock()
+        hass.states.get = MagicMock(return_value=None)
+        return hass
+
+    @pytest.fixture
+    def coordinator(self, mock_hass):
+        """Create a coordinator instance for testing."""
+        config_entry = MockConfigEntry(create_temperature_config())
+        return DataUpdateCoordinator(mock_hass, config_entry)  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize("mode", [ReopeningMode.ACTIVE, ReopeningMode.PASSIVE, ReopeningMode.OFF])
+    async def test_async_set_automatic_reopening_mode_valid_modes(self, coordinator, mode):
+        """Test that all valid automatic reopening modes are accepted."""
+
+        await coordinator.async_set_automatic_reopening_mode(mode)
+
+        coordinator.hass.config_entries.async_update_entry.assert_called_once()
+        call_args = coordinator.hass.config_entries.async_update_entry.call_args
+        assert call_args[1]["options"]["automatic_reopening_mode"] == mode
+
+    async def test_async_set_automatic_reopening_mode_invalid_mode_raises_value_error(self, coordinator, caplog):
+        """Test that invalid automatic reopening mode raises ValueError."""
+
+        invalid_mode = "invalid_reopening_mode"
+
+        with pytest.raises(ValueError, match=f"Invalid automatic reopening mode: {invalid_mode}"):
+            await coordinator.async_set_automatic_reopening_mode(invalid_mode)
+
+        assert f"Invalid automatic reopening mode: {invalid_mode}" in caplog.text
+        coordinator.hass.config_entries.async_update_entry.assert_not_called()

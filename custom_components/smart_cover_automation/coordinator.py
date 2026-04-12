@@ -11,7 +11,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from . import const
 from .automation_engine import AutomationEngine
 from .config import ConfKeys, ResolvedConfig, resolve_entry
-from .const import LockMode
+from .const import LockMode, ReopeningMode
 from .data import CoordinatorData
 from .ha_interface import HomeAssistantInterface, WeatherEntityNotFoundError
 from .log import Log
@@ -140,6 +140,13 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         resolved = self._resolved_settings()
         return resolved.lock_mode
 
+    @property
+    def automatic_reopening_mode(self) -> ReopeningMode:
+        """Get current automatic reopening mode."""
+
+        resolved = self._resolved_settings()
+        return resolved.automatic_reopening_mode
+
     #
     # is_locked
     #
@@ -177,6 +184,18 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
         # This will trigger the update listener (async_reload_entry) in __init__.py
         # which will compare configs and decide on refresh vs. reload
+        self.hass.config_entries.async_update_entry(self.config_entry, options=new_options)
+
+    async def async_set_automatic_reopening_mode(self, automatic_reopening_mode: const.ReopeningMode) -> None:
+        """Set the automatic reopening mode and persist to config."""
+
+        valid_modes = [mode.value for mode in const.ReopeningMode]
+        if automatic_reopening_mode not in valid_modes:
+            self._logger.error(f"Invalid automatic reopening mode: {automatic_reopening_mode}. Valid modes: {valid_modes}")
+            raise ValueError(f"Invalid automatic reopening mode: {automatic_reopening_mode}")
+
+        new_options = dict(self.config_entry.options)
+        new_options[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = automatic_reopening_mode
         self.hass.config_entries.async_update_entry(self.config_entry, options=new_options)
 
     #
