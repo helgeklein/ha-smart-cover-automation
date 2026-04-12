@@ -477,6 +477,7 @@ class TestTimeCalculationHelpers:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.MORNING_OPENING_MODE.value: "relative_to_sunrise",
         }
         resolved = resolve(config)
         engine = AutomationEngine(
@@ -1094,7 +1095,7 @@ class TestComputePostEveningClosure:
 
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
     def test_relative_morning_opening_matches_sunrise_by_default(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
-        """Test that the default relative morning opening releases at sunrise."""
+        """Test that relative morning opening with zero delay releases at sunrise."""
 
         from datetime import datetime
 
@@ -1105,6 +1106,8 @@ class TestComputePostEveningClosure:
             ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
             ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+            ConfKeys.MORNING_OPENING_MODE.value: "relative_to_sunrise",
+            ConfKeys.MORNING_OPENING_TIME.value: "00:00:00",
         }
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
