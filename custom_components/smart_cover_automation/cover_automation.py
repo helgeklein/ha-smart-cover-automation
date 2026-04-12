@@ -641,9 +641,9 @@ class CoverAutomation:
                 max_closure_limit = self._get_cover_closure_limit(get_max=True, evening_closure=True)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
                 desired_pos_friendly_name = (
-                    "closing for evening privacy"
+                    "closing for evening closure"
                     if evening_closure_reason == CoverMovementReason.CLOSING_AFTER_SUNSET
-                    else "keeping the cover closed during the overnight privacy period"
+                    else "keeping the cover closed during the evening closure period"
                 )
                 movement_reason = evening_closure_reason
         elif effective_temp_hot and sensor_data.weather_sunny and sun_hitting:
