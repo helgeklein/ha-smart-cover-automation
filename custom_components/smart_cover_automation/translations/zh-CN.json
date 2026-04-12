@@ -312,6 +312,10 @@
                     "name": "防止过热",
                     "description": "当遮阳设备为了防止房间过热而移动时使用的原因。"
                 },
+                "reason_end_heat_protection": {
+                    "name": "结束隔热保护",
+                    "description": "当遮阳设备因隔热保护条件不再适用而重新开启时使用的原因。"
+                },
                 "reason_let_light_in": {
                     "name": "引入光线",
                     "description": "当遮阳设备为了让更多光线进入而移动时使用的原因。"
@@ -319,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "在夜间保护隐私",
                     "description": "当遮阳设备在日落后自动关闭时使用的原因。"
+                },
+                "reason_end_evening_closure": {
+                    "name": "结束夜间隐私保护",
+                    "description": "当遮阳设备因晚间关闭时段结束而重新开启时使用的原因。"
+                },
+                "reason_end_manual_override": {
+                    "name": "结束手动覆盖",
+                    "description": "当遮阳设备因手动覆盖暂停结束而重新开启时使用的原因。"
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "在夜间保持隐私",

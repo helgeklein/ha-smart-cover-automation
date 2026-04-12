@@ -312,6 +312,10 @@
                     "name": "vor Hitze zu schützen",
                     "description": "Grund, wenn der Rollladen bewegt wird, um vor Hitze zu schützen."
                 },
+                "reason_end_heat_protection": {
+                    "name": "den Hitzeschutz zu beenden",
+                    "description": "Grund, wenn der Rollladen wieder geöffnet wird, weil die Bedingungen für den Hitzeschutz nicht mehr gelten."
+                },
                 "reason_let_light_in": {
                     "name": "Licht hereinzulassen",
                     "description": "Grund, wenn der Rollladen bewegt wird, um mehr Licht hereinzulassen."
@@ -319,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "die Privatsphäre nachts zu schützen",
                     "description": "Grund, wenn der Rollladen automatisch nach Sonnenuntergang geschlossen wird."
+                },
+                "reason_end_evening_closure": {
+                    "name": "den nächtlichen Sichtschutz zu beenden",
+                    "description": "Grund, wenn der Rollladen wieder geöffnet wird, weil der Zeitraum des Abendschließens beendet ist."
+                },
+                "reason_end_manual_override": {
+                    "name": "die manuelle Übersteuerung zu beenden",
+                    "description": "Grund, wenn der Rollladen wieder geöffnet wird, weil die Pause durch die manuelle Übersteuerung beendet ist."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "die Privatsphäre über Nacht zu wahren",

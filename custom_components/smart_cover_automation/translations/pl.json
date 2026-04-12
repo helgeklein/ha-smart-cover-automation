@@ -312,6 +312,10 @@
                     "name": "chronić przed upałem",
                     "description": "Powód używany, gdy roleta porusza się, aby chronić pomieszczenie przed upałem."
                 },
+                "reason_end_heat_protection": {
+                    "name": "zakończyć ochronę przed upałem",
+                    "description": "Powód używany, gdy roleta ponownie się otwiera, ponieważ warunki ochrony przed upałem przestały obowiązywać."
+                },
                 "reason_let_light_in": {
                     "name": "wpuścić światło",
                     "description": "Powód używany, gdy roleta porusza się, aby wpuścić więcej światła."
@@ -319,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "chronić prywatność nocą",
                     "description": "Powód używany, gdy roleta zamyka się automatycznie po zachodzie słońca."
+                },
+                "reason_end_evening_closure": {
+                    "name": "zakończyć nocną ochronę prywatności",
+                    "description": "Powód używany, gdy roleta ponownie się otwiera, ponieważ zakończył się okres wieczornego zamykania."
+                },
+                "reason_end_manual_override": {
+                    "name": "zakończyć ręczne nadpisanie",
+                    "description": "Powód używany, gdy roleta ponownie się otwiera, ponieważ zakończyła się przerwa spowodowana ręcznym nadpisaniem."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "zachować prywatność przez noc",

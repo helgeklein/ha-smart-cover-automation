@@ -312,6 +312,10 @@
                     "name": "skydda mot värme",
                     "description": "Orsak som används när persiennen rör sig för att skydda rummet mot värme."
                 },
+                "reason_end_heat_protection": {
+                    "name": "avsluta värmeskyddet",
+                    "description": "Orsak som används när persiennen öppnas igen eftersom villkoren för värmeskydd inte längre gäller."
+                },
                 "reason_let_light_in": {
                     "name": "släppa in ljus",
                     "description": "Orsak som används när persiennen rör sig för att släppa in mer ljus."
@@ -319,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "skydda integriteten nattetid",
                     "description": "Orsak som används när persiennen stängs automatiskt efter solnedgången."
+                },
+                "reason_end_evening_closure": {
+                    "name": "avsluta det nattliga insynsskyddet",
+                    "description": "Orsak som används när persiennen öppnas igen eftersom perioden för kvällsstängning har avslutats."
+                },
+                "reason_end_manual_override": {
+                    "name": "avsluta den manuella överstyrningen",
+                    "description": "Orsak som används när persiennen öppnas igen eftersom pausen från manuell överstyrning har avslutats."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "bevara integriteten under natten",

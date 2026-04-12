@@ -83,12 +83,13 @@ class CoverPositionHistory:
 class CoverPositionHistoryManager:
     """Manages position history for all covers in the coordinator."""
 
-    __slots__ = ("_automation_closed_markers", "_cover_position_history", "_recent_automation_actions")
+    __slots__ = ("_automation_closed_markers", "_cover_position_history", "_manual_override_blocked", "_recent_automation_actions")
 
     def __init__(self) -> None:
         """Initialize the position history manager."""
-        self._automation_closed_markers: set[str] = set()
+        self._automation_closed_markers: dict[str, str] = {}
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
+        self._manual_override_blocked: set[str] = set()
         self._recent_automation_actions: dict[str, RecentAutomationAction] = {}
 
     #
@@ -188,17 +189,37 @@ class CoverPositionHistoryManager:
 
         self._recent_automation_actions.pop(entity_id, None)
 
-    def mark_closed_by_automation(self, entity_id: str) -> None:
-        """Mark a cover as currently closed by automation."""
+    def mark_closed_by_automation(self, entity_id: str, reason_key: str) -> None:
+        """Mark a cover as currently closed by automation and remember why."""
 
-        self._automation_closed_markers.add(entity_id)
+        self._automation_closed_markers[entity_id] = reason_key
 
     def clear_closed_by_automation(self, entity_id: str) -> None:
         """Clear the automation-closed marker for a cover."""
 
-        self._automation_closed_markers.discard(entity_id)
+        self._automation_closed_markers.pop(entity_id, None)
 
     def was_closed_by_automation(self, entity_id: str) -> bool:
         """Return whether the cover is currently marked as automation-closed."""
 
         return entity_id in self._automation_closed_markers
+
+    def get_closed_by_automation_reason(self, entity_id: str) -> str | None:
+        """Return the stored automation-closing reason key for a cover, if any."""
+
+        return self._automation_closed_markers.get(entity_id)
+
+    def mark_manual_override_blocked(self, entity_id: str) -> None:
+        """Mark that automation is currently blocked by a manual override."""
+
+        self._manual_override_blocked.add(entity_id)
+
+    def clear_manual_override_blocked(self, entity_id: str) -> None:
+        """Clear the manual-override-blocked marker for a cover."""
+
+        self._manual_override_blocked.discard(entity_id)
+
+    def was_manual_override_blocking(self, entity_id: str) -> bool:
+        """Return whether the cover was previously blocked by manual override."""
+
+        return entity_id in self._manual_override_blocked

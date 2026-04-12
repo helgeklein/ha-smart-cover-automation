@@ -312,6 +312,10 @@
                     "name": "proteger del calor",
                     "description": "Motivo usado cuando la persiana se mueve para proteger la habitación del calor."
                 },
+                "reason_end_heat_protection": {
+                    "name": "terminar la protección contra el calor",
+                    "description": "Motivo usado cuando la persiana vuelve a abrirse porque ya no se aplican las condiciones de protección contra el calor."
+                },
                 "reason_let_light_in": {
                     "name": "dejar pasar la luz",
                     "description": "Motivo usado cuando la persiana se mueve para dejar pasar más luz."
@@ -319,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "proteger la privacidad por la noche",
                     "description": "Motivo usado cuando la persiana se cierra automáticamente después del atardecer."
+                },
+                "reason_end_evening_closure": {
+                    "name": "terminar la protección de la privacidad nocturna",
+                    "description": "Motivo usado cuando la persiana vuelve a abrirse porque ha terminado el periodo de cierre nocturno."
+                },
+                "reason_end_manual_override": {
+                    "name": "terminar la anulación manual",
+                    "description": "Motivo usado cuando la persiana vuelve a abrirse porque ha terminado la pausa por anulación manual."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "mantener la privacidad durante la noche",

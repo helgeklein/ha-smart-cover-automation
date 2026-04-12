@@ -312,6 +312,10 @@
                     "name": "protéger de la chaleur",
                     "description": "Motif utilisé lorsque le volet se déplace pour protéger la pièce de la chaleur."
                 },
+                "reason_end_heat_protection": {
+                    "name": "mettre fin à la protection contre la chaleur",
+                    "description": "Motif utilisé lorsque le volet se rouvre parce que les conditions de protection contre la chaleur ne s'appliquent plus."
+                },
                 "reason_let_light_in": {
                     "name": "laisser entrer la lumière",
                     "description": "Motif utilisé lorsque le volet se déplace pour laisser entrer davantage de lumière."
@@ -319,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "protéger la vie privée la nuit",
                     "description": "Motif utilisé lorsque le volet se ferme automatiquement après le coucher du soleil."
+                },
+                "reason_end_evening_closure": {
+                    "name": "mettre fin à la protection de l'intimité pendant la nuit",
+                    "description": "Motif utilisé lorsque le volet se rouvre parce que la période de fermeture du soir est terminée."
+                },
+                "reason_end_manual_override": {
+                    "name": "mettre fin à l'override manuel",
+                    "description": "Motif utilisé lorsque le volet se rouvre parce que la pause due à l'override manuel est terminée."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "préserver l'intimité pendant la nuit",

@@ -312,6 +312,10 @@
                     "name": "te beschermen tegen hitte",
                     "description": "Reden die wordt gebruikt wanneer het rolluik beweegt om de kamer tegen hitte te beschermen."
                 },
+                "reason_end_heat_protection": {
+                    "name": "de hittebescherming te beëindigen",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik weer opent omdat de voorwaarden voor hittebescherming niet langer gelden."
+                },
                 "reason_let_light_in": {
                     "name": "licht binnen te laten",
                     "description": "Reden die wordt gebruikt wanneer het rolluik beweegt om meer licht binnen te laten."
@@ -319,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "de privacy 's nachts te beschermen",
                     "description": "Reden die wordt gebruikt wanneer het rolluik automatisch sluit na zonsondergang."
+                },
+                "reason_end_evening_closure": {
+                    "name": "de nachtelijke privacybescherming te beëindigen",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik weer opent omdat de periode van avondsluiting is afgelopen."
+                },
+                "reason_end_manual_override": {
+                    "name": "de handmatige override te beëindigen",
+                    "description": "Reden die wordt gebruikt wanneer het rolluik weer opent omdat de pauze door handmatige override is afgelopen."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "de privacy 's nachts te behouden",

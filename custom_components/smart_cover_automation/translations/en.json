@@ -312,6 +312,14 @@
                     "name": "protect from heat",
                     "description": "Reason used when the cover moves to protect the room from heat."
                 },
+                "reason_end_heat_protection": {
+                    "name": "end heat protection",
+                    "description": "Reason used when the cover reopens because heat-protection conditions no longer apply."
+                },
+                "reason_end_manual_override": {
+                    "name": "manual override ended",
+                    "description": "Reason used when the cover reopens because the manual override pause has ended."
+                },
                 "reason_let_light_in": {
                     "name": "let light in",
                     "description": "Reason used when the cover moves to let more light inside."
@@ -319,6 +327,10 @@
                 "reason_close_after_sunset": {
                     "name": "protect privacy at night",
                     "description": "Reason used when the cover closes automatically after sunset."
+                },
+                "reason_end_evening_closure": {
+                    "name": "end overnight privacy protection",
+                    "description": "Reason used when the cover reopens because the evening-closure period has ended."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "keep privacy overnight",

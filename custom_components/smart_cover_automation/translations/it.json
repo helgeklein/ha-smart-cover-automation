@@ -312,6 +312,10 @@
                     "name": "proteggere dal calore",
                     "description": "Motivo usato quando la tapparella si muove per proteggere la stanza dal calore."
                 },
+                "reason_end_heat_protection": {
+                    "name": "terminare la protezione dal calore",
+                    "description": "Motivo usato quando la tapparella si riapre perché le condizioni di protezione dal calore non si applicano più."
+                },
                 "reason_let_light_in": {
                     "name": "far entrare la luce",
                     "description": "Motivo usato quando la tapparella si muove per far entrare più luce."
@@ -319,6 +323,14 @@
                 "reason_close_after_sunset": {
                     "name": "proteggere la privacy di notte",
                     "description": "Motivo usato quando la tapparella si chiude automaticamente dopo il tramonto."
+                },
+                "reason_end_evening_closure": {
+                    "name": "terminare la protezione della privacy notturna",
+                    "description": "Motivo usato quando la tapparella si riapre perché il periodo di chiusura serale è terminato."
+                },
+                "reason_end_manual_override": {
+                    "name": "terminare l'override manuale",
+                    "description": "Motivo usato quando la tapparella si riapre perché la pausa dovuta all'override manuale è terminata."
                 },
                 "reason_keep_closed_after_evening_closure": {
                     "name": "mantenere la privacy durante la notte",
