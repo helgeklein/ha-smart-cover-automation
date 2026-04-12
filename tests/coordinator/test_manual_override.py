@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_CURRENT_TILT_POSITION, CoverEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
+from homeassistant.helpers import entity_registry as ha_entity_registry
 
 from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.config import ConfKeys
@@ -21,6 +22,7 @@ from custom_components.smart_cover_automation.cover_position_history import Posi
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
+    MOCK_SUN_ENTITY_ID,
     TEST_HOT_TEMP,
     MockConfigEntry,
     create_combined_state_mock,
@@ -126,6 +128,96 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
         cover_result = result.covers[MOCK_COVER_ENTITY_ID]
         assert cover_result.pos_target_desired is not None
         assert cover_result.pos_target_desired == 0  # Fully closed
+
+    async def test_manual_override_expiry_logs_manual_override_end_reason(self, mock_hass: MagicMock) -> None:
+        """Manual override expiry should emit the dedicated reopen reason in a full coordinator cycle."""
+
+        mock_hass.config = MagicMock()
+        mock_hass.config.language = "en"
+
+        config_data = create_sun_config()
+        config_data[ConfKeys.MANUAL_OVERRIDE_DURATION.value] = 1800
+        config_data[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = const.ReopeningMode.ACTIVE.value
+        config_entry = MockConfigEntry(config_data)
+
+        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+        coordinator._ha_interface.set_cover_position = AsyncMock(side_effect=[0, 100])
+        coordinator.status_sensor_unique_id = "test_unique_id"
+
+        registry = MagicMock()
+        integration_entity = MagicMock()
+        integration_entity.unique_id = "test_unique_id"
+        integration_entity.platform = const.DOMAIN
+        integration_entity.entity_id = f"binary_sensor.{const.DOMAIN}_status"
+        registry.entities = {"test_entity_registry_id": integration_entity}
+
+        base_key = f"component.{const.DOMAIN}.{const.TRANSL_KEY_SERVICES}.{const.SERVICE_LOGBOOK_ENTRY}.{const.TRANSL_KEY_FIELDS}"
+        translations = {
+            f"{base_key}.{const.TRANSL_LOGBOOK_VERB_OPENING}.{const.TRANSL_ATTR_NAME}": "Opening",
+            f"{base_key}.{const.TRANSL_LOGBOOK_VERB_CLOSING}.{const.TRANSL_ATTR_NAME}": "Closing",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION}.{const.TRANSL_ATTR_NAME}": "protect from heat",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_END_MANUAL_OVERRIDE}.{const.TRANSL_ATTR_NAME}": "manual override ended",
+            f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}.{const.TRANSL_ATTR_NAME}": "{verb} {entity_id} to {reason}. New position: {position}%.",
+        }
+
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))
+        state_mapping = create_combined_state_mock(
+            sun_azimuth=180.0,
+            cover_states={
+                MOCK_COVER_ENTITY_ID: {
+                    ATTR_CURRENT_POSITION: 100,
+                    ATTR_SUPPORTED_FEATURES: int(CoverEntityFeature.SET_POSITION),
+                }
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
+
+        with (
+            patch.object(ha_entity_registry, "async_get", return_value=registry),
+            patch(
+                "custom_components.smart_cover_automation.ha_interface.translation.async_get_translations",
+                new_callable=AsyncMock,
+                return_value=translations,
+            ),
+            patch("custom_components.smart_cover_automation.ha_interface.async_log_entry") as mock_log_entry,
+        ):
+            first_result = await coordinator._async_update_data()
+
+            first_cover_result = first_result.covers[MOCK_COVER_ENTITY_ID]
+            assert first_cover_result.pos_target_final == 0
+            assert mock_log_entry.call_count == 1
+            assert "protect from heat" in mock_log_entry.call_args.kwargs["message"]
+
+            state_mapping[MOCK_COVER_ENTITY_ID].attributes = {
+                ATTR_CURRENT_POSITION: 50,
+                ATTR_SUPPORTED_FEATURES: int(CoverEntityFeature.SET_POSITION),
+            }
+
+            second_result = await coordinator._async_update_data()
+
+            second_cover_result = second_result.covers[MOCK_COVER_ENTITY_ID]
+            assert second_cover_result.pos_target_desired is None
+            assert coordinator._ha_interface.set_cover_position.await_count == 1
+
+            latest_entry = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry(MOCK_COVER_ENTITY_ID)
+            assert latest_entry is not None
+
+            set_weather_forecast_temp(20.0)
+            state_mapping[MOCK_SUN_ENTITY_ID].attributes = {"elevation": 45.0, "azimuth": 90.0}
+
+            expired_time = latest_entry.timestamp + timedelta(seconds=1801)
+            with patch("custom_components.smart_cover_automation.cover_automation.datetime") as mock_datetime:
+                mock_datetime.now.return_value = expired_time
+                mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
+                mock_datetime.timezone = timezone
+
+                third_result = await coordinator._async_update_data()
+
+            third_cover_result = third_result.covers[MOCK_COVER_ENTITY_ID]
+            assert third_cover_result.pos_target_final == 100
+            assert coordinator._ha_interface.set_cover_position.await_count == 2
+            assert mock_log_entry.call_count == 2
+            assert "manual override ended" in mock_log_entry.call_args.kwargs["message"]
 
     async def test_no_manual_override_same_position(self, mock_hass: MagicMock) -> None:
         """Test that no manual override is detected when position hasn't changed.
@@ -249,6 +341,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         config_data = create_sun_config()
         config_data[ConfKeys.MANUAL_OVERRIDE_DURATION.value] = 1800
+        config_data[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = const.ReopeningMode.ACTIVE.value
         config_entry = MockConfigEntry(config_data)
 
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -301,6 +394,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         config_data = create_sun_config()
         config_data[ConfKeys.MANUAL_OVERRIDE_DURATION.value] = 1800
+        config_data[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = const.ReopeningMode.ACTIVE.value
         config_entry = MockConfigEntry(config_data)
 
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -352,6 +446,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
         config_data = create_sun_config()
         config_data[ConfKeys.MANUAL_OVERRIDE_DURATION.value] = 1800
         config_data[ConfKeys.COVERS_MIN_POSITION_DELTA.value] = 0
+        config_data[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = const.ReopeningMode.ACTIVE.value
         config_entry = MockConfigEntry(config_data)
 
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -390,6 +485,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         config_data = create_sun_config()
         config_data[ConfKeys.MANUAL_OVERRIDE_DURATION.value] = 1800
+        config_data[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = const.ReopeningMode.ACTIVE.value
         config_entry = MockConfigEntry(config_data)
 
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
@@ -436,6 +532,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         config_data = create_sun_config()
         config_data[ConfKeys.MANUAL_OVERRIDE_DURATION.value] = 1800
+        config_data[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = const.ReopeningMode.ACTIVE.value
         config_entry = MockConfigEntry(config_data)
 
         coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
