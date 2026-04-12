@@ -10,6 +10,8 @@ from __future__ import annotations
 from typing import cast
 from unittest.mock import MagicMock
 
+from custom_components.smart_cover_automation.config import ConfKeys
+from custom_components.smart_cover_automation.const import ReopeningMode
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 
@@ -67,7 +69,9 @@ class TestCoverControlEdgeCases:
         set_weather_forecast_temp(30.0)  # Hot temperature
         hass.services.async_call.side_effect = create_mock_weather_service()
 
-        config_entry = MockConfigEntry(create_temperature_config())
+        config = create_temperature_config()
+        config[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = ReopeningMode.ACTIVE.value
+        config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         # Mock weather and sun entities to trigger cover closing
@@ -121,7 +125,9 @@ class TestCoverControlEdgeCases:
         set_weather_forecast_temp(15.0)  # Cold temperature
         hass.services.async_call.side_effect = create_mock_weather_service()
 
-        config_entry = MockConfigEntry(create_temperature_config())
+        config = create_temperature_config()
+        config[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = ReopeningMode.ACTIVE.value
+        config_entry = MockConfigEntry(config)
         coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
 
         # Mock weather and sun entities for cold weather (covers should open)

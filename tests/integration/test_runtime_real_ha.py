@@ -41,6 +41,7 @@ from custom_components.smart_cover_automation.const import (
     HA_SUN_ENTITY_ID,
     UPDATE_INTERVAL,
     LockMode,
+    ReopeningMode,
 )
 from custom_components.smart_cover_automation.ha_interface import HomeAssistantInterface
 
@@ -638,6 +639,7 @@ class TestRuntimeBehavior:
             extra_options={
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [TEST_COVER_1],
+                ConfKeys.AUTOMATIC_REOPENING_MODE.value: ReopeningMode.ACTIVE.value,
             },
         )
         with patch(
@@ -693,6 +695,7 @@ class TestRuntimeBehavior:
             extra_options={
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [TEST_COVER_1],
+                ConfKeys.AUTOMATIC_REOPENING_MODE.value: ReopeningMode.ACTIVE.value,
             },
         )
         with patch(
@@ -882,7 +885,10 @@ class TestRuntimeBehavior:
 
         entry = _create_config_entry(
             hass,
-            extra_options={ConfKeys.COVERS_MIN_POSITION_DELTA.value: 5},
+            extra_options={
+                ConfKeys.COVERS_MIN_POSITION_DELTA.value: 5,
+                ConfKeys.AUTOMATIC_REOPENING_MODE.value: ReopeningMode.ACTIVE.value,
+            },
         )
         await _setup_integration(
             hass,
