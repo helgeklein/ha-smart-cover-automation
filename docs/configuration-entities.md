@@ -30,6 +30,14 @@ If **simulation mode** is enabled, the automation runs through all calculations 
 
 The entities in this section control the cover movements.
 
+### Automatic Reopening
+
+Choose how automation should reopen covers when closing conditions no longer apply. The following settings are available:
+
+- **Active:** Always reopens covers. In this mode, covers that were closed manually are reopened after the manual override duration has elapsed.
+- **Passive:** Only reopens covers that were previously closed by automation. In this mode, covers that were closed manually are not reopened.
+- **Off:** Disables automatic reopening.
+
 ### Lock Mode
 
 Lock mode moves the covers to either opened or closed state, or keeps them in their current position. It then locks the covers, keeping them in that position until lock mode is disabled.
