@@ -231,7 +231,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ),
     ConfKeys.MORNING_OPENING_TIME: _ConfSpec(default=time(8, 0, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATIC_REOPENING_MODE: _ConfSpec(
-        default=ReopeningMode.ACTIVE,
+        default=ReopeningMode.PASSIVE,
         converter=ReopeningMode,
         runtime_configurable=True,
     ),

@@ -121,6 +121,7 @@
                             "close_covers_after_sunset_cover_list": "Persienner:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorera varaktigheten för manuell överstyrning:",
                             "close_covers_after_sunset_keep_closed": "Håll persienner stängda:",
+                            "automatic_reopening_mode": "Automatisk återöppning:",
                             "morning_opening_mode": "Morgonöppning: läge:",
                             "morning_opening_time": "Morgonöppning: tid:"
                         },
@@ -131,6 +132,7 @@
                             "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas på kvällen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "När den är aktiverad får kvällsstängningen flytta valda persienner även om en paus från manuell överstyrning fortfarande är aktiv.",
                             "close_covers_after_sunset_keep_closed": "När funktionen är aktiverad stängs valda persienner igen under den nattliga kvällsstängningsperioden om de öppnas på nytt. Tiden för manuell överstyrning respekteras. Låsläget har företräde, så persiennerna stängs bara igen efter att låsläget har inaktiverats.",
+                            "automatic_reopening_mode": "Välj hur automationen ska öppna persienner igen när stängningsvillkoren inte längre gäller. Aktiv öppnar alltid persienner igen, Passiv öppnar bara persienner igen som tidigare har stängts av automationen och Av inaktiverar automatisk återöppning.",
                             "morning_opening_mode": "Välj om morgonöppningen ska vara relativ till soluppgången, använda en absolut tid eller levereras av en entitet.",
                             "morning_opening_time": "Beroende på valt läge: fördröjning efter soluppgången eller fast tidpunkt. Ignoreras i externt läge."
                         }
@@ -170,6 +172,14 @@
             }
         },
         "select": {
+            "automatic_reopening_mode": {
+                "name": "Automatisk återöppning",
+                "state": {
+                    "active": "Aktiv",
+                    "passive": "Passiv",
+                    "off": "Av"
+                }
+            },
             "lock_mode": {
                 "name": "Låsläge",
                 "state": {
@@ -328,6 +338,13 @@
         }
     },
     "selector": {
+        "automatic_reopening_mode": {
+            "options": {
+                "active": "Aktiv",
+                "passive": "Passiv",
+                "off": "Av"
+            }
+        },
         "lock_mode": {
             "options": {
                 "unlocked": "Upplåst (automatisering aktiv)",

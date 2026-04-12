@@ -676,7 +676,7 @@ class TestSelectEntityDataFlow:
         self,
         hass: HomeAssistant,
     ) -> None:
-        """Automatic reopening select shows ACTIVE by default."""
+        """Automatic reopening select shows PASSIVE by default."""
 
         entry = _create_config_entry(hass)
         await _setup_integration(hass, entry)
@@ -686,7 +686,7 @@ class TestSelectEntityDataFlow:
 
         state = hass.states.get(entity_id)
         assert state is not None
-        assert state.state == ReopeningMode.ACTIVE
+        assert state.state == ReopeningMode.PASSIVE
 
     async def test_select_changes_automatic_reopening_mode(
         self,

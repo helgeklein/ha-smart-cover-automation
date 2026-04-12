@@ -331,7 +331,7 @@ class TestConfigurationResolution:
         rs_default = resolve({})
         rs_passive = resolve({ConfKeys.AUTOMATIC_REOPENING_MODE.value: ReopeningMode.PASSIVE.value})
 
-        assert rs_default.automatic_reopening_mode == ReopeningMode.ACTIVE
+        assert rs_default.automatic_reopening_mode == ReopeningMode.PASSIVE
         assert rs_passive.automatic_reopening_mode == ReopeningMode.PASSIVE
 
     def test_resolve_evening_max_uses_default_when_unset(self):

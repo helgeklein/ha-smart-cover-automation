@@ -121,6 +121,7 @@
                             "close_covers_after_sunset_cover_list": "Tapparelle:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignora la durata dell'override manuale:",
                             "close_covers_after_sunset_keep_closed": "Mantieni chiuse le tapparelle:",
+                            "automatic_reopening_mode": "Riapertura automatica:",
                             "morning_opening_mode": "Apertura mattutina: modalità:",
                             "morning_opening_time": "Apertura mattutina: ora:"
                         },
@@ -131,6 +132,7 @@
                             "close_covers_after_sunset_cover_list": "Seleziona le tapparelle che devono essere chiuse di sera.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando attivata, la chiusura serale può muovere le tapparelle selezionate anche se è ancora attiva una pausa dovuta all'override manuale.",
                             "close_covers_after_sunset_keep_closed": "Quando attivata, le tapparelle selezionate vengono richiuse durante il periodo notturno di chiusura serale se vengono riaperte. La durata dell'override manuale viene rispettata. La modalità di blocco ha la precedenza, quindi le tapparelle vengono richiuse solo dopo che la modalità di blocco è stata disattivata.",
+                            "automatic_reopening_mode": "Scegli come l'automazione deve riaprire le tapparelle quando le condizioni di chiusura non sono più presenti. Attivo riapre sempre le tapparelle, Passivo riapre solo le tapparelle precedentemente chiuse dall'automazione e Disattivato disabilita la riapertura automatica.",
                             "morning_opening_mode": "Scegli se l'apertura mattutina è relativa all'alba, usa un orario assoluto oppure è fornita da un'entità.",
                             "morning_opening_time": "A seconda della modalità scelta: ritardo dopo l'alba oppure orario fisso. Ignorato in modalità esterna."
                         }
@@ -170,6 +172,14 @@
             }
         },
         "select": {
+            "automatic_reopening_mode": {
+                "name": "Riapertura automatica",
+                "state": {
+                    "active": "Attivo",
+                    "passive": "Passivo",
+                    "off": "Disattivato"
+                }
+            },
             "lock_mode": {
                 "name": "Modalità di blocco",
                 "state": {
@@ -328,6 +338,13 @@
         }
     },
     "selector": {
+        "automatic_reopening_mode": {
+            "options": {
+                "active": "Attivo",
+                "passive": "Passivo",
+                "off": "Disattivato"
+            }
+        },
         "lock_mode": {
             "options": {
                 "unlocked": "Sbloccato (automazione attiva)",

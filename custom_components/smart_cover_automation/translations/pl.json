@@ -121,6 +121,7 @@
                             "close_covers_after_sunset_cover_list": "Rolety:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignoruj czas ręcznego nadpisania:",
                             "close_covers_after_sunset_keep_closed": "Pozostaw rolety zamknięte:",
+                            "automatic_reopening_mode": "Automatyczne ponowne otwieranie:",
                             "morning_opening_mode": "Poranne otwieranie: tryb:",
                             "morning_opening_time": "Poranne otwieranie: godzina:"
                         },
@@ -131,6 +132,7 @@
                             "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Po włączeniu zamykanie wieczorne może poruszyć wybrane rolety, nawet jeśli nadal trwa pauza po ręcznym nadpisaniu.",
                             "close_covers_after_sunset_keep_closed": "Po włączeniu wybrane rolety zostaną ponownie zamknięte podczas nocnego okresu wieczornego zamykania, jeśli zostaną ponownie otwarte. Czas ręcznego nadpisania jest respektowany. Tryb blokady ma pierwszeństwo, więc rolety zostaną ponownie zamknięte dopiero po wyłączeniu trybu blokady.",
+                            "automatic_reopening_mode": "Wybierz, jak automatyzacja ma ponownie otwierać rolety, gdy warunki zamknięcia przestaną obowiązywać. Aktywny zawsze ponownie otwiera rolety, Pasywny ponownie otwiera tylko rolety wcześniej zamknięte przez automatyzację, a Wyłączony wyłącza automatyczne ponowne otwieranie.",
                             "morning_opening_mode": "Wybierz, czy poranne otwieranie ma być względem wschodu słońca, korzystać ze stałej godziny czy być dostarczane przez encję.",
                             "morning_opening_time": "W zależności od wybranego trybu: opóźnienie po wschodzie słońca lub stała godzina dnia. Ignorowane w trybie zewnętrznym."
                         }
@@ -170,6 +172,14 @@
             }
         },
         "select": {
+            "automatic_reopening_mode": {
+                "name": "Automatyczne ponowne otwieranie",
+                "state": {
+                    "active": "Aktywny",
+                    "passive": "Pasywny",
+                    "off": "Wyłączony"
+                }
+            },
             "lock_mode": {
                 "name": "Tryb blokady",
                 "state": {
@@ -328,6 +338,13 @@
         }
     },
     "selector": {
+        "automatic_reopening_mode": {
+            "options": {
+                "active": "Aktywny",
+                "passive": "Pasywny",
+                "off": "Wyłączony"
+            }
+        },
         "lock_mode": {
             "options": {
                 "unlocked": "Odblokowany (automatyzacja aktywna)",

@@ -132,7 +132,7 @@
                             "close_covers_after_sunset_cover_list": "Select the covers that should be closed in the evening.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active.",
                             "close_covers_after_sunset_keep_closed": "When enabled, selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.",
-                            "automatic_reopening_mode": "Choose how automation may reopen covers after an automation-driven closure. Active keeps the current behavior, Passive only reopens covers that were previously closed by automation, and Off never reopens closed covers.",
+                            "automatic_reopening_mode": "Choose how automation should reopen covers when closing conditions no longer apply. Active always reopens covers, Passive only reopens covers that were previously closed by automation, and Off disables automatic reopening.",
                             "morning_opening_mode": "Choose whether morning opening is relative to sunrise, uses an absolute time, or is supplied by an entity.",
                             "morning_opening_time": "Depending on the selected mode: delay after sunrise or fixed time of day. Ignored in external mode."
                         }
