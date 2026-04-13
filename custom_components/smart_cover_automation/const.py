@@ -265,5 +265,11 @@ TRANSL_KEY_FIELDS: Final[str] = "fields"
 # hass.data keys
 DATA_COORDINATORS: Final[str] = "coordinators"
 
+# Persistent runtime-state storage
+STORAGE_VERSION: Final[int] = 1
+STORAGE_KEY_AUTOMATION_STATE: Final[str] = "automation_state"
+STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: Final[str] = "automation_closed_markers"
+STORAGE_SAVE_DELAY_SECONDS: Final[int] = 1
+
 # Initialize the module-level logger
 _init_logger()

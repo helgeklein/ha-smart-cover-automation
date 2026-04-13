@@ -54,7 +54,7 @@
                 "python.analysis.inlayHints.functionReturnTypes": false,
                 "python.analysis.inlayHints.variableTypes": false,
                 "python.analysis.completeFunctionParens": false,
-                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.defaultInterpreterPath": "/usr/local/bin/python3",
                 // VS Code file watching optimizations
                 "files.watcherExclude": {
                     "**/__pycache__/**": true,
