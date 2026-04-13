@@ -42,4 +42,7 @@
 ## Python
 
 - Don't try to create Python environments unless told so explicitly.
-- Use the default system Python unless an environment exists exactly for the current scenario.
+- In this repo, always use `python3` from `PATH` for Python commands.
+- In this devcontainer, `python3` should resolve to `/usr/local/bin/python3`.
+- Do not use `/usr/bin/python3` unless the user explicitly asks for the Debian system Python.
+- If an absolute path is required for Python, use `/usr/local/bin/python3`.

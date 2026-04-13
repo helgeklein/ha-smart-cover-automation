@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Iterator
@@ -83,14 +84,29 @@ class CoverPositionHistory:
 class CoverPositionHistoryManager:
     """Manages position history for all covers in the coordinator."""
 
-    __slots__ = ("_automation_closed_markers", "_cover_position_history", "_manual_override_blocked", "_recent_automation_actions")
+    __slots__ = (
+        "_automation_closed_markers",
+        "_cover_position_history",
+        "_manual_override_blocked",
+        "_on_closed_by_automation_changed",
+        "_recent_automation_actions",
+    )
 
-    def __init__(self) -> None:
+    def __init__(self, on_closed_by_automation_changed: Callable[[dict[str, str]], None] | None = None) -> None:
         """Initialize the position history manager."""
         self._automation_closed_markers: dict[str, str] = {}
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
         self._manual_override_blocked: set[str] = set()
+        self._on_closed_by_automation_changed = on_closed_by_automation_changed
         self._recent_automation_actions: dict[str, RecentAutomationAction] = {}
+
+    def _notify_closed_by_automation_changed(self) -> None:
+        """Persist automation-closed markers when they change."""
+
+        if self._on_closed_by_automation_changed is None:
+            return
+
+        self._on_closed_by_automation_changed(dict(self._automation_closed_markers))
 
     #
     # add
@@ -192,12 +208,20 @@ class CoverPositionHistoryManager:
     def mark_closed_by_automation(self, entity_id: str, reason_key: str) -> None:
         """Mark a cover as currently closed by automation and remember why."""
 
+        if self._automation_closed_markers.get(entity_id) == reason_key:
+            return
+
         self._automation_closed_markers[entity_id] = reason_key
+        self._notify_closed_by_automation_changed()
 
     def clear_closed_by_automation(self, entity_id: str) -> None:
         """Clear the automation-closed marker for a cover."""
 
+        if entity_id not in self._automation_closed_markers:
+            return
+
         self._automation_closed_markers.pop(entity_id, None)
+        self._notify_closed_by_automation_changed()
 
     def was_closed_by_automation(self, entity_id: str) -> bool:
         """Return whether the cover is currently marked as automation-closed."""
@@ -208,6 +232,18 @@ class CoverPositionHistoryManager:
         """Return the stored automation-closing reason key for a cover, if any."""
 
         return self._automation_closed_markers.get(entity_id)
+
+    def export_closed_by_automation_markers(self) -> dict[str, str]:
+        """Return a copy of the automation-closed markers for persistence."""
+
+        return dict(self._automation_closed_markers)
+
+    def restore_closed_by_automation_markers(self, markers: Mapping[str, str]) -> None:
+        """Restore automation-closed markers from persistent storage."""
+
+        self._automation_closed_markers = {
+            entity_id: reason_key for entity_id, reason_key in markers.items() if isinstance(entity_id, str) and isinstance(reason_key, str)
+        }
 
     def mark_manual_override_blocked(self, entity_id: str) -> None:
         """Mark that automation is currently blocked by a manual override."""

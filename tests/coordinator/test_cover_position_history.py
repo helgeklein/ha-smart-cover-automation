@@ -1,12 +1,14 @@
 """Test position history tracking functionality in the coordinator."""
 
 from datetime import datetime, timezone
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from custom_components.smart_cover_automation.const import (
     COVER_POSITION_HISTORY_SIZE,
+    TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.cover_position_history import (
@@ -258,6 +260,58 @@ class TestPositionEntryAndTimestamps:
         assert entry.position == 50
         assert entry.cover_moved is True
         assert entry.timestamp == test_time
+
+
+class TestAutomationClosedMarkers:
+    """Test persistence-facing automation closed marker behavior."""
+
+    def test_export_and_restore_closed_markers_round_trip(self) -> None:
+        """Exported automation-closed markers should be restorable after restart."""
+
+        manager = CoverPositionHistoryManager()
+        manager.mark_closed_by_automation("cover.living_room", TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET)
+
+        restored_manager = CoverPositionHistoryManager()
+        restored_manager.restore_closed_by_automation_markers(manager.export_closed_by_automation_markers())
+
+        assert restored_manager.get_closed_by_automation_reason("cover.living_room") == TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+
+    def test_closed_marker_change_callback_only_runs_on_real_changes(self) -> None:
+        """Persistence callback should only run when the marker set actually changes."""
+
+        callback = MagicMock()
+        manager = CoverPositionHistoryManager(on_closed_by_automation_changed=callback)
+
+        manager.mark_closed_by_automation("cover.living_room", TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET)
+        manager.mark_closed_by_automation("cover.living_room", TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET)
+        manager.clear_closed_by_automation("cover.living_room")
+        manager.clear_closed_by_automation("cover.living_room")
+
+        assert callback.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_coordinator_runtime_state_round_trip(self, hass) -> None:
+        """Persisted automation-closed markers should survive coordinator recreation."""
+
+        from custom_components.smart_cover_automation.data import IntegrationConfigEntry
+        from tests.conftest import create_temperature_config, create_test_config_entry
+
+        config_entry = create_test_config_entry(create_temperature_config(), entry_id="persistent_entry")
+        coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, config_entry))
+        coordinator._automation_engine._cover_pos_history_mgr.mark_closed_by_automation(
+            "cover.test_cover",
+            TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
+        )
+        await coordinator.async_persist_runtime_state()
+
+        restored_entry = create_test_config_entry(create_temperature_config(), entry_id="persistent_entry")
+        restored_coordinator = DataUpdateCoordinator(hass, cast(IntegrationConfigEntry, restored_entry))
+        await restored_coordinator.async_restore_runtime_state()
+
+        assert (
+            restored_coordinator._automation_engine._cover_pos_history_mgr.get_closed_by_automation_reason("cover.test_cover")
+            == TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+        )
 
     def test_cover_position_history_add_with_explicit_timestamp(self):
         """Test adding positions with explicit timestamps."""

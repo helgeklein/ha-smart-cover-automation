@@ -10,6 +10,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from . import const
 from .automation_engine import AutomationEngine
+from .automation_state_store import AutomationStateStore
 from .config import ConfKeys, ResolvedConfig, resolve_entry
 from .const import LockMode, ReopeningMode
 from .data import CoordinatorData
@@ -70,11 +71,19 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         # Get configuration from options (all user settings are stored there)
         config = dict(getattr(config_entry, const.HA_OPTIONS, {}) or {})
 
+        self._automation_state_store = AutomationStateStore(hass, config_entry.entry_id)
+
         # Create the HA interface layer (pass instance logger)
         self._ha_interface = HomeAssistantInterface(hass, self._resolved_settings, logger=self._logger)
 
         # Initialize the automation engine (persists across runs, pass instance logger)
-        self._automation_engine = AutomationEngine(resolved=resolved, config=config, ha_interface=self._ha_interface, logger=self._logger)
+        self._automation_engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=self._ha_interface,
+            logger=self._logger,
+            on_closed_by_automation_changed=self._automation_state_store.schedule_save_closed_markers,
+        )
 
         # Track verbose logging state to avoid redundant setLevel calls
         self._verbose_logging_enabled: bool | None = None
@@ -139,6 +148,22 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
         resolved = self._resolved_settings()
         return resolved.lock_mode
+
+    async def async_restore_runtime_state(self) -> None:
+        """Restore runtime state that must survive Home Assistant restarts."""
+
+        stored_markers = await self._automation_state_store.async_load_closed_markers()
+        self._automation_engine.restore_closed_by_automation_markers(stored_markers)
+
+    async def async_persist_runtime_state(self) -> None:
+        """Persist runtime state immediately."""
+
+        await self._automation_state_store.async_save_closed_markers(self._automation_engine.export_closed_by_automation_markers())
+
+    async def async_remove_runtime_state(self) -> None:
+        """Remove persisted runtime state for this config entry."""
+
+        await self._automation_state_store.async_remove()
 
     @property
     def automatic_reopening_mode(self) -> ReopeningMode:

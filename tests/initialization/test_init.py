@@ -35,6 +35,7 @@ import pytest
 
 from custom_components.smart_cover_automation import (
     async_reload_entry,
+    async_remove_entry,
     async_setup_entry,
     async_unload_entry,
 )
@@ -292,6 +293,19 @@ class TestIntegrationSetup:
 
         # Verify reload was requested with correct entry ID
         mock_hass_with_spec.config_entries.async_reload.assert_called_once_with(mock_config_entry_basic.entry_id)
+
+    async def test_remove_entry_cleans_up_persisted_runtime_state(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
+        """Removing an entry should delete the persisted automation state store."""
+
+        with patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class:
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_remove_runtime_state = AsyncMock()
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_remove_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        mock_coordinator_class.assert_called_once_with(mock_hass_with_spec, mock_config_entry_basic)
+        mock_coordinator.async_remove_runtime_state.assert_called_once_with()
 
     async def test_runtime_data_setup(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test that runtime data is properly configured during setup.

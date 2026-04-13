@@ -573,6 +573,10 @@ async def async_setup_entry(
             config=merged_config,
         )
 
+        restore_result = coordinator.async_restore_runtime_state()
+        if isawaitable(restore_result):
+            await restore_result
+
         # Track coordinator references for service handling
         domain_data = hass.data.setdefault(DOMAIN, {})
         coordinators = domain_data.setdefault(DATA_COORDINATORS, {})
@@ -642,6 +646,12 @@ async def async_unload_entry(
 
     logger.info(f"Unloading {INTEGRATION_NAME} integration")
     try:
+        if hasattr(entry, "runtime_data") and entry.runtime_data:
+            coordinator = entry.runtime_data.coordinator
+            persist_result = coordinator.async_persist_runtime_state()
+            if isawaitable(persist_result):
+                await persist_result
+
         result = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
         domain_state = hass.data.get(DOMAIN)
@@ -665,6 +675,29 @@ async def async_unload_entry(
         # "Unexpected" errors: log exception with stack trace
         logger.exception(f"Error unloading {INTEGRATION_NAME} integration: {err}")
         return False
+
+
+#
+# async_remove_entry
+#
+async def async_remove_entry(
+    hass: HomeAssistant,
+    entry: IntegrationConfigEntry,
+) -> None:
+    """Handle permanent removal of a config entry."""
+    logger = Log(entry_id=entry.entry_id)
+
+    logger.info(f"Removing {INTEGRATION_NAME} integration entry")
+
+    try:
+        coordinator = DataUpdateCoordinator(hass, entry)
+        remove_result = coordinator.async_remove_runtime_state()
+        if isawaitable(remove_result):
+            await remove_result
+    except (OSError, ValueError, TypeError) as err:
+        logger.error(f"Error removing persisted state for {INTEGRATION_NAME} integration: {err}")
+    except Exception as err:
+        logger.exception(f"Error removing persisted state for {INTEGRATION_NAME} integration: {err}")
 
 
 #
