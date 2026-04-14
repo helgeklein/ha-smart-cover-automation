@@ -30,6 +30,9 @@ if TYPE_CHECKING:
     from homeassistant.core import State
 
 
+COVER_RESULT_NO_MOVEMENT = "no movement"
+
+
 class CoverMovementReason(Enum):
     """Encapsulates cover movement and reason."""
 
@@ -225,10 +228,10 @@ class CoverAutomation:
 
         # Move cover if needed (skip if movement_reason is None, e.g., opening block after evening closure active)
         if movement_reason is None:
-            # No movement - describe why automation kept the current position.
+            # No movement - the reason is already covered by the INFO log above.
             self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
             cover_moved = False
-            message = self._get_no_movement_message(sensor_data, current_pos, desired_pos, lockout_protection)
+            message = COVER_RESULT_NO_MOVEMENT
         else:
             cover_moved, actual_pos, message = await self._move_cover_if_needed(current_pos, desired_pos, features, movement_reason)
             if not cover_moved:
@@ -792,33 +795,6 @@ class CoverAutomation:
         # Check for per-cover override, otherwise use global config
         limit = to_int_or_none(self.config.get(per_cover_key))
         return limit if limit is not None else global_default
-
-    def _get_no_movement_message(
-        self,
-        sensor_data: SensorData,
-        current_pos: int,
-        desired_pos: int,
-        lockout_protection_active: bool,
-    ) -> str:
-        """Explain why automation intentionally kept the current position."""
-
-        if lockout_protection_active:
-            return "No movement: keeping current position because lockout protection is active"
-
-        if self.entity_id in self.resolved.evening_closure_cover_list and self._is_opening_block_after_evening_closure_active(sensor_data):
-            return "No movement: keeping current position because morning reopening is still blocked"
-
-        open_target = min(const.COVER_POS_FULLY_OPEN, self._get_cover_closure_limit(get_max=False))
-        if current_pos == desired_pos == open_target:
-            return "No movement: already at the open target"
-
-        if self.resolved.automatic_reopening_mode == const.ReopeningMode.PASSIVE:
-            return "No movement: keeping current position because passive reopening only applies after automation closed this cover"
-
-        if self.resolved.automatic_reopening_mode == const.ReopeningMode.OFF:
-            return "No movement: keeping current position because automatic reopening is disabled"
-
-        return "No movement required by the current automation decision"
 
     #
     # _move_cover_if_needed

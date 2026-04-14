@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from datetime import date, datetime, timedelta
 from datetime import time as dt_time
 from typing import TYPE_CHECKING, Any
@@ -33,6 +34,7 @@ class AutomationEngine:
         config: dict[str, Any],
         ha_interface: Any,
         logger: Log,
+        on_closed_by_automation_changed: Callable[[dict[str, str]], None] | None = None,
     ) -> None:
         """Initialize the automation engine.
 
@@ -45,7 +47,7 @@ class AutomationEngine:
 
         self.resolved = resolved
         self.config = config
-        self._cover_pos_history_mgr = CoverPositionHistoryManager()
+        self._cover_pos_history_mgr = CoverPositionHistoryManager(on_closed_by_automation_changed=on_closed_by_automation_changed)
         self._ha_interface = ha_interface
         self._logger = logger
 
@@ -54,6 +56,16 @@ class AutomationEngine:
 
         # Evening closure state tracking
         self._evening_covers_closed: bool = False  # Prevent multiple closings within the evening closure window
+
+    def export_closed_by_automation_markers(self) -> dict[str, str]:
+        """Return automation-closed markers for persistence."""
+
+        return self._cover_pos_history_mgr.export_closed_by_automation_markers()
+
+    def restore_closed_by_automation_markers(self, markers: Mapping[str, str]) -> None:
+        """Restore automation-closed markers from persistent storage."""
+
+        self._cover_pos_history_mgr.restore_closed_by_automation_markers(markers)
 
     #
     # run

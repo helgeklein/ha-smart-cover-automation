@@ -1594,40 +1594,6 @@ class TestMaoveCoverIfNeeded:
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 20, cover_moved=True)
         mock_ha_interface.add_logbook_entry.assert_called_once()
 
-
-class TestNoMovementMessages:
-    """Test admin-facing no-movement explanations."""
-
-    def test_get_no_movement_message_passive_already_open(self, cover_automation, mock_resolved_config, sensor_data):
-        """Passive mode should not mention reopening policy when already at the open target."""
-
-        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
-
-        message = cover_automation._get_no_movement_message(
-            sensor_data,
-            current_pos=100,
-            desired_pos=100,
-            lockout_protection_active=False,
-        )
-
-        assert message == "No movement: already at the open target"
-
-    def test_get_no_movement_message_passive_keeps_closed_cover(self, cover_automation, mock_resolved_config, sensor_data):
-        """Passive mode should explain why a closed cover stays closed."""
-
-        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
-
-        message = cover_automation._get_no_movement_message(
-            sensor_data,
-            current_pos=0,
-            desired_pos=0,
-            lockout_protection_active=False,
-        )
-
-        assert message == (
-            "No movement: keeping current position because passive reopening only applies after automation closed this cover"
-        )
-
     async def test_move_cover_if_needed_opening_let_light_in(self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr):
         """Test moving cover to let light in."""
         mock_ha_interface.set_cover_position.return_value = 80
