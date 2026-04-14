@@ -220,6 +220,56 @@ class TestOptionsFlowStep2:
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in flow._config_data
 
 
+class TestOptionsFlowNavigation:
+    """Test options-flow navigation metadata."""
+
+    async def test_intermediate_steps_are_marked_as_not_last_step(self, mock_hass_with_covers: MagicMock) -> None:
+        """Intermediate steps should render the Next button in Home Assistant."""
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+        flow = OptionsFlowHandler(_create_mock_entry(data=existing_data))
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+
+        step_results = [
+            await flow.async_step_init(None),
+            await flow.async_step_2(None),
+            await flow.async_step_3(None),
+            await flow.async_step_4(None),
+            await flow.async_step_5(None),
+        ]
+
+        for result in step_results:
+            result_dict = _as_dict(result)
+            assert result_dict["type"] == FlowResultType.FORM
+            assert result_dict["last_step"] is False
+
+    async def test_final_step_is_marked_as_last_step(self, mock_hass_with_covers: MagicMock) -> None:
+        """The final step should keep the Submit button in Home Assistant."""
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+        flow = OptionsFlowHandler(_create_mock_entry(data=existing_data))
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+
+        result = await flow.async_step_6(None)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "6"
+        assert result_dict["last_step"] is True
+
+
 class TestOptionsFlowIntegration:
     """Test complete options flow from start to finish."""
 

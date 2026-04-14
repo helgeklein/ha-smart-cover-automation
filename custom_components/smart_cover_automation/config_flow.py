@@ -918,6 +918,23 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """
         return dict(self._config_entry.options) if self._config_entry.options else {}
 
+    def _show_form(
+        self,
+        *,
+        step_id: str,
+        data_schema: vol.Schema,
+        errors: dict[str, str] | None = None,
+        last_step: bool,
+    ) -> config_entries.ConfigFlowResult:
+        """Show an options-flow form with an explicit last-step flag."""
+
+        return self.async_show_form(
+            step_id=step_id,
+            data_schema=data_schema,
+            errors=errors,
+            last_step=last_step,
+        )
+
     #
     # _cleanup_external_tilt_value_keys
     #
@@ -1086,9 +1103,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         if user_input is None:
             # Show the form
-            return self.async_show_form(
+            return self._show_form(
                 step_id="init",
                 data_schema=FlowHelper.build_schema_step_1(resolved_settings),
+                last_step=False,
             )
         else:
             # Validate user input
@@ -1097,10 +1115,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 # Convert user input into resolved settings
                 resolved_settings = resolve(user_input)
                 # Show form again with errors
-                return self.async_show_form(
+                return self._show_form(
                     step_id="init",
                     data_schema=FlowHelper.build_schema_step_1(resolved_settings),
                     errors=errors,
+                    last_step=False,
                 )
             else:
                 self._logger.debug(f"Options flow step 1 user input: {user_input}")
@@ -1123,9 +1142,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             selected_covers = self._get_covers()
 
             # Show the form
-            return self.async_show_form(
+            return self._show_form(
                 step_id="2",
                 data_schema=FlowHelper.build_schema_step_2(covers=selected_covers, defaults=current_settings),
+                last_step=False,
             )
         else:
             self._logger.debug(f"Options flow step 2 user input: {user_input}")
@@ -1149,11 +1169,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             selected_covers = self._get_covers()
 
             # Show the form
-            return self.async_show_form(
+            return self._show_form(
                 step_id="3",
                 data_schema=FlowHelper.build_schema_step_3(
                     covers=selected_covers, defaults=current_settings, resolved_settings=resolved_settings
                 ),
+                last_step=False,
             )
 
         self._logger.debug(f"Options flow step 3 user input: {user_input}")
@@ -1218,7 +1239,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             selected_covers = self._get_covers()
 
             # Show the form
-            return self.async_show_form(
+            return self._show_form(
                 step_id="4",
                 data_schema=FlowHelper.build_schema_step_4_tilt(
                     covers=selected_covers,
@@ -1226,6 +1247,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     resolved_settings=resolved_settings,
                     hass=self.hass,
                 ),
+                last_step=False,
             )
 
         self._logger.debug(f"Options flow step 4 user input: {user_input}")
@@ -1273,9 +1295,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             selected_covers = self._get_covers()
 
             # Show the form
-            return self.async_show_form(
+            return self._show_form(
                 step_id="5",
                 data_schema=FlowHelper.build_schema_step_5(covers=selected_covers, defaults=current_settings),
+                last_step=False,
             )
 
         self._logger.debug(f"Options flow step 5 user input: {user_input}")
@@ -1313,9 +1336,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             selected_covers = self._get_covers()
 
             # Show the form
-            return self.async_show_form(
+            return self._show_form(
                 step_id="6",
                 data_schema=FlowHelper.build_schema_step_6(covers=selected_covers, resolved_settings=resolved_settings),
+                last_step=True,
             )
 
         self._logger.debug(f"Options flow step 6 user input: {user_input}")
