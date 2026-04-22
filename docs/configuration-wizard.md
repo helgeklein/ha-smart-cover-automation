@@ -106,6 +106,9 @@ The global tilt modes can be overridden per cover.
 
 - **Minimum tilt change:** Minimum tilt change (%) required before sending a command. Prevents excessive motor wear from small adjustments.
 - **Slat overlap ratio (d/L):** Ratio of slat spacing to slat width (`0.5` – `1.0`). Lower values mean more overlap between slats. The default of `0.9` works well for most venetian blinds. Only relevant for Auto mode.
+
+*New in 3.1:*
+
 - **Tilt open to cover open delay:** Delay between opening the slats fully and reopening the cover. Only applies to covers with tilt support whose effective daytime tilt mode is Auto and that were previously closed for heat protection.
 
 ## Step 5: Window Sensors for Lockout Protection (Optional)
