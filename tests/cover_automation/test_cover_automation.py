@@ -868,7 +868,7 @@ class TestCalculateDesiredPosition:
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
         mock_resolved_config.tilt_mode_day = TiltMode.AUTO
-        mock_resolved_config.tilt_open_to_cover_open_delay = 120
+        mock_resolved_config.tilt_open_to_cover_open_delay = 2
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
 
         sensor_data = make_sensor_data(
@@ -896,7 +896,7 @@ class TestCalculateDesiredPosition:
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
         mock_resolved_config.tilt_mode_day = TiltMode.AUTO
-        mock_resolved_config.tilt_open_to_cover_open_delay = 120
+        mock_resolved_config.tilt_open_to_cover_open_delay = 2
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
         mock_cover_pos_history_mgr.get_delayed_reopen_action.return_value = MagicMock(
             reopen_at=datetime.now(timezone.utc) + timedelta(seconds=30)
@@ -927,7 +927,7 @@ class TestCalculateDesiredPosition:
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
         mock_resolved_config.tilt_mode_day = TiltMode.AUTO
-        mock_resolved_config.tilt_open_to_cover_open_delay = 120
+        mock_resolved_config.tilt_open_to_cover_open_delay = 2
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
         mock_cover_pos_history_mgr.get_delayed_reopen_action.return_value = MagicMock(
             reopen_at=datetime.now(timezone.utc) - timedelta(seconds=1)
@@ -957,7 +957,7 @@ class TestCalculateDesiredPosition:
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
         mock_resolved_config.tilt_mode_day = TiltMode.MANUAL
-        mock_resolved_config.tilt_open_to_cover_open_delay = 120
+        mock_resolved_config.tilt_open_to_cover_open_delay = 2
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
 
         sensor_data = make_sensor_data(

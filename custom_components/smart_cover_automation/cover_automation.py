@@ -687,11 +687,11 @@ class CoverAutomation:
                 )
 
                 if reopening_allowed and self._should_delay_heat_protection_reopen(last_automation_closing_reason):
-                    delay_seconds = self.resolved.tilt_open_to_cover_open_delay
+                    delay_minutes = self.resolved.tilt_open_to_cover_open_delay
                     if delayed_reopen_action is None:
                         self._cover_pos_history_mgr.set_delayed_reopen_action(
                             self.entity_id,
-                            reopen_at=time_now + timedelta(seconds=delay_seconds),
+                            reopen_at=time_now + timedelta(minutes=delay_minutes),
                         )
                         desired_pos = current_pos
                         desired_pos_friendly_name = "opening tilt before delayed reopening after heat protection"
