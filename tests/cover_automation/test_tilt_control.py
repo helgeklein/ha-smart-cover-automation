@@ -59,6 +59,7 @@ def mock_resolved_config():
     resolved.tilt_set_value_day = 50
     resolved.tilt_set_value_night = 0
     resolved.tilt_min_change_delta = 5
+    resolved.tilt_open_to_cover_open_delay = 0
     resolved.tilt_slat_overlap_ratio = 0.9
     return resolved
 
@@ -85,6 +86,9 @@ def mock_cover_pos_history_mgr():
     mgr.get_recent_automation_action = MagicMock(return_value=None)
     mgr.set_recent_automation_action = MagicMock()
     mgr.clear_recent_automation_action = MagicMock()
+    mgr.set_delayed_reopen_action = MagicMock()
+    mgr.get_delayed_reopen_action = MagicMock(return_value=None)
+    mgr.clear_delayed_reopen_action = MagicMock()
     mgr.add = MagicMock()
     mgr.get_entries = MagicMock(return_value=[])
     return mgr

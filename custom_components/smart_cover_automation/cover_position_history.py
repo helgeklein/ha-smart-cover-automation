@@ -29,6 +29,13 @@ class RecentAutomationAction:
     expires_at: datetime
 
 
+@dataclass(frozen=True, slots=True)
+class DelayedReopenAction:
+    """Short-lived tracking for delayed reopening after tilt was opened."""
+
+    reopen_at: datetime
+
+
 @dataclass(slots=True)
 class CoverPositionHistory:
     """Tracks position history for a single cover."""
@@ -87,6 +94,7 @@ class CoverPositionHistoryManager:
     __slots__ = (
         "_automation_closed_markers",
         "_cover_position_history",
+        "_delayed_reopen_actions",
         "_manual_override_blocked",
         "_on_closed_by_automation_changed",
         "_recent_automation_actions",
@@ -96,6 +104,7 @@ class CoverPositionHistoryManager:
         """Initialize the position history manager."""
         self._automation_closed_markers: dict[str, str] = {}
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
+        self._delayed_reopen_actions: dict[str, DelayedReopenAction] = {}
         self._manual_override_blocked: set[str] = set()
         self._on_closed_by_automation_changed = on_closed_by_automation_changed
         self._recent_automation_actions: dict[str, RecentAutomationAction] = {}
@@ -204,6 +213,21 @@ class CoverPositionHistoryManager:
         """Clear any stored recent automation action for a cover."""
 
         self._recent_automation_actions.pop(entity_id, None)
+
+    def set_delayed_reopen_action(self, entity_id: str, reopen_at: datetime) -> None:
+        """Store a delayed reopen deadline for a cover."""
+
+        self._delayed_reopen_actions[entity_id] = DelayedReopenAction(reopen_at=reopen_at)
+
+    def get_delayed_reopen_action(self, entity_id: str) -> DelayedReopenAction | None:
+        """Get the active delayed reopen state for a cover, if any."""
+
+        return self._delayed_reopen_actions.get(entity_id)
+
+    def clear_delayed_reopen_action(self, entity_id: str) -> None:
+        """Clear any stored delayed reopen state for a cover."""
+
+        self._delayed_reopen_actions.pop(entity_id, None)
 
     def mark_closed_by_automation(self, entity_id: str, reason_key: str) -> None:
         """Mark a cover as currently closed by automation and remember why."""

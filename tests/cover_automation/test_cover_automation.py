@@ -31,7 +31,7 @@ from homeassistant.const import (
 )
 
 from custom_components.smart_cover_automation import const
-from custom_components.smart_cover_automation.const import LockMode, ReopeningMode
+from custom_components.smart_cover_automation.const import LockMode, ReopeningMode, TiltMode
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverMovementReason,
@@ -63,6 +63,8 @@ def mock_resolved_config():
     resolved.evening_closure_cover_list = ()
     resolved.automatic_reopening_mode = ReopeningMode.ACTIVE
     resolved.covers_min_position_delta = 5
+    resolved.tilt_mode_day = TiltMode.AUTO
+    resolved.tilt_open_to_cover_open_delay = 0
     return resolved
 
 
@@ -86,6 +88,9 @@ def mock_cover_pos_history_mgr():
     mgr.clear_recent_automation_action = MagicMock()
     mgr.mark_closed_by_automation = MagicMock()
     mgr.clear_closed_by_automation = MagicMock()
+    mgr.set_delayed_reopen_action = MagicMock()
+    mgr.get_delayed_reopen_action = MagicMock(return_value=None)
+    mgr.clear_delayed_reopen_action = MagicMock()
     mgr.was_closed_by_automation = MagicMock(return_value=False)
     mgr.get_closed_by_automation_reason = MagicMock(return_value=None)
     mgr.mark_manual_override_blocked = MagicMock()
@@ -855,6 +860,123 @@ class TestCalculateDesiredPosition:
         assert position == 50
         assert reason is None
         assert lockout_active is False
+
+    def test_calculate_desired_position_delays_auto_tilt_reopen_after_heat_protection(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Auto-tilt heat-protection reopening should prepare tilt first when a delay is configured."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_resolved_config.tilt_mode_day = TiltMode.AUTO
+        mock_resolved_config.tilt_open_to_cover_open_delay = 120
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+
+        assert position == 50
+        assert reason == CoverMovementReason.PREPARING_REOPEN_AFTER_HEAT_PROTECTION
+        assert lockout_active is False
+        mock_cover_pos_history_mgr.set_delayed_reopen_action.assert_called_once()
+
+    def test_calculate_desired_position_keeps_waiting_while_delayed_reopen_timer_active(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Auto-tilt heat-protection reopening should wait until the delayed reopen timer expires."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_resolved_config.tilt_mode_day = TiltMode.AUTO
+        mock_resolved_config.tilt_open_to_cover_open_delay = 120
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+        mock_cover_pos_history_mgr.get_delayed_reopen_action.return_value = MagicMock(
+            reopen_at=datetime.now(timezone.utc) + timedelta(seconds=30)
+        )
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+
+        assert position == 50
+        assert reason == CoverMovementReason.PREPARING_REOPEN_AFTER_HEAT_PROTECTION
+        assert lockout_active is False
+        mock_cover_pos_history_mgr.set_delayed_reopen_action.assert_not_called()
+
+    def test_calculate_desired_position_reopens_after_delayed_auto_tilt_wait_elapsed(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Auto-tilt heat-protection reopening should open the cover after the delay elapsed."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_resolved_config.tilt_mode_day = TiltMode.AUTO
+        mock_resolved_config.tilt_open_to_cover_open_delay = 120
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+        mock_cover_pos_history_mgr.get_delayed_reopen_action.return_value = MagicMock(
+            reopen_at=datetime.now(timezone.utc) - timedelta(seconds=1)
+        )
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
+        assert lockout_active is False
+
+    def test_calculate_desired_position_does_not_delay_when_day_tilt_mode_is_not_auto(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Delayed reopening should be limited to effective day auto tilt mode."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_resolved_config.tilt_mode_day = TiltMode.MANUAL
+        mock_resolved_config.tilt_open_to_cover_open_delay = 120
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
+        assert lockout_active is False
+        mock_cover_pos_history_mgr.set_delayed_reopen_action.assert_not_called()
 
     def test_calculate_desired_position_after_manual_override_expired(self, cover_automation):
         """Active mode should use a dedicated reopening reason when manual override just expired."""

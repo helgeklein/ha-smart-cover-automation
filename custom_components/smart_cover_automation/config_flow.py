@@ -7,7 +7,7 @@ from typing import Any, Mapping
 import voluptuous as vol  # pyright: ignore[reportMissingImports]
 from homeassistant import config_entries  # pyright: ignore[reportMissingImports]
 from homeassistant.components.weather.const import WeatherEntityFeature  # pyright: ignore[reportMissingImports]
-from homeassistant.const import STATE_UNAVAILABLE, Platform  # pyright: ignore[reportMissingImports]
+from homeassistant.const import STATE_UNAVAILABLE, Platform, UnitOfTime  # pyright: ignore[reportMissingImports]
 from homeassistant.data_entry_flow import section  # pyright: ignore[reportMissingImports]
 from homeassistant.helpers import selector  # pyright: ignore[reportMissingImports]
 
@@ -371,6 +371,22 @@ class FlowHelper:
                     unit_of_measurement="%",
                     mode=selector.NumberSelectorMode.BOX,
                 )
+            )
+        )
+
+        # Delay between opening tilt and reopening the cover in day auto mode
+        schema_dict[
+            vol.Required(
+                ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value,
+                default=int(round(resolved_settings.tilt_open_to_cover_open_delay / 60)),
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=1440,
+                step=1,
+                unit_of_measurement=UnitOfTime.MINUTES,
+                mode=selector.NumberSelectorMode.BOX,
             )
         )
 
@@ -1264,6 +1280,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_data[ConfKeys.TILT_SET_VALUE_DAY.value] = int(user_input.get(ConfKeys.TILT_SET_VALUE_DAY.value, 50))
         self._config_data[ConfKeys.TILT_SET_VALUE_NIGHT.value] = int(user_input.get(ConfKeys.TILT_SET_VALUE_NIGHT.value, 0))
         self._config_data[ConfKeys.TILT_MIN_CHANGE_DELTA.value] = int(user_input.get(ConfKeys.TILT_MIN_CHANGE_DELTA.value, 5))
+        self._config_data[ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value] = (
+            int(user_input.get(ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value, 0)) * 60
+        )
         self._config_data[ConfKeys.TILT_SLAT_OVERLAP_RATIO.value] = float(user_input.get(ConfKeys.TILT_SLAT_OVERLAP_RATIO.value, 0.9))
 
         # Build per-cover tilt mode settings

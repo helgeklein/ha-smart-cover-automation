@@ -164,6 +164,7 @@ class AutomationEngine:
             "tilt_set_value_day": self.resolved.tilt_set_value_day,
             "tilt_set_value_night": self.resolved.tilt_set_value_night,
             "tilt_min_change_delta": self.resolved.tilt_min_change_delta,
+            "tilt_open_to_cover_open_delay": self.resolved.tilt_open_to_cover_open_delay,
             "tilt_slat_overlap_ratio": self.resolved.tilt_slat_overlap_ratio,
         }
         self._logger.info(f"Global settings: {str(global_settings)}")

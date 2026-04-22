@@ -95,6 +95,9 @@ class ConfKeys(StrEnum):
     SUN_AZIMUTH_TOLERANCE = "sun_azimuth_tolerance"  # Max angle difference (°) to consider sun hitting.
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
     TILT_MIN_CHANGE_DELTA = "tilt_min_change_delta"  # Minimum tilt change (%) to actually send a service call.
+    TILT_OPEN_TO_COVER_OPEN_DELAY = (
+        "tilt_open_to_cover_open_delay"  # Delay stored in seconds between opening tilt and reopening the cover in day auto mode.
+    )
     TILT_MODE_DAY = "tilt_mode_day"  # Global tilt mode during daytime.
     TILT_MODE_NIGHT = "tilt_mode_night"  # Global tilt mode at night / evening closure.
     TILT_SET_VALUE_DAY = "tilt_set_value_day"  # Fixed tilt angle (0-100) for day "set_value" mode.
@@ -248,6 +251,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.SUN_AZIMUTH_TOLERANCE: _ConfSpec(default=90, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=0.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.TILT_MIN_CHANGE_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
+    ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY: _ConfSpec(default=0, converter=_Converters.to_duration_seconds),
     ConfKeys.TILT_MODE_DAY: _ConfSpec(default=TiltMode.AUTO, converter=TiltMode),
     ConfKeys.TILT_MODE_NIGHT: _ConfSpec(default=TiltMode.CLOSED, converter=TiltMode),
     ConfKeys.TILT_SET_VALUE_DAY: _ConfSpec(default=50, converter=_Converters.to_int),
@@ -383,6 +387,7 @@ class ResolvedConfig:
     sun_azimuth_tolerance: int
     sun_elevation_threshold: float
     tilt_min_change_delta: int
+    tilt_open_to_cover_open_delay: int
     tilt_mode_day: TiltMode
     tilt_mode_night: TiltMode
     tilt_set_value_day: int
