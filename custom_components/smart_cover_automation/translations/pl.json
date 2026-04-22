@@ -65,6 +65,7 @@
                     "tilt_set_value_day": "Dzienny kąt nachylenia (wartość stała):",
                     "tilt_set_value_night": "Nocny kąt nachylenia (wartość stała):",
                     "tilt_min_change_delta": "Minimalna zmiana nachylenia:",
+                    "tilt_open_to_cover_open_delay": "Opóźnienie między otwarciem lameli a rolety:",
                     "tilt_slat_overlap_ratio": "Współczynnik zakładki lameli (d/L):"
                 },
                 "data_description": {
@@ -73,6 +74,7 @@
                     "tilt_set_value_day": "Stały kąt nachylenia dla trybu dziennego. 0 % = całkowicie zamknięte (pionowo, blokuje światło), 100 % = całkowicie otwarte (poziomo, wpuszcza światło). Używane tylko, gdy dzienny tryb nachylenia jest ustawiony na „Wartość stała”.",
                     "tilt_set_value_night": "Stały kąt nachylenia dla trybu nocnego. 0 % = całkowicie zamknięte (pionowo, blokuje światło), 100 % = całkowicie otwarte (poziomo, wpuszcza światło). Używane tylko, gdy nocny tryb nachylenia jest ustawiony na „Wartość stała”.",
                     "tilt_min_change_delta": "Minimalna zmiana nachylenia (%) wymagana przed wysłaniem polecenia. Zapobiega nadmiernemu zużyciu silnika przez drobne regulacje.",
+                    "tilt_open_to_cover_open_delay": "Opóźnienie między pełnym otwarciem lameli a ponownym otwarciem rolety. Dotyczy tylko rolet ze sterowaniem nachyleniem, których efektywny dzienny tryb nachylenia to Auto i które zostały wcześniej zamknięte w celu ochrony przed ciepłem.",
                     "tilt_slat_overlap_ratio": "Stosunek odstępu do szerokości lameli (0,5–1,0). Niższe wartości oznaczają większe zakładki. Wartość domyślna 0,9 sprawdza się w większości żaluzji weneckich. Dotyczy tylko trybu Auto."
                 },
                 "sections": {

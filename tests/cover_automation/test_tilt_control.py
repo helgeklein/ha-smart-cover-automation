@@ -11,13 +11,15 @@ Tests cover:
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_CURRENT_TILT_POSITION, CoverEntityFeature
 from homeassistant.const import STATE_OPEN
 
-from custom_components.smart_cover_automation.const import LockMode, TiltMode
+from custom_components.smart_cover_automation import const
+from custom_components.smart_cover_automation.const import LockMode, ReopeningMode, TiltMode
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverMovementReason,
@@ -59,6 +61,7 @@ def mock_resolved_config():
     resolved.tilt_set_value_day = 50
     resolved.tilt_set_value_night = 0
     resolved.tilt_min_change_delta = 5
+    resolved.tilt_open_to_cover_open_delay = 0
     resolved.tilt_slat_overlap_ratio = 0.9
     return resolved
 
@@ -85,6 +88,9 @@ def mock_cover_pos_history_mgr():
     mgr.get_recent_automation_action = MagicMock(return_value=None)
     mgr.set_recent_automation_action = MagicMock()
     mgr.clear_recent_automation_action = MagicMock()
+    mgr.set_delayed_reopen_action = MagicMock()
+    mgr.get_delayed_reopen_action = MagicMock(return_value=None)
+    mgr.clear_delayed_reopen_action = MagicMock()
     mgr.add = MagicMock()
     mgr.get_entries = MagicMock(return_value=[])
     return mgr
@@ -1174,6 +1180,94 @@ class TestProcessWithTilt:
         assert cover_state.pos_target_desired == 0
         assert cover_state.pos_target_final is None
         assert cover_state.tilt_target == 100
+
+    @pytest.mark.asyncio
+    async def test_process_prepares_delayed_reopen_with_tilt_only(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features
+    ) -> None:
+        """Delayed reopen preparation should only open tilt and schedule the reopen deadline."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_resolved_config.tilt_mode_day = TiltMode.AUTO
+        mock_resolved_config.tilt_open_to_cover_open_delay = 2
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=100)
+
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+
+        state = MagicMock()
+        state.state = STATE_OPEN
+        state.attributes = {
+            ATTR_CURRENT_POSITION: 0,
+            ATTR_CURRENT_TILT_POSITION: 0,
+            "supported_features": tilt_features,
+        }
+        data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        before = datetime.now(timezone.utc)
+        cover_state = await auto.process(state, data)
+        after = datetime.now(timezone.utc)
+
+        mock_ha_interface.set_cover_position.assert_not_called()
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 100, tilt_features)
+        mock_cover_pos_history_mgr.set_delayed_reopen_action.assert_called_once()
+        reopen_at = mock_cover_pos_history_mgr.set_delayed_reopen_action.call_args.kwargs["reopen_at"]
+        assert before + timedelta(minutes=2) <= reopen_at <= after + timedelta(minutes=2)
+        assert cover_state.pos_target_desired == 0
+        assert cover_state.pos_target_final is None
+        assert cover_state.tilt_target == 100
+
+    @pytest.mark.asyncio
+    async def test_process_reopens_cover_after_delayed_reopen_expires(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features
+    ) -> None:
+        """Expired delayed reopen state should reopen the cover and clear the delay marker."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_resolved_config.tilt_mode_day = TiltMode.AUTO
+        mock_resolved_config.tilt_open_to_cover_open_delay = 2
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+        mock_cover_pos_history_mgr.get_delayed_reopen_action.return_value = MagicMock(
+            reopen_at=datetime.now(timezone.utc) - timedelta(seconds=1)
+        )
+        mock_ha_interface.set_cover_position = AsyncMock(return_value=100)
+
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+
+        state = MagicMock()
+        state.state = STATE_OPEN
+        state.attributes = {
+            ATTR_CURRENT_POSITION: 0,
+            ATTR_CURRENT_TILT_POSITION: 0,
+            "supported_features": tilt_features,
+        }
+        data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        cover_state = await auto.process(state, data)
+
+        mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 100, tilt_features)
+        mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called()
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+        assert cover_state.pos_target_desired == 100
+        assert cover_state.pos_target_final == 100
 
     #
     # test_process_applies_night_tilt_during_evening_closure_when_opening_block_enabled

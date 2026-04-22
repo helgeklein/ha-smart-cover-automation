@@ -65,6 +65,7 @@
                     "tilt_set_value_day": "Dag-kantelhoek (vaste waarde):",
                     "tilt_set_value_night": "Nacht-kantelhoek (vaste waarde):",
                     "tilt_min_change_delta": "Minimale kantelwijziging:",
+                    "tilt_open_to_cover_open_delay": "Vertraging tussen lamellen openen en rolluik openen:",
                     "tilt_slat_overlap_ratio": "Lameloverlapverhouding (d/L):"
                 },
                 "data_description": {
@@ -73,6 +74,7 @@
                     "tilt_set_value_day": "Vaste kantelhoek voor de dagmodus. 0 % = volledig gesloten (verticaal, blokkeert licht), 100 % = volledig open (horizontaal, laat licht door). Wordt alleen gebruikt wanneer de dag-kantelmodus is ingesteld op 'Vaste waarde'.",
                     "tilt_set_value_night": "Vaste kantelhoek voor de nachtmodus. 0 % = volledig gesloten (verticaal, blokkeert licht), 100 % = volledig open (horizontaal, laat licht door). Wordt alleen gebruikt wanneer de nacht-kantelmodus is ingesteld op ‘Vaste waarde’.",
                     "tilt_min_change_delta": "Minimale kantelwijziging (%) vereist voordat een commando wordt verstuurd. Voorkomt overmatige motorslijtage door kleine aanpassingen.",
+                    "tilt_open_to_cover_open_delay": "Vertraging tussen het volledig openen van de lamellen en het opnieuw openen van het rolluik. Alleen van toepassing op rolluiken met kantelregeling waarvan de effectieve dag-kantelmodus Auto is en die eerder voor hittebescherming zijn gesloten.",
                     "tilt_slat_overlap_ratio": "Verhouding tussen lamelafstand en lamelbreedte (0,5–1,0). Lagere waarden betekenen meer overlap. De standaardwaarde van 0,9 werkt goed voor de meeste jaloezieën. Alleen relevant voor de Auto-modus."
                 },
                 "sections": {

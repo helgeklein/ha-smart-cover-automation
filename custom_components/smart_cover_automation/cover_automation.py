@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any, assert_never
 
@@ -37,6 +37,7 @@ class CoverMovementReason(Enum):
     """Encapsulates cover movement and reason."""
 
     CLOSING_HEAT_PROTECTION = "closing_heat_protection"
+    PREPARING_REOPEN_AFTER_HEAT_PROTECTION = "preparing_reopen_after_heat_protection"
     OPENING_LET_LIGHT_IN = "opening_let_light_in"
     OPENING_AFTER_HEAT_PROTECTION = "opening_after_heat_protection"
     OPENING_AFTER_MANUAL_OVERRIDE = "opening_after_manual_override"
@@ -193,6 +194,7 @@ class CoverAutomation:
         manual_override_remaining = self._get_manual_override_remaining(current_pos)
         if manual_override_remaining is not None:
             self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
+            self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             if self._should_ignore_manual_override(sensor_data):
                 self._cover_pos_history_mgr.clear_manual_override_blocked(self.entity_id)
                 message = (
@@ -630,8 +632,11 @@ class CoverAutomation:
         effective_temp_hot = self._get_effective_temp_hot(sensor_data)
         evening_closure_reason = self._get_evening_closure_movement_reason(sensor_data)
         last_automation_closing_reason = self._cover_pos_history_mgr.get_closed_by_automation_reason(self.entity_id)
+        delayed_reopen_action = self._cover_pos_history_mgr.get_delayed_reopen_action(self.entity_id)
+        time_now = datetime.now(timezone.utc)
 
         if evening_closure_reason is not None:
+            self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             # Evening closure mode - check lockout protection first
             if self._is_lockout_protection_active(evening_closure_reason):
                 # Lockout protection active - keep current position (prevent closing)
@@ -650,6 +655,7 @@ class CoverAutomation:
                 )
                 movement_reason = evening_closure_reason
         elif effective_temp_hot and sensor_data.weather_sunny and sun_hitting:
+            self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             # Heat protection mode - check lockout protection first
             if self._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION):
                 # Lockout protection active - keep current position (prevent closing)
@@ -668,6 +674,7 @@ class CoverAutomation:
             if self.entity_id in self.resolved.evening_closure_cover_list and self._is_opening_block_after_evening_closure_active(
                 sensor_data
             ):
+                self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                 # Opening block active - keep current position (no movement)
                 desired_pos = current_pos
                 desired_pos_friendly_name = "keeping current position because morning reopening is still blocked"
@@ -675,7 +682,37 @@ class CoverAutomation:
             else:
                 reopening_mode = self.resolved.automatic_reopening_mode
                 open_target = min(const.COVER_POS_FULLY_OPEN, self._get_cover_closure_limit(get_max=False))
-                if reopening_mode == const.ReopeningMode.ACTIVE:
+                reopening_allowed = reopening_mode == const.ReopeningMode.ACTIVE or (
+                    reopening_mode == const.ReopeningMode.PASSIVE and last_automation_closing_reason is not None
+                )
+
+                if reopening_allowed and self._should_delay_heat_protection_reopen(last_automation_closing_reason):
+                    delay_minutes = self.resolved.tilt_open_to_cover_open_delay
+                    if delayed_reopen_action is None:
+                        self._cover_pos_history_mgr.set_delayed_reopen_action(
+                            self.entity_id,
+                            reopen_at=time_now + timedelta(minutes=delay_minutes),
+                        )
+                        desired_pos = current_pos
+                        desired_pos_friendly_name = "opening tilt before delayed reopening after heat protection"
+                        movement_reason = CoverMovementReason.PREPARING_REOPEN_AFTER_HEAT_PROTECTION
+                    elif time_now < delayed_reopen_action.reopen_at:
+                        desired_pos = current_pos
+                        desired_pos_friendly_name = "keeping current position until delayed reopening after heat protection expires"
+                        movement_reason = CoverMovementReason.PREPARING_REOPEN_AFTER_HEAT_PROTECTION
+                    else:
+                        desired_pos = open_target
+                        desired_pos_friendly_name = (
+                            "already at the open target after delayed reopening"
+                            if current_pos == desired_pos
+                            else "opening because delayed reopening after heat protection has expired"
+                        )
+                        movement_reason = self._get_opening_movement_reason(
+                            last_automation_closing_reason,
+                            manual_override_just_expired=manual_override_just_expired,
+                        )
+                elif reopening_mode == const.ReopeningMode.ACTIVE:
+                    self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = open_target
                     desired_pos_friendly_name = (
                         "already at the open target" if current_pos == desired_pos else "opening because closing conditions no longer apply"
@@ -685,6 +722,7 @@ class CoverAutomation:
                         manual_override_just_expired=manual_override_just_expired,
                     )
                 elif reopening_mode == const.ReopeningMode.PASSIVE and last_automation_closing_reason is not None:
+                    self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = open_target
                     desired_pos_friendly_name = (
                         "already at the open target after an automation-driven closure"
@@ -696,6 +734,7 @@ class CoverAutomation:
                         manual_override_just_expired=manual_override_just_expired,
                     )
                 elif reopening_mode == const.ReopeningMode.PASSIVE:
+                    self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = current_pos
                     desired_pos_friendly_name = (
                         "already at the open target"
@@ -704,6 +743,7 @@ class CoverAutomation:
                     )
                     movement_reason = None
                 else:
+                    self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = current_pos
                     desired_pos_friendly_name = (
                         "already at the open target"
@@ -717,6 +757,17 @@ class CoverAutomation:
         )
 
         return desired_pos, movement_reason, lockout_protection_active
+
+    def _should_delay_heat_protection_reopen(self, last_automation_closing_reason: str | None) -> bool:
+        """Return whether this cover should use delayed reopening after heat protection."""
+
+        if last_automation_closing_reason != const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION:
+            return False
+
+        if self.resolved.tilt_open_to_cover_open_delay <= 0:
+            return False
+
+        return self._get_effective_tilt_mode(is_night=False) == const.TiltMode.AUTO
 
     def _get_opening_movement_reason(
         self, last_automation_closing_reason: str | None, manual_override_just_expired: bool = False
@@ -820,11 +871,13 @@ class CoverAutomation:
         if desired_pos == current_pos:
             if self._is_opening_movement_reason(movement_reason):
                 self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
+                self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             return False, None, "No movement needed"
 
         if abs(desired_pos - current_pos) < self.resolved.covers_min_position_delta:
             if self._is_opening_movement_reason(movement_reason):
                 self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
+                self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             return False, None, "Skipped minor adjustment"
 
         # Movement needed
@@ -849,6 +902,9 @@ class CoverAutomation:
             else:
                 self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
 
+            if self._is_opening_movement_reason(movement_reason):
+                self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+
             if movement_reason == CoverMovementReason.CLOSING_HEAT_PROTECTION:
                 verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
                 reason_key = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
@@ -870,6 +926,10 @@ class CoverAutomation:
             elif movement_reason == CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE:
                 verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
                 reason_key = const.TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE
+            elif movement_reason == CoverMovementReason.PREPARING_REOPEN_AFTER_HEAT_PROTECTION:
+                # This state is used for tilt-only reopening preparation and should
+                # never reach the cover movement path.
+                return False, None, "Skipped cover movement during delayed reopen preparation"
             else:
                 # Type checker will fail if a new enum value is added but not handled
                 assert_never(movement_reason)
@@ -937,6 +997,7 @@ class CoverAutomation:
             return False
 
         self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
+        self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
 
         if self.resolved.lock_mode == const.LockMode.HOLD_POSITION:
             # Just block all automation (including tilt)

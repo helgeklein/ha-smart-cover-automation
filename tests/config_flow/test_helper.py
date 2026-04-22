@@ -629,6 +629,7 @@ class TestFlowHelperStep4TiltSchema:
 
         assert ConfKeys.TILT_MODE_DAY.value in schema_keys
         assert ConfKeys.TILT_MODE_NIGHT.value in schema_keys
+        assert ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value in schema_keys
         assert const.STEP_4_SECTION_TILT_DAY not in schema_keys
         assert const.STEP_4_SECTION_TILT_NIGHT not in schema_keys
 
@@ -691,6 +692,7 @@ class TestFlowHelperStep4TiltSchema:
 
         assert ConfKeys.TILT_MODE_DAY.value in schema_keys
         assert ConfKeys.TILT_MODE_NIGHT.value in schema_keys
+        assert ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value in schema_keys
         assert const.STEP_4_SECTION_TILT_DAY not in schema_keys
         assert const.STEP_4_SECTION_TILT_NIGHT not in schema_keys
 

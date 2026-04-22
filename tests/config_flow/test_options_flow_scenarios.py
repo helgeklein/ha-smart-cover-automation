@@ -93,6 +93,7 @@ class TestOptionsFlowScenarios:
             ConfKeys.TILT_SET_VALUE_DAY.value: 50,
             ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
             ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
+            ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value: 0,
             ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
         }
 

@@ -82,6 +82,7 @@ In this step of the configuration wizard, you can specify how the tilt angle of 
   - Only direct sunlight is blocked (cloudy conditions and the sun's position is taken into account).
   - If the sun is not shining on a window, the slats are kept in open mode to allow indirect light through.
   - Not available in night mode.
+  - Only in this mode the setting **Tilt open to cover open delay** is applicable (see below).
 - **Manual:** Don't change the user's manual setting.
 - **Open:** Keep the slats fully open.
 - **Closed:** Keep the slats fully closed.
@@ -100,6 +101,15 @@ The above tilt modes are available in two variants: one applies to operations du
 ### Per-Cover Overrides
 
 The global tilt modes can be overridden per cover.
+
+### Additional Settings
+
+- **Minimum tilt change:** Minimum tilt change (%) required before sending a command. Prevents excessive motor wear from small adjustments.
+- **Slat overlap ratio (d/L):** Ratio of slat spacing to slat width (`0.5` – `1.0`). Lower values mean more overlap between slats. The default of `0.9` works well for most venetian blinds. Only relevant for Auto mode.
+
+*New in 3.1:*
+
+- **Tilt open to cover open delay:** Delay between opening the slats fully and reopening the cover. Only applies to covers with tilt support whose effective daytime tilt mode is Auto and that were previously closed for heat protection.
 
 ## Step 5: Window Sensors for Lockout Protection (Optional)
 

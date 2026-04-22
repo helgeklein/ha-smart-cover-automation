@@ -336,6 +336,7 @@ class TestOptionsFlow:
                 ConfKeys.TILT_SET_VALUE_DAY.value: 50,
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
+                ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value: 0,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
             },
             # Step 5: window sensors (empty — no sensors configured)
@@ -352,6 +353,87 @@ class TestOptionsFlow:
         assert opts[ConfKeys.COVERS.value] == [TEST_COVER_1]
         assert opts[ConfKeys.WEATHER_ENTITY_ID.value] == TEST_WEATHER
         assert opts[f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}"] == 180.0
+
+    async def test_options_flow_round_trips_non_zero_tilt_reopen_delay(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """A non-zero tilt reopen delay should persist and show up unchanged when reopening step 4."""
+
+        _register_cover_entity(hass, TEST_COVER_1, COVER_FEATURES | CoverEntityFeature.SET_TILT_POSITION)
+        _register_weather_entity(hass)
+
+        entry = _create_loaded_entry(hass)
+
+        step_inputs = [
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: TEST_WEATHER,
+                ConfKeys.COVERS.value: [TEST_COVER_1],
+            },
+            {f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180.0},
+            {
+                ConfKeys.COVERS_MIN_CLOSURE.value: 100,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 0,
+            },
+            {
+                ConfKeys.TILT_MODE_DAY.value: TiltMode.AUTO,
+                ConfKeys.TILT_MODE_NIGHT.value: TiltMode.CLOSED,
+                ConfKeys.TILT_SET_VALUE_DAY.value: 50,
+                ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
+                ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
+                ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value: 2,
+                ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
+            },
+            {},
+            {},
+        ]
+
+        result = await _step_through_options_flow(hass, entry, step_inputs)
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        assert entry.options[ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value] == 2
+
+        result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "init"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    ConfKeys.WEATHER_ENTITY_ID.value: TEST_WEATHER,
+                    ConfKeys.COVERS.value: [TEST_COVER_1],
+                },
+            )
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "2"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180.0},
+            )
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "3"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    ConfKeys.COVERS_MIN_CLOSURE.value: 100,
+                    ConfKeys.COVERS_MAX_CLOSURE.value: 0,
+                },
+            )
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "4"
+
+        schema = result["data_schema"].schema
+        delay_key = next(key for key in schema if getattr(key, "schema", None) == ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value)
+        delay_default = delay_key.default() if callable(delay_key.default) else delay_key.default
+
+        assert delay_default == 2
 
     # ------------------------------------------------------------------
     # 3.3  Options flow step 1 validation — invalid cover entity
@@ -505,6 +587,7 @@ class TestOptionsFlow:
                 ConfKeys.TILT_SET_VALUE_DAY.value: 50,
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
+                ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value: 0,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
             },
             {},
