@@ -926,6 +926,10 @@ class CoverAutomation:
             elif movement_reason == CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE:
                 verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
                 reason_key = const.TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE
+            elif movement_reason == CoverMovementReason.PREPARING_REOPEN_AFTER_HEAT_PROTECTION:
+                # This state is used for tilt-only reopening preparation and should
+                # never reach the cover movement path.
+                return False, None, "Skipped cover movement during delayed reopen preparation"
             else:
                 # Type checker will fail if a new enum value is added but not handled
                 assert_never(movement_reason)
