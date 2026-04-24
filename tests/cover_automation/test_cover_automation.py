@@ -35,6 +35,7 @@ from custom_components.smart_cover_automation.const import LockMode, ReopeningMo
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverMovementReason,
+    CoverState,
 )
 from custom_components.smart_cover_automation.cover_automation import (
     SensorData as CoverSensorData,
@@ -790,6 +791,54 @@ class TestCalculateDesiredPosition:
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
         assert position == 100  # Fully open
         assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+
+    def test_calculate_desired_position_holds_when_weather_state_is_unknown_and_sun_hitting(
+        self, cover_automation, mock_cover_pos_history_mgr
+    ):
+        """Weather-dependent movement should hold position when required weather state is unknown."""
+
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=None,
+            temp_hot=None,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=0)
+
+        assert position == 0
+        assert reason is None
+        assert lockout_active is False
+
+    def test_calculate_desired_position_reopens_when_sun_stops_hitting_even_if_weather_unknown(
+        self, cover_automation, mock_cover_pos_history_mgr
+    ):
+        """Sun geometry should still allow reopening when weather data is unavailable."""
+
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=None,
+            temp_hot=None,
+            weather_condition=None,
+            weather_sunny=None,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=0)
+
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
+        assert lockout_active is False
 
     def test_calculate_desired_position_passive_reopens_after_automation_closure(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
@@ -1581,6 +1630,16 @@ class TestGetEffectiveTempHot:
         assert result is True
         mock_logger.debug.assert_not_called()
 
+    def test_get_effective_temp_hot_propagates_unknown_state(self, cover_automation, sensor_data, mock_logger):
+        """Test that unknown global hot state remains unknown without per-cover override."""
+
+        sensor_data.temp_hot = None
+
+        result = cover_automation._get_effective_temp_hot(sensor_data)
+
+        assert result is None
+        mock_logger.debug.assert_not_called()
+
     def test_get_effective_temp_hot_per_cover_true_overrides_global_false(self, cover_automation, basic_config, sensor_data, mock_logger):
         """Test that per-cover True overrides a global False hot state."""
 
@@ -1615,6 +1674,75 @@ class TestGetEffectiveTempHot:
         assert position == 0
         assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
         assert lockout_active is False
+
+
+class TestApplyTilt:
+    """Test tilt handling for weather-aware automation paths."""
+
+    async def test_apply_tilt_skips_when_sunshine_state_unknown_and_sun_hitting(
+        self,
+        cover_automation,
+        sensor_data,
+        mock_resolved_config,
+        mock_ha_interface,
+    ):
+        """AUTO tilt should hold when sunshine state is unknown and sun is hitting."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.AUTO
+        cover_automation._cover_supports_tilt = True
+        cover_state = CoverState(
+            pos_current=0,
+            tilt_current=40,
+            sun_hitting=True,
+            sun_azimuth_diff=10.0,
+        )
+        sensor_data.weather_sunny = None
+
+        await cover_automation._apply_tilt(
+            cover_state,
+            sensor_data,
+            CoverEntityFeature.SET_TILT_POSITION,
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            cover_moved=False,
+        )
+
+        assert cover_state.tilt_target is None
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+
+    async def test_apply_tilt_opens_when_sunshine_state_unknown_and_sun_not_hitting(
+        self,
+        cover_automation,
+        sensor_data,
+        mock_resolved_config,
+        mock_ha_interface,
+    ):
+        """AUTO tilt should open fully when sunshine state is unknown but sun is not hitting."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.AUTO
+        mock_resolved_config.tilt_min_change_delta = 5
+        cover_automation._cover_supports_tilt = True
+        cover_state = CoverState(
+            pos_current=0,
+            tilt_current=0,
+            sun_hitting=False,
+            sun_azimuth_diff=90.0,
+        )
+        sensor_data.weather_sunny = None
+
+        await cover_automation._apply_tilt(
+            cover_state,
+            sensor_data,
+            CoverEntityFeature.SET_TILT_POSITION,
+            CoverMovementReason.OPENING_LET_LIGHT_IN,
+            cover_moved=False,
+        )
+
+        assert cover_state.tilt_target == 100
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with(
+            "cover.test",
+            100,
+            CoverEntityFeature.SET_TILT_POSITION,
+        )
 
 
 class TestIsLockoutActive:

@@ -11,7 +11,7 @@ from homeassistant.const import Platform
 from homeassistant.exceptions import HomeAssistantError, ServiceNotFound
 
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
-from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
+from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.ha_interface import ServiceCallError
 from tests.conftest import (
     MOCK_COVER_ENTITY_ID,
@@ -216,8 +216,9 @@ class TestCoordinatorErrorHandling:
         assert coordinator.last_exception is None  # No critical error propagated
         assert coordinator.last_update_success is True  # Automation continues successfully
 
-        # Verify that automation was skipped due to weather data unavailability
+        # Verify that automation stayed available despite missing forecast data
         assert coordinator.data is not None
-        # Verify empty result was returned
-        assert coordinator.data == CoordinatorData(covers={})
-        assert "Weather data unavailable, skipping actions" in caplog.text
+        assert coordinator.data.weather_sunny is True
+        assert coordinator.data.temp_current_max is None
+        assert coordinator.data.temp_hot is None
+        assert "Weather forecast unavailable" in caplog.text

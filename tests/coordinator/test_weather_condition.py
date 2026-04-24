@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
-from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
+from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.ha_interface import (
     InvalidSensorReadingError,
     WeatherEntityNotFoundError,
@@ -67,10 +67,8 @@ class TestWeatherCondition:
             # Second refresh should show the actual warning
             await coordinator.async_refresh()
             assert coordinator.last_exception is None  # No critical error should be raised
-            # Verify that coordinator data contains the weather unavailable message
             assert coordinator.data is not None
-            assert coordinator.data == CoordinatorData(covers={})
-            assert "Weather data unavailable, skipping actions" in caplog.text
+            assert "Weather condition unavailable" in caplog.text or "Weather forecast unavailable" in caplog.text
         else:
             # Mock weather entity with the specified state
             weather_state = MagicMock()
@@ -91,10 +89,9 @@ class TestWeatherCondition:
             caplog.clear()
             # Second refresh should show the actual warning
             await coordinator.async_refresh()
-            # Should return early with weather unavailable message
             result = coordinator.data
-            assert result == CoordinatorData(covers={})
-            assert "Weather data unavailable, skipping actions" in caplog.text
+            assert result is not None
+            assert "Weather condition unavailable" in caplog.text or "Weather forecast unavailable" in caplog.text
 
     def test_get_weather_condition_direct_call(self) -> None:
         """Test _get_weather_condition method directly."""
