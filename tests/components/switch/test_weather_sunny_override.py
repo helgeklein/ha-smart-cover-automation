@@ -518,7 +518,11 @@ class TestWeatherSunnyOverrideInEngine:
         await engine._gather_sensor_data()
 
         # Verify the override was logged
-        mock_logger.debug.assert_any_call("Current weather condition: sunny (source: external control)")
+        mock_logger.debug.assert_any_call(
+            "Current weather condition: %s (source: %s)",
+            "sunny",
+            "external control",
+        )
 
 
 class TestWeatherHotOverrideInEngine:

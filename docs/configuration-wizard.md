@@ -46,6 +46,12 @@ The integration considers the following current weather conditions as the **sun 
 - `sunny`
 - `partlycloudy`
 
+*New in 3.2:*
+
+#### Offline Use
+
+The integration caches the weather forecast response for situations when internet connectivity is unavailable. When offline, the integration continues to work as well as is possible under the circumstances.
+
 ### Covers
 
 Select the covers the integration should automate.

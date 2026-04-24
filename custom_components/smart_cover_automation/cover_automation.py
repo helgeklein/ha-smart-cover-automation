@@ -52,11 +52,11 @@ class SensorData:
 
     sun_azimuth: float
     sun_elevation: float
-    temp_max: float
+    temp_max: float | None
     temp_min: float | None
-    temp_hot: bool
-    weather_condition: str
-    weather_sunny: bool
+    temp_hot: bool | None
+    weather_condition: str | None
+    weather_sunny: bool | None
     evening_closure: bool
     post_evening_closure: bool
 
@@ -630,6 +630,7 @@ class CoverAutomation:
 
         lockout_protection_active = False
         effective_temp_hot = self._get_effective_temp_hot(sensor_data)
+        heat_protection_state = self._get_heat_protection_state(effective_temp_hot, sensor_data.weather_sunny, sun_hitting)
         evening_closure_reason = self._get_evening_closure_movement_reason(sensor_data)
         last_automation_closing_reason = self._cover_pos_history_mgr.get_closed_by_automation_reason(self.entity_id)
         delayed_reopen_action = self._cover_pos_history_mgr.get_delayed_reopen_action(self.entity_id)
@@ -654,7 +655,7 @@ class CoverAutomation:
                     else "keeping the cover closed during the evening closure period"
                 )
                 movement_reason = evening_closure_reason
-        elif effective_temp_hot and sensor_data.weather_sunny and sun_hitting:
+        elif heat_protection_state is True:
             self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             # Heat protection mode - check lockout protection first
             if self._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION):
@@ -669,6 +670,11 @@ class CoverAutomation:
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
                 desired_pos_friendly_name = "closing for heat protection"
                 movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
+        elif heat_protection_state is None:
+            self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+            desired_pos = current_pos
+            desired_pos_friendly_name = "keeping current position because required weather data is unavailable"
+            movement_reason = None
         else:
             # Let light in mode - check if opening block after evening closure is active
             if self.entity_id in self.resolved.evening_closure_cover_list and self._is_opening_block_after_evening_closure_active(
@@ -791,7 +797,7 @@ class CoverAutomation:
     #
     # _get_effective_temp_hot
     #
-    def _get_effective_temp_hot(self, sensor_data: SensorData) -> bool:
+    def _get_effective_temp_hot(self, sensor_data: SensorData) -> bool | None:
         """Get the effective hot-weather state for this cover.
 
         Per-cover external control overrides the global hot state for this one
@@ -816,6 +822,30 @@ class CoverAutomation:
             return effective_temp_hot
 
         return sensor_data.temp_hot
+
+    @staticmethod
+    def _get_heat_protection_state(
+        effective_temp_hot: bool | None,
+        weather_sunny: bool | None,
+        sun_hitting: bool,
+    ) -> bool | None:
+        """Resolve whether heat-protection conditions are met.
+
+        Returns True when all closing conditions are known to be active, False
+        when any condition is known to be inactive, and None when a weather-
+        dependent condition is unavailable while the sun is still hitting.
+        """
+
+        if not sun_hitting:
+            return False
+
+        if effective_temp_hot is False or weather_sunny is False:
+            return False
+
+        if effective_temp_hot is True and weather_sunny is True:
+            return True
+
+        return None
 
     #
     # _get_cover_closure_limit
@@ -1285,7 +1315,12 @@ class CoverAutomation:
             if target_tilt is None:
                 return  # No tilt info available
         elif tilt_mode == const.TiltMode.AUTO:
-            if sensor_data.weather_sunny and cover_state.sun_hitting and cover_state.sun_azimuth_diff is not None:
+            if sensor_data.weather_sunny is None:
+                if cover_state.sun_hitting:
+                    self._log_cover_msg("Auto tilt skipped because sunshine state is unavailable", const.LogSeverity.DEBUG)
+                    return
+                target_tilt = const.COVER_POS_FULLY_OPEN
+            elif sensor_data.weather_sunny and cover_state.sun_hitting and cover_state.sun_azimuth_diff is not None:
                 target_tilt = self._calculate_auto_tilt(
                     sensor_data.sun_elevation,
                     cover_state.sun_azimuth_diff,

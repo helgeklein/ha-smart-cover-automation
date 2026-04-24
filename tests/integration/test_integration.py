@@ -22,7 +22,7 @@ Home Assistant environments.
 from __future__ import annotations
 
 import logging
-from typing import cast
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -55,6 +55,19 @@ from ..conftest import (
 # Test constants are now imported from conftest.py - see imports above for:
 # TEST_HOT_TEMP, TEST_COLD_TEMP, TEST_COMFORTABLE_TEMP_1, TEST_COVER_OPEN, TEST_COVER_CLOSED,
 # TEST_NUM_COVERS, TEST_MIN_SERVICE_CALLS, TEST_HIGH_ELEVATION, TEST_DIRECT_AZIMUTH
+
+
+def _set_config_entry_option(coordinator: Any, key: str, value: str) -> None:
+    """Replace one config entry option in a Pylance-safe way for tests."""
+
+    config_entry = coordinator.config_entry
+    updated_options = dict(config_entry.options)
+    updated_options[key] = value
+    object.__setattr__(config_entry, "options", updated_options)
+
+    runtime_data = getattr(config_entry, "runtime_data", None)
+    if runtime_data is not None:
+        runtime_data.config = updated_options
 
 
 class TestIntegrationScenarios:
@@ -113,7 +126,11 @@ class TestIntegrationScenarios:
         # Setup coordinator with integrated hass and weather service
         coordinator = create_integration_coordinator()
         hass = cast(MagicMock, coordinator.hass)
-        coordinator.config_entry.options[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = ReopeningMode.ACTIVE.value
+        _set_config_entry_option(
+            coordinator,
+            ConfKeys.AUTOMATIC_REOPENING_MODE.value,
+            ReopeningMode.ACTIVE.value,
+        )
 
         # Set the weather forecast temperature for this scenario
         set_weather_forecast_temp(float(temp))
@@ -322,10 +339,78 @@ class TestIntegrationScenarios:
         # Second refresh should show the actual warning
         await coordinator.async_refresh()
         assert coordinator.last_exception is None  # No critical error should be raised
-        # Verify that coordinator data contains the weather unavailable message
+        # Verify that automation continues with weather-dependent state held.
         assert coordinator.data is not None
-        assert coordinator.data.covers == {}
-        assert "Weather data unavailable, skipping actions" in caplog.text
+        assert MOCK_COVER_ENTITY_ID in coordinator.data.covers
+        cover_data = coordinator.data.covers[MOCK_COVER_ENTITY_ID]
+        assert cover_data.pos_current == TEST_COVER_OPEN
+        assert cover_data.pos_target_desired == TEST_COVER_OPEN
+        assert coordinator.data.temp_current_max is None
+        assert coordinator.data.temp_current_min is None
+        assert coordinator.data.temp_hot is None
+        assert coordinator.data.weather_sunny is None
+        assert "Weather forecast unavailable" in caplog.text
+        assert "Weather condition unavailable" in caplog.text
+
+    async def test_offline_refresh_uses_cached_weather_state_across_cycles(self, caplog) -> None:
+        """A cached hot and sunny weather state should continue driving automation while offline."""
+
+        coordinator = create_integration_coordinator()
+        hass = cast(MagicMock, coordinator.hass)
+        _set_config_entry_option(
+            coordinator,
+            ConfKeys.AUTOMATIC_REOPENING_MODE.value,
+            ReopeningMode.ACTIVE.value,
+        )
+
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))
+
+        weather_state = MagicMock()
+        weather_state.state = HA_WEATHER_COND_SUNNY
+        weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
+
+        cover_state = MagicMock()
+        cover_state.attributes = {
+            ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
+            ATTR_SUPPORTED_FEATURES: 15,
+        }
+
+        sun_state = MagicMock()
+        sun_state.state = "above_horizon"
+        sun_state.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": 90.0}
+
+        hass.states.get.side_effect = lambda entity_id: {
+            MOCK_WEATHER_ENTITY_ID: weather_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_SUN_ENTITY_ID: sun_state,
+        }.get(entity_id)
+
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
+        await coordinator.async_refresh()
+        assert coordinator.data is not None
+        first_cover_data = coordinator.data.covers[MOCK_COVER_ENTITY_ID]
+        assert first_cover_data.pos_target_desired == TEST_COVER_OPEN
+        assert coordinator.data.temp_hot is True
+        assert coordinator.data.weather_sunny is True
+
+        hass.states.get.side_effect = lambda entity_id: {
+            MOCK_WEATHER_ENTITY_ID: None,
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_SUN_ENTITY_ID: sun_state,
+        }.get(entity_id)
+        sun_state.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
+
+        caplog.clear()
+        await coordinator.async_refresh()
+
+        assert coordinator.data is not None
+        second_cover_data = coordinator.data.covers[MOCK_COVER_ENTITY_ID]
+        assert second_cover_data.pos_target_desired == TEST_COVER_CLOSED
+        assert coordinator.data.temp_hot is True
+        assert coordinator.data.weather_sunny is True
+        assert "continuing with last known forecast temperatures" in caplog.text
+        assert "continuing with last known weather condition" in caplog.text
 
     async def test_configuration_validation(self, caplog) -> None:
         """
@@ -471,7 +556,11 @@ class TestIntegrationScenarios:
         covers = ["cover.smart", "cover.basic"]
         coordinator = create_integration_coordinator(covers=covers)
         hass = cast(MagicMock, coordinator.hass)
-        coordinator.config_entry.options[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = ReopeningMode.ACTIVE.value
+        _set_config_entry_option(
+            coordinator,
+            ConfKeys.AUTOMATIC_REOPENING_MODE.value,
+            ReopeningMode.ACTIVE.value,
+        )
 
         # Setup cold temperature to trigger opening covers (clear automation logic)
         set_weather_forecast_temp(float(TEST_COLD_TEMP))  # Cold enough to open covers for warmth

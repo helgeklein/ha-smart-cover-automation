@@ -227,8 +227,76 @@ class TestGatherSensorData:
         sensor_data, message = await automation_engine._gather_sensor_data()
 
         # Verify error handling
-        assert sensor_data is None
-        assert "Weather data unavailable" in message
+        assert sensor_data is not None
+        assert sensor_data.temp_max is None
+        assert sensor_data.temp_hot is None
+        assert sensor_data.weather_sunny is True
+        assert "Weather forecast unavailable" in message
+
+    async def test_gather_sensor_data_weather_unavailable_uses_cached_values(self, automation_engine, mock_ha_interface):
+        """Test offline weather fallback to last known values."""
+
+        first_sensor_data, first_message = await automation_engine._gather_sensor_data()
+
+        assert first_sensor_data is not None
+        assert first_message == ""
+
+        from custom_components.smart_cover_automation.ha_interface import InvalidSensorReadingError
+
+        mock_ha_interface.get_daily_temperature_extrema.side_effect = InvalidSensorReadingError("weather.test", "Forecast unavailable")
+        mock_ha_interface.get_weather_condition.side_effect = InvalidSensorReadingError("weather.test", "state is unavailable")
+
+        sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.temp_max == first_sensor_data.temp_max
+        assert sensor_data.temp_min == first_sensor_data.temp_min
+        assert sensor_data.temp_hot == first_sensor_data.temp_hot
+        assert sensor_data.weather_condition == first_sensor_data.weather_condition
+        assert sensor_data.weather_sunny == first_sensor_data.weather_sunny
+        assert "continuing with last known" in message
+
+    @pytest.mark.parametrize(
+        "failing_call,expected_message",
+        [
+            (
+                "forecast",
+                "Weather forecast unavailable due to an unexpected error, continuing with last known forecast temperatures",
+            ),
+            (
+                "condition",
+                "Weather condition unavailable due to an unexpected error, continuing with last known weather condition",
+            ),
+        ],
+    )
+    async def test_gather_sensor_data_unexpected_weather_error_uses_cached_values(
+        self,
+        automation_engine,
+        mock_ha_interface,
+        failing_call: str,
+        expected_message: str,
+    ):
+        """Unexpected weather errors should reuse cached weather values when available."""
+
+        first_sensor_data, first_message = await automation_engine._gather_sensor_data()
+
+        assert first_sensor_data is not None
+        assert first_message == ""
+
+        if failing_call == "forecast":
+            mock_ha_interface.get_daily_temperature_extrema.side_effect = RuntimeError("Unexpected weather error")
+        else:
+            mock_ha_interface.get_weather_condition.side_effect = RuntimeError("Unexpected weather condition error")
+
+        sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.temp_max == first_sensor_data.temp_max
+        assert sensor_data.temp_min == first_sensor_data.temp_min
+        assert sensor_data.temp_hot == first_sensor_data.temp_hot
+        assert sensor_data.weather_condition == first_sensor_data.weather_condition
+        assert sensor_data.weather_sunny == first_sensor_data.weather_sunny
+        assert expected_message in message
 
     async def test_gather_sensor_data_sun_not_found_error_propagates(self, automation_engine, mock_ha_interface):
         """Test that SunSensorNotFoundError propagates as expected."""
@@ -262,8 +330,10 @@ class TestGatherSensorData:
         sensor_data, message = await automation_engine._gather_sensor_data()
 
         # Verify error handling
-        assert sensor_data is None
-        assert "Unexpected error getting weather data" in message
+        assert sensor_data is not None
+        assert sensor_data.temp_max is None
+        assert sensor_data.temp_hot is None
+        assert "unexpected error" in message.lower()
 
 
 class TestCheckGlobalConditions:

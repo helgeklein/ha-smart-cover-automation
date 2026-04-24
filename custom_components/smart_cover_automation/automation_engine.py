@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from datetime import time as dt_time
 from typing import TYPE_CHECKING, Any
@@ -20,6 +21,15 @@ from .log import Log
 
 if TYPE_CHECKING:
     from homeassistant.core import State
+
+
+@dataclass(slots=True)
+class WeatherSnapshot:
+    """Last successfully resolved weather inputs."""
+
+    temp_max: float | None = None
+    temp_min: float | None = None
+    weather_condition: str | None = None
 
 
 class AutomationEngine:
@@ -56,6 +66,9 @@ class AutomationEngine:
 
         # Evening closure state tracking
         self._evening_covers_closed: bool = False  # Prevent multiple closings within the evening closure window
+
+        # Preserve the last successful weather inputs for temporary offline periods.
+        self._weather_snapshot = WeatherSnapshot()
 
     def export_closed_by_automation_markers(self) -> dict[str, str]:
         """Return automation-closed markers for persistence."""
@@ -116,6 +129,9 @@ class AutomationEngine:
             severity = const.LogSeverity.DEBUG if is_first_run else const.LogSeverity.WARNING
             self._log_automation_result(message, severity)
             return result
+        if message:
+            severity = const.LogSeverity.DEBUG if is_first_run else const.LogSeverity.WARNING
+            self._log_automation_result(message, severity)
 
         # Get lock state
         lock_mode = self.resolved.lock_mode
@@ -223,28 +239,63 @@ class AutomationEngine:
             self._logger.error(f"Unexpected error getting sun data: {err}")
             return (None, f"Unexpected error getting sun data: {err}")
 
-        # Get weather data
+        weather_messages: list[str] = []
+
+        temp_max = self._weather_snapshot.temp_max
+        temp_min = self._weather_snapshot.temp_min
+        temperature_available = temp_max is not None
+
         try:
             temp_max, temp_min = await self._ha_interface.get_daily_temperature_extrema(self.resolved.weather_entity_id)
-            weather_condition = self._ha_interface.get_weather_condition(self.resolved.weather_entity_id)
+            self._weather_snapshot.temp_max = temp_max
+            self._weather_snapshot.temp_min = temp_min
+            temperature_available = True
         except InvalidSensorReadingError, WeatherEntityNotFoundError:
-            message = (
-                "Weather data unavailable on startup, skipping first iteration"
-                if is_first_run
-                else "Weather data unavailable, skipping actions"
-            )
-            return (None, message)
+            if temperature_available:
+                weather_messages.append("Weather forecast unavailable, continuing with last known forecast temperatures")
+            else:
+                weather_messages.append("Weather forecast unavailable, skipping weather-dependent actions that require forecast data")
         except Exception as err:
-            # Unexpected error - log and treat as temporary unavailability
-            self._logger.error(f"Unexpected error getting weather data: {err}")
-            return (None, f"Unexpected error getting weather data: {err}")
+            self._logger.error(f"Unexpected error getting weather forecast data: {err}")
+            if temperature_available:
+                weather_messages.append(
+                    "Weather forecast unavailable due to an unexpected error, continuing with last known forecast temperatures"
+                )
+            else:
+                weather_messages.append("Weather forecast unavailable due to an unexpected error")
+
+        weather_condition = self._weather_snapshot.weather_condition
+        condition_available = weather_condition is not None
+
+        try:
+            weather_condition = self._ha_interface.get_weather_condition(self.resolved.weather_entity_id)
+            self._weather_snapshot.weather_condition = weather_condition
+            condition_available = True
+        except InvalidSensorReadingError, WeatherEntityNotFoundError:
+            if condition_available:
+                weather_messages.append("Weather condition unavailable, continuing with last known weather condition")
+            else:
+                weather_messages.append("Weather condition unavailable, skipping weather-dependent actions that require sunshine state")
+        except Exception as err:
+            self._logger.error(f"Unexpected error getting weather condition: {err}")
+            if condition_available:
+                weather_messages.append(
+                    "Weather condition unavailable due to an unexpected error, continuing with last known weather condition"
+                )
+            else:
+                weather_messages.append("Weather condition unavailable due to an unexpected error")
 
         # Calculate derived values
-        meets_daily_max_threshold = temp_max >= self.resolved.daily_max_temperature_threshold
-        # Missing forecast lows should not disable the whole automation cycle.
-        meets_daily_min_threshold = temp_min >= self.resolved.daily_min_temperature_threshold if temp_min is not None else None
-        temp_hot = meets_daily_max_threshold and (meets_daily_min_threshold is not False)
-        hot_source = "forecast thresholds" if temp_min is not None else "forecast daily max threshold"
+        temp_hot: bool | None = None
+        hot_source = "unavailable"
+        meets_daily_max_threshold: bool | None = None
+        meets_daily_min_threshold: bool | None = None
+        if temperature_available and temp_max is not None:
+            meets_daily_max_threshold = temp_max >= self.resolved.daily_max_temperature_threshold
+            # Missing forecast lows should not disable the whole automation cycle.
+            meets_daily_min_threshold = temp_min >= self.resolved.daily_min_temperature_threshold if temp_min is not None else None
+            temp_hot = meets_daily_max_threshold and (meets_daily_min_threshold is not False)
+            hot_source = "forecast thresholds" if temp_min is not None else "forecast daily max threshold"
 
         weather_hot_external_control = self.config.get(const.SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL)
         if weather_hot_external_control is not None:
@@ -253,24 +304,31 @@ class AutomationEngine:
 
         # Check for weather sunny external control override
         weather_sunny_external_control = self.config.get(const.SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL)
+        weather_sunny: bool | None = None
+        sunny_source = "unavailable"
         if weather_sunny_external_control is not None:
             # External control is enabled - use its boolean value to determine sunny state
             weather_sunny = bool(weather_sunny_external_control)
             sunny_source = "external control"
-        else:
+        elif condition_available and weather_condition is not None:
             # External control disabled - determine sunny state based on weather condition
             weather_sunny = weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS
             sunny_source = "weather entity"
+        message = "; ".join(dict.fromkeys(weather_messages))
         self._logger.debug(
             "Current weather temperature state: %s (source: %s, daily_max=%s, daily_min=%s, max_threshold_met=%s, min_threshold_met=%s)",
-            "hot" if temp_hot else "not hot",
+            "hot" if temp_hot is True else "not hot" if temp_hot is False else "unknown",
             hot_source,
             temp_max,
             temp_min,
             meets_daily_max_threshold,
             meets_daily_min_threshold,
         )
-        self._logger.debug(f"Current weather condition: {'sunny' if weather_sunny else 'not sunny'} (source: {sunny_source})")
+        self._logger.debug(
+            "Current weather condition: %s (source: %s)",
+            "sunny" if weather_sunny is True else "not sunny" if weather_sunny is False else "unknown",
+            sunny_source,
+        )
 
         # Check for evening closure and handle delayed cover closing
         evening_closure = self._check_evening_closure()
@@ -291,7 +349,7 @@ class AutomationEngine:
                 evening_closure=evening_closure,
                 post_evening_closure=post_evening_closure,
             ),
-            "",
+            message,
         )
 
     #
