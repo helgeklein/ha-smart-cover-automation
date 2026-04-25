@@ -44,7 +44,7 @@ A Home Assistant integration to automate the control of your smart home's window
     - The integration needs to know if the sun is shining.
     - It'll automatically query your weather forecast entity for an approximate value.
     - If you have a luxmeter or pyranometer, you can use it instead for better accuracy.
-    - Or [use your PV to determine if the sun is shining]({{ '/weather-sunny-external-pv/' | relative_url }}).
+    - Or [use your PV to determine if the sun is shining](https://ha-smart-cover-automation.helgeklein.com/weather-sunny-external-pv/).
 - **Comfort:**
     - Micro-adjustments are avoided.
 - **Supported covers:**
