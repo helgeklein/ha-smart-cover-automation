@@ -66,6 +66,8 @@
                     "tilt_set_value_night": "Angle d'inclinaison nocturne (valeur fixe) :",
                     "tilt_min_change_delta": "Changement d'inclinaison minimum :",
                     "tilt_open_to_cover_open_delay": "Délai entre ouverture des lamelles et du volet :",
+                    "tilt_vertical_position": "Position d'inclinaison verticale :",
+                    "tilt_horizontal_position": "Position d'inclinaison horizontale :",
                     "tilt_slat_overlap_ratio": "Ratio de chevauchement des lamelles (d/L) :"
                 },
                 "data_description": {
@@ -75,6 +77,8 @@
                     "tilt_set_value_night": "Angle d'inclinaison fixe pour le mode nuit. 0 % = complètement fermé (vertical, bloque la lumière), 100 % = complètement ouvert (horizontal, laisse entrer la lumière). Utilisé uniquement lorsque le mode d'inclinaison nocturne est réglé sur « Valeur fixe ».",
                     "tilt_min_change_delta": "Changement d'inclinaison minimum (%) requis avant d'envoyer une commande. Évite l'usure excessive du moteur par de petits ajustements.",
                     "tilt_open_to_cover_open_delay": "Délai entre l'ouverture complète des lamelles et la réouverture du volet. S'applique uniquement aux volets avec contrôle d'inclinaison dont le mode d'inclinaison effectif en journée est Auto et qui ont été précédemment fermés pour protéger de la chaleur.",
+                    "tilt_vertical_position": "Pourcentage d'inclinaison Home Assistant pour des lamelles complètement verticales. Le mode Auto considère cela comme la position verticale des lamelles. Valeur par défaut : 0 %.",
+                    "tilt_horizontal_position": "Pourcentage d'inclinaison Home Assistant pour des lamelles complètement horizontales. Le mode Auto considère cela comme la position horizontale des lamelles. Valeur par défaut : 100 %.",
                     "tilt_slat_overlap_ratio": "Rapport entre l'espacement et la largeur des lamelles (0,5–1,0). Des valeurs plus basses signifient plus de chevauchement. La valeur par défaut de 0,9 convient à la plupart des stores vénitiens. Pertinent uniquement pour le mode Auto."
                 },
                 "sections": {

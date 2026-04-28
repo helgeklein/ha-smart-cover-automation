@@ -66,6 +66,8 @@
                     "tilt_set_value_night": "Angolo di inclinazione notturno (valore fisso):",
                     "tilt_min_change_delta": "Variazione minima di inclinazione:",
                     "tilt_open_to_cover_open_delay": "Ritardo tra apertura lamelle e apertura tapparella:",
+                    "tilt_vertical_position": "Posizione di inclinazione verticale:",
+                    "tilt_horizontal_position": "Posizione di inclinazione orizzontale:",
                     "tilt_slat_overlap_ratio": "Rapporto di sovrapposizione lamelle (d/L):"
                 },
                 "data_description": {
@@ -75,6 +77,8 @@
                     "tilt_set_value_night": "Angolo di inclinazione fisso per la modalità notturna. 0 % = completamente chiuso (verticale, blocca la luce), 100 % = completamente aperto (orizzontale, lascia entrare la luce). Utilizzato solo quando la modalità di inclinazione notturna è impostata su «Valore fisso».",
                     "tilt_min_change_delta": "Variazione minima di inclinazione (%) richiesta prima di inviare un comando. Previene l'usura eccessiva del motore per piccole regolazioni.",
                     "tilt_open_to_cover_open_delay": "Ritardo tra l'apertura completa delle lamelle e la riapertura della tapparella. Si applica solo alle tapparelle con controllo di inclinazione il cui modo di inclinazione diurno effettivo è Auto e che erano state precedentemente chiuse per protezione dal calore.",
+                    "tilt_vertical_position": "Percentuale di inclinazione di Home Assistant per lamelle completamente verticali. La modalità Auto la tratta come posizione verticale delle lamelle. Predefinito: 0%.",
+                    "tilt_horizontal_position": "Percentuale di inclinazione di Home Assistant per lamelle completamente orizzontali. La modalità Auto la tratta come posizione orizzontale delle lamelle. Predefinito: 100%.",
                     "tilt_slat_overlap_ratio": "Rapporto tra spaziatura e larghezza delle lamelle (0,5–1,0). Valori più bassi significano più sovrapposizione. Il valore predefinito di 0,9 funziona bene per la maggior parte delle veneziane. Rilevante solo per la modalità Auto."
                 },
                 "sections": {

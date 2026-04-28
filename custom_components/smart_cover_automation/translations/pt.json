@@ -66,6 +66,8 @@
                     "tilt_set_value_night": "Ângulo de inclinação noturno (valor fixo):",
                     "tilt_min_change_delta": "Alteração mínima de inclinação:",
                     "tilt_open_to_cover_open_delay": "Atraso entre abrir lâminas e abrir persiana:",
+                    "tilt_vertical_position": "Posição de inclinação vertical:",
+                    "tilt_horizontal_position": "Posição de inclinação horizontal:",
                     "tilt_slat_overlap_ratio": "Rácio de sobreposição das lâminas (d/L):"
                 },
                 "data_description": {
@@ -75,6 +77,8 @@
                     "tilt_set_value_night": "Ângulo de inclinação fixo para o modo noturno. 0 % = completamente fechado (vertical, bloqueia luz), 100 % = completamente aberto (horizontal, deixa entrar luz). Utilizado apenas quando o modo de inclinação noturna está definido como «Valor fixo».",
                     "tilt_min_change_delta": "Alteração mínima de inclinação (%) necessária antes de enviar um comando. Evita desgaste excessivo do motor com pequenos ajustes.",
                     "tilt_open_to_cover_open_delay": "Atraso entre abrir totalmente as lâminas e reabrir a persiana. Aplica-se apenas a persianas com controlo de inclinação cujo modo de inclinação diurno efetivo é Auto e que foram anteriormente fechadas para proteção contra o calor.",
+                    "tilt_vertical_position": "Percentagem de inclinação do Home Assistant para lâminas totalmente verticais. O modo Auto trata isto como a posição vertical das lâminas. Predefinição: 0 %.",
+                    "tilt_horizontal_position": "Percentagem de inclinação do Home Assistant para lâminas totalmente horizontais. O modo Auto trata isto como a posição horizontal das lâminas. Predefinição: 100 %.",
                     "tilt_slat_overlap_ratio": "Rácio entre o espaçamento e a largura das lâminas (0,5–1,0). Valores mais baixos significam mais sobreposição. O valor predefinido de 0,9 funciona bem para a maioria das persianas venezianas. Relevante apenas para o modo Auto."
                 },
                 "sections": {

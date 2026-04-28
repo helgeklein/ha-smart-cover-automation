@@ -979,6 +979,8 @@ class TestOptionsFlowHelperMethods:
             ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
             ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
             ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value: 0,
+            ConfKeys.TILT_VERTICAL_POSITION.value: 0,
+            ConfKeys.TILT_HORIZONTAL_POSITION.value: 100,
             ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
         }
         mock_entry = _create_mock_entry(data=existing_data)
@@ -1020,6 +1022,48 @@ class TestOptionsFlowHelperMethods:
 
         result_dict = _as_dict(result)
         assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+
+    async def test_step_4_saves_auto_tilt_orientation_positions(self, mock_hass_with_covers: MagicMock) -> None:
+        """Step 4 should persist the configured Auto-mode vertical/horizontal positions."""
+
+        mock_entry = _create_mock_entry(
+            data={
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+            }
+        )
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            }
+        )
+        await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
+        await flow.async_step_3({})
+
+        result = await flow.async_step_4(
+            {
+                ConfKeys.TILT_MODE_DAY.value: const.TiltMode.AUTO,
+                ConfKeys.TILT_MODE_NIGHT.value: const.TiltMode.CLOSED,
+                ConfKeys.TILT_SET_VALUE_DAY.value: 50,
+                ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
+                ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
+                ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value: 0,
+                ConfKeys.TILT_VERTICAL_POSITION.value: 12,
+                ConfKeys.TILT_HORIZONTAL_POSITION.value: 68,
+                ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
+            }
+        )
+
+        result_dict = _as_dict(result)
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "5"
+        assert flow._config_data[ConfKeys.TILT_VERTICAL_POSITION.value] == 12
+        assert flow._config_data[ConfKeys.TILT_HORIZONTAL_POSITION.value] == 68
 
     #
     # test_options_flow_with_changed_settings_logs_info

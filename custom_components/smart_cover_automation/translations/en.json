@@ -66,6 +66,8 @@
                     "tilt_set_value_night": "Night tilt angle (set value):",
                     "tilt_min_change_delta": "Minimum tilt change:",
                     "tilt_open_to_cover_open_delay": "Tilt open to cover open delay:",
+                    "tilt_vertical_position": "Vertical tilt position:",
+                    "tilt_horizontal_position": "Horizontal tilt position:",
                     "tilt_slat_overlap_ratio": "Slat overlap ratio (d/L):"
                 },
                 "data_description": {
@@ -75,6 +77,8 @@
                     "tilt_set_value_night": "Fixed tilt angle for night mode. 0% = fully closed (vertical, blocks light), 100% = fully open (horizontal, lets light in). Only used when night tilt mode is set to 'Set value'.",
                     "tilt_min_change_delta": "Minimum tilt change (%) required before sending a command. Prevents excessive motor wear from small adjustments.",
                     "tilt_open_to_cover_open_delay": "Delay between opening the slats fully and reopening the cover. Only applies to covers with tilt support whose effective daytime tilt mode is Auto and that were previously closed for heat protection.",
+                    "tilt_vertical_position": "Home Assistant tilt percentage for fully vertical slats. Auto mode treats this as the vertical slat position. Default: 0%.",
+                    "tilt_horizontal_position": "Home Assistant tilt percentage for fully horizontal slats. Auto mode treats this as the horizontal slat position. Default: 100%.",
                     "tilt_slat_overlap_ratio": "Ratio of slat spacing to slat width (0.5–1.0). Lower values mean more overlap between slats. The default of 0.9 works well for most venetian blinds. Only relevant for Auto mode."
                 },
                 "sections": {
