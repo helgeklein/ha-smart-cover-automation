@@ -170,6 +170,33 @@ def test_translation_has_evening_closure_section_keys(language_code: str) -> Non
 
 
 @pytest.mark.parametrize("language_code", _get_available_languages())
+def test_translation_has_step_4_tilt_keys(language_code: str) -> None:
+    """Test that step 4 tilt field labels and descriptions are translated in every language."""
+
+    data = _load_translations(language_code)
+    step_4 = data.get(const.HA_OPTIONS, {}).get("step", {}).get("4", {})
+    section_data = step_4.get("data", {})
+    section_descriptions = step_4.get("data_description", {})
+    expected_fields = {
+        ConfKeys.TILT_MODE_DAY.value,
+        ConfKeys.TILT_MODE_NIGHT.value,
+        ConfKeys.TILT_SET_VALUE_DAY.value,
+        ConfKeys.TILT_SET_VALUE_NIGHT.value,
+        ConfKeys.TILT_MIN_CHANGE_DELTA.value,
+        ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value,
+        ConfKeys.TILT_VERTICAL_POSITION.value,
+        ConfKeys.TILT_HORIZONTAL_POSITION.value,
+        ConfKeys.TILT_SLAT_OVERLAP_RATIO.value,
+    }
+
+    missing_labels = expected_fields - set(section_data.keys())
+    missing_descriptions = expected_fields - set(section_descriptions.keys())
+
+    assert not missing_labels, f"Missing step 4 tilt labels in {language_code}.json: {sorted(missing_labels)}"
+    assert not missing_descriptions, f"Missing step 4 tilt descriptions in {language_code}.json: {sorted(missing_descriptions)}"
+
+
+@pytest.mark.parametrize("language_code", _get_available_languages())
 def test_translation_file_is_valid_json(language_code: str) -> None:
     """Test that each translation file contains valid, parseable JSON.
 

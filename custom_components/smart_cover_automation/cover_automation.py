@@ -1202,6 +1202,30 @@ class CoverAutomation:
         tilt_percent = 100.0 * (1.0 - theta_deg / 90.0)
         return max(0, min(100, round(tilt_percent)))
 
+    @staticmethod
+    def _map_auto_tilt_to_ha_position(
+        semantic_tilt: int,
+        vertical_position: int,
+        horizontal_position: int,
+    ) -> int:
+        """Map semantic Auto tilt to the cover's raw Home Assistant tilt scale.
+
+        Args:
+            semantic_tilt: Auto tilt on the semantic scale where 0 means vertical
+                slats and 100 means horizontal slats.
+            vertical_position: Raw HA tilt percentage that corresponds to vertical
+                slats for this installation.
+            horizontal_position: Raw HA tilt percentage that corresponds to
+                horizontal slats for this installation.
+
+        Returns:
+            Raw HA tilt percentage clamped to 0-100.
+        """
+
+        semantic_tilt = max(const.COVER_POS_FULLY_CLOSED, min(const.COVER_POS_FULLY_OPEN, semantic_tilt))
+        mapped = vertical_position + ((horizontal_position - vertical_position) * (semantic_tilt / 100.0))
+        return max(const.COVER_POS_FULLY_CLOSED, min(const.COVER_POS_FULLY_OPEN, round(mapped)))
+
     #
     # _get_external_tilt_value
     #
@@ -1319,16 +1343,29 @@ class CoverAutomation:
                 if cover_state.sun_hitting:
                     self._log_cover_msg("Auto tilt skipped because sunshine state is unavailable", const.LogSeverity.DEBUG)
                     return
-                target_tilt = const.COVER_POS_FULLY_OPEN
+                target_tilt = self._map_auto_tilt_to_ha_position(
+                    const.COVER_POS_FULLY_OPEN,
+                    self.resolved.tilt_vertical_position,
+                    self.resolved.tilt_horizontal_position,
+                )
             elif sensor_data.weather_sunny and cover_state.sun_hitting and cover_state.sun_azimuth_diff is not None:
-                target_tilt = self._calculate_auto_tilt(
+                semantic_tilt = self._calculate_auto_tilt(
                     sensor_data.sun_elevation,
                     cover_state.sun_azimuth_diff,
                     self.resolved.tilt_slat_overlap_ratio,
                 )
+                target_tilt = self._map_auto_tilt_to_ha_position(
+                    semantic_tilt,
+                    self.resolved.tilt_vertical_position,
+                    self.resolved.tilt_horizontal_position,
+                )
             else:
                 # Sun not hitting or not sunny — open tilt fully to let in diffuse daylight
-                target_tilt = const.COVER_POS_FULLY_OPEN
+                target_tilt = self._map_auto_tilt_to_ha_position(
+                    const.COVER_POS_FULLY_OPEN,
+                    self.resolved.tilt_vertical_position,
+                    self.resolved.tilt_horizontal_position,
+                )
         elif tilt_mode == const.TiltMode.EXTERNAL:
             target_tilt = self._get_external_tilt_value(is_night)
             if target_tilt is None:

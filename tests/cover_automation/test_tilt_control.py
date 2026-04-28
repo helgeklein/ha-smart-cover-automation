@@ -62,6 +62,8 @@ def mock_resolved_config():
     resolved.tilt_set_value_night = 0
     resolved.tilt_min_change_delta = 5
     resolved.tilt_open_to_cover_open_delay = 0
+    resolved.tilt_vertical_position = 0
+    resolved.tilt_horizontal_position = 100
     resolved.tilt_slat_overlap_ratio = 0.9
     return resolved
 
@@ -267,6 +269,31 @@ class TestCalculateAutoTilt:
         assert result == 0
 
 
+class TestMapAutoTiltToHaPosition:
+    """Tests for mapping semantic Auto tilt to raw HA positions."""
+
+    def test_default_mapping_is_identity(self) -> None:
+        """Default vertical/horizontal positions should preserve the semantic tilt."""
+
+        assert CoverAutomation._map_auto_tilt_to_ha_position(0, 0, 100) == 0
+        assert CoverAutomation._map_auto_tilt_to_ha_position(58, 0, 100) == 58
+        assert CoverAutomation._map_auto_tilt_to_ha_position(100, 0, 100) == 100
+
+    def test_custom_mapping_uses_configured_range(self) -> None:
+        """Semantic Auto tilt should map into the configured HA range."""
+
+        assert CoverAutomation._map_auto_tilt_to_ha_position(0, 20, 80) == 20
+        assert CoverAutomation._map_auto_tilt_to_ha_position(50, 20, 80) == 50
+        assert CoverAutomation._map_auto_tilt_to_ha_position(100, 20, 80) == 80
+
+    def test_inverted_mapping_is_supported(self) -> None:
+        """Installations with inverted HA tilt semantics should still work."""
+
+        assert CoverAutomation._map_auto_tilt_to_ha_position(0, 90, 10) == 90
+        assert CoverAutomation._map_auto_tilt_to_ha_position(50, 90, 10) == 50
+        assert CoverAutomation._map_auto_tilt_to_ha_position(100, 90, 10) == 10
+
+
 # ───────────────────────────────────────────────────────────────────────
 # Tilt mode resolution tests
 # ───────────────────────────────────────────────────────────────────────
@@ -382,6 +409,48 @@ class TestApplyTilt:
 
         mock_ha_interface.set_cover_tilt_position.assert_not_called()
         assert cover_state.tilt_target is None
+
+    @pytest.mark.asyncio
+    async def test_auto_mode_maps_semantic_tilt_to_configured_ha_positions(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Auto mode should remap semantic tilt using the configured vertical/horizontal positions."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.AUTO
+        mock_resolved_config.tilt_vertical_position = 20
+        mock_resolved_config.tilt_horizontal_position = 80
+        semantic_tilt = CoverAutomation._calculate_auto_tilt(sensor_data.sun_elevation, 0.0, mock_resolved_config.tilt_slat_overlap_ratio)
+        expected_tilt = CoverAutomation._map_auto_tilt_to_ha_position(semantic_tilt, 20, 80)
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=expected_tilt)
+
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=True, sun_azimuth_diff=0.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", expected_tilt, tilt_features)
+        assert cover_state.tilt_target == expected_tilt
+
+    @pytest.mark.asyncio
+    async def test_auto_mode_uses_configured_horizontal_position_when_sun_not_hitting(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Auto mode should use the configured horizontal position when opening slats fully."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.AUTO
+        mock_resolved_config.tilt_vertical_position = 10
+        mock_resolved_config.tilt_horizontal_position = 70
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=70)
+
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=False, sun_azimuth_diff=45.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 70, tilt_features)
+        assert cover_state.tilt_target == 70
 
     #
     # test_external_mode_uses_global_value

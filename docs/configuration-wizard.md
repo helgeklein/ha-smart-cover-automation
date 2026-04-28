@@ -88,7 +88,6 @@ In this step of the configuration wizard, you can specify how the tilt angle of 
   - Only direct sunlight is blocked (cloudy conditions and the sun's position is taken into account).
   - If the sun is not shining on a window, the slats are kept in open mode to allow indirect light through.
   - Not available in night mode.
-  - Only in this mode the setting **Tilt open to cover open delay** is applicable (see below).
 - **Manual:** Don't change the user's manual setting.
 - **Open:** Keep the slats fully open.
 - **Closed:** Keep the slats fully closed.
@@ -99,6 +98,13 @@ In this step of the configuration wizard, you can specify how the tilt angle of 
   - The integration-managed tilt angle entities are available globally as well as per cover, depending on where you configured `external` as tilt angle control mode.
   - The integration only adjusts your covers' tilt angles if the tilt angle entities actually have a valid value (0-100).
   - If both global and per-cover external tilt angle values are specified, the per-cover value takes precedence.
+
+The following settings only apply to **auto** mode (details below):
+
+- **Tilt open to cover open delay**
+- **Horizontal tilt position**
+- **Vertical tilt position**
+
 
 ### Global Tilt Modes for Day and Night
 
@@ -116,6 +122,11 @@ The global tilt modes can be overridden per cover.
 *New in 3.1:*
 
 - **Tilt open to cover open delay:** Delay between opening the slats fully and reopening the cover. Only applies to covers with tilt support whose effective daytime tilt mode is Auto and that were previously closed for heat protection.
+
+*New in 3.3:*
+
+- **Horizontal tilt position:** Home Assistant tilt percentage for fully horizontal slats. Auto mode treats this as the horizontal slat position. Default: 100%.
+- **Vertical tilt position:** Home Assistant tilt percentage for fully vertical slats. Auto mode treats this as the vertical slat position. Default: 0%.
 
 ## Step 5: Window Sensors for Lockout Protection (Optional)
 

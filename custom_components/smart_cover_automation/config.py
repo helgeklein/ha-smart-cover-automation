@@ -98,6 +98,8 @@ class ConfKeys(StrEnum):
     TILT_OPEN_TO_COVER_OPEN_DELAY = (
         "tilt_open_to_cover_open_delay"  # Delay stored in minutes between opening tilt and reopening the cover in day auto mode.
     )
+    TILT_VERTICAL_POSITION = "tilt_vertical_position"  # HA tilt position that corresponds to vertical slats in Auto mode.
+    TILT_HORIZONTAL_POSITION = "tilt_horizontal_position"  # HA tilt position that corresponds to horizontal slats in Auto mode.
     TILT_MODE_DAY = "tilt_mode_day"  # Global tilt mode during daytime.
     TILT_MODE_NIGHT = "tilt_mode_night"  # Global tilt mode at night / evening closure.
     TILT_SET_VALUE_DAY = "tilt_set_value_day"  # Fixed tilt angle (0-100) for day "set_value" mode.
@@ -252,6 +254,8 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=0.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.TILT_MIN_CHANGE_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY: _ConfSpec(default=0, converter=_Converters.to_int),
+    ConfKeys.TILT_VERTICAL_POSITION: _ConfSpec(default=0, converter=_Converters.to_int),
+    ConfKeys.TILT_HORIZONTAL_POSITION: _ConfSpec(default=100, converter=_Converters.to_int),
     ConfKeys.TILT_MODE_DAY: _ConfSpec(default=TiltMode.AUTO, converter=TiltMode),
     ConfKeys.TILT_MODE_NIGHT: _ConfSpec(default=TiltMode.CLOSED, converter=TiltMode),
     ConfKeys.TILT_SET_VALUE_DAY: _ConfSpec(default=50, converter=_Converters.to_int),
@@ -388,6 +392,8 @@ class ResolvedConfig:
     sun_elevation_threshold: float
     tilt_min_change_delta: int
     tilt_open_to_cover_open_delay: int
+    tilt_vertical_position: int
+    tilt_horizontal_position: int
     tilt_mode_day: TiltMode
     tilt_mode_night: TiltMode
     tilt_set_value_day: int

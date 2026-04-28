@@ -66,6 +66,8 @@ def mock_resolved_config():
     resolved.covers_min_position_delta = 5
     resolved.tilt_mode_day = TiltMode.AUTO
     resolved.tilt_open_to_cover_open_delay = 0
+    resolved.tilt_vertical_position = 0
+    resolved.tilt_horizontal_position = 100
     return resolved
 
 

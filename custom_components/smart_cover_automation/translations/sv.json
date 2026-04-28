@@ -66,6 +66,8 @@
                     "tilt_set_value_night": "Nattlutningsvinkel (fast värde):",
                     "tilt_min_change_delta": "Minsta lutningsändring:",
                     "tilt_open_to_cover_open_delay": "Fördröjning mellan öppna lameller och öppet solskydd:",
+                    "tilt_vertical_position": "Vertikal lutningsposition:",
+                    "tilt_horizontal_position": "Horisontell lutningsposition:",
                     "tilt_slat_overlap_ratio": "Lamellöverlappningskvot (d/L):"
                 },
                 "data_description": {
@@ -75,6 +77,8 @@
                     "tilt_set_value_night": "Fast lutningsvinkel för nattläget. 0 % = helt stängd (vertikal, blockerar ljus), 100 % = helt öppen (horisontell, släpper in ljus). Används endast när nattlutningsläget är inställt på ”Fast värde”.",
                     "tilt_min_change_delta": "Minsta lutningsändring (%) som krävs innan ett kommando skickas. Förhindrar onormalt motorslitage från små justeringar.",
                     "tilt_open_to_cover_open_delay": "Fördröjning mellan att lamellerna öppnas helt och att solskyddet öppnas igen. Gäller bara för solskydd med lamellstyrning där det effektiva dagläget för lutningen är Auto och som tidigare stängdes för värmeskydd.",
+                    "tilt_vertical_position": "Lutningsprocent i Home Assistant för helt vertikala lameller. Auto-läget behandlar detta som den vertikala lamellpositionen. Standard: 0 %.",
+                    "tilt_horizontal_position": "Lutningsprocent i Home Assistant för helt horisontella lameller. Auto-läget behandlar detta som den horisontella lamellpositionen. Standard: 100 %.",
                     "tilt_slat_overlap_ratio": "Förhållande mellan lamellavstånd och lamellbredd (0,5–1,0). Lägre värden innebär mer överlappning. Standardvärdet 0,9 fungerar bra för de flesta persienner. Endast relevant för Auto-läget."
                 },
                 "sections": {

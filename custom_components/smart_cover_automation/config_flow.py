@@ -390,6 +390,30 @@ class FlowHelper:
             )
         )
 
+        schema_dict[vol.Required(ConfKeys.TILT_VERTICAL_POSITION.value, default=resolved_settings.tilt_vertical_position)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    unit_of_measurement="%",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        )
+
+        schema_dict[vol.Required(ConfKeys.TILT_HORIZONTAL_POSITION.value, default=resolved_settings.tilt_horizontal_position)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    unit_of_measurement="%",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        )
+
         # Slat overlap ratio (d/L) for Auto mode
         schema_dict[vol.Required(ConfKeys.TILT_SLAT_OVERLAP_RATIO.value, default=resolved_settings.tilt_slat_overlap_ratio)] = (
             selector.NumberSelector(
@@ -1283,6 +1307,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_data[ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value] = int(
             user_input.get(ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value, 0)
         )
+        self._config_data[ConfKeys.TILT_VERTICAL_POSITION.value] = int(user_input.get(ConfKeys.TILT_VERTICAL_POSITION.value, 0))
+        self._config_data[ConfKeys.TILT_HORIZONTAL_POSITION.value] = int(user_input.get(ConfKeys.TILT_HORIZONTAL_POSITION.value, 100))
         self._config_data[ConfKeys.TILT_SLAT_OVERLAP_RATIO.value] = float(user_input.get(ConfKeys.TILT_SLAT_OVERLAP_RATIO.value, 0.9))
 
         # Build per-cover tilt mode settings
