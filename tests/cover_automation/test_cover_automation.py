@@ -677,6 +677,20 @@ class TestCheckManualOverride:
 
         assert result == CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE
 
+    def test_get_evening_closure_movement_reason_returns_none_without_valid_external_time(
+        self, cover_automation, sensor_data, mock_resolved_config
+    ):
+        """External evening closure without a valid time should not trigger a closing reason."""
+
+        mock_resolved_config.evening_closure_enabled = True
+        mock_resolved_config.evening_closure_mode = const.EveningClosureMode.EXTERNAL
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.has_valid_external_evening_closure_time = False
+
+        result = cover_automation._get_evening_closure_movement_reason(sensor_data)
+
+        assert result is None
+
 
 class TestCalculateSunHitting:
     """Test _calculate_sun_hitting method."""
@@ -1676,6 +1690,65 @@ class TestGetEffectiveTempHot:
         assert position == 0
         assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
         assert lockout_active is False
+
+    def test_calculate_desired_position_skips_reopening_without_valid_external_morning_time(
+        self, cover_automation, sensor_data, mock_resolved_config
+    ):
+        """External morning opening without a valid time should suppress automatic reopening."""
+
+        mock_resolved_config.evening_closure_enabled = True
+        mock_resolved_config.morning_opening_mode = const.MorningOpeningMode.EXTERNAL
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.ACTIVE
+        sensor_data.temp_hot = False
+        sensor_data.weather_sunny = False
+        sensor_data.has_valid_external_morning_opening_time = False
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=0)
+
+        assert position == 0
+        assert reason is None
+        assert lockout_active is False
+
+    async def test_process_logs_cover_specific_missing_external_evening_time(
+        self, cover_automation, sensor_data, mock_resolved_config, mock_state, mock_logger, mock_ha_interface
+    ):
+        """Missing external evening closure time should be logged with the cover entity."""
+
+        mock_resolved_config.evening_closure_enabled = True
+        mock_resolved_config.evening_closure_mode = const.EveningClosureMode.EXTERNAL
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.temp_hot = False
+        sensor_data.weather_sunny = False
+        sensor_data.has_valid_external_evening_closure_time = False
+
+        await cover_automation.process(mock_state, sensor_data)
+
+        mock_logger.debug.assert_any_call(
+            "[cover.test] External evening closure mode active but no valid time is set, skipping evening closure"
+        )
+        mock_ha_interface.set_cover_position.assert_not_called()
+
+    async def test_process_logs_cover_specific_missing_external_morning_time(
+        self, cover_automation, sensor_data, mock_resolved_config, mock_state, mock_logger, mock_ha_interface
+    ):
+        """Missing external morning opening time should be logged with the cover entity."""
+
+        mock_resolved_config.evening_closure_enabled = True
+        mock_resolved_config.morning_opening_mode = const.MorningOpeningMode.EXTERNAL
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.temp_hot = False
+        sensor_data.weather_sunny = False
+        sensor_data.has_valid_external_morning_opening_time = False
+        mock_state.attributes[ATTR_CURRENT_POSITION] = 0
+        mock_state.state = STATE_CLOSED
+
+        await cover_automation.process(mock_state, sensor_data)
+
+        mock_logger.debug.assert_any_call(
+            "[cover.test] External morning opening mode active but no valid time is set, skipping automatic reopening"
+        )
+        mock_ha_interface.set_cover_position.assert_not_called()
 
 
 class TestApplyTilt:
