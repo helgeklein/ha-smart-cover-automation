@@ -209,6 +209,12 @@
             "close_covers_after_sunset_mode": {
                 "name": "Avondsluiting: modus"
             },
+            "morning_opening_time": {
+                "name": "Ochtendopening: tijd"
+            },
+            "morning_opening_mode": {
+                "name": "Ochtendopening: modus"
+            },
             "sun_azimuth": {
                 "name": "Zonazimut"
             },

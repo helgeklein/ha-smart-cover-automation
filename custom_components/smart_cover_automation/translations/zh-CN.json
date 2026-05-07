@@ -209,6 +209,12 @@
             "close_covers_after_sunset_mode": {
                 "name": "晚间关闭：模式"
             },
+            "morning_opening_time": {
+                "name": "晨间开启：时间"
+            },
+            "morning_opening_mode": {
+                "name": "晨间开启：模式"
+            },
             "sun_azimuth": {
                 "name": "太阳方位角"
             },

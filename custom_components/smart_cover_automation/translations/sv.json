@@ -209,6 +209,12 @@
             "close_covers_after_sunset_mode": {
                 "name": "Kvällsstängning: läge"
             },
+            "morning_opening_time": {
+                "name": "Morgonöppning: tid"
+            },
+            "morning_opening_mode": {
+                "name": "Morgonöppning: läge"
+            },
             "sun_azimuth": {
                 "name": "Solazimut"
             },

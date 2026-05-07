@@ -209,6 +209,12 @@
             "close_covers_after_sunset_mode": {
                 "name": "Fecho ao entardecer: modo"
             },
+            "morning_opening_time": {
+                "name": "Abertura matinal: hora"
+            },
+            "morning_opening_mode": {
+                "name": "Abertura matinal: modo"
+            },
             "sun_azimuth": {
                 "name": "Azimute solar"
             },

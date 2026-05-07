@@ -9,6 +9,7 @@ The sensors that appear in Home Assistant are:
 
 from __future__ import annotations
 
+from datetime import time
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorEntityDescription
@@ -18,10 +19,16 @@ from .const import (
     SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
     SENSOR_KEY_EVENING_CLOSURE_MODE,
     SENSOR_KEY_EVENING_CLOSURE_TIME,
+    SENSOR_KEY_MORNING_OPENING_MODE,
+    SENSOR_KEY_MORNING_OPENING_TIME,
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
     SENSOR_KEY_TEMP_CURRENT_MIN,
+    TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
+    TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
+    EveningClosureMode,
+    MorningOpeningMode,
 )
 from .entity import IntegrationEntity
 
@@ -58,6 +65,8 @@ async def async_setup_entry(
         AutomationDisabledTimeRangeSensor(coordinator),
         EveningClosureTimeSensor(coordinator),
         EveningClosureModeSensor(coordinator),
+        MorningOpeningTimeSensor(coordinator),
+        MorningOpeningModeSensor(coordinator),
         SunAzimuthSensor(coordinator),
         SunElevationSensor(coordinator),
         TempCurrentMaxSensor(coordinator),
@@ -116,6 +125,29 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):  # pyright: ignore[rep
     # Both base classes define it differently, but they're compatible at runtime.
     # The CoordinatorEntity's implementation provides the correct coordinator-based
     # availability logic we want, so no override is needed.
+
+    @staticmethod
+    def _parse_configured_time(raw_value: object) -> time | None:
+        """Parse a stored option time value into a time object."""
+
+        if raw_value in (None, ""):
+            return None
+
+        from .config import _Converters
+
+        try:
+            return _Converters.to_time(raw_value)
+        except AttributeError, TypeError, ValueError:
+            return None
+
+    @staticmethod
+    def _format_time_value(value: time | None) -> str | None:
+        """Format a time object as HH:MM, or None when unavailable."""
+
+        if value is None:
+            return None
+
+        return f"{value.hour:02d}:{value.minute:02d}"
 
 
 #
@@ -191,17 +223,21 @@ class EveningClosureTimeSensor(IntegrationSensor):
         super().__init__(coordinator, entity_description)
 
     @property
-    def native_value(self) -> str:  # pyright: ignore
+    def native_value(self) -> str | None:  # pyright: ignore
         """Return the configured time value for evening closure.
 
         Returns:
-            String in HH:MM format.
+            String in HH:MM format, or None if the external value is unavailable.
         """
 
         resolved = self.coordinator._resolved_settings()
+        time_value = resolved.evening_closure_time
 
-        delay_time = resolved.evening_closure_time
-        return f"{delay_time.hour:02d}:{delay_time.minute:02d}"
+        if resolved.evening_closure_mode == EveningClosureMode.EXTERNAL:
+            options = dict(self.coordinator.config_entry.options or {})
+            time_value = self._parse_configured_time(options.get(TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME))
+
+        return self._format_time_value(time_value)
 
 
 #
@@ -236,6 +272,75 @@ class EveningClosureModeSensor(IntegrationSensor):
         resolved = self.coordinator._resolved_settings()
 
         return resolved.evening_closure_mode
+
+
+#
+# MorningOpeningTimeSensor
+#
+class MorningOpeningTimeSensor(IntegrationSensor):
+    """Sensor that reports the configured time for morning opening."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+
+        entity_description = SensorEntityDescription(
+            key=SENSOR_KEY_MORNING_OPENING_TIME,
+            translation_key=SENSOR_KEY_MORNING_OPENING_TIME,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            icon="mdi:timer-outline",
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def native_value(self) -> str | None:  # pyright: ignore
+        """Return the configured time value for morning opening.
+
+        Returns:
+            String in HH:MM format, or None if the external value is unavailable.
+        """
+
+        resolved = self.coordinator._resolved_settings()
+        time_value = resolved.morning_opening_time
+
+        if resolved.morning_opening_mode == MorningOpeningMode.EXTERNAL:
+            options = dict(self.coordinator.config_entry.options or {})
+            time_value = self._parse_configured_time(options.get(TIME_KEY_MORNING_OPENING_EXTERNAL_TIME))
+
+        return self._format_time_value(time_value)
+
+
+#
+# MorningOpeningModeSensor
+#
+class MorningOpeningModeSensor(IntegrationSensor):
+    """Sensor that reports the configured morning opening mode."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Provides the data for this sensor
+        """
+
+        entity_description = SensorEntityDescription(
+            key=SENSOR_KEY_MORNING_OPENING_MODE,
+            translation_key=SENSOR_KEY_MORNING_OPENING_MODE,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            icon="mdi:clock-time-eight",
+        )
+        super().__init__(coordinator, entity_description)
+
+    @property
+    def native_value(self) -> str:  # pyright: ignore
+        """Return the configured morning opening mode."""
+
+        resolved = self.coordinator._resolved_settings()
+
+        return resolved.morning_opening_mode
 
 
 #
