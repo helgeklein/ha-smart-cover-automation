@@ -123,6 +123,31 @@ async def test_async_setup_entry_adds_evening_external_time_entity(mock_coordina
     assert captured[0].unique_id == f"{entry.entry_id}_{TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME}"
 
 
+async def test_async_setup_entry_adds_both_external_time_entities(mock_coordinator_basic) -> None:
+    """When both schedules are external, the platform should create both time entities."""
+
+    entry = mock_coordinator_basic.config_entry
+    entry.runtime_data = MagicMock()
+    entry.runtime_data.coordinator = mock_coordinator_basic
+    mock_coordinator_basic._resolved_settings = Mock(
+        return_value=SimpleNamespace(
+            evening_closure_mode=EveningClosureMode.EXTERNAL,
+            morning_opening_mode=MorningOpeningMode.EXTERNAL,
+        )
+    )
+    captured, add_entities = _capture_added_entities()
+
+    await async_setup_entry_time(
+        mock_coordinator_basic.hass,
+        cast(IntegrationConfigEntry, entry),
+        add_entities,
+    )
+
+    assert len(captured) == 2
+    assert any(isinstance(entity, MorningOpeningExternalTime) for entity in captured)
+    assert any(isinstance(entity, EveningClosureExternalTime) for entity in captured)
+
+
 #
 # test_morning_opening_external_time_metadata_and_native_value
 #

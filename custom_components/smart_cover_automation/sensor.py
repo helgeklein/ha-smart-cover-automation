@@ -231,7 +231,7 @@ class EveningClosureTimeSensor(IntegrationSensor):
         """
 
         resolved = self.coordinator._resolved_settings()
-        time_value = resolved.evening_closure_time
+        time_value: time | None = resolved.evening_closure_time
 
         if resolved.evening_closure_mode == EveningClosureMode.EXTERNAL:
             options = dict(self.coordinator.config_entry.options or {})
@@ -304,7 +304,7 @@ class MorningOpeningTimeSensor(IntegrationSensor):
         """
 
         resolved = self.coordinator._resolved_settings()
-        time_value = resolved.morning_opening_time
+        time_value: time | None = resolved.morning_opening_time
 
         if resolved.morning_opening_mode == MorningOpeningMode.EXTERNAL:
             options = dict(self.coordinator.config_entry.options or {})

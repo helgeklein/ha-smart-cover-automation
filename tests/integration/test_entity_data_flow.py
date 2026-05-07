@@ -38,6 +38,10 @@ from custom_components.smart_cover_automation.const import (
     NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
     SELECT_KEY_AUTOMATIC_REOPENING_MODE,
     SELECT_KEY_LOCK_MODE,
+    SENSOR_KEY_EVENING_CLOSURE_MODE,
+    SENSOR_KEY_EVENING_CLOSURE_TIME,
+    SENSOR_KEY_MORNING_OPENING_MODE,
+    SENSOR_KEY_MORNING_OPENING_TIME,
     SENSOR_KEY_SUN_AZIMUTH,
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
@@ -427,6 +431,40 @@ class TestBinarySensorDataFlow:
 
 class TestSensorDataFlow:
     """Verify sensor entities expose correct coordinator data."""
+
+    async def test_diagnostic_time_and_mode_sensors_reflect_external_schedule_values(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Morning and evening diagnostic sensors should surface active external schedule values."""
+
+        entry = _create_config_entry(
+            hass,
+            {
+                ConfKeys.MORNING_OPENING_MODE.value: "external",
+                ConfKeys.MORNING_OPENING_TIME.value: "08:00:00",
+                TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "07:45:00",
+                ConfKeys.EVENING_CLOSURE_MODE.value: "external",
+                ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
+                TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "18:35:00",
+            },
+        )
+        await _setup_integration(hass, entry)
+
+        expected_states = {
+            SENSOR_KEY_MORNING_OPENING_MODE: "external",
+            SENSOR_KEY_MORNING_OPENING_TIME: "07:45",
+            SENSOR_KEY_EVENING_CLOSURE_MODE: "external",
+            SENSOR_KEY_EVENING_CLOSURE_TIME: "18:35",
+        }
+
+        for key, expected_state in expected_states.items():
+            entity_id = _entity_id_for_key(hass, entry, key)
+            assert entity_id is not None, f"Diagnostic sensor {key} not registered"
+
+            state = hass.states.get(entity_id)
+            assert state is not None, f"No state for {entity_id}"
+            assert state.state == expected_state
 
     # ------------------------------------------------------------------
     # 2.6  Sun azimuth sensor
