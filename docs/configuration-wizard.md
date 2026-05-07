@@ -147,19 +147,35 @@ Blocked time range settings:
 - **Disable from:** Start time of the time period in which the automation should be inactive.
 - **Disable until:** End time of the time period in which the automation should be inactive.
 
-### Evening Closure
+### Evening Closure & Morning Opening
 
-Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening, either at a fixed time or with a certain delay after sunset. The same covers become eligible to reopen in the morning if normal automation permits, either at a fixed time, a certain delay after sunrise or at an externally controlled time.
+Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening, either at a fixed time, with a certain delay after sunset or at an externally controlled time.
 
-**Note:**
+The same covers become eligible to reopen in the morning if normal automation permits, either at a fixed time, with a certain delay after sunrise or at an externally controlled time.
+
+**Notes:**
 
 - Covers closed by the evening closure function stay closed until the specified morning opening time or until the end of the blocked time range - whichever is later.
+-  Whether a cover actually reopens also depends on the automatic reopening mode:
+    - In **Passive** automatic reopening mode, only covers previously closed by the automation are reopened.
+    - In **Active** automatic reopening mode, covers closed manually can reopen after the manual override duration has elapsed.
+    - In **Off** automatic reopening mode, covers are not reopened automatically.
 
-Evening closure settings:
+**Evening closure settings:**
 
-- **Close covers in the evening:** Enable or disable the evening closure function.
-- **Evening closure: mode:** Choose whether to close at a fixed time or relative to sunset.
-- **Evening closure: time:** Depending on the selected mode: delay after sunset, or fixed time of day.
+*"External" mode is new in 3.4*
+
+- **Evening closure: mode:** Specifies the closing time:
+  - **Absolute time:** A fixed time of day.
+  - **Relative to sunset:** A specified delay after sunset.
+  - **External:** Set the closing time from your own automation.
+    - The integration creates an additional entity that receives the closing time.
+    - This entity is fully managed, i.e., it's deleted again if the mode is changed away from `external`.
+    - If this entity has no valid time, the integration cannot determine when to close the covers, so they stay open.
+- **Evening closure: time:** Depending on the selected mode: delay after sunset, or fixed time of day. This setting is ignored if `Evening closure: mode` is `external`.
+
+**Morning opening settings:**
+
 - **Morning opening: mode:** Specifies the earliest reopening time for the previously closed covers. Actual reopening only happens if normal automation permits (e.g., heat protection).
   - **Absolute time:** A fixed time of day.
   - **Relative to sunrise:** A specified delay after sunrise.
@@ -168,9 +184,17 @@ Evening closure settings:
     - This entity is fully managed, i.e., it's deleted again if the mode is changed away from `external`.
     - If this entity has no valid time, the integration cannot determine when to reopen the covers, so they stay closed.
 - **Morning opening: time:** Depending on the selected mode: delay after sunrise, or fixed time of day. This setting is ignored if `Morning opening: mode` is `external`.
+
+**Evening closing & morning opening settings:**
+
+- **Close covers in the evening:** Enable or disable the evening closure function.
 - **Covers:** Subset of covers to close after sunset.
 - **Ignore manual override duration:** When enabled, the evening closure can move selected covers even if a manual override pause is still active.
 - **Keep covers closed:** When enabled, selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.
+- **Automatic reopening:** Controls how automation reopens covers after closing conditions no longer apply:
+  - **Active:** Always reopens covers.
+  - **Passive:** Only reopens covers that were previously closed by automation.
+  - **Off:** Disables automatic reopening.
 
 ## Next Steps
 
