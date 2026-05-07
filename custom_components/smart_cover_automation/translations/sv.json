@@ -133,8 +133,8 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "När den är aktiverad stängs persiennerna automatiskt på kvällen.",
-                            "close_covers_after_sunset_mode": "Välj om persiennerna ska stängas vid en fast tid eller relativt solnedgången.",
-                            "close_covers_after_sunset_delay": "Beroende på valt läge: fördröjning efter solnedgången eller fast tidpunkt.",
+                            "close_covers_after_sunset_mode": "Välj om kvällsstängningen ska vara relativ till solnedgången, använda en absolut tid eller levereras av en entitet.",
+                            "close_covers_after_sunset_delay": "Beroende på valt läge: fördröjning efter solnedgången eller fast tidpunkt. Ignoreras i externt läge.",
                             "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas på kvällen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "När den är aktiverad får kvällsstängningen flytta valda persienner även om en paus från manuell överstyrning fortfarande är aktiv.",
                             "close_covers_after_sunset_keep_closed": "När funktionen är aktiverad stängs valda persienner igen under den nattliga kvällsstängningsperioden om de öppnas på nytt. Tiden för manuell överstyrning respekteras. Låsläget har företräde, så persiennerna stängs bara igen efter att låsläget har inaktiverats.",
@@ -209,6 +209,12 @@
             "close_covers_after_sunset_mode": {
                 "name": "Kvällsstängning: läge"
             },
+            "morning_opening_time": {
+                "name": "Morgonöppning: tid"
+            },
+            "morning_opening_mode": {
+                "name": "Morgonöppning: läge"
+            },
             "sun_azimuth": {
                 "name": "Solazimut"
             },
@@ -223,6 +229,9 @@
             }
         },
         "time": {
+            "evening_closure_external_time": {
+                "name": "Kvällsstängning: extern tid"
+            },
             "morning_opening_external_time": {
                 "name": "Morgonöppning: extern tid"
             }
@@ -384,7 +393,8 @@
         "evening_closure_mode": {
             "options": {
                 "after_sunset": "Efter solnedgången (relativ fördröjning)",
-                "fixed_time": "Fast tidpunkt"
+                "fixed_time": "Fast tidpunkt",
+                "external": "Externt (tid som levereras av en entitet)"
             }
         },
         "morning_opening_mode": {

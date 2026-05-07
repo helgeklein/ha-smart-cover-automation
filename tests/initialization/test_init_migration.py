@@ -25,8 +25,10 @@ from custom_components.smart_cover_automation import (
     _async_migrate_unique_ids,
     _async_remove_stale_registry_entities,
     _get_entry_options_dict,
+    _get_valid_external_evening_closure_keys,
     _get_valid_external_morning_opening_keys,
     _get_valid_external_tilt_value_keys,
+    _is_external_evening_closure_key,
     _is_external_morning_opening_key,
     const,
 )
@@ -1149,6 +1151,72 @@ class TestAsyncRemoveStaleRegistryEntities:
         mock_registry.async_remove.assert_not_called()
         mock_hass.config_entries.async_update_entry.assert_not_called()
 
+    async def test_stale_external_evening_closure_entity_and_value_are_deleted(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Cleanup should remove stale external evening closure entities and stored values."""
+
+        stale_entity = MagicMock()
+        stale_entity.unique_id = f"{mock_entry.entry_id}_{const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME}"
+        stale_entity.entity_id = "time.smart_cover_automation_evening_closure_external_time"
+        mock_entry.options = {
+            const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "18:15:00",
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.FIXED_TIME,
+        }
+        mock_hass.config_entries = MagicMock()
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[stale_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        mock_registry.async_remove.assert_called_once_with(stale_entity.entity_id)
+        mock_hass.config_entries.async_update_entry.assert_called_once()
+        updated_options = mock_hass.config_entries.async_update_entry.call_args.kwargs["options"]
+        assert const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME not in updated_options
+
+    async def test_external_evening_closure_entity_is_preserved_when_mode_is_external(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Cleanup should keep the external evening closure entity when it is still configured."""
+
+        external_entity = MagicMock()
+        external_entity.unique_id = f"{mock_entry.entry_id}_{const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME}"
+        external_entity.entity_id = "time.smart_cover_automation_evening_closure_external_time"
+        mock_entry.options = {
+            const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "18:15:00",
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.EXTERNAL,
+        }
+        mock_hass.config_entries = MagicMock()
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[external_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        mock_registry.async_remove.assert_not_called()
+        mock_hass.config_entries.async_update_entry.assert_not_called()
+
     async def test_registry_access_failure_returns_early(
         self,
         mock_hass: MagicMock,
@@ -1226,11 +1294,25 @@ class TestInitHelperFunctions:
 
         assert _get_valid_external_morning_opening_keys(entry) == {const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME}
 
+    def test_get_valid_external_evening_closure_keys_for_external_mode(self) -> None:
+        """External evening closure mode should keep the runtime time key."""
+
+        entry = MagicMock()
+        entry.options = {ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.EXTERNAL}
+
+        assert _get_valid_external_evening_closure_keys(entry) == {const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME}
+
     def test_is_external_morning_opening_key(self) -> None:
         """The morning opening entity key helper should identify only the dedicated time key."""
 
         assert _is_external_morning_opening_key(const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME) is True
         assert _is_external_morning_opening_key("something_else") is False
+
+    def test_is_external_evening_closure_key(self) -> None:
+        """The evening closure entity key helper should identify only the dedicated time key."""
+
+        assert _is_external_evening_closure_key(const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME) is True
+        assert _is_external_evening_closure_key("something_else") is False
 
     def test_get_valid_external_tilt_value_keys_includes_global_and_supported_per_cover(self) -> None:
         """Valid external tilt keys should include global and tilt-capable per-cover keys only."""

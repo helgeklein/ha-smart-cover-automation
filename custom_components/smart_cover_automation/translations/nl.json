@@ -133,8 +133,8 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Wanneer ingeschakeld worden de rolluiken 's avonds automatisch gesloten.",
-                            "close_covers_after_sunset_mode": "Kies of de rolluiken op een vast tijdstip of relatief ten opzichte van zonsondergang worden gesloten.",
-                            "close_covers_after_sunset_delay": "Afhankelijk van de gekozen modus: vertraging na zonsondergang of vast tijdstip.",
+                            "close_covers_after_sunset_mode": "Kies of de avondsluiting relatief ten opzichte van zonsondergang is, een vast tijdstip gebruikt of door een entiteit wordt geleverd.",
+                            "close_covers_after_sunset_delay": "Afhankelijk van de gekozen modus: vertraging na zonsondergang of vast tijdstip. Wordt genegeerd in de externe modus.",
                             "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die 's avonds moeten worden gesloten.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wanneer ingeschakeld mag de avondsluiting geselecteerde rolluiken bewegen, ook als een pauze door handmatige override nog actief is.",
                             "close_covers_after_sunset_keep_closed": "Wanneer ingeschakeld worden geselecteerde rolluiken tijdens de nachtelijke avondsluitingsperiode opnieuw gesloten als ze weer worden geopend. De duur van handmatige override wordt gerespecteerd. Vergrendelingsmodus heeft voorrang, dus rolluiken worden pas opnieuw gesloten nadat de vergrendelingsmodus is uitgeschakeld.",
@@ -209,6 +209,12 @@
             "close_covers_after_sunset_mode": {
                 "name": "Avondsluiting: modus"
             },
+            "morning_opening_time": {
+                "name": "Ochtendopening: tijd"
+            },
+            "morning_opening_mode": {
+                "name": "Ochtendopening: modus"
+            },
             "sun_azimuth": {
                 "name": "Zonazimut"
             },
@@ -223,6 +229,9 @@
             }
         },
         "time": {
+            "evening_closure_external_time": {
+                "name": "Avondsluiting: externe tijd"
+            },
             "morning_opening_external_time": {
                 "name": "Ochtendopening: externe tijd"
             }
@@ -384,7 +393,8 @@
         "evening_closure_mode": {
             "options": {
                 "after_sunset": "Na zonsondergang (relatieve vertraging)",
-                "fixed_time": "Vast tijdstip"
+                "fixed_time": "Vast tijdstip",
+                "external": "Extern (tijd aangeleverd door een entiteit)"
             }
         },
         "morning_opening_mode": {

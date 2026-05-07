@@ -1026,6 +1026,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             merged.pop(const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME, None)
 
     #
+    # _cleanup_external_evening_closure_keys
+    #
+    @staticmethod
+    def _cleanup_external_evening_closure_keys(merged: dict[str, Any]) -> None:
+        """Remove the external evening closure time when the matching entity no longer exists."""
+
+        if merged.get(ConfKeys.EVENING_CLOSURE_MODE.value) != const.EveningClosureMode.EXTERNAL:
+            merged.pop(const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME, None)
+
+    #
     # _get_covers
     #
     def _get_covers(self) -> list[str]:
@@ -1122,6 +1132,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         self._cleanup_external_tilt_value_keys(merged, covers_in_input)
         self._cleanup_external_morning_opening_keys(merged)
+        self._cleanup_external_evening_closure_keys(merged)
 
         self._logger.debug(f"Options flow completed. Final configuration being saved: {merged}")
 

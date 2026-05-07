@@ -22,13 +22,18 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.data import CoordinatorData
 from custom_components.smart_cover_automation.sensor import (
+    EveningClosureModeSensor,
     EveningClosureTimeSensor,
+    MorningOpeningModeSensor,
+    MorningOpeningTimeSensor,
     SunAzimuthSensor,
     SunElevationSensor,
     TempCurrentMaxSensor,
 )
+from tests.conftest import set_test_options
 
 if TYPE_CHECKING:
     from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
@@ -377,3 +382,131 @@ async def test_evening_closure_time_sensor_boundary_values(mock_coordinator_basi
 
         # Verify conversion
         assert sensor.native_value == expected_string
+
+
+async def test_evening_closure_time_sensor_uses_external_value_in_external_mode(
+    mock_coordinator_basic: DataUpdateCoordinator,
+) -> None:
+    """External evening closure mode should surface the externally supplied time."""
+
+    mock_settings = MagicMock()
+    mock_settings.evening_closure_mode = const.EveningClosureMode.EXTERNAL
+    mock_settings.evening_closure_time = time(0, 15, 0)
+    mock_coordinator_basic._resolved_settings = MagicMock(return_value=mock_settings)
+    set_test_options(
+        mock_coordinator_basic.config_entry,
+        {const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "18:45:00"},
+    )
+
+    sensor = EveningClosureTimeSensor(mock_coordinator_basic)
+
+    assert sensor.native_value == "18:45"
+
+
+async def test_evening_closure_time_sensor_returns_none_for_invalid_external_value(
+    mock_coordinator_basic: DataUpdateCoordinator,
+) -> None:
+    """Invalid external evening closure times should not fall back to the ignored base value."""
+
+    mock_settings = MagicMock()
+    mock_settings.evening_closure_mode = const.EveningClosureMode.EXTERNAL
+    mock_settings.evening_closure_time = time(0, 15, 0)
+    mock_coordinator_basic._resolved_settings = MagicMock(return_value=mock_settings)
+    set_test_options(
+        mock_coordinator_basic.config_entry,
+        {const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "not-a-time"},
+    )
+
+    sensor = EveningClosureTimeSensor(mock_coordinator_basic)
+
+    assert sensor.native_value is None
+
+
+async def test_morning_opening_time_sensor_properties(mock_coordinator_basic: DataUpdateCoordinator) -> None:
+    """Morning opening time sensor should expose the expected metadata."""
+
+    sensor = MorningOpeningTimeSensor(mock_coordinator_basic)
+
+    assert sensor.entity_description.key == const.SENSOR_KEY_MORNING_OPENING_TIME
+    assert sensor.entity_description.translation_key == const.SENSOR_KEY_MORNING_OPENING_TIME
+    assert sensor.entity_description.icon == "mdi:timer-outline"
+    assert sensor.unique_id == f"{mock_coordinator_basic.config_entry.entry_id}_{const.SENSOR_KEY_MORNING_OPENING_TIME}"
+
+
+async def test_morning_opening_mode_sensor_properties(mock_coordinator_basic: DataUpdateCoordinator) -> None:
+    """Morning opening mode sensor should expose the expected metadata."""
+
+    sensor = MorningOpeningModeSensor(mock_coordinator_basic)
+
+    assert sensor.entity_description.key == const.SENSOR_KEY_MORNING_OPENING_MODE
+    assert sensor.entity_description.translation_key == const.SENSOR_KEY_MORNING_OPENING_MODE
+    assert sensor.entity_description.icon == "mdi:clock-time-eight"
+    assert sensor.unique_id == f"{mock_coordinator_basic.config_entry.entry_id}_{const.SENSOR_KEY_MORNING_OPENING_MODE}"
+
+
+async def test_morning_opening_time_sensor_uses_resolved_time_when_not_external(
+    mock_coordinator_basic: DataUpdateCoordinator,
+) -> None:
+    """Non-external morning opening modes should expose the configured base time."""
+
+    mock_settings = MagicMock()
+    mock_settings.morning_opening_mode = const.MorningOpeningMode.FIXED_TIME
+    mock_settings.morning_opening_time = time(7, 30, 0)
+    mock_coordinator_basic._resolved_settings = MagicMock(return_value=mock_settings)
+
+    sensor = MorningOpeningTimeSensor(mock_coordinator_basic)
+
+    assert sensor.native_value == "07:30"
+
+
+async def test_morning_opening_time_sensor_uses_external_value_in_external_mode(
+    mock_coordinator_basic: DataUpdateCoordinator,
+) -> None:
+    """External morning opening mode should surface the externally supplied time."""
+
+    mock_settings = MagicMock()
+    mock_settings.morning_opening_mode = const.MorningOpeningMode.EXTERNAL
+    mock_settings.morning_opening_time = time(8, 0, 0)
+    mock_coordinator_basic._resolved_settings = MagicMock(return_value=mock_settings)
+    set_test_options(
+        mock_coordinator_basic.config_entry,
+        {const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "07:45:00"},
+    )
+
+    sensor = MorningOpeningTimeSensor(mock_coordinator_basic)
+
+    assert sensor.native_value == "07:45"
+
+
+async def test_morning_opening_time_sensor_returns_none_for_invalid_external_value(
+    mock_coordinator_basic: DataUpdateCoordinator,
+) -> None:
+    """Invalid external morning opening times should not fall back to the ignored base value."""
+
+    mock_settings = MagicMock()
+    mock_settings.morning_opening_mode = const.MorningOpeningMode.EXTERNAL
+    mock_settings.morning_opening_time = time(8, 0, 0)
+    mock_coordinator_basic._resolved_settings = MagicMock(return_value=mock_settings)
+    set_test_options(
+        mock_coordinator_basic.config_entry,
+        {const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "not-a-time"},
+    )
+
+    sensor = MorningOpeningTimeSensor(mock_coordinator_basic)
+
+    assert sensor.native_value is None
+
+
+async def test_mode_sensors_return_resolved_modes(mock_coordinator_basic: DataUpdateCoordinator) -> None:
+    """Evening and morning mode sensors should mirror resolved configuration modes."""
+
+    mock_settings = MagicMock()
+    mock_settings.evening_closure_mode = const.EveningClosureMode.EXTERNAL
+    mock_settings.morning_opening_mode = const.MorningOpeningMode.RELATIVE_TO_SUNRISE
+    mock_coordinator_basic._resolved_settings = MagicMock(return_value=mock_settings)
+
+    evening_sensor = EveningClosureModeSensor(mock_coordinator_basic)
+    morning_sensor = MorningOpeningModeSensor(mock_coordinator_basic)
+
+    assert evening_sensor.native_value == const.EveningClosureMode.EXTERNAL
+    assert morning_sensor.native_value == const.MorningOpeningMode.RELATIVE_TO_SUNRISE

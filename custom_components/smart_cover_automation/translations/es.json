@@ -133,8 +133,8 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Cuando está activada, las persianas se cerrarán automáticamente por la noche.",
-                            "close_covers_after_sunset_mode": "Elija si cerrar a una hora fija o de forma relativa a la puesta de sol.",
-                            "close_covers_after_sunset_delay": "Según el modo seleccionado: retraso tras la puesta de sol u hora fija del día.",
+                            "close_covers_after_sunset_mode": "Elija si el cierre al anochecer es relativo a la puesta de sol, usa una hora absoluta o lo proporciona una entidad.",
+                            "close_covers_after_sunset_delay": "Según el modo seleccionado: retraso tras la puesta de sol u hora fija del día. Se ignora en el modo externo.",
                             "close_covers_after_sunset_cover_list": "Seleccione las persianas que deben cerrarse por la noche.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Cuando está activada, el cierre nocturno puede mover las persianas seleccionadas aunque siga activa una pausa por anulación manual.",
                             "close_covers_after_sunset_keep_closed": "Cuando está activada, las persianas seleccionadas se vuelven a cerrar durante el periodo nocturno de cierre al anochecer si se vuelven a abrir. Se respeta la duración de la anulación manual. El modo de bloqueo tiene prioridad, por lo que las persianas solo se vuelven a cerrar después de desactivar el modo de bloqueo.",
@@ -209,6 +209,12 @@
             "close_covers_after_sunset_mode": {
                 "name": "Cierre al anochecer: modo"
             },
+            "morning_opening_time": {
+                "name": "Apertura matutina: hora"
+            },
+            "morning_opening_mode": {
+                "name": "Apertura matutina: modo"
+            },
             "sun_azimuth": {
                 "name": "Acimut solar"
             },
@@ -223,6 +229,9 @@
             }
         },
         "time": {
+            "evening_closure_external_time": {
+                "name": "Cierre al anochecer: hora externa"
+            },
             "morning_opening_external_time": {
                 "name": "Apertura matutina: hora externa"
             }
@@ -384,7 +393,8 @@
         "evening_closure_mode": {
             "options": {
                 "after_sunset": "Tras la puesta de sol (retraso relativo)",
-                "fixed_time": "Hora fija del día"
+                "fixed_time": "Hora fija del día",
+                "external": "Externo (hora proporcionada por una entidad)"
             }
         },
         "morning_opening_mode": {

@@ -59,6 +59,8 @@ class SensorData:
     weather_sunny: bool | None
     evening_closure: bool
     post_evening_closure: bool
+    has_valid_external_evening_closure_time: bool = True
+    has_valid_external_morning_opening_time: bool = True
 
 
 @dataclass(slots=True)
@@ -217,6 +219,18 @@ class CoverAutomation:
         sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
         cover_state.sun_hitting = sun_hitting
         cover_state.sun_azimuth_diff = round(sun_azimuth_difference, 1)
+
+        if self._has_missing_external_evening_closure_time(sensor_data):
+            self._log_cover_msg(
+                "External evening closure mode active but no valid time is set, skipping evening closure",
+                const.LogSeverity.DEBUG,
+            )
+
+        if self._has_missing_external_morning_opening_time(sensor_data):
+            self._log_cover_msg(
+                "External morning opening mode active but no valid time is set, skipping automatic reopening",
+                const.LogSeverity.DEBUG,
+            )
 
         # Calculate desired position (lockout protection and opening block after evening closure are checked inside _calculate_desired_position)
         desired_pos, movement_reason, lockout_protection = self._calculate_desired_position(
@@ -386,6 +400,9 @@ class CoverAutomation:
         if self.entity_id not in self.resolved.evening_closure_cover_list:
             return None
 
+        if self._has_missing_external_evening_closure_time(sensor_data):
+            return None
+
         if sensor_data.evening_closure:
             return CoverMovementReason.CLOSING_AFTER_SUNSET
 
@@ -393,6 +410,26 @@ class CoverAutomation:
             return CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE
 
         return None
+
+    def _has_missing_external_evening_closure_time(self, sensor_data: SensorData) -> bool:
+        """Return whether evening closure is externally controlled but has no valid time."""
+
+        return (
+            self.resolved.evening_closure_enabled
+            and self.resolved.evening_closure_mode == const.EveningClosureMode.EXTERNAL
+            and self.entity_id in self.resolved.evening_closure_cover_list
+            and not sensor_data.has_valid_external_evening_closure_time
+        )
+
+    def _has_missing_external_morning_opening_time(self, sensor_data: SensorData) -> bool:
+        """Return whether morning opening is externally controlled but has no valid time."""
+
+        return (
+            self.resolved.evening_closure_enabled
+            and self.resolved.morning_opening_mode == const.MorningOpeningMode.EXTERNAL
+            and self.entity_id in self.resolved.evening_closure_cover_list
+            and not sensor_data.has_valid_external_morning_opening_time
+        )
 
     #
     # _get_cover_position
@@ -677,7 +714,12 @@ class CoverAutomation:
             movement_reason = None
         else:
             # Let light in mode - check if opening block after evening closure is active
-            if self.entity_id in self.resolved.evening_closure_cover_list and self._is_opening_block_after_evening_closure_active(
+            if self._has_missing_external_morning_opening_time(sensor_data):
+                self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+                desired_pos = current_pos
+                desired_pos_friendly_name = "keeping current position because external morning opening has no valid time"
+                movement_reason = None
+            elif self.entity_id in self.resolved.evening_closure_cover_list and self._is_opening_block_after_evening_closure_active(
                 sensor_data
             ):
                 self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)

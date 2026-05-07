@@ -473,6 +473,70 @@ class TestTimeCalculationHelpers:
 
         assert engine._get_evening_closure_time_for_date(date(2025, 11, 5)) is None
 
+    def test_get_evening_closure_time_for_date_external_valid(self, mock_ha_interface, mock_logger, freezer):
+        """Test evening closure datetime calculation in external mode with a valid entity time."""
+        from datetime import date
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_MODE.value: "external",
+            const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "18:20:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        freezer.move_to("2025-11-05 06:00:00")
+        result = engine._get_evening_closure_time_for_date(date(2025, 11, 5))
+
+        assert result is not None
+        assert result.hour == 18
+        assert result.minute == 20
+
+    def test_get_evening_closure_time_for_date_external_missing_returns_none(self, mock_ha_interface, mock_logger):
+        """Test evening closure datetime calculation in external mode without an entity time."""
+        from datetime import date
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_MODE.value: "external",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        assert engine._get_evening_closure_time_for_date(date(2025, 11, 5)) is None
+
+    def test_get_evening_closure_time_for_date_external_invalid_returns_none(self, mock_ha_interface, mock_logger):
+        """Test evening closure datetime calculation in external mode with an invalid entity time."""
+        from datetime import date
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_MODE.value: "external",
+            const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "not-a-time",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        assert engine._get_evening_closure_time_for_date(date(2025, 11, 5)) is None
+
     def test_get_morning_opening_time_for_date_external_valid(self, mock_ha_interface, mock_logger, freezer):
         """Test morning opening datetime calculation in external mode with a valid entity time."""
         from datetime import date

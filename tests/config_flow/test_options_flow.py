@@ -957,6 +957,57 @@ class TestOptionsFlowHelperMethods:
 
         assert const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME not in merged
 
+    def test_cleanup_external_evening_closure_keys_keeps_value_in_external_mode(self) -> None:
+        """External evening closure time should be preserved while external mode is active."""
+
+        merged = {
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.EXTERNAL,
+            const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "18:15:00",
+        }
+
+        OptionsFlowHandler._cleanup_external_evening_closure_keys(merged)
+
+        assert const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME in merged
+
+    def test_cleanup_external_evening_closure_keys_removes_value_when_mode_changes(self) -> None:
+        """External evening closure time should be removed once the mode is no longer external."""
+
+        merged = {
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.FIXED_TIME,
+            const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "18:15:00",
+        }
+
+        OptionsFlowHandler._cleanup_external_evening_closure_keys(merged)
+
+        assert const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME not in merged
+
+    async def test_finalize_and_save_removes_stale_evening_external_time_when_mode_changes(
+        self,
+        mock_hass_with_covers: MagicMock,
+    ) -> None:
+        """Finalizing the flow should drop stale external evening time values after mode changes."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.EXTERNAL,
+            const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "18:15:00",
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.FIXED_TIME,
+        }
+
+        result = flow._finalize_and_save()
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        assert result_dict["data"][ConfKeys.EVENING_CLOSURE_MODE.value] == const.EveningClosureMode.FIXED_TIME
+        assert const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME not in result_dict["data"]
+
     async def test_options_flow_no_changes_logs_debug(self, mock_hass_with_covers: MagicMock, caplog: Any) -> None:
         """Test that completing flow with no changes logs at debug level."""
         import logging

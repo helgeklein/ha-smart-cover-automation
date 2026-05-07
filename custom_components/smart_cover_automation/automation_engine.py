@@ -336,6 +336,12 @@ class AutomationEngine:
         # Compute post-evening-closure flag for the opening block.
         # The cover logic applies it only to evening-closure covers.
         post_evening_closure = self._compute_post_evening_closure()
+        has_valid_external_evening_closure_time = self.resolved.evening_closure_mode != const.EveningClosureMode.EXTERNAL or (
+            self._get_valid_external_time(const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME) is not None
+        )
+        has_valid_external_morning_opening_time = self.resolved.morning_opening_mode != const.MorningOpeningMode.EXTERNAL or (
+            self._get_valid_external_time(const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME) is not None
+        )
 
         return (
             SensorData(
@@ -348,6 +354,8 @@ class AutomationEngine:
                 weather_sunny=weather_sunny,
                 evening_closure=evening_closure,
                 post_evening_closure=post_evening_closure,
+                has_valid_external_evening_closure_time=has_valid_external_evening_closure_time,
+                has_valid_external_morning_opening_time=has_valid_external_morning_opening_time,
             ),
             message,
         )
@@ -369,6 +377,20 @@ class AutomationEngine:
             microsecond=0,
         )
 
+    def _get_valid_external_time(self, config_key: str) -> dt_time | None:
+        """Return a validated external time value from configuration, if present."""
+
+        external_time_raw = self.config.get(config_key)
+        if external_time_raw in (None, ""):
+            return None
+
+        try:
+            from .config import _Converters
+
+            return _Converters.to_time(external_time_raw)
+        except AttributeError, TypeError, ValueError:
+            return None
+
     #
     # _get_evening_closure_time_for_date
     #
@@ -385,6 +407,13 @@ class AutomationEngine:
         if mode == const.EveningClosureMode.FIXED_TIME:
             closing_time = self.resolved.evening_closure_time
             return self._get_local_datetime_for_date(target_date, closing_time)
+
+        if mode == const.EveningClosureMode.EXTERNAL:
+            resolved_time = self._get_valid_external_time(const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME)
+            if resolved_time is None:
+                return None
+
+            return self._get_local_datetime_for_date(target_date, resolved_time)
 
         # After sunset mode: sunset + configured delay
         sunset_time = get_astral_event_date(self._ha_interface.hass, SUN_EVENT_SUNSET, target_date)
@@ -416,17 +445,8 @@ class AutomationEngine:
             return self._get_local_datetime_for_date(target_date, self.resolved.morning_opening_time)
 
         if mode == const.MorningOpeningMode.EXTERNAL:
-            external_time_raw = self.config.get(const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME)
-            if external_time_raw is None:
-                self._logger.debug("External morning opening mode active but no time is set")
-                return None
-
-            try:
-                from .config import _Converters
-
-                resolved_time = _Converters.to_time(external_time_raw)
-            except AttributeError, TypeError, ValueError:
-                self._logger.debug("Invalid external morning opening time: %r", external_time_raw)
+            resolved_time = self._get_valid_external_time(const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME)
+            if resolved_time is None:
                 return None
 
             return self._get_local_datetime_for_date(target_date, resolved_time)
@@ -446,9 +466,10 @@ class AutomationEngine:
     def _check_evening_closure(self) -> bool:
         """Check if covers should close based on evening closure settings.
 
-        Supports two modes:
+        Supports three modes:
         - after_sunset: closes covers after sunset + configured delay
         - fixed_time: closes covers at a fixed time of day
+        - external: closes covers at a time supplied via entity
 
         Uses a 10-minute window approach for reliability: covers should close if
         current time is within the window starting at the calculated closing time

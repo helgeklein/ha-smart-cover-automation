@@ -128,6 +128,14 @@ This binary switch is disabled by default. If you enable it, the integration sto
 
 The entities in this section control externally supplied time values.
 
+### Evening Closure (External Control)
+
+This entity is only created when `Evening closure: mode` is set to `External` in the configuration wizard.
+
+The integration then uses the configured time as the time at which covers are to be closed in the evening.
+
+Use case: you want to determine the evening closing time from your own automation, for example based on household schedules.
+
 ### Morning Opening (External Control)
 
 This entity is only created when `Morning opening: mode` is set to `External` in the configuration wizard.

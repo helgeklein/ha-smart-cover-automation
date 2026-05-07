@@ -262,6 +262,43 @@ class TestSmartReload:
         mock_hass_with_spec.config_entries.async_reload.assert_not_called()
         assert mock_runtime_data.config["morning_opening_external_time"] == "08:30:00"
 
+    async def test_reload_with_external_evening_closure_time_change_only(
+        self,
+        mock_hass_with_spec,
+        mock_config_entry_basic,
+    ) -> None:
+        """Changing only the external evening closure time should refresh, not reload."""
+
+        mock_coordinator = MagicMock()
+        mock_coordinator._merged_config = {
+            "evening_closure_external_time": "18:00:00",
+            "covers": ["cover.test"],
+        }
+        mock_coordinator.async_request_refresh = AsyncMock()
+
+        mock_runtime_data = MagicMock(spec=RuntimeData)
+        mock_runtime_data.coordinator = mock_coordinator
+        mock_runtime_data.config = {
+            "evening_closure_external_time": "18:00:00",
+            "covers": ["cover.test"],
+        }
+
+        mock_config_entry_basic.runtime_data = mock_runtime_data
+        mock_config_entry_basic.data = {}
+        mock_config_entry_basic.options = {
+            "evening_closure_external_time": "18:30:00",
+            "covers": ["cover.test"],
+        }
+
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_reload = AsyncMock()
+
+        await async_reload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        mock_coordinator.async_request_refresh.assert_called_once()
+        mock_hass_with_spec.config_entries.async_reload.assert_not_called()
+        assert mock_runtime_data.config["evening_closure_external_time"] == "18:30:00"
+
     async def test_reload_with_structural_change_triggers_full_reload(
         self,
         mock_hass_with_spec,

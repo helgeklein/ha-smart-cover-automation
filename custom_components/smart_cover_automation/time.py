@@ -12,7 +12,12 @@ from typing import TYPE_CHECKING
 from homeassistant.components.time import TimeEntity, TimeEntityDescription
 from homeassistant.const import EntityCategory
 
-from .const import TIME_KEY_MORNING_OPENING_EXTERNAL_TIME, MorningOpeningMode
+from .const import (
+    TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
+    TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
+    EveningClosureMode,
+    MorningOpeningMode,
+)
 from .entity import IntegrationEntity
 
 if TYPE_CHECKING:
@@ -37,6 +42,8 @@ async def async_setup_entry(
     resolved = coordinator._resolved_settings()
 
     entities: list[IntegrationTime] = []
+    if resolved.evening_closure_mode == EveningClosureMode.EXTERNAL:
+        entities.append(EveningClosureExternalTime(coordinator))
     if resolved.morning_opening_mode == MorningOpeningMode.EXTERNAL:
         entities.append(MorningOpeningExternalTime(coordinator))
 
@@ -109,3 +116,24 @@ class MorningOpeningExternalTime(IntegrationTime):
             icon="mdi:weather-sunset-up",
         )
         super().__init__(coordinator, entity_description, TIME_KEY_MORNING_OPENING_EXTERNAL_TIME)
+
+
+#
+# EveningClosureExternalTime
+#
+class EveningClosureExternalTime(IntegrationTime):
+    """Global external evening closure time."""
+
+    #
+    # __init__
+    #
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the external evening closure time entity."""
+
+        entity_description = TimeEntityDescription(
+            key=TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
+            translation_key=TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:weather-sunset-down",
+        )
+        super().__init__(coordinator, entity_description, TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME)

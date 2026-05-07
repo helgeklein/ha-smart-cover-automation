@@ -10,11 +10,14 @@ from unittest.mock import MagicMock, Mock
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.const import (
+    TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
+    EveningClosureMode,
     MorningOpeningMode,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.time import (
+    EveningClosureExternalTime,
     MorningOpeningExternalTime,
 )
 from custom_components.smart_cover_automation.time import (
@@ -47,7 +50,12 @@ async def test_async_setup_entry_adds_external_time_entity(mock_coordinator_basi
     entry = mock_coordinator_basic.config_entry
     entry.runtime_data = MagicMock()
     entry.runtime_data.coordinator = mock_coordinator_basic
-    mock_coordinator_basic._resolved_settings = Mock(return_value=SimpleNamespace(morning_opening_mode=MorningOpeningMode.EXTERNAL))
+    mock_coordinator_basic._resolved_settings = Mock(
+        return_value=SimpleNamespace(
+            evening_closure_mode=EveningClosureMode.FIXED_TIME,
+            morning_opening_mode=MorningOpeningMode.EXTERNAL,
+        )
+    )
     captured, add_entities = _capture_added_entities()
 
     await async_setup_entry_time(
@@ -70,7 +78,12 @@ async def test_async_setup_entry_skips_time_entity_when_not_external(mock_coordi
     entry = mock_coordinator_basic.config_entry
     entry.runtime_data = MagicMock()
     entry.runtime_data.coordinator = mock_coordinator_basic
-    mock_coordinator_basic._resolved_settings = Mock(return_value=SimpleNamespace(morning_opening_mode=MorningOpeningMode.FIXED_TIME))
+    mock_coordinator_basic._resolved_settings = Mock(
+        return_value=SimpleNamespace(
+            evening_closure_mode=EveningClosureMode.FIXED_TIME,
+            morning_opening_mode=MorningOpeningMode.FIXED_TIME,
+        )
+    )
     captured, add_entities = _capture_added_entities()
 
     await async_setup_entry_time(
@@ -80,6 +93,59 @@ async def test_async_setup_entry_skips_time_entity_when_not_external(mock_coordi
     )
 
     assert captured == []
+
+
+#
+# test_async_setup_entry_adds_evening_external_time_entity
+#
+async def test_async_setup_entry_adds_evening_external_time_entity(mock_coordinator_basic) -> None:
+    """External evening closure mode should create one time entity."""
+
+    entry = mock_coordinator_basic.config_entry
+    entry.runtime_data = MagicMock()
+    entry.runtime_data.coordinator = mock_coordinator_basic
+    mock_coordinator_basic._resolved_settings = Mock(
+        return_value=SimpleNamespace(
+            evening_closure_mode=EveningClosureMode.EXTERNAL,
+            morning_opening_mode=MorningOpeningMode.FIXED_TIME,
+        )
+    )
+    captured, add_entities = _capture_added_entities()
+
+    await async_setup_entry_time(
+        mock_coordinator_basic.hass,
+        cast(IntegrationConfigEntry, entry),
+        add_entities,
+    )
+
+    assert len(captured) == 1
+    assert isinstance(captured[0], EveningClosureExternalTime)
+    assert captured[0].unique_id == f"{entry.entry_id}_{TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME}"
+
+
+async def test_async_setup_entry_adds_both_external_time_entities(mock_coordinator_basic) -> None:
+    """When both schedules are external, the platform should create both time entities."""
+
+    entry = mock_coordinator_basic.config_entry
+    entry.runtime_data = MagicMock()
+    entry.runtime_data.coordinator = mock_coordinator_basic
+    mock_coordinator_basic._resolved_settings = Mock(
+        return_value=SimpleNamespace(
+            evening_closure_mode=EveningClosureMode.EXTERNAL,
+            morning_opening_mode=MorningOpeningMode.EXTERNAL,
+        )
+    )
+    captured, add_entities = _capture_added_entities()
+
+    await async_setup_entry_time(
+        mock_coordinator_basic.hass,
+        cast(IntegrationConfigEntry, entry),
+        add_entities,
+    )
+
+    assert len(captured) == 2
+    assert any(isinstance(entity, MorningOpeningExternalTime) for entity in captured)
+    assert any(isinstance(entity, EveningClosureExternalTime) for entity in captured)
 
 
 #
@@ -129,3 +195,38 @@ async def test_morning_opening_external_time_async_set_value_persists_isoformat(
     call_kwargs = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
     options = call_kwargs[1]["options"] if "options" in call_kwargs[1] else call_kwargs[0][1]
     assert options[TIME_KEY_MORNING_OPENING_EXTERNAL_TIME] == "07:45:00"
+
+
+#
+# test_evening_closure_external_time_metadata_and_native_value
+#
+def test_evening_closure_external_time_metadata_and_native_value(mock_coordinator_basic) -> None:
+    """The evening time entity should expose metadata and parse stored option values."""
+
+    entry = mock_coordinator_basic.config_entry
+    entity = EveningClosureExternalTime(mock_coordinator_basic)
+
+    assert entity.entity_description.key == TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME
+    assert entity.entity_description.translation_key == TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME
+    assert entity.entity_description.icon == "mdi:weather-sunset-down"
+    assert entity.native_value is None
+
+    entry.options[TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME] = "18:45:00"
+    assert entity.native_value == time(18, 45)
+
+
+#
+# test_evening_closure_external_time_async_set_value_persists_isoformat
+#
+async def test_evening_closure_external_time_async_set_value_persists_isoformat(mock_coordinator_basic) -> None:
+    """Setting a new evening time value should persist it to config entry options."""
+
+    entity = EveningClosureExternalTime(mock_coordinator_basic)
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()
+
+    await entity.async_set_value(time(18, 30))
+
+    mock_coordinator_basic.hass.config_entries.async_update_entry.assert_called_once()
+    call_kwargs = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
+    options = call_kwargs[1]["options"] if "options" in call_kwargs[1] else call_kwargs[0][1]
+    assert options[TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME] == "18:30:00"
