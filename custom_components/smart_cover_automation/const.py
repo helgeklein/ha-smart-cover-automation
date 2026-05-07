@@ -116,6 +116,7 @@ class EveningClosureMode(StrEnum):
 
     AFTER_SUNSET = "after_sunset"  # Close a configurable duration after sunset
     FIXED_TIME = "fixed_time"  # Close at a fixed time of day
+    EXTERNAL = "external"  # Close at a time supplied via entity
 
 
 #
@@ -192,6 +193,9 @@ NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_NIGHT: Final[str] = (
 )
 TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: Final[str] = (
     "morning_opening_external_time"  # Key for the global external morning opening time entity
+)
+TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: Final[str] = (
+    "evening_closure_external_time"  # Key for the global external evening closure time entity
 )
 SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity

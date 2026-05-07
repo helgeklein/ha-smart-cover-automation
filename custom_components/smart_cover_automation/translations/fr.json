@@ -133,8 +133,8 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Lorsqu'elle est activée, les volets se fermeront automatiquement le soir.",
-                            "close_covers_after_sunset_mode": "Choisissez de fermer à une heure fixe ou par rapport au coucher du soleil.",
-                            "close_covers_after_sunset_delay": "Selon le mode choisi : délai après le coucher du soleil ou heure fixe.",
+                            "close_covers_after_sunset_mode": "Choisissez si la fermeture du soir est relative au coucher du soleil, utilise une heure absolue ou est fournie par une entité.",
+                            "close_covers_after_sunset_delay": "Selon le mode choisi : délai après le coucher du soleil ou heure fixe. Ignoré en mode externe.",
                             "close_covers_after_sunset_cover_list": "Sélectionnez les volets qui doivent se fermer le soir.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Lorsqu'elle est activée, la fermeture du soir peut déplacer les volets sélectionnés même si une pause due à une commande manuelle est encore active.",
                             "close_covers_after_sunset_keep_closed": "Lorsqu'elle est activée, les volets sélectionnés sont refermés pendant la période nocturne de fermeture du soir s'ils sont rouverts. La durée de la commande manuelle est respectée. Le mode verrouillage est prioritaire, donc les volets ne sont refermés qu'après sa désactivation.",
@@ -223,6 +223,9 @@
             }
         },
         "time": {
+            "evening_closure_external_time": {
+                "name": "Fermeture du soir : heure externe"
+            },
             "morning_opening_external_time": {
                 "name": "Ouverture matinale : heure externe"
             }
@@ -384,7 +387,8 @@
         "evening_closure_mode": {
             "options": {
                 "after_sunset": "Après le coucher du soleil (délai relatif)",
-                "fixed_time": "Heure fixe"
+                "fixed_time": "Heure fixe",
+                "external": "Externe (heure fournie par une entité)"
             }
         },
         "morning_opening_mode": {

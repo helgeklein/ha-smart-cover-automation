@@ -133,8 +133,8 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Quando attivata, le tapparelle verranno chiuse automaticamente di sera.",
-                            "close_covers_after_sunset_mode": "Scegli se chiudere a un orario fisso o in modo relativo al tramonto.",
-                            "close_covers_after_sunset_delay": "A seconda della modalità scelta: ritardo dopo il tramonto oppure orario fisso.",
+                            "close_covers_after_sunset_mode": "Scegli se la chiusura serale è relativa al tramonto, usa un orario assoluto oppure è fornita da un'entità.",
+                            "close_covers_after_sunset_delay": "A seconda della modalità scelta: ritardo dopo il tramonto oppure orario fisso. Ignorato in modalità esterna.",
                             "close_covers_after_sunset_cover_list": "Seleziona le tapparelle che devono essere chiuse di sera.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando attivata, la chiusura serale può muovere le tapparelle selezionate anche se è ancora attiva una pausa dovuta all'override manuale.",
                             "close_covers_after_sunset_keep_closed": "Quando attivata, le tapparelle selezionate vengono richiuse durante il periodo notturno di chiusura serale se vengono riaperte. La durata dell'override manuale viene rispettata. La modalità di blocco ha la precedenza, quindi le tapparelle vengono richiuse solo dopo che la modalità di blocco è stata disattivata.",
@@ -223,6 +223,9 @@
             }
         },
         "time": {
+            "evening_closure_external_time": {
+                "name": "Chiusura serale: ora esterna"
+            },
             "morning_opening_external_time": {
                 "name": "Apertura mattutina: ora esterna"
             }
@@ -384,7 +387,8 @@
         "evening_closure_mode": {
             "options": {
                 "after_sunset": "Dopo il tramonto (ritardo relativo)",
-                "fixed_time": "Orario fisso"
+                "fixed_time": "Orario fisso",
+                "external": "Esterno (ora fornita da un'entità)"
             }
         },
         "morning_opening_mode": {

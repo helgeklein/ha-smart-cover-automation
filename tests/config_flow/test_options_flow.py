@@ -957,6 +957,30 @@ class TestOptionsFlowHelperMethods:
 
         assert const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME not in merged
 
+    def test_cleanup_external_evening_closure_keys_keeps_value_in_external_mode(self) -> None:
+        """External evening closure time should be preserved while external mode is active."""
+
+        merged = {
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.EXTERNAL,
+            const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "18:15:00",
+        }
+
+        OptionsFlowHandler._cleanup_external_evening_closure_keys(merged)
+
+        assert const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME in merged
+
+    def test_cleanup_external_evening_closure_keys_removes_value_when_mode_changes(self) -> None:
+        """External evening closure time should be removed once the mode is no longer external."""
+
+        merged = {
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.FIXED_TIME,
+            const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "18:15:00",
+        }
+
+        OptionsFlowHandler._cleanup_external_evening_closure_keys(merged)
+
+        assert const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME not in merged
+
     async def test_options_flow_no_changes_logs_debug(self, mock_hass_with_covers: MagicMock, caplog: Any) -> None:
         """Test that completing flow with no changes logs at debug level."""
         import logging

@@ -42,6 +42,7 @@ from custom_components.smart_cover_automation.const import (
     SENSOR_KEY_SUN_ELEVATION,
     SENSOR_KEY_TEMP_CURRENT_MAX,
     SENSOR_KEY_TEMP_CURRENT_MIN,
+    TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
     LockMode,
     ReopeningMode,
@@ -909,6 +910,78 @@ class TestTimeEntityDataFlow:
         reloaded_state = hass.states.get(reloaded_entity_id)
         assert reloaded_state is not None
         assert reloaded_state.state == "08:10:00"
+
+    async def test_evening_closure_external_time_entity_persists_new_value(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Setting the external evening-closure time entity should update options and entity state."""
+
+        entry = _create_config_entry(
+            hass,
+            extra_options={ConfKeys.EVENING_CLOSURE_MODE.value: "external"},
+        )
+        await _setup_integration(hass, entry)
+
+        entity_id = _entity_id_for_key(hass, entry, TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME)
+        assert entity_id is not None, "evening closure external time entity not registered"
+
+        await hass.services.async_call(
+            "time",
+            "set_value",
+            {"entity_id": entity_id, "time": "18:35:00"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        assert entry.options[TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME] == "18:35:00"
+
+        state = hass.states.get(entity_id)
+        assert state is not None
+        assert state.state == "18:35:00"
+
+    async def test_evening_closure_external_time_entity_persists_across_reload(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """The external evening-closure time should remain available after a full reload."""
+
+        entry = _create_config_entry(
+            hass,
+            extra_options={ConfKeys.EVENING_CLOSURE_MODE.value: "external"},
+        )
+
+        with patch(
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
+            new_callable=AsyncMock,
+            return_value=(HOT_TEMP, 18.0),
+        ):
+            await _setup_integration(hass, entry)
+
+            entity_id = _entity_id_for_key(hass, entry, TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME)
+            assert entity_id is not None, "evening closure external time entity not registered"
+
+            await hass.services.async_call(
+                "time",
+                "set_value",
+                {"entity_id": entity_id, "time": "18:50:00"},
+                blocking=True,
+            )
+            await hass.async_block_till_done()
+
+            assert entry.options[TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME] == "18:50:00"
+
+            assert await hass.config_entries.async_reload(entry.entry_id)
+            await hass.async_block_till_done()
+
+        assert entry.state == ConfigEntryState.LOADED
+        reloaded_entity_id = _entity_id_for_key(hass, entry, TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME)
+        assert reloaded_entity_id is not None
+        assert reloaded_entity_id == entity_id
+
+        reloaded_state = hass.states.get(reloaded_entity_id)
+        assert reloaded_state is not None
+        assert reloaded_state.state == "18:50:00"
 
 
 class TestMorningOpeningIntegrationFlow:

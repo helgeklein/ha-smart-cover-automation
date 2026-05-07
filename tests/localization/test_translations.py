@@ -170,6 +170,20 @@ def test_translation_has_evening_closure_section_keys(language_code: str) -> Non
 
 
 @pytest.mark.parametrize("language_code", _get_available_languages())
+def test_translation_has_evening_external_time_keys(language_code: str) -> None:
+    """Test that evening external mode and entity labels are translated in every language."""
+
+    data = _load_translations(language_code)
+    evening_options = data.get("selector", {}).get("evening_closure_mode", {}).get("options", {})
+    time_entities = data.get("entity", {}).get("time", {})
+
+    assert "external" in evening_options, f"Missing evening external mode option in {language_code}.json"
+    assert const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME in time_entities, (
+        f"Missing evening external time entity label in {language_code}.json"
+    )
+
+
+@pytest.mark.parametrize("language_code", _get_available_languages())
 def test_translation_has_step_4_tilt_keys(language_code: str) -> None:
     """Test that step 4 tilt field labels and descriptions are translated in every language."""
 

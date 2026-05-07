@@ -133,8 +133,8 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Wenn aktiviert, werden die Rollläden abends automatisch geschlossen.",
-                            "close_covers_after_sunset_mode": "Wählen Sie, ob zu einer festen Uhrzeit oder relativ zum Sonnenuntergang geschlossen werden soll.",
-                            "close_covers_after_sunset_delay": "Je nach gewähltem Modus: Verzögerung nach Sonnenuntergang oder feste Uhrzeit.",
+                            "close_covers_after_sunset_mode": "Wählen Sie, ob das Abendschließen relativ zum Sonnenuntergang erfolgt, eine feste Uhrzeit verwendet oder von einer Entität geliefert wird.",
+                            "close_covers_after_sunset_delay": "Je nach gewähltem Modus: Verzögerung nach Sonnenuntergang oder feste Uhrzeit. Im externen Modus ignoriert.",
                             "close_covers_after_sunset_cover_list": "Wählen Sie die Rollläden aus, die abends geschlossen werden sollen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wenn aktiviert, darf das Abendschließen ausgewählte Rollläden trotz aktiver Pause durch manuelle Übersteuerung bewegen.",
                             "close_covers_after_sunset_keep_closed": "Wenn aktiviert, werden ausgewählte Rollläden während der nächtlichen Abendschließphase erneut geschlossen, wenn sie wieder geöffnet werden. Die Dauer der manuellen Übersteuerung wird berücksichtigt. Der Sperrmodus hat Vorrang, daher werden Rollläden erst erneut geschlossen, nachdem der Sperrmodus deaktiviert wurde.",
@@ -223,6 +223,9 @@
             }
         },
         "time": {
+            "evening_closure_external_time": {
+                "name": "Abendschließen: externe Zeit"
+            },
             "morning_opening_external_time": {
                 "name": "Morgendliches Öffnen: externe Zeit"
             }
@@ -384,7 +387,8 @@
         "evening_closure_mode": {
             "options": {
                 "after_sunset": "Nach Sonnenuntergang (relative Verzögerung)",
-                "fixed_time": "Feste Uhrzeit"
+                "fixed_time": "Feste Uhrzeit",
+                "external": "Extern (Zeit wird von einer Entität geliefert)"
             }
         },
         "morning_opening_mode": {

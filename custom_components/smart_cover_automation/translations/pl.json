@@ -133,8 +133,8 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Po włączeniu rolety zostaną automatycznie zamknięte wieczorem.",
-                            "close_covers_after_sunset_mode": "Wybierz, czy zamykać o stałej godzinie, czy względem zachodu słońca.",
-                            "close_covers_after_sunset_delay": "W zależności od wybranego trybu: opóźnienie po zachodzie słońca lub stała godzina.",
+                            "close_covers_after_sunset_mode": "Wybierz, czy zamykanie wieczorne ma być względem zachodu słońca, korzystać ze stałej godziny czy być dostarczane przez encję.",
+                            "close_covers_after_sunset_delay": "W zależności od wybranego trybu: opóźnienie po zachodzie słońca lub stała godzina. Ignorowane w trybie zewnętrznym.",
                             "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Po włączeniu zamykanie wieczorne może poruszyć wybrane rolety, nawet jeśli nadal trwa pauza po ręcznym nadpisaniu.",
                             "close_covers_after_sunset_keep_closed": "Po włączeniu wybrane rolety zostaną ponownie zamknięte podczas nocnego okresu wieczornego zamykania, jeśli zostaną ponownie otwarte. Czas ręcznego nadpisania jest respektowany. Tryb blokady ma pierwszeństwo, więc rolety zostaną ponownie zamknięte dopiero po wyłączeniu trybu blokady.",
@@ -223,6 +223,9 @@
             }
         },
         "time": {
+            "evening_closure_external_time": {
+                "name": "Zamykanie wieczorne: czas zewnętrzny"
+            },
             "morning_opening_external_time": {
                 "name": "Poranne otwieranie: czas zewnętrzny"
             }
@@ -384,7 +387,8 @@
         "evening_closure_mode": {
             "options": {
                 "after_sunset": "Po zachodzie słońca (opóźnienie względne)",
-                "fixed_time": "Stała godzina"
+                "fixed_time": "Stała godzina",
+                "external": "Zewnętrzny (czas dostarczany przez encję)"
             }
         },
         "morning_opening_mode": {

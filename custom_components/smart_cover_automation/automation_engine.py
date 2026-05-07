@@ -386,6 +386,22 @@ class AutomationEngine:
             closing_time = self.resolved.evening_closure_time
             return self._get_local_datetime_for_date(target_date, closing_time)
 
+        if mode == const.EveningClosureMode.EXTERNAL:
+            external_time_raw = self.config.get(const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME)
+            if external_time_raw is None:
+                self._logger.debug("External evening closure mode active but no time is set")
+                return None
+
+            try:
+                from .config import _Converters
+
+                resolved_time = _Converters.to_time(external_time_raw)
+            except AttributeError, TypeError, ValueError:
+                self._logger.debug("Invalid external evening closure time: %r", external_time_raw)
+                return None
+
+            return self._get_local_datetime_for_date(target_date, resolved_time)
+
         # After sunset mode: sunset + configured delay
         sunset_time = get_astral_event_date(self._ha_interface.hass, SUN_EVENT_SUNSET, target_date)
         if sunset_time is None:
@@ -446,9 +462,10 @@ class AutomationEngine:
     def _check_evening_closure(self) -> bool:
         """Check if covers should close based on evening closure settings.
 
-        Supports two modes:
+        Supports three modes:
         - after_sunset: closes covers after sunset + configured delay
         - fixed_time: closes covers at a fixed time of day
+        - external: closes covers at a time supplied via entity
 
         Uses a 10-minute window approach for reliability: covers should close if
         current time is within the window starting at the calculated closing time
