@@ -46,8 +46,6 @@ The integration considers the following current weather conditions as the **sun 
 - `sunny`
 - `partlycloudy`
 
-*New in 3.2:*
-
 #### Offline Use
 
 The integration caches the weather forecast response for situations when internet connectivity is unavailable. When offline, the integration continues to work as well as is possible under the circumstances.
@@ -119,11 +117,7 @@ The global tilt modes can be overridden per cover.
 - **Minimum tilt change:** Minimum tilt change (%) required before sending a command. Prevents excessive motor wear from small adjustments.
 - **Slat overlap ratio (d/L):** Ratio of slat spacing to slat width (`0.5` – `1.0`). Lower values mean more overlap between slats. The default of `0.9` works well for most venetian blinds. Only relevant for Auto mode.
 
-*New in 3.1:*
-
 - **Tilt open to cover open delay:** Delay between opening the slats fully and reopening the cover. Only applies to covers with tilt support whose effective daytime tilt mode is Auto and that were previously closed for heat protection.
-
-*New in 3.3:*
 
 - **Horizontal tilt position:** Home Assistant tilt percentage for fully horizontal slats. Auto mode treats this as the horizontal slat position. Default: 100%.
 - **Vertical tilt position:** Home Assistant tilt percentage for fully vertical slats. Auto mode treats this as the vertical slat position. Default: 0%.
@@ -162,8 +156,6 @@ The same covers become eligible to reopen in the morning if normal automation pe
     - In **Off** automatic reopening mode, covers are not reopened automatically.
 
 **Evening closure settings:**
-
-*"External" mode is new in 3.4*
 
 - **Evening closure: mode:** Specifies the closing time:
   - **Absolute time:** A fixed time of day.
