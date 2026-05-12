@@ -1,8 +1,8 @@
 {
     "name": "smart_cover_automation",
     "image": "mcr.microsoft.com/devcontainers/python:3.14",
-    // Install Ruby and Bundler for Jekyll documentation maintenance
-    "onCreateCommand": "sudo apt-get update && sudo apt-get install -y ruby-full bundler build-essential zlib1g-dev ripgrep",
+    // Install Ruby and the Bundler version declared in the docs lockfile
+    "onCreateCommand": "sudo apt-get update && sudo apt-get install -y ruby-full build-essential zlib1g-dev ripgrep && sudo gem install bundler:$(awk '/^BUNDLED WITH$/{getline; gsub(/^ +/, \"\"); print; exit}' docs/Gemfile.lock) --no-document",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [
         8123,

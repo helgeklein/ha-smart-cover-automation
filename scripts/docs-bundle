@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd "$(dirname "$0")/../docs"
+
+readonly DOCS_BUNDLER_VERSION="$(awk '/^BUNDLED WITH$/{getline; gsub(/^ +/, ""); print; exit}' Gemfile.lock)"
+
+ruby_version=$(ruby -e 'puts "#{RUBY_VERSION[0..2]}.0"')
+gem_home="/home/vscode/.local/share/gem/ruby/${ruby_version}"
+
+export PATH="$PATH:${gem_home}/bin"
+export GEM_HOME="$gem_home"
+export GEM_PATH="$gem_home"
+export BUNDLE_PATH="$gem_home"
+
+if ! bundle "_${DOCS_BUNDLER_VERSION}_" -v >/dev/null 2>&1; then
+    gem install bundler:"${DOCS_BUNDLER_VERSION}" --user-install --no-document
+fi
+
+bundle "_${DOCS_BUNDLER_VERSION}_" "$@"
