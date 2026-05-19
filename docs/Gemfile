@@ -12,6 +12,10 @@ gem "jekyll-sitemap", "~> 1.4"
 gem "jekyll-seo-tag", "~> 2.8"
 gem "json", ">= 2.19.2"
 
+# Security overrides for vulnerable transitive dependencies.
+gem "activesupport", ">= 8.1.2.1"
+gem "addressable", ">= 2.9.0"
+
 # Ruby 3.0+ compatibility
 gem "webrick", "~> 1.8"
 

@@ -15,7 +15,7 @@ export GEM_PATH="$gem_home"
 export BUNDLE_PATH="$gem_home"
 
 if ! bundle "_${DOCS_BUNDLER_VERSION}_" -v >/dev/null 2>&1; then
-    gem install bundler:"${DOCS_BUNDLER_VERSION}" --user-install --no-document
+    gem install bundler:"${DOCS_BUNDLER_VERSION}" --user-install --no-document >&2
 fi
 
 bundle "_${DOCS_BUNDLER_VERSION}_" "$@"

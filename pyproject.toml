@@ -87,6 +87,5 @@ exclude = [
 [[tool.mypy.overrides]]
 module = [
     "homeassistant.*",
-    "pytest_homeassistant_custom_component.*",
 ]
 ignore_missing_imports = true
