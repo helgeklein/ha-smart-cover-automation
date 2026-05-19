@@ -1393,6 +1393,9 @@ class CoverAutomation:
             cover_moved: Whether the cover position was changed this cycle
         """
 
+        if movement_reason is None:
+            return
+
         target_tilt = self._determine_target_tilt(cover_state, sensor_data, movement_reason, cover_moved)
         if target_tilt is None:
             return

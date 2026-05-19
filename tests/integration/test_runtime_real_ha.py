@@ -810,6 +810,51 @@ class TestRuntimeBehavior:
                 f"Expected {cover_id} in coordinator data, got {list(coordinator.data.covers.keys())}"
             )
 
+    async def test_cover_movement_stagger_delay_delays_second_cover_service_call(self, hass: HomeAssistant) -> None:
+        """A stagger delay should execute the first cover immediately and queue the second."""
+
+        cover_calls: list[ServiceCall] = []
+
+        async def _record_set_cover_position(call: ServiceCall) -> None:
+            """Record real cover service calls issued by the integration."""
+
+            cover_calls.append(call)
+
+        hass.services.async_register("cover", "set_cover_position", _record_set_cover_position)
+
+        entry = _create_config_entry(
+            hass,
+            covers=[TEST_COVER_1, TEST_COVER_2],
+            extra_options={
+                ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value: 5,
+            },
+        )
+
+        await _setup_integration(
+            hass,
+            entry,
+            temp_max=HOT_TEMP,
+            sun_elevation=SUN_HIGH_ELEVATION,
+            sun_azimuth=SUN_DIRECT_AZIMUTH,
+            cover_positions={
+                TEST_COVER_1: COVER_POS_FULLY_OPEN,
+                TEST_COVER_2: COVER_POS_FULLY_OPEN,
+            },
+        )
+
+        coordinator = _get_coordinator(hass, entry)
+        pending = coordinator._automation_engine._pending_cover_executions
+
+        assert coordinator.data.covers[TEST_COVER_1].pos_target_final == COVER_POS_FULLY_CLOSED
+        assert coordinator.data.covers[TEST_COVER_2].pos_target_final is None
+        assert [call.data["entity_id"] for call in cover_calls] == [TEST_COVER_1]
+
+        scheduled = pending.get(TEST_COVER_2)
+        assert scheduled is not None
+        assert scheduled.execute_at > dt_util.utcnow()
+        assert scheduled.execute_at - dt_util.utcnow() <= timedelta(seconds=5.5)
+        assert scheduled.execute_at - dt_util.utcnow() >= timedelta(seconds=4.0)
+
     # ------------------------------------------------------------------
     # 1.12 Coordinator update after state change
     # ------------------------------------------------------------------
