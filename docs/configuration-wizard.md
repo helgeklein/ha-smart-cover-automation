@@ -122,9 +122,17 @@ The global tilt modes can be overridden per cover.
 - **Horizontal tilt position:** Home Assistant tilt percentage for fully horizontal slats. Auto mode treats this as the horizontal slat position. Default: 100%.
 - **Vertical tilt position:** Home Assistant tilt percentage for fully vertical slats. Auto mode treats this as the vertical slat position. Default: 0%.
 
-## Step 5: Window Sensors for Lockout Protection (Optional)
+## Step 5: Additional Settings and Window Sensors (Optional)
 
-In this step of the configuration wizard, you can enable lockout protection by configuring window sensors for each cover. If any window sensor associated with a cover reports that the window is open, the cover won't be closed. This is especially useful for patio or terrace doors with a cover that would block you from re-entering the building if closed.
+In this step of the configuration wizard, you can configure additional global settings plus optional window sensors for each cover.
+
+### Additional Settings
+
+- **Delay between covers:** Delays the start of one cover movement relative to the next within the same automation cycle. Use this when you want to avoid multiple covers starting at the exact same time. A value of `0` disables the delay.
+
+### Window Sensors for Lockout Protection
+
+You can enable lockout protection by configuring window sensors for each cover. If any window sensor associated with a cover reports that the window is open, the cover won't be closed. This is especially useful for patio or terrace doors with a cover that would block you from re-entering the building if closed.
 
 ## Step 6: Time Settings (Optional)
 
