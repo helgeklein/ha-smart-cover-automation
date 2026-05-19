@@ -343,9 +343,9 @@ class TestIntegrationSetup:
 
             # Verify RuntimeData was created with correct parameters (config comes from options)
             mock_data_class.assert_called_once_with(
-                integration=mock_integration,
-                coordinator=mock_coordinator,
-                config=dict(mock_config_entry_basic.options),
+                mock_coordinator,
+                mock_integration,
+                dict(mock_config_entry_basic.options),
             )
 
             # Verify runtime_data was attached to config entry

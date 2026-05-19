@@ -499,7 +499,7 @@ class FlowHelper:
     #
     @staticmethod
     def build_schema_step_5(covers: list[str], defaults: Mapping[str, Any]) -> vol.Schema:
-        """Build schema for step 5: window sensors per cover.
+        """Build schema for step 5: additional settings and window sensors.
 
         Args:
             covers: List of cover entity IDs
@@ -509,7 +509,25 @@ class FlowHelper:
             Schema for step 5 form
         """
 
+        resolved_settings = resolve(defaults)
+
         schema_dict: dict[vol.Marker, object] = {}
+
+        additional_settings_schema = {
+            vol.Required(
+                ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value,
+                default=resolved_settings.cover_movement_stagger_delay,
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=const.MAX_COVER_MOVEMENT_STAGGER_DELAY_SECONDS,
+                    step=1,
+                    unit_of_measurement=UnitOfTime.SECONDS,
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        }
+        schema_dict[vol.Optional(const.STEP_5_SECTION_ADDITIONAL_SETTINGS)] = section(vol.Schema(additional_settings_schema))
 
         # Build schema dict for window sensors and group inside collapsible section
         window_sensors_schema_dict = FlowHelper._build_schema_cover_entities(covers, const.COVER_SFX_WINDOW_SENSORS, defaults)
@@ -1341,7 +1359,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     # async_step_5
     #
     async def async_step_5(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 5: Configure window sensors for each cover."""
+        """Step 5: Configure additional settings and window sensors."""
 
         if user_input is None:
             # Get currently valid settings
@@ -1364,6 +1382,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Get currently valid settings
         current_settings = self._current_settings()
+
+        additional_settings, sections_present = FlowHelper.extract_from_section_input(
+            user_input,
+            {const.STEP_5_SECTION_ADDITIONAL_SETTINGS},
+        )
+        if const.STEP_5_SECTION_ADDITIONAL_SETTINGS in sections_present:
+            self._config_data[ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value] = int(
+                additional_settings.get(ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value, 0)
+            )
 
         # Build complete lists of window sensor settings for all covers
         window_sensor_data = self._build_section_cover_settings(

@@ -94,6 +94,25 @@ class CoverState:
     lockout_protection: bool | None = None
 
 
+@dataclass(slots=True, frozen=True)
+class CoverExecutionPlan:
+    """Encapsulates a deferred per-cover execution."""
+
+    cover_state: CoverState
+    sensor_data: SensorData
+    features: int
+    current_pos: int
+    desired_pos: int
+    movement_reason: CoverMovementReason
+    planned_tilt_target: int | None
+
+    @property
+    def signature(self) -> tuple[int, CoverMovementReason, int | None]:
+        """Return the fields that determine whether two deferred executions are equivalent."""
+
+        return (self.desired_pos, self.movement_reason, self.planned_tilt_target)
+
+
 class CoverAutomation:
     """Handles automation logic for a single cover."""
 
@@ -144,54 +163,51 @@ class CoverAutomation:
             CoverState object with automation results
         """
 
+        cover_state, plan = await self.evaluate(state, sensor_data)
+        if plan is None:
+            self._logger.debug(f"[{self.entity_id}] Cover result: {COVER_RESULT_NO_MOVEMENT}. Cover state: {cover_state}")
+            return cover_state
+
+        return await self.execute_plan(plan)
+
+    async def evaluate(self, state: State | None, sensor_data: SensorData) -> tuple[CoverState, CoverExecutionPlan | None]:
+        """Evaluate automation for this cover and optionally return a deferred execution plan."""
+
         cover_state = CoverState()
 
-        # Get cover azimuth
         cover_azimuth = self._get_cover_azimuth()
         if cover_azimuth is None:
-            return cover_state
-        else:
-            cover_state.cover_azimuth = cover_azimuth
+            return cover_state, None
+        cover_state.cover_azimuth = cover_azimuth
 
-        # Validate current cover state
         if not self._validate_cover_state(state):
-            return cover_state
-        else:
-            # At this point, we know state is not None due to validation (type narrowing for type checkers)
-            assert state is not None
-            cover_state.state = state.state
+            return cover_state, None
 
-        # Check if cover is moving
+        assert state is not None
+        cover_state.state = state.state
+
         if self._is_cover_moving(state):
-            return cover_state
+            return cover_state, None
 
-        # Get cover features
         features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
         cover_state.supported_features = features
 
-        # Cache tilt support flag on first call
         if self._cover_supports_tilt is None:
             self._cover_supports_tilt = bool(int(features) & CoverEntityFeature.SET_TILT_POSITION)
 
-        # Read current tilt position (for Manual mode tracking and delta checks)
         if self._cover_supports_tilt:
             cover_state.tilt_current = to_int_or_none(state.attributes.get(ATTR_CURRENT_TILT_POSITION))
 
-        # Get cover position
         success, current_pos = self._get_cover_position(state, features)
         if not success:
-            return cover_state
-        else:
-            cover_state.pos_current = current_pos
+            return cover_state, None
+        cover_state.pos_current = current_pos
 
-        # Handle lock modes before normal automation logic
         locked = await self._process_lock_mode(cover_state, current_pos, features)
         if locked:
-            return cover_state
+            return cover_state, None
 
         manual_override_just_expired = False
-
-        # Check for manual override
         was_manual_override_blocking = self._cover_pos_history_mgr.was_manual_override_blocking(self.entity_id)
         manual_override_remaining = self._get_manual_override_remaining(current_pos)
         if manual_override_remaining is not None:
@@ -199,23 +215,22 @@ class CoverAutomation:
             self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             if self._should_ignore_manual_override(sensor_data):
                 self._cover_pos_history_mgr.clear_manual_override_blocked(self.entity_id)
-                message = (
-                    f"Ignoring manual override during evening-closure trigger; {manual_override_remaining:.0f} s would otherwise remain"
+                self._log_cover_msg(
+                    f"Ignoring manual override during evening-closure trigger; {manual_override_remaining:.0f} s would otherwise remain",
+                    const.LogSeverity.INFO,
                 )
-                self._log_cover_msg(message, const.LogSeverity.INFO)
             else:
                 self._cover_pos_history_mgr.mark_manual_override_blocked(self.entity_id)
-                message = (
+                self._log_cover_msg(
                     "Manual override detected (position changed externally), "
-                    f"skipping this cover for another {manual_override_remaining:.0f} s"
+                    f"skipping this cover for another {manual_override_remaining:.0f} s",
+                    const.LogSeverity.INFO,
                 )
-                self._log_cover_msg(message, const.LogSeverity.INFO)
-                return cover_state
+                return cover_state, None
         elif was_manual_override_blocking:
             manual_override_just_expired = True
             self._cover_pos_history_mgr.clear_manual_override_blocked(self.entity_id)
 
-        # Calculate sun hitting
         sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
         cover_state.sun_hitting = sun_hitting
         cover_state.sun_azimuth_diff = round(sun_azimuth_difference, 1)
@@ -232,7 +247,6 @@ class CoverAutomation:
                 const.LogSeverity.DEBUG,
             )
 
-        # Calculate desired position (lockout protection and opening block after evening closure are checked inside _calculate_desired_position)
         desired_pos, movement_reason, lockout_protection = self._calculate_desired_position(
             sensor_data,
             sun_hitting,
@@ -242,29 +256,57 @@ class CoverAutomation:
         cover_state.pos_target_desired = desired_pos
         cover_state.lockout_protection = lockout_protection
 
-        # Move cover if needed (skip if movement_reason is None, e.g., opening block after evening closure active)
         if movement_reason is None:
-            # No movement - the reason is already covered by the INFO log above.
             self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
-            cover_moved = False
-            message = COVER_RESULT_NO_MOVEMENT
+            return cover_state, None
+
+        cover_moved = self._is_cover_move_required(current_pos, desired_pos)
+        planned_tilt_target = self._determine_target_tilt(cover_state, sensor_data, movement_reason, cover_moved)
+        cover_state.tilt_target = planned_tilt_target
+
+        return (
+            cover_state,
+            CoverExecutionPlan(
+                cover_state=cover_state,
+                sensor_data=sensor_data,
+                features=features,
+                current_pos=current_pos,
+                desired_pos=desired_pos,
+                movement_reason=movement_reason,
+                planned_tilt_target=planned_tilt_target,
+            ),
+        )
+
+    async def execute_plan(self, plan: CoverExecutionPlan) -> CoverState:
+        """Execute a previously evaluated cover plan."""
+
+        cover_state = plan.cover_state
+        cover_moved, actual_pos, message = await self._move_cover_if_needed(
+            plan.current_pos,
+            plan.desired_pos,
+            plan.features,
+            plan.movement_reason,
+        )
+        if not cover_moved:
+            self._cover_pos_history_mgr.add(self.entity_id, plan.current_pos, cover_moved=False)
         else:
-            cover_moved, actual_pos, message = await self._move_cover_if_needed(current_pos, desired_pos, features, movement_reason)
-            if not cover_moved:
-                # No movement - just add the current position to the history
-                self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
-            else:
-                # Movement occurred
-                cover_state.pos_target_final = actual_pos
+            cover_state.pos_target_final = actual_pos
 
-        # Apply tilt only when an automation movement context is active.
-        if movement_reason is not None:
-            await self._apply_tilt(cover_state, sensor_data, features, movement_reason, cover_moved)
+        await self._apply_tilt(
+            cover_state,
+            plan.sensor_data,
+            plan.features,
+            plan.movement_reason,
+            cover_moved,
+        )
 
-        # Log per-cover state
         self._logger.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}")
-
         return cover_state
+
+    def _is_cover_move_required(self, current_pos: int, desired_pos: int) -> bool:
+        """Return whether a cover-position command is expected for this evaluation."""
+
+        return desired_pos != current_pos and abs(desired_pos - current_pos) >= self.resolved.covers_min_position_delta
 
     #
     # _get_cover_azimuth
@@ -1351,78 +1393,24 @@ class CoverAutomation:
             cover_moved: Whether the cover position was changed this cycle
         """
 
-        # Determine day/night context
+        if movement_reason is None:
+            return
+
+        target_tilt = self._determine_target_tilt(cover_state, sensor_data, movement_reason, cover_moved)
+        if target_tilt is None:
+            return
+
         is_night = movement_reason in (
             CoverMovementReason.CLOSING_AFTER_SUNSET,
             CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE,
         )
         tilt_mode = self._get_effective_tilt_mode(is_night)
 
-        if tilt_mode is None:
-            return  # Cover doesn't support tilt
-
-        # Skip tilt when cover is fully open (raised) — slats are not deployed
-        effective_pos = cover_state.pos_target_final if cover_moved else cover_state.pos_current
-        if effective_pos == const.COVER_POS_FULLY_OPEN:
-            return
-
-        # Determine target tilt based on mode
-        target_tilt: int | None = None
-
-        if tilt_mode == const.TiltMode.OPEN:
-            target_tilt = const.COVER_POS_FULLY_OPEN  # 100
-        elif tilt_mode == const.TiltMode.CLOSED:
-            target_tilt = const.COVER_POS_FULLY_CLOSED  # 0
-        elif tilt_mode == const.TiltMode.MANUAL:
-            # Restore the tilt the cover had before automation moved it.
-            # cover_state.tilt_current was read from the HA state *before* the
-            # position change, so it reflects the user's (or previous) setting.
-            target_tilt = cover_state.tilt_current
-            if target_tilt is None:
-                return  # No tilt info available
-        elif tilt_mode == const.TiltMode.AUTO:
-            if sensor_data.weather_sunny is None:
-                if cover_state.sun_hitting:
-                    self._log_cover_msg("Auto tilt skipped because sunshine state is unavailable", const.LogSeverity.DEBUG)
-                    return
-                target_tilt = self._map_auto_tilt_to_ha_position(
-                    const.COVER_POS_FULLY_OPEN,
-                    self.resolved.tilt_vertical_position,
-                    self.resolved.tilt_horizontal_position,
-                )
-            elif sensor_data.weather_sunny and cover_state.sun_hitting and cover_state.sun_azimuth_diff is not None:
-                semantic_tilt = self._calculate_auto_tilt(
-                    sensor_data.sun_elevation,
-                    cover_state.sun_azimuth_diff,
-                    self.resolved.tilt_slat_overlap_ratio,
-                )
-                target_tilt = self._map_auto_tilt_to_ha_position(
-                    semantic_tilt,
-                    self.resolved.tilt_vertical_position,
-                    self.resolved.tilt_horizontal_position,
-                )
-            else:
-                # Sun not hitting or not sunny — open tilt fully to let in diffuse daylight
-                target_tilt = self._map_auto_tilt_to_ha_position(
-                    const.COVER_POS_FULLY_OPEN,
-                    self.resolved.tilt_vertical_position,
-                    self.resolved.tilt_horizontal_position,
-                )
-        elif tilt_mode == const.TiltMode.EXTERNAL:
-            target_tilt = self._get_external_tilt_value(is_night)
-            if target_tilt is None:
-                self._log_cover_msg("External tilt mode active but no external value is set, skipping", const.LogSeverity.DEBUG)
-                return
-        elif tilt_mode == const.TiltMode.SET_VALUE:
-            target_tilt = self.resolved.tilt_set_value_night if is_night else self.resolved.tilt_set_value_day
-
-        if target_tilt is None:
-            return
-
         cover_state.tilt_target = target_tilt
 
         # Check minimum change delta (skip if cover was just moved — always apply tilt then)
         current_tilt = cover_state.tilt_current
+        effective_pos = cover_state.pos_target_final if cover_moved else cover_state.pos_current
         if not cover_moved and current_tilt is not None:
             if abs(target_tilt - current_tilt) < self.resolved.tilt_min_change_delta:
                 self._log_cover_msg(
@@ -1442,6 +1430,77 @@ class CoverAutomation:
             )
         except Exception as err:
             self._logger.error(f"[{self.entity_id}] Failed to set tilt: {err}")
+
+    def _determine_target_tilt(
+        self,
+        cover_state: CoverState,
+        sensor_data: SensorData,
+        movement_reason: CoverMovementReason,
+        cover_moved: bool,
+    ) -> int | None:
+        """Determine the target tilt without changing the existing action ordering."""
+
+        is_night = movement_reason in (
+            CoverMovementReason.CLOSING_AFTER_SUNSET,
+            CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE,
+        )
+        tilt_mode = self._get_effective_tilt_mode(is_night)
+
+        if tilt_mode is None:
+            return None
+
+        effective_pos = cover_state.pos_target_final if cover_moved else cover_state.pos_current
+        if effective_pos == const.COVER_POS_FULLY_OPEN:
+            return None
+
+        if tilt_mode == const.TiltMode.OPEN:
+            return const.COVER_POS_FULLY_OPEN
+
+        if tilt_mode == const.TiltMode.CLOSED:
+            return const.COVER_POS_FULLY_CLOSED
+
+        if tilt_mode == const.TiltMode.MANUAL:
+            return cover_state.tilt_current
+
+        if tilt_mode == const.TiltMode.AUTO:
+            if sensor_data.weather_sunny is None:
+                if cover_state.sun_hitting:
+                    self._log_cover_msg("Auto tilt skipped because sunshine state is unavailable", const.LogSeverity.DEBUG)
+                    return None
+                return self._map_auto_tilt_to_ha_position(
+                    const.COVER_POS_FULLY_OPEN,
+                    self.resolved.tilt_vertical_position,
+                    self.resolved.tilt_horizontal_position,
+                )
+
+            if sensor_data.weather_sunny and cover_state.sun_hitting and cover_state.sun_azimuth_diff is not None:
+                semantic_tilt = self._calculate_auto_tilt(
+                    sensor_data.sun_elevation,
+                    cover_state.sun_azimuth_diff,
+                    self.resolved.tilt_slat_overlap_ratio,
+                )
+                return self._map_auto_tilt_to_ha_position(
+                    semantic_tilt,
+                    self.resolved.tilt_vertical_position,
+                    self.resolved.tilt_horizontal_position,
+                )
+
+            return self._map_auto_tilt_to_ha_position(
+                const.COVER_POS_FULLY_OPEN,
+                self.resolved.tilt_vertical_position,
+                self.resolved.tilt_horizontal_position,
+            )
+
+        if tilt_mode == const.TiltMode.EXTERNAL:
+            target_tilt = self._get_external_tilt_value(is_night)
+            if target_tilt is None:
+                self._log_cover_msg("External tilt mode active but no external value is set, skipping", const.LogSeverity.DEBUG)
+            return target_tilt
+
+        if tilt_mode == const.TiltMode.SET_VALUE:
+            return self.resolved.tilt_set_value_night if is_night else self.resolved.tilt_set_value_day
+
+        return None
 
     #
     # _log_cover_msg

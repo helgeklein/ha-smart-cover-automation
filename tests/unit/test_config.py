@@ -260,6 +260,13 @@ class TestConfigurationResolution:
         # "not-an-int" can't be converted to int, so uses default value 5
         assert rs.covers_min_position_delta == 5
 
+    def test_resolve_cover_movement_stagger_delay(self):
+        """Test that the stagger delay resolves as an integer number of seconds."""
+
+        resolved = resolve({ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value: "12"})
+
+        assert resolved.cover_movement_stagger_delay == 12
+
     def test_resolve_entry_reads_from_attributes(self):
         """Test that resolve_entry() extracts configuration from Home Assistant config entry objects.
 

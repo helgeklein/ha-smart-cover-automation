@@ -83,6 +83,7 @@ class ConfKeys(StrEnum):
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_CLOSURE = "covers_min_closure"  # Minimum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_POSITION_DELTA = "covers_min_position_delta"  # Ignore smaller position changes (%).
+    COVER_MOVEMENT_STAGGER_DELAY = "cover_movement_stagger_delay"  # Delay in seconds between cover starts within one iteration.
     ENABLED = "enabled"  # Global on/off for all automation.
     LOCK_MODE = "lock_mode"  # Current lock mode for all covers.
     MANUAL_OVERRIDE_DURATION = "manual_override_duration"  # Duration (seconds) to skip a cover's automation after manual cover move.
@@ -245,6 +246,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.COVERS_MIN_POSITION_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
+    ConfKeys.COVER_MOVEMENT_STAGGER_DELAY: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.LOCK_MODE: _ConfSpec(default=LockMode.UNLOCKED, converter=LockMode, runtime_configurable=True),
     ConfKeys.MANUAL_OVERRIDE_DURATION: _ConfSpec(default=1800, converter=_Converters.to_duration_seconds, runtime_configurable=True),
@@ -384,6 +386,7 @@ class ResolvedConfig:
     covers_max_closure: int
     covers_min_closure: int
     covers_min_position_delta: int
+    cover_movement_stagger_delay: int
     enabled: bool
     lock_mode: LockMode
     manual_override_duration: int

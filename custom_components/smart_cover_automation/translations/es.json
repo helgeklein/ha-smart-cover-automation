@@ -92,8 +92,17 @@
             },
             "5": {
                 "title": "Smart Cover Automation - Paso 5 de 6",
-                "description": "Activa la protección contra bloqueo configurando **sensores de ventana** para cada persiana (opcional). Si algún sensor de ventana asociado a una persiana indica que la ventana está abierta, la persiana no se cerrará.",
+                "description": "Configura **ajustes adicionales** y **sensores de ventana** opcionales para cada persiana. Los sensores de ventana activan la protección contra bloqueo: si un sensor asociado informa que la ventana está abierta, la persiana no se cerrará.",
                 "sections": {
+                    "section_additional_settings": {
+                        "name": "Ajustes adicionales",
+                        "data": {
+                            "cover_movement_stagger_delay": "Retraso entre persianas:"
+                        },
+                        "data_description": {
+                            "cover_movement_stagger_delay": "Retraso en segundos entre iniciar un movimiento de persiana y el siguiente dentro de la misma iteración de automatización. Use 0 para desactivar el escalonado."
+                        }
+                    },
                     "section_window_sensors": {
                         "name": "Sensores de ventana"
                     }

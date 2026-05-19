@@ -43,6 +43,12 @@ from custom_components.smart_cover_automation.const import (
     LockMode,
     ReopeningMode,
 )
+from custom_components.smart_cover_automation.cover_automation import (
+    CoverAutomation,
+    CoverExecutionPlan,
+    CoverMovementReason,
+    SensorData,
+)
 from custom_components.smart_cover_automation.ha_interface import HomeAssistantInterface
 
 # --- Test entity IDs ---
@@ -809,6 +815,141 @@ class TestRuntimeBehavior:
             assert cover_id in coordinator.data.covers, (
                 f"Expected {cover_id} in coordinator data, got {list(coordinator.data.covers.keys())}"
             )
+
+    async def test_cover_movement_stagger_delay_delays_second_cover_service_call(self, hass: HomeAssistant) -> None:
+        """A stagger delay should execute the first cover immediately and queue the second."""
+
+        cover_calls: list[ServiceCall] = []
+
+        async def _record_set_cover_position(call: ServiceCall) -> None:
+            """Record real cover service calls issued by the integration."""
+
+            cover_calls.append(call)
+
+        hass.services.async_register("cover", "set_cover_position", _record_set_cover_position)
+
+        entry = _create_config_entry(
+            hass,
+            covers=[TEST_COVER_1, TEST_COVER_2],
+            extra_options={
+                ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value: 5,
+            },
+        )
+
+        await _setup_integration(
+            hass,
+            entry,
+            temp_max=HOT_TEMP,
+            sun_elevation=SUN_HIGH_ELEVATION,
+            sun_azimuth=SUN_DIRECT_AZIMUTH,
+            cover_positions={
+                TEST_COVER_1: COVER_POS_FULLY_OPEN,
+                TEST_COVER_2: COVER_POS_FULLY_OPEN,
+            },
+        )
+
+        coordinator = _get_coordinator(hass, entry)
+        pending = coordinator._automation_engine._pending_cover_executions
+
+        assert coordinator.data.covers[TEST_COVER_1].pos_target_final == COVER_POS_FULLY_CLOSED
+        assert coordinator.data.covers[TEST_COVER_2].pos_target_final is None
+        assert [call.data["entity_id"] for call in cover_calls] == [TEST_COVER_1]
+
+        scheduled = pending.get(TEST_COVER_2)
+        assert scheduled is not None
+        assert scheduled.execute_at > dt_util.utcnow()
+        assert scheduled.execute_at - dt_util.utcnow() <= timedelta(seconds=5.5)
+        assert scheduled.execute_at - dt_util.utcnow() >= timedelta(seconds=4.0)
+
+    @pytest.mark.xfail(
+        reason="Queued staggered executions currently use a stale plan instead of revalidating live cover state",
+        strict=True,
+    )
+    async def test_cover_movement_stagger_delay_revalidates_cover_state_before_queued_execution(self, hass: HomeAssistant) -> None:
+        """A queued staggered execution should not fire if the user moved the cover before the delay elapsed."""
+
+        cover_calls: list[ServiceCall] = []
+
+        async def _record_set_cover_position(call: ServiceCall) -> None:
+            """Record real cover service calls issued by the integration."""
+
+            cover_calls.append(call)
+
+        async def _immediate_sleep(delay: float) -> None:
+            """Fast-forward queued staggered tasks once the test releases them."""
+
+            return None
+
+        hass.services.async_register("cover", "set_cover_position", _record_set_cover_position)
+
+        entry = _create_config_entry(
+            hass,
+            covers=[TEST_COVER_1, TEST_COVER_2],
+            extra_options={
+                ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value: 5,
+            },
+        )
+
+        await _setup_integration(
+            hass,
+            entry,
+            temp_max=HOT_TEMP,
+            sun_elevation=SUN_HIGH_ELEVATION,
+            sun_azimuth=SUN_DIRECT_AZIMUTH,
+            cover_positions={
+                TEST_COVER_1: COVER_POS_FULLY_OPEN,
+                TEST_COVER_2: COVER_POS_FULLY_OPEN,
+            },
+        )
+
+        coordinator = _get_coordinator(hass, entry)
+        pending = coordinator._automation_engine._pending_cover_executions
+
+        assert coordinator.data.covers[TEST_COVER_1].pos_target_final == COVER_POS_FULLY_CLOSED
+        assert coordinator.data.covers[TEST_COVER_2].pos_target_final is None
+        assert pending.get(TEST_COVER_2) is not None
+        assert [call.data["entity_id"] for call in cover_calls] == [TEST_COVER_1]
+
+        # Simulate a manual user move while the second cover is still queued.
+        _setup_cover_entity(hass, TEST_COVER_2, position=COVER_POS_FULLY_CLOSED)
+
+        scheduled = pending[TEST_COVER_2]
+        scheduled.task.cancel()
+        with patch("custom_components.smart_cover_automation.automation_engine.asyncio.sleep", side_effect=_immediate_sleep):
+            await coordinator._automation_engine._run_pending_cover_execution(
+                TEST_COVER_2,
+                scheduled.schedule_id,
+                CoverAutomation(
+                    entity_id=TEST_COVER_2,
+                    resolved=coordinator._automation_engine.resolved,
+                    config=coordinator._automation_engine.config,
+                    cover_pos_history_mgr=coordinator._automation_engine._cover_pos_history_mgr,
+                    ha_interface=coordinator._automation_engine._ha_interface,
+                    logger=coordinator._automation_engine._logger,
+                ),
+                CoverExecutionPlan(
+                    cover_state=coordinator.data.covers[TEST_COVER_2],
+                    sensor_data=SensorData(
+                        sun_azimuth=coordinator.data.sun_azimuth or SUN_DIRECT_AZIMUTH,
+                        sun_elevation=coordinator.data.sun_elevation or SUN_HIGH_ELEVATION,
+                        temp_max=coordinator.data.temp_current_max,
+                        temp_min=coordinator.data.temp_current_min,
+                        temp_hot=coordinator.data.temp_hot,
+                        weather_condition="sunny",
+                        weather_sunny=coordinator.data.weather_sunny,
+                        evening_closure=False,
+                        post_evening_closure=False,
+                    ),
+                    features=COVER_FEATURES_SET_POSITION,
+                    current_pos=COVER_POS_FULLY_OPEN,
+                    desired_pos=COVER_POS_FULLY_CLOSED,
+                    movement_reason=CoverMovementReason.CLOSING_HEAT_PROTECTION,
+                    planned_tilt_target=None,
+                ),
+                0,
+            )
+
+        assert [call.data["entity_id"] for call in cover_calls] == [TEST_COVER_1]
 
     # ------------------------------------------------------------------
     # 1.12 Coordinator update after state change

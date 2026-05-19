@@ -13,10 +13,10 @@ from functools import partial
 from inspect import isawaitable
 from typing import TYPE_CHECKING, Any, Final, cast
 
-from homeassistant.const import Platform
-from homeassistant.core import ServiceCall
-from homeassistant.helpers import entity_registry as er
-from homeassistant.loader import async_get_loaded_integration
+from homeassistant.const import Platform  # pyright: ignore[reportMissingImports]
+from homeassistant.core import ServiceCall  # pyright: ignore[reportMissingImports]
+from homeassistant.helpers import entity_registry as er  # pyright: ignore[reportMissingImports]
+from homeassistant.loader import async_get_loaded_integration  # pyright: ignore[reportMissingImports]
 
 from . import const
 from .config import CONF_SPECS, ConfKeys, is_runtime_configurable_key
@@ -49,7 +49,7 @@ from .log import Log
 from .util import cover_supports_tilt
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
+    from homeassistant.core import HomeAssistant  # pyright: ignore[reportMissingImports]
 
     from .data import IntegrationConfigEntry
 
@@ -399,9 +399,9 @@ async def _async_register_lock_service(hass: HomeAssistant) -> None:
     Args:
         hass: Home Assistant instance
     """
-    import voluptuous as vol
-    from homeassistant.helpers import config_validation as cv
-    from homeassistant.helpers import service
+    import voluptuous as vol  # pyright: ignore[reportMissingImports]
+    from homeassistant.helpers import config_validation as cv  # pyright: ignore[reportMissingImports]
+    from homeassistant.helpers import service  # pyright: ignore[reportMissingImports]
 
     #
     # async_handle_set_lock
@@ -595,9 +595,9 @@ async def async_setup_entry(
 
         # Store shared state
         entry.runtime_data = RuntimeData(
-            integration=async_get_loaded_integration(hass, entry.domain),
-            coordinator=coordinator,
-            config=merged_config,
+            coordinator,
+            async_get_loaded_integration(hass, entry.domain),
+            merged_config,
         )
 
         restore_result = coordinator.async_restore_runtime_state()
@@ -675,6 +675,7 @@ async def async_unload_entry(
     try:
         if hasattr(entry, "runtime_data") and entry.runtime_data:
             coordinator = entry.runtime_data.coordinator
+            coordinator.cancel_pending_cover_executions()
             persist_result = coordinator.async_persist_runtime_state()
             if isawaitable(persist_result):
                 await persist_result

@@ -19,7 +19,12 @@ from homeassistant.util import dt as dt_util
 from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.automation_engine import AutomationEngine
 from custom_components.smart_cover_automation.config import ConfKeys, resolve
-from custom_components.smart_cover_automation.cover_automation import SensorData
+from custom_components.smart_cover_automation.cover_automation import (
+    CoverExecutionPlan,
+    CoverMovementReason,
+    CoverState,
+    SensorData,
+)
 
 
 @pytest.fixture
@@ -931,6 +936,67 @@ class TestRunMethod:
 
         assert set(result.covers) == {"cover.test_1", "cover.test_2"}
         assert mock_process.await_count == 2
+
+    @patch("custom_components.smart_cover_automation.automation_engine.CoverAutomation.execute_plan", new_callable=AsyncMock)
+    @patch("custom_components.smart_cover_automation.automation_engine.CoverAutomation.evaluate", new_callable=AsyncMock)
+    async def test_run_queues_later_cover_actions_when_stagger_enabled(
+        self,
+        mock_evaluate,
+        mock_execute_plan,
+        mock_ha_interface,
+        mock_logger,
+    ):
+        """Test that only the first actionable cover executes immediately when staggering is enabled."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test_1", "cover.test_2"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value: 15,
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        sensor_data = SensorData(180.0, 45.0, 25.0, 18.0, True, "sunny", True, False, False)
+        plan_1 = CoverExecutionPlan(
+            cover_state=CoverState(pos_current=10, pos_target_desired=20),
+            sensor_data=sensor_data,
+            features=0,
+            current_pos=10,
+            desired_pos=20,
+            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            planned_tilt_target=None,
+        )
+        plan_2 = CoverExecutionPlan(
+            cover_state=CoverState(pos_current=30, pos_target_desired=40),
+            sensor_data=sensor_data,
+            features=0,
+            current_pos=30,
+            desired_pos=40,
+            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            planned_tilt_target=None,
+        )
+        mock_evaluate.side_effect = [
+            (plan_1.cover_state, plan_1),
+            (plan_2.cover_state, plan_2),
+        ]
+
+        with patch.object(engine, "_schedule_pending_cover_execution") as mock_schedule:
+            result = await engine.run(
+                {
+                    "cover.test_1": MagicMock(),
+                    "cover.test_2": MagicMock(),
+                }
+            )
+
+        mock_execute_plan.assert_awaited_once_with(plan_1)
+        mock_schedule.assert_called_once()
+        assert result.covers["cover.test_1"] == mock_execute_plan.return_value
+        assert result.covers["cover.test_2"] == plan_2.cover_state
 
 
 class TestLogAutomationResult:

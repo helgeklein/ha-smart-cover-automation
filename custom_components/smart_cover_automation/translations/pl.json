@@ -92,8 +92,17 @@
             },
             "5": {
                 "title": "Smart Cover Automation - Krok 5 z 6",
-                "description": "Włącz ochronę przed zablokowaniem, konfigurując **czujniki okienne** dla każdej rolety (opcjonalne). Jeśli którykolwiek czujnik okna powiązany z roletą zgłosi, że okno jest otwarte, roleta nie zostanie zamknięta.",
+                "description": "Skonfiguruj **dodatkowe ustawienia** i opcjonalne **czujniki okienne** dla każdej rolety. Czujniki okienne włączają ochronę przed zablokowaniem: jeśli powiązany czujnik zgłosi otwarte okno, roleta nie zostanie zamknięta.",
                 "sections": {
+                    "section_additional_settings": {
+                        "name": "Dodatkowe ustawienia",
+                        "data": {
+                            "cover_movement_stagger_delay": "Opóźnienie między roletami:"
+                        },
+                        "data_description": {
+                            "cover_movement_stagger_delay": "Opóźnienie w sekundach między rozpoczęciem ruchu jednej rolety a następnej w tej samej iteracji automatyzacji. Ustaw 0, aby wyłączyć kaskadowanie."
+                        }
+                    },
                     "section_window_sensors": {
                         "name": "Czujniki okienne"
                     }

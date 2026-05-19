@@ -92,8 +92,17 @@
             },
             "5": {
                 "title": "Smart Cover Automation - Schritt 5 von 6",
-                "description": "Aktivieren Sie den Aussperrschutz, indem Sie **Fenstersensoren** für jeden Rollladen konfigurieren (optional). Wenn ein Fenstersensor meldet, dass ein Fenster geöffnet ist, wird der Rollladen nicht geschlossen.",
+                "description": "Konfigurieren Sie **zusätzliche Einstellungen** und optionale **Fenstersensoren** für jeden Rollladen. Fenstersensoren aktivieren den Aussperrschutz: Meldet ein zugeordneter Sensor ein offenes Fenster, wird der Rollladen nicht geschlossen.",
                 "sections": {
+                    "section_additional_settings": {
+                        "name": "Zusätzliche Einstellungen",
+                        "data": {
+                            "cover_movement_stagger_delay": "Verzögerung zwischen Rollläden:"
+                        },
+                        "data_description": {
+                            "cover_movement_stagger_delay": "Verzögerung in Sekunden zwischen dem Start einer Rollladenbewegung und der nächsten innerhalb derselben Automatisierungsiteration. 0 deaktiviert die Staffelung."
+                        }
+                    },
                     "section_window_sensors": {
                         "name": "Fenstersensoren"
                     }

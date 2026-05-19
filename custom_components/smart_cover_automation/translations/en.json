@@ -92,8 +92,17 @@
             },
             "5": {
                 "title": "Smart Cover Automation - Step 5 of 6",
-                "description": "Enable lockout protection by configuring **window sensors** for each cover (optional). If any window sensor associated with a cover reports that the window is open, the cover won't be closed.",
+                "description": "Configure **additional settings** and optional **window sensors** for each cover. Window sensors enable lockout protection: if any associated sensor reports an open window, the cover won't be closed.",
                 "sections": {
+                    "section_additional_settings": {
+                        "name": "Additional settings",
+                        "data": {
+                            "cover_movement_stagger_delay": "Stagger delay between covers:"
+                        },
+                        "data_description": {
+                            "cover_movement_stagger_delay": "Delay in seconds between starting one cover movement and the next within the same automation iteration. Set to 0 to disable staggering."
+                        }
+                    },
                     "section_window_sensors": {
                         "name": "Window sensors"
                     }

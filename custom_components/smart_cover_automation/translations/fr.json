@@ -92,8 +92,17 @@
             },
             "5": {
                 "title": "Smart Cover Automation - Étape 5 sur 6",
-                "description": "Activez la protection anti-blocage en configurant des **capteurs de fenêtre** pour chaque volet (facultatif). Si un capteur de fenêtre associé à un volet indique que la fenêtre est ouverte, le volet ne se fermera pas.",
+                "description": "Configurez des **paramètres supplémentaires** et des **capteurs de fenêtre** facultatifs pour chaque volet. Les capteurs de fenêtre activent la protection anti-blocage : si un capteur associé signale qu'une fenêtre est ouverte, le volet ne se ferme pas.",
                 "sections": {
+                    "section_additional_settings": {
+                        "name": "Paramètres supplémentaires",
+                        "data": {
+                            "cover_movement_stagger_delay": "Délai entre volets :"
+                        },
+                        "data_description": {
+                            "cover_movement_stagger_delay": "Délai en secondes entre le démarrage d'un mouvement de volet et le suivant au cours de la même itération d'automatisation. Réglez sur 0 pour désactiver l'échelonnement."
+                        }
+                    },
                     "section_window_sensors": {
                         "name": "Capteurs de fenêtre"
                     }

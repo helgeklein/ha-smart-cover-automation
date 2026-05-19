@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -14,7 +15,7 @@ from homeassistant.util import dt as dt_util
 
 from . import const
 from .config import ResolvedConfig
-from .cover_automation import CoverAutomation, SensorData
+from .cover_automation import CoverAutomation, CoverExecutionPlan, SensorData
 from .cover_position_history import CoverPositionHistoryManager
 from .data import CoordinatorData
 from .log import Log
@@ -30,6 +31,17 @@ class WeatherSnapshot:
     temp_max: float | None = None
     temp_min: float | None = None
     weather_condition: str | None = None
+
+
+@dataclass(slots=True)
+class ScheduledCoverExecution:
+    """Tracks one pending delayed cover execution."""
+
+    schedule_id: int
+    execute_at: datetime
+    generation: int
+    plan_signature: tuple[int, Any, int | None]
+    task: asyncio.Task[None]
 
 
 class AutomationEngine:
@@ -69,6 +81,9 @@ class AutomationEngine:
 
         # Preserve the last successful weather inputs for temporary offline periods.
         self._weather_snapshot = WeatherSnapshot()
+        self._pending_cover_executions: dict[str, ScheduledCoverExecution] = {}
+        self._schedule_sequence = 0
+        self._run_generation = 0
 
     def export_closed_by_automation_markers(self) -> dict[str, str]:
         """Return automation-closed markers for persistence."""
@@ -79,6 +94,12 @@ class AutomationEngine:
         """Restore automation-closed markers from persistent storage."""
 
         self._cover_pos_history_mgr.restore_closed_by_automation_markers(markers)
+
+    def cancel_pending_cover_executions(self) -> None:
+        """Cancel all queued staggered cover executions."""
+
+        for entity_id in tuple(self._pending_cover_executions):
+            self._cancel_pending_cover_execution(entity_id, "automation context ended")
 
     #
     # run
@@ -104,12 +125,14 @@ class AutomationEngine:
         # Check if covers are configured
         covers = tuple(self.resolved.covers)
         if not covers:
+            self.cancel_pending_cover_executions()
             message = "No covers configured; skipping actions"
             self._log_automation_result(message, const.LogSeverity.INFO)
             return result
 
         # Check if automation is enabled
         if not self.resolved.enabled:
+            self.cancel_pending_cover_executions()
             message = "Automation disabled via configuration; skipping actions"
             self._log_automation_result(message, const.LogSeverity.INFO)
             return result
@@ -117,6 +140,7 @@ class AutomationEngine:
         # Check if any covers are available
         cover_count_available = sum(1 for s in cover_states.values() if s is not None)
         if cover_count_available == 0:
+            self.cancel_pending_cover_executions()
             message = "All covers unavailable; skipping actions"
             self._log_automation_result(message, const.LogSeverity.INFO)
             return result
@@ -124,6 +148,7 @@ class AutomationEngine:
         # Gather sensor data
         sensor_data, message = await self._gather_sensor_data(is_first_run)
         if sensor_data is None:
+            self.cancel_pending_cover_executions()
             # Critical data unavailable, automation canceled
             # Use DEBUG severity on first run to avoid startup warnings
             severity = const.LogSeverity.DEBUG if is_first_run else const.LogSeverity.WARNING
@@ -182,6 +207,7 @@ class AutomationEngine:
             "tilt_min_change_delta": self.resolved.tilt_min_change_delta,
             "tilt_open_to_cover_open_delay": self.resolved.tilt_open_to_cover_open_delay,
             "tilt_slat_overlap_ratio": self.resolved.tilt_slat_overlap_ratio,
+            "cover_movement_stagger_delay": self.resolved.cover_movement_stagger_delay,
         }
         self._logger.info(f"Global settings: {str(global_settings)}")
 
@@ -192,11 +218,21 @@ class AutomationEngine:
         # Check global blocking conditions
         success, message, severity = self._check_global_conditions()
         if not success:
+            self.cancel_pending_cover_executions()
             self._log_automation_result(message, severity)
             return result
 
-        # Process each cover
-        for entity_id, state in cover_states.items():
+        stagger_delay = max(0, self.resolved.cover_movement_stagger_delay)
+        if stagger_delay <= 0:
+            self.cancel_pending_cover_executions()
+
+        self._run_generation += 1
+        run_generation = self._run_generation
+        actionable_index = 0
+
+        # Process each configured cover in user-defined order
+        for entity_id in covers:
+            state = cover_states.get(entity_id)
             cover_automation = CoverAutomation(
                 entity_id=entity_id,
                 resolved=self.resolved,
@@ -205,10 +241,103 @@ class AutomationEngine:
                 ha_interface=self._ha_interface,
                 logger=self._logger,
             )
-            cover_attrs = await cover_automation.process(state, sensor_data)
+
+            if stagger_delay <= 0:
+                result.covers[entity_id] = await cover_automation.process(state, sensor_data)
+                continue
+
+            cover_attrs, plan = await cover_automation.evaluate(state, sensor_data)
             result.covers[entity_id] = cover_attrs
 
+            if plan is None:
+                self._cancel_pending_cover_execution(entity_id, "no queued action remains valid")
+                continue
+
+            if actionable_index == 0:
+                self._cancel_pending_cover_execution(entity_id, "replaced by immediate execution")
+                result.covers[entity_id] = await cover_automation.execute_plan(plan)
+            else:
+                execute_at = dt_util.utcnow() + timedelta(seconds=actionable_index * stagger_delay)
+                self._schedule_pending_cover_execution(entity_id, cover_automation, plan, execute_at, run_generation)
+
+            actionable_index += 1
+
+        self._cancel_pending_cover_executions_for_removed_covers(covers)
+
         return result
+
+    def _schedule_pending_cover_execution(
+        self,
+        entity_id: str,
+        cover_automation: CoverAutomation,
+        plan: CoverExecutionPlan,
+        execute_at: datetime,
+        generation: int,
+    ) -> None:
+        """Schedule or update one delayed cover execution."""
+
+        existing = self._pending_cover_executions.get(entity_id)
+        if existing is not None and existing.plan_signature == plan.signature and existing.execute_at <= execute_at:
+            return
+
+        if existing is not None:
+            self._cancel_pending_cover_execution(entity_id, "superseded by a newer cover plan")
+
+        delay_seconds = max(0.0, (execute_at - dt_util.utcnow()).total_seconds())
+        self._schedule_sequence += 1
+        schedule_id = self._schedule_sequence
+        task = asyncio.create_task(self._run_pending_cover_execution(entity_id, schedule_id, cover_automation, plan, delay_seconds))
+        self._pending_cover_executions[entity_id] = ScheduledCoverExecution(
+            schedule_id=schedule_id,
+            execute_at=execute_at,
+            generation=generation,
+            plan_signature=plan.signature,
+            task=task,
+        )
+        self._logger.info("[%s] Queued cover execution in %.0f s", entity_id, delay_seconds)
+
+    async def _run_pending_cover_execution(
+        self,
+        entity_id: str,
+        schedule_id: int,
+        cover_automation: CoverAutomation,
+        plan: CoverExecutionPlan,
+        delay_seconds: float,
+    ) -> None:
+        """Run one delayed cover execution if it is still the active queued job."""
+
+        try:
+            await asyncio.sleep(delay_seconds)
+        except asyncio.CancelledError:
+            return
+
+        scheduled = self._pending_cover_executions.get(entity_id)
+        if scheduled is None or scheduled.schedule_id != schedule_id:
+            return
+
+        self._pending_cover_executions.pop(entity_id, None)
+        try:
+            await cover_automation.execute_plan(plan)
+        except Exception as err:
+            self._logger.error("[%s] Failed queued cover execution: %s", entity_id, err)
+
+    def _cancel_pending_cover_execution(self, entity_id: str, reason: str) -> None:
+        """Cancel one queued cover execution if it exists."""
+
+        scheduled = self._pending_cover_executions.pop(entity_id, None)
+        if scheduled is None:
+            return
+
+        scheduled.task.cancel()
+        self._logger.debug("[%s] Cancelled queued cover execution: %s", entity_id, reason)
+
+    def _cancel_pending_cover_executions_for_removed_covers(self, configured_covers: tuple[str, ...]) -> None:
+        """Cancel queued executions that belong to covers no longer configured."""
+
+        configured_cover_ids = set(configured_covers)
+        for entity_id in tuple(self._pending_cover_executions):
+            if entity_id not in configured_cover_ids:
+                self._cancel_pending_cover_execution(entity_id, "cover no longer configured")
 
     #
     # _gather_sensor_data

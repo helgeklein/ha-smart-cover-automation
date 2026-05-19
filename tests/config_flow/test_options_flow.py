@@ -437,6 +437,30 @@ class TestOptionsFlowIntegration:
         assert data[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value] == 25.0
         assert data[ConfKeys.COVERS_MIN_POSITION_DELTA.value] == 10
 
+    async def test_step_5_persists_cover_movement_stagger_delay(self, mock_hass_with_covers: MagicMock) -> None:
+        """Step 5 should persist the stagger-delay setting alongside window-sensor settings."""
+
+        existing_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+        }
+        flow = OptionsFlowHandler(_create_mock_entry(data=existing_data))
+        flow.hass = mock_hass_with_covers
+        flow._config_data = dict(existing_data)
+
+        result = await flow.async_step_5(
+            {
+                const.STEP_5_SECTION_ADDITIONAL_SETTINGS: {
+                    ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value: 12,
+                },
+                const.STEP_5_SECTION_WINDOW_SENSORS: {},
+            }
+        )
+
+        assert _as_dict(result)["type"] == FlowResultType.FORM
+        assert _as_dict(result)["step_id"] == "6"
+        assert flow._config_data[ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value] == 12
+
     async def test_removes_orphaned_max_closure_settings(self, mock_hass_with_covers: MagicMock) -> None:
         """Test that per-cover max_closure settings are removed when covers are removed.
 
