@@ -92,8 +92,17 @@
             },
             "5": {
                 "title": "Smart Cover Automation - Steg 5 av 6",
-                "description": "Aktivera klämskydd genom att konfigurera **fönstersensorer** för varje persienn (valfritt). Om någon fönstersensor som är kopplad till en persienn rapporterar att fönstret är öppet stängs persiennen inte.",
+                "description": "Konfigurera **ytterligare inställningar** och valfria **fönstersensorer** för varje persienn. Fönstersensorer aktiverar klämskydd: om en kopplad sensor rapporterar att ett fönster är öppet stängs persiennen inte.",
                 "sections": {
+                    "section_additional_settings": {
+                        "name": "Ytterligare inställningar",
+                        "data": {
+                            "cover_movement_stagger_delay": "Fördröjning mellan persienner:"
+                        },
+                        "data_description": {
+                            "cover_movement_stagger_delay": "Fördröjning i sekunder mellan att starta en persiennrörelse och nästa inom samma automationsiteration. Sätt 0 för att inaktivera fördröjningen."
+                        }
+                    },
                     "section_window_sensors": {
                         "name": "Fönstersensorer"
                     }

@@ -92,8 +92,17 @@
             },
             "5": {
                 "title": "Smart Cover Automation - Passo 5 di 6",
-                "description": "Attiva la protezione anti-blocco configurando **sensori finestra** per ciascuna tapparella (opzionale). Se un sensore finestra associato a una tapparella segnala che la finestra è aperta, la tapparella non verrà chiusa.",
+                "description": "Configura **impostazioni aggiuntive** e **sensori finestra** opzionali per ciascuna tapparella. I sensori finestra attivano la protezione anti-blocco: se un sensore associato segnala una finestra aperta, la tapparella non verrà chiusa.",
                 "sections": {
+                    "section_additional_settings": {
+                        "name": "Impostazioni aggiuntive",
+                        "data": {
+                            "cover_movement_stagger_delay": "Ritardo sfalsato tra tapparelle:"
+                        },
+                        "data_description": {
+                            "cover_movement_stagger_delay": "Ritardo in secondi tra l'avvio del movimento di una tapparella e il successivo nella stessa iterazione di automazione. Imposta 0 per disattivare lo sfalsamento."
+                        }
+                    },
                     "section_window_sensors": {
                         "name": "Sensori finestra"
                     }

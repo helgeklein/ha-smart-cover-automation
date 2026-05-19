@@ -92,8 +92,17 @@
             },
             "5": {
                 "title": "智能遮阳自动化 - 第 5 步,共 6 步",
-                "description": "通过为每个遮阳设备配置**窗户传感器**来启用防夹保护（可选）。如果与遮阳设备关联的任何窗户传感器报告窗户已打开，该遮阳设备将不会关闭。",
+                "description": "为每个遮阳设备配置**附加设置**和可选的**窗户传感器**。窗户传感器可启用防夹保护：如果关联传感器报告窗户已打开，则不会关闭该遮阳设备。",
                 "sections": {
+                    "section_additional_settings": {
+                        "name": "附加设置",
+                        "data": {
+                            "cover_movement_stagger_delay": "遮阳设备之间的错峰延迟："
+                        },
+                        "data_description": {
+                            "cover_movement_stagger_delay": "在同一轮自动化迭代中，启动一个遮阳设备动作到下一个动作之间的延迟秒数。设置为 0 可禁用错峰。"
+                        }
+                    },
                     "section_window_sensors": {
                         "name": "窗户传感器"
                     }

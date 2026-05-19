@@ -165,6 +165,11 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
         await self._automation_state_store.async_remove()
 
+    def cancel_pending_cover_executions(self) -> None:
+        """Cancel queued staggered cover executions for this coordinator."""
+
+        self._automation_engine.cancel_pending_cover_executions()
+
     @property
     def automatic_reopening_mode(self) -> ReopeningMode:
         """Get current automatic reopening mode."""

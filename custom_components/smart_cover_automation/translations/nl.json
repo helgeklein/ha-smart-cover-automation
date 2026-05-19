@@ -92,8 +92,17 @@
             },
             "5": {
                 "title": "Smart Cover Automation - Stap 5 van 6",
-                "description": "Schakel de blokkeerbeveiliging in door **raamsensoren** voor elk rolluik te configureren (optioneel). Als een raamsensor die aan een rolluik is gekoppeld meldt dat het raam openstaat, wordt het rolluik niet gesloten.",
+                "description": "Configureer **extra instellingen** en optionele **raamsensoren** voor elk rolluik. Raamsensoren activeren blokkeerbeveiliging: als een gekoppelde sensor meldt dat een raam openstaat, wordt het rolluik niet gesloten.",
                 "sections": {
+                    "section_additional_settings": {
+                        "name": "Extra instellingen",
+                        "data": {
+                            "cover_movement_stagger_delay": "Verspreide vertraging tussen rolluiken:"
+                        },
+                        "data_description": {
+                            "cover_movement_stagger_delay": "Vertraging in seconden tussen het starten van de ene rolluikbeweging en de volgende binnen dezelfde automatiseringsiteratie. Stel 0 in om spreiding uit te schakelen."
+                        }
+                    },
                     "section_window_sensors": {
                         "name": "Raamsensoren"
                     }

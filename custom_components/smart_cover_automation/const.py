@@ -225,6 +225,7 @@ STEP_3_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
 STEP_3_SECTION_EVENING_MAX_CLOSURE: Final[str] = "section_evening_max_closure"
 STEP_4_SECTION_TILT_DAY: Final[str] = "section_tilt_day"
 STEP_4_SECTION_TILT_NIGHT: Final[str] = "section_tilt_night"
+STEP_5_SECTION_ADDITIONAL_SETTINGS: Final[str] = "section_additional_settings"
 STEP_5_SECTION_WINDOW_SENSORS: Final[str] = "section_window_sensors"
 STEP_6_SECTION_TIME_RANGE: Final[str] = "section_time_range"
 STEP_6_SECTION_CLOSE_AFTER_SUNSET: Final[str] = "section_close_after_sunset"
@@ -250,6 +251,7 @@ COVER_POS_FULLY_CLOSED: Final = 0
 
 # Coordinator
 UPDATE_INTERVAL: Final = timedelta(seconds=60)
+MAX_COVER_MOVEMENT_STAGGER_DELAY_SECONDS: Final[int] = 3600
 SUNSET_CLOSING_WINDOW_MINUTES: Final[int] = 10  # Duration of the evening closure window
 
 # Logbook service/translation keys

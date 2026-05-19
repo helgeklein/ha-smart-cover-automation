@@ -699,7 +699,7 @@ class TestFlowHelperStep4TiltSchema:
     def test_build_schema_step_5_omits_window_sensor_section_when_entity_helper_returns_empty(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Step 5 should omit the optional window sensor section when no per-cover entity fields exist."""
+        """Step 5 should still expose additional settings even without window sensor fields."""
 
         monkeypatch.setattr(FlowHelper, "_build_schema_cover_entities", lambda covers, suffix, defaults: {})
 
@@ -709,4 +709,5 @@ class TestFlowHelperStep4TiltSchema:
         schema = FlowHelper.build_schema_step_5(covers, defaults)
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
 
+        assert const.STEP_5_SECTION_ADDITIONAL_SETTINGS in schema_keys
         assert const.STEP_5_SECTION_WINDOW_SENSORS not in schema_keys

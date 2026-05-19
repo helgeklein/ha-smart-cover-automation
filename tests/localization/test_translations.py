@@ -222,6 +222,27 @@ def test_translation_has_step_4_tilt_keys(language_code: str) -> None:
 
 
 @pytest.mark.parametrize("language_code", _get_available_languages())
+def test_translation_has_step_5_additional_settings_keys(language_code: str) -> None:
+    """Test that step 5 additional-settings labels and descriptions are translated in every language."""
+
+    data = _load_translations(language_code)
+    section = (
+        data.get(const.HA_OPTIONS, {}).get("step", {}).get("5", {}).get("sections", {}).get(const.STEP_5_SECTION_ADDITIONAL_SETTINGS, {})
+    )
+    section_data = section.get("data", {})
+    section_descriptions = section.get("data_description", {})
+    expected_fields = {ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value}
+
+    missing_labels = expected_fields - set(section_data.keys())
+    missing_descriptions = expected_fields - set(section_descriptions.keys())
+
+    assert not missing_labels, f"Missing step 5 additional-settings labels in {language_code}.json: {sorted(missing_labels)}"
+    assert not missing_descriptions, (
+        f"Missing step 5 additional-settings descriptions in {language_code}.json: {sorted(missing_descriptions)}"
+    )
+
+
+@pytest.mark.parametrize("language_code", _get_available_languages())
 def test_translation_file_is_valid_json(language_code: str) -> None:
     """Test that each translation file contains valid, parseable JSON.
 

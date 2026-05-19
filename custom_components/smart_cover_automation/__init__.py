@@ -675,6 +675,7 @@ async def async_unload_entry(
     try:
         if hasattr(entry, "runtime_data") and entry.runtime_data:
             coordinator = entry.runtime_data.coordinator
+            coordinator.cancel_pending_cover_executions()
             persist_result = coordinator.async_persist_runtime_state()
             if isawaitable(persist_result):
                 await persist_result
