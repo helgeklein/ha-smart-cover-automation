@@ -97,7 +97,7 @@
                     "section_additional_settings": {
                         "name": "Zusätzliche Einstellungen",
                         "data": {
-                            "cover_movement_stagger_delay": "Staffelungsverzögerung zwischen Rollläden:"
+                            "cover_movement_stagger_delay": "Verzögerung zwischen Rollläden:"
                         },
                         "data_description": {
                             "cover_movement_stagger_delay": "Verzögerung in Sekunden zwischen dem Start einer Rollladenbewegung und der nächsten innerhalb derselben Automatisierungsiteration. 0 deaktiviert die Staffelung."

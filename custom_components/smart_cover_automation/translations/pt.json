@@ -97,7 +97,7 @@
                     "section_additional_settings": {
                         "name": "Definições adicionais",
                         "data": {
-                            "cover_movement_stagger_delay": "Atraso escalonado entre persianas:"
+                            "cover_movement_stagger_delay": "Atraso entre persianas:"
                         },
                         "data_description": {
                             "cover_movement_stagger_delay": "Atraso em segundos entre iniciar o movimento de uma persiana e a seguinte dentro da mesma iteração de automação. Defina 0 para desativar o escalonamento."

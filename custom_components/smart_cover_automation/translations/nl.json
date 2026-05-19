@@ -97,7 +97,7 @@
                     "section_additional_settings": {
                         "name": "Extra instellingen",
                         "data": {
-                            "cover_movement_stagger_delay": "Verspreide vertraging tussen rolluiken:"
+                            "cover_movement_stagger_delay": "Vertraging tussen rolluiken:"
                         },
                         "data_description": {
                             "cover_movement_stagger_delay": "Vertraging in seconden tussen het starten van de ene rolluikbeweging en de volgende binnen dezelfde automatiseringsiteratie. Stel 0 in om spreiding uit te schakelen."

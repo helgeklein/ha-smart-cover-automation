@@ -97,7 +97,7 @@
                     "section_additional_settings": {
                         "name": "Dodatkowe ustawienia",
                         "data": {
-                            "cover_movement_stagger_delay": "Opóźnienie kaskadowe między roletami:"
+                            "cover_movement_stagger_delay": "Opóźnienie między roletami:"
                         },
                         "data_description": {
                             "cover_movement_stagger_delay": "Opóźnienie w sekundach między rozpoczęciem ruchu jednej rolety a następnej w tej samej iteracji automatyzacji. Ustaw 0, aby wyłączyć kaskadowanie."

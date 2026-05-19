@@ -97,7 +97,7 @@
                     "section_additional_settings": {
                         "name": "Paramètres supplémentaires",
                         "data": {
-                            "cover_movement_stagger_delay": "Délai échelonné entre volets :"
+                            "cover_movement_stagger_delay": "Délai entre volets :"
                         },
                         "data_description": {
                             "cover_movement_stagger_delay": "Délai en secondes entre le démarrage d'un mouvement de volet et le suivant au cours de la même itération d'automatisation. Réglez sur 0 pour désactiver l'échelonnement."

@@ -97,7 +97,7 @@
                     "section_additional_settings": {
                         "name": "Impostazioni aggiuntive",
                         "data": {
-                            "cover_movement_stagger_delay": "Ritardo sfalsato tra tapparelle:"
+                            "cover_movement_stagger_delay": "Ritardo tra tapparelle:"
                         },
                         "data_description": {
                             "cover_movement_stagger_delay": "Ritardo in secondi tra l'avvio del movimento di una tapparella e il successivo nella stessa iterazione di automazione. Imposta 0 per disattivare lo sfalsamento."
