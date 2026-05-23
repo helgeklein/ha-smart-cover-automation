@@ -76,6 +76,7 @@ class LogSeverity(Enum):
 
 DOMAIN: Final[str] = "smart_cover_automation"
 INTEGRATION_NAME: Final[str] = "Smart Cover Automation"
+DEFAULT_COVER_AZIMUTH: Final[int] = 180
 
 # Per-cover configuration key suffixes
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)

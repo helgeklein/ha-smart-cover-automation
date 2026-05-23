@@ -125,7 +125,7 @@ class FlowHelper:
             raw = defaults.get(key)
             default_value = to_int_or_none(raw)
             if default_value is None:
-                default_value = 180
+                default_value = const.DEFAULT_COVER_AZIMUTH
 
             # Configure a selector
             value_selector = selector.NumberSelector(
@@ -1313,6 +1313,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 azimuth_key = f"{cover}_{const.COVER_SFX_AZIMUTH}"
                 if azimuth_key in step_2_input:
                     self._config_data[azimuth_key] = int(step_2_input[azimuth_key])
+                    continue
+
+                current_azimuth = self._to_int(current_settings.get(azimuth_key))
+                if current_azimuth is None:
+                    current_azimuth = const.DEFAULT_COVER_AZIMUTH
+                self._config_data[azimuth_key] = current_azimuth
 
             sun_azimuth_tolerance_data = self._build_section_cover_settings(
                 user_input,
