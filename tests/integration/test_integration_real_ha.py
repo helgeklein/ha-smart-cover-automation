@@ -33,6 +33,7 @@ from custom_components.smart_cover_automation.const import (
     COVER_SFX_TILT_EXTERNAL_VALUE_DAY,
     COVER_SFX_TILT_MODE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
+    STEP_2_SECTION_AZIMUTH,
     STEP_4_SECTION_TILT_DAY,
     TiltMode,
 )
@@ -115,6 +116,12 @@ def _as_dict(result: Any) -> dict[str, Any]:
     """Convert a flow result TypedDict to a plain dict."""
 
     return cast(dict[str, Any], result)
+
+
+def _step_2_azimuth_input(azimuths: dict[str, float]) -> dict[str, Any]:
+    """Wrap step-2 azimuth data in the options-flow section payload."""
+
+    return {STEP_2_SECTION_AZIMUTH: azimuths}
 
 
 #
@@ -207,10 +214,12 @@ async def _run_options_flow(
     result = _as_dict(
         await hass.config_entries.options.async_configure(
             result["flow_id"],
-            user_input={
-                f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180.0,
-                f"{TEST_COVER_2}_{COVER_SFX_AZIMUTH}": 90.0,
-            },
+            user_input=_step_2_azimuth_input(
+                {
+                    f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180.0,
+                    f"{TEST_COVER_2}_{COVER_SFX_AZIMUTH}": 90.0,
+                }
+            ),
         )
     )
     assert result["type"] is FlowResultType.FORM

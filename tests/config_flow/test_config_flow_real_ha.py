@@ -27,6 +27,7 @@ from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
     COVER_SFX_AZIMUTH,
     INTEGRATION_NAME,
+    STEP_2_SECTION_AZIMUTH,
     TiltMode,
 )
 
@@ -89,6 +90,12 @@ def _as_dict(result: ConfigFlowResult) -> dict[str, Any]:
     """Convert flow result TypedDict to plain dict for test assertions."""
 
     return cast(dict[str, Any], result)
+
+
+def _step_2_azimuth_input(azimuths: dict[str, float]) -> dict[str, Any]:
+    """Wrap step-2 azimuth data in the options-flow section payload."""
+
+    return {STEP_2_SECTION_AZIMUTH: azimuths}
 
 
 #
@@ -234,7 +241,7 @@ async def _step_through_options_flow(
         result = _as_dict(
             await hass.config_entries.options.async_configure(
                 result["flow_id"],
-                user_input=inputs[i],
+                user_input=_step_2_azimuth_input(inputs[i]) if step_id == "2" else inputs[i],
             )
         )
         if result["type"] is FlowResultType.CREATE_ENTRY:
@@ -411,7 +418,7 @@ class TestOptionsFlow:
         result = _as_dict(
             await hass.config_entries.options.async_configure(
                 result["flow_id"],
-                user_input={f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180.0},
+                user_input=_step_2_azimuth_input({f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180.0}),
             )
         )
         assert result["type"] is FlowResultType.FORM
