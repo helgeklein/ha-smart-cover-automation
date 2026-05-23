@@ -326,10 +326,12 @@ class AutomationEngine:
         target_date = dt_util.as_local(target_datetime).date()
 
         try:
-            sun_azimuth, sun_elevation = self._ha_interface.get_sun_data_for_datetime(target_datetime)
+            sun_samples = self._ha_interface.get_sun_samples_from_sunrise_until(target_datetime)
         except Exception as err:
             self._logger.error("Unexpected error getting future sun data: %s", err)
             return (None, f"Blocked time range started; pre-close skipped because future sun data is unavailable: {err}")
+
+        sun_azimuth, sun_elevation = sun_samples[-1]
 
         weather_messages: list[str] = []
 
@@ -338,22 +340,21 @@ class AutomationEngine:
         weather_condition: str | None = None
 
         try:
-            temp_max, temp_min = await self._ha_interface.get_daily_temperature_extrema_for_date(
+            temp_max, temp_min, weather_condition = await self._ha_interface.get_forecast_snapshot_for_date(
                 self.resolved.weather_entity_id,
                 target_date,
+                log_context=f"next-morning pre-close forecast for {target_date.isoformat()}",
             )
+            if temp_max is None:
+                weather_messages.append("Forecast temperature unavailable for the next blocked-time exit")
+            if weather_condition is None:
+                weather_messages.append("Forecast sunshine state unavailable for the next blocked-time exit")
         except InvalidSensorReadingError, WeatherEntityNotFoundError:
             weather_messages.append("Forecast temperature unavailable for the next blocked-time exit")
-        except Exception as err:
-            self._logger.error(f"Unexpected error getting forecast temperatures for blocked-time pre-close: {err}")
-            weather_messages.append("Forecast temperature unavailable for the next blocked-time exit")
-
-        try:
-            weather_condition = await self._ha_interface.get_forecast_condition_for_date(self.resolved.weather_entity_id, target_date)
-        except InvalidSensorReadingError, WeatherEntityNotFoundError:
             weather_messages.append("Forecast sunshine state unavailable for the next blocked-time exit")
         except Exception as err:
-            self._logger.error(f"Unexpected error getting forecast condition for blocked-time pre-close: {err}")
+            self._logger.error(f"Unexpected error getting forecast snapshot for blocked-time pre-close: {err}")
+            weather_messages.append("Forecast temperature unavailable for the next blocked-time exit")
             weather_messages.append("Forecast sunshine state unavailable for the next blocked-time exit")
 
         temp_hot: bool | None = None
@@ -377,6 +378,8 @@ class AutomationEngine:
                 evening_closure=False,
                 post_evening_closure=False,
                 ignore_weather_external_controls=True,
+                sun_samples=sun_samples,
+                pre_closing=True,
             ),
             message,
         )

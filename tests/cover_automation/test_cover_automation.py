@@ -1127,6 +1127,29 @@ class TestCalculateSunHitting:
         assert sun_hitting is False
         assert diff == 0.0
 
+    def test_calculate_effective_sun_hitting_uses_pre_close_samples(self, cover_automation, mock_resolved_config):
+        """Pre-close sun-path samples should count a future morning hit before the blocked range ends."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        sensor_data = make_sensor_data(
+            sun_azimuth=250.0,
+            sun_elevation=45.0,
+            temp_max=28.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=False,
+            sun_samples=((120.0, 5.0), (180.0, 20.0), (250.0, 45.0)),
+            pre_closing=True,
+        )
+
+        sun_hitting, diff = cover_automation._calculate_effective_sun_hitting(sensor_data, cover_azimuth=180.0)
+
+        assert sun_hitting is True
+        assert diff == 0.0
+
 
 class TestCalculateAngleDifference:
     """Test _calculate_angle_difference static method."""
@@ -1554,6 +1577,60 @@ class TestCalculateDesiredPosition:
         position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
         assert position == 100
         assert reason == CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
+
+    def test_calculate_desired_position_pre_closing_never_opens_evening_closed_cover(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_logger
+    ):
+        """Pre-closing should never reopen or partially open a cover that is already more closed."""
+
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=False,
+            pre_closing=True,
+        )
+
+        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=0)
+
+        assert position == 0
+        assert reason is None
+        mock_logger.info.assert_any_call(
+            "[cover.test] Current position: 0%, desired position: 0%, keeping current position because pre-closing never opens covers"
+        )
+
+    def test_calculate_desired_position_pre_closing_skips_reopening_when_conditions_do_not_match(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_logger
+    ):
+        """Pre-closing should hold position instead of using normal reopening behavior."""
+
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=90.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+            pre_closing=True,
+        )
+
+        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=30)
+
+        assert position == 30
+        assert reason is None
+        mock_logger.info.assert_any_call(
+            "[cover.test] Current position: 30%, desired position: 30%, keeping current position because pre-closing only closes covers"
+        )
 
     def test_calculate_desired_position_with_max_closure_limit(self, cover_automation, mock_resolved_config, basic_config):
         """Test desired position with max closure limit."""

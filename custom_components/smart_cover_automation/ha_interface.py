@@ -35,6 +35,7 @@ from . import const
 from .log import Log
 
 MIN_TEMPERATURE_CUTOVER_OFFSET = timedelta(minutes=30)
+PRE_CLOSE_SUN_SAMPLE_INTERVAL = timedelta(minutes=15)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -334,6 +335,24 @@ class HomeAssistantInterface:
             location.solar_elevation(local_datetime, observer_elevation=elevation),
         )
 
+    def get_sun_samples_from_sunrise_until(self, target_datetime: datetime) -> tuple[tuple[float, float], ...]:
+        """Return sampled sun positions from local sunrise until a target datetime."""
+
+        local_target = dt_util.as_local(target_datetime)
+        sunrise_time = get_astral_event_date(self.hass, SUN_EVENT_SUNRISE, local_target.date())
+        if sunrise_time is None or sunrise_time >= local_target:
+            sample_time = local_target
+        else:
+            sample_time = sunrise_time
+
+        sun_samples: list[tuple[float, float]] = []
+        while sample_time < local_target:
+            sun_samples.append(self.get_sun_data_for_datetime(sample_time))
+            sample_time += PRE_CLOSE_SUN_SAMPLE_INTERVAL
+
+        sun_samples.append(self.get_sun_data_for_datetime(target_datetime))
+        return tuple(sun_samples)
+
     #
     # get_sun_state
     #
@@ -493,6 +512,49 @@ class HomeAssistantInterface:
 
         return condition
 
+    async def get_forecast_snapshot_for_date(
+        self,
+        entity_id: str,
+        target_date: date,
+        *,
+        log_context: str | None = None,
+    ) -> tuple[float | None, float | None, str | None]:
+        """Get one explicit-date forecast snapshot with a single forecast service call."""
+
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            raise WeatherEntityNotFoundError(entity_id)
+
+        forecast_list = await self._get_forecast_list(entity_id, log_context=log_context)
+        if forecast_list is None:
+            raise InvalidSensorReadingError(entity_id, "Forecast unavailable")
+
+        label = target_date.isoformat()
+        forecast_result = self._find_day_forecast_for_date(forecast_list, target_date, label)
+        if forecast_result is None:
+            raise InvalidSensorReadingError(entity_id, "Forecast unavailable")
+
+        _, day_forecast = forecast_result
+        max_temp = self._extract_max_temperature(day_forecast)
+        if max_temp is None:
+            self._logger.warning("Could not extract forecast maximum temperature from %s for %s. max=%s", entity_id, label, max_temp)
+
+        min_temp = self._extract_min_temperature(day_forecast)
+        if min_temp is None:
+            self._logger.warning(
+                "Could not extract forecast minimum temperature from %s for %s. Continuing with daily max only.",
+                entity_id,
+                label,
+            )
+
+        condition = self._extract_forecast_condition(day_forecast)
+
+        return (
+            self._convert_forecast_temperature_to_celsius(state, max_temp) if max_temp is not None else None,
+            self._convert_forecast_temperature_to_celsius(state, min_temp) if min_temp is not None else None,
+            condition,
+        )
+
     #
     # get_max_temperature
     #
@@ -565,7 +627,7 @@ class HomeAssistantInterface:
     #
     # _get_day_forecast
     #
-    async def _get_forecast_list(self, entity_id: str) -> list[Any] | None:
+    async def _get_forecast_list(self, entity_id: str, log_context: str | None = None) -> list[Any] | None:
         """Return the validated daily forecast list for a weather entity."""
 
         try:
@@ -574,7 +636,10 @@ class HomeAssistantInterface:
                 Platform.WEATHER, SERVICE_GET_FORECASTS, service_data, blocking=True, return_response=True
             )
 
-            self._logger.debug(f"Weather forecast service response for {entity_id}: {response}")
+            if log_context is None:
+                self._logger.debug(f"Weather forecast service response for {entity_id}: {response}")
+            else:
+                self._logger.debug(f"Weather forecast service response for {entity_id} ({log_context}): {response}")
 
             if not (response and isinstance(response, dict) and entity_id in response):
                 self._logger.warning(f"Invalid or empty forecast response for {entity_id}: {response}")

@@ -62,6 +62,8 @@ class SensorData:
     has_valid_external_evening_closure_time: bool = True
     has_valid_external_morning_opening_time: bool = True
     ignore_weather_external_controls: bool = False
+    sun_samples: tuple[tuple[float, float], ...] | None = None
+    pre_closing: bool = False
 
 
 @dataclass(slots=True)
@@ -231,7 +233,7 @@ class CoverAutomation:
             manual_override_just_expired = True
             self._cover_pos_history_mgr.clear_manual_override_blocked(self.entity_id)
 
-        sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
+        sun_hitting, sun_azimuth_difference = self._calculate_effective_sun_hitting(sensor_data, cover_azimuth)
         cover_state.sun_hitting = sun_hitting
         cover_state.sun_azimuth_diff = round(sun_azimuth_difference, 1)
 
@@ -700,6 +702,26 @@ class CoverAutomation:
 
         return sun_hitting, sun_azimuth_difference
 
+    def _calculate_effective_sun_hitting(self, sensor_data: SensorData, cover_azimuth: float) -> tuple[bool, float]:
+        """Calculate whether sun hits this cover for the current automation mode."""
+
+        if not sensor_data.sun_samples:
+            return self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
+
+        best_hit_difference: float | None = None
+        best_overall_difference: float | None = None
+        for sample_azimuth, sample_elevation in sensor_data.sun_samples:
+            sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sample_azimuth, sample_elevation, cover_azimuth)
+            if best_overall_difference is None or sun_azimuth_difference < best_overall_difference:
+                best_overall_difference = sun_azimuth_difference
+            if sun_hitting and (best_hit_difference is None or sun_azimuth_difference < best_hit_difference):
+                best_hit_difference = sun_azimuth_difference
+
+        if best_hit_difference is not None:
+            return True, best_hit_difference
+
+        return False, best_overall_difference if best_overall_difference is not None else 180.0
+
     #
     # _calculate_angle_difference
     #
@@ -771,8 +793,15 @@ class CoverAutomation:
                 # No lockout - close the cover
                 max_closure_limit = self._get_cover_closure_limit(get_max=True)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
-                desired_pos_friendly_name = "closing for heat protection"
-                movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
+                if sensor_data.pre_closing and desired_pos >= current_pos:
+                    desired_pos = current_pos
+                    desired_pos_friendly_name = "keeping current position because pre-closing never opens covers"
+                    movement_reason = None
+                else:
+                    desired_pos_friendly_name = (
+                        "pre-closing for heat protection" if sensor_data.pre_closing else "closing for heat protection"
+                    )
+                    movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
         elif heat_protection_state is None:
             self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             desired_pos = current_pos
@@ -780,7 +809,12 @@ class CoverAutomation:
             movement_reason = None
         else:
             # Let light in mode - check if opening block after evening closure is active
-            if self._has_missing_external_morning_opening_time(sensor_data):
+            if sensor_data.pre_closing:
+                self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+                desired_pos = current_pos
+                desired_pos_friendly_name = "keeping current position because pre-closing only closes covers"
+                movement_reason = None
+            elif self._has_missing_external_morning_opening_time(sensor_data):
                 self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                 desired_pos = current_pos
                 desired_pos_friendly_name = "keeping current position because external morning opening has no valid time"
