@@ -29,7 +29,15 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Step 2 of 6",
-                "description": "Configure the **azimuth** (direction) for each cover (required).\n\n(0°=North, 90°=East, 180°=South, 270°=West)"
+                "description": "Configure the **azimuth** (direction) for each cover. You can also add optional per-cover **sun azimuth tolerance** overrides.\n\n(0°=North, 90°=East, 180°=South, 270°=West)",
+                "sections": {
+                    "section_azimuth": {
+                        "name": "Cover azimuth (per-cover)"
+                    },
+                    "section_sun_azimuth_tolerance": {
+                        "name": "Sun azimuth tolerance overrides (per-cover)"
+                    }
+                }
             },
             "3": {
                 "title": "Smart Cover Automation - Step 3 of 6",

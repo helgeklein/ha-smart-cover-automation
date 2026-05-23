@@ -695,6 +695,28 @@ class TestCheckManualOverride:
 class TestCalculateSunHitting:
     """Test _calculate_sun_hitting method."""
 
+    def test_calculate_sun_hitting_uses_per_cover_tolerance_override(self, cover_automation, mock_resolved_config):
+        """Test that per-cover tolerance overrides the global tolerance."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] = 10
+
+        sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=195.0, sun_elevation=45.0, cover_azimuth=180.0)
+        assert sun_hitting is False
+        assert diff == 15.0
+
+    def test_calculate_sun_hitting_falls_back_when_per_cover_tolerance_invalid(self, cover_automation, mock_resolved_config):
+        """Test that invalid per-cover tolerance falls back to the global tolerance."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] = "invalid"
+
+        sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=195.0, sun_elevation=45.0, cover_azimuth=180.0)
+        assert sun_hitting is True
+        assert diff == 15.0
+
     def test_calculate_sun_hitting_direct_hit(self, cover_automation, mock_resolved_config):
         """Test when sun is directly hitting the window."""
         mock_resolved_config.sun_elevation_threshold = 10.0

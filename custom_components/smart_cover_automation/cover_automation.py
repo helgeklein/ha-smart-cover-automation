@@ -327,6 +327,15 @@ class CoverAutomation:
             return None
         return cover_azimuth
 
+    def _get_cover_sun_azimuth_tolerance(self) -> int:
+        """Get per-cover sun azimuth tolerance or fall back to the global setting."""
+
+        cover_tolerance_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}")
+        cover_tolerance = to_int_or_none(cover_tolerance_raw)
+        if cover_tolerance is None:
+            return self.resolved.sun_azimuth_tolerance
+        return cover_tolerance
+
     #
     # _validate_cover_state
     #
@@ -669,8 +678,9 @@ class CoverAutomation:
         """
 
         sun_azimuth_difference = self._calculate_angle_difference(sun_azimuth, cover_azimuth)
+        sun_azimuth_tolerance = self._get_cover_sun_azimuth_tolerance()
         if sun_elevation >= self.resolved.sun_elevation_threshold:
-            sun_hitting = sun_azimuth_difference < self.resolved.sun_azimuth_tolerance
+            sun_hitting = sun_azimuth_difference < sun_azimuth_tolerance
         else:
             sun_hitting = False
 
