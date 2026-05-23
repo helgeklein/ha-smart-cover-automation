@@ -14,7 +14,7 @@ from homeassistant.helpers import selector  # pyright: ignore[reportMissingImpor
 from . import const
 from .config import CONF_SPECS, ConfKeys, ResolvedConfig, resolve
 from .log import Log
-from .util import to_float_or_none, to_int_or_none
+from .util import to_int_or_none
 
 
 #
@@ -123,7 +123,7 @@ class FlowHelper:
 
             # Get the default value
             raw = defaults.get(key)
-            default_value = to_float_or_none(raw)
+            default_value = to_int_or_none(raw)
             if default_value is None:
                 default_value = 180
 
@@ -132,7 +132,7 @@ class FlowHelper:
                 selector.NumberSelectorConfig(
                     min=0,
                     max=359,
-                    step=0.1,
+                    step=1,
                     unit_of_measurement="°",
                     mode=selector.NumberSelectorMode.BOX,
                 )
@@ -1272,7 +1272,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             for cover in covers_in_input:
                 azimuth_key = f"{cover}_{const.COVER_SFX_AZIMUTH}"
                 if azimuth_key in step_2_input:
-                    self._config_data[azimuth_key] = float(step_2_input[azimuth_key])
+                    self._config_data[azimuth_key] = int(step_2_input[azimuth_key])
 
             sun_azimuth_tolerance_data = self._build_section_cover_settings(
                 user_input,

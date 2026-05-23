@@ -32,10 +32,10 @@
                 "description": "Configure the **azimuth** (direction) for each cover. You can also add optional per-cover **sun azimuth tolerance** overrides.\n\n(0°=North, 90°=East, 180°=South, 270°=West)",
                 "sections": {
                     "section_azimuth": {
-                        "name": "Cover azimuth (per-cover)"
+                        "name": "Cover azimuth"
                     },
                     "section_sun_azimuth_tolerance": {
-                        "name": "Sun azimuth tolerance overrides (per-cover)"
+                        "name": "Sun azimuth tolerance (per-cover)"
                     }
                 }
             },
