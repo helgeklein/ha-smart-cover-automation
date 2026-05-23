@@ -1227,6 +1227,31 @@ class TestCalculateDesiredPosition:
         assert position == 100  # Fully open
         assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
 
+    def test_calculate_desired_position_does_not_let_light_in_below_horizon(self, cover_automation, mock_logger, mock_resolved_config):
+        """Default opening to let light in should not run when the sun is below the horizon."""
+
+        mock_resolved_config.covers_min_closure = 100
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=-5.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+
+        assert position == 50
+        assert reason is None
+        assert lockout_active is False
+        mock_logger.info.assert_any_call(
+            "[cover.test] Current position: 50%, desired position: 50%, keeping current position because the sun is below the horizon"
+        )
+
     def test_calculate_desired_position_holds_when_weather_state_is_unknown_and_sun_hitting(
         self, cover_automation, mock_cover_pos_history_mgr
     ):
@@ -1658,7 +1683,32 @@ class TestCalculateDesiredPosition:
         assert position == 30
         assert reason is None
         mock_logger.info.assert_any_call(
-            "[cover.test] Current position: 30%, desired position: 30%, keeping current position because pre-closing only closes covers"
+            "[cover.test] Current position: 30%, desired position: 30%, keeping current position because pre-closing conditions don't apply"
+        )
+
+    def test_calculate_desired_position_pre_closing_keeps_fully_open_cover(self, cover_automation, mock_cover_pos_history_mgr, mock_logger):
+        """Pre-closing should use the same no-op reason when a fully open cover does not need closing."""
+
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=90.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+            pre_closing=True,
+        )
+
+        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=100)
+
+        assert position == 100
+        assert reason is None
+        mock_logger.info.assert_any_call(
+            "[cover.test] Current position: 100%, desired position: 100%, keeping current position because pre-closing conditions don't apply"
         )
 
     def test_calculate_desired_position_with_max_closure_limit(self, cover_automation, mock_resolved_config, basic_config):

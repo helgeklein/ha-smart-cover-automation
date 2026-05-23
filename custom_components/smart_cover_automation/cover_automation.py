@@ -814,11 +814,11 @@ class CoverAutomation:
             desired_pos_friendly_name = "keeping current position because required weather data is unavailable"
             movement_reason = None
         else:
-            # Let light in mode - check if opening block after evening closure is active
+            # Heat-protection closing does not apply; handle pre-closing no-op or reopening logic.
             if sensor_data.pre_closing:
                 self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                 desired_pos = current_pos
-                desired_pos_friendly_name = "keeping current position because pre-closing only closes covers"
+                desired_pos_friendly_name = "keeping current position because pre-closing conditions don't apply"
                 movement_reason = None
             elif self._has_missing_external_morning_opening_time(sensor_data):
                 self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
@@ -842,8 +842,14 @@ class CoverAutomation:
                     and self._is_passive_reopening_eligible(current_pos)
                 )
                 reopening_allowed = reopening_mode == const.ReopeningMode.ACTIVE or (passive_reopening_eligible)
+                default_opening_would_let_light_in = last_automation_closing_reason is None and not manual_override_just_expired
 
-                if reopening_allowed and self._should_delay_heat_protection_reopen(last_automation_closing_reason):
+                if default_opening_would_let_light_in and sensor_data.sun_elevation <= 0:
+                    self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+                    desired_pos = current_pos
+                    desired_pos_friendly_name = "keeping current position because the sun is below the horizon"
+                    movement_reason = None
+                elif reopening_allowed and self._should_delay_heat_protection_reopen(last_automation_closing_reason):
                     delay_minutes = self.resolved.tilt_open_to_cover_open_delay
                     if delayed_reopen_action is None:
                         self._cover_pos_history_mgr.set_delayed_reopen_action(

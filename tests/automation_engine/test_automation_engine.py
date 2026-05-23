@@ -596,7 +596,7 @@ class TestGatherSensorData:
                 message = await engine._run_blocked_time_range_pre_close({"cover.test": MagicMock()}, result)
 
         mock_process_covers.assert_awaited_once()
-        assert "evaluating forecast-based pre-close" in message
+        assert "ran forecast-based pre-close evaluation" in message
 
     async def test_run_blocked_time_range_pre_close_returns_error_message_when_snapshot_missing(self, mock_ha_interface, mock_logger):
         """Blocked-time pre-close should return the sensor-build error message unchanged."""

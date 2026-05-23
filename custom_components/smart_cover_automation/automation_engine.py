@@ -320,7 +320,7 @@ class AutomationEngine:
 
         self._logger.debug("Pre-closure weather conditions met, activating...")
         await self._process_covers(tuple(self.resolved.covers), cover_states, pre_close_sensor_data, result)
-        return "Blocked time range started; evaluating forecast-based pre-close for next-morning heat protection"
+        return "Blocked time range started; ran forecast-based pre-close evaluation for next-morning heat protection"
 
     async def _build_blocked_time_range_pre_close_sensor_data(self) -> tuple[SensorData | None, str]:
         """Build the forecast-only sensor snapshot used for blocked-time pre-close."""
