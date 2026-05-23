@@ -61,6 +61,9 @@ class SensorData:
     post_evening_closure: bool
     has_valid_external_evening_closure_time: bool = True
     has_valid_external_morning_opening_time: bool = True
+    ignore_weather_external_controls: bool = False
+    sun_samples: tuple[tuple[float, float], ...] | None = None
+    pre_closing: bool = False
 
 
 @dataclass(slots=True)
@@ -230,7 +233,7 @@ class CoverAutomation:
             manual_override_just_expired = True
             self._cover_pos_history_mgr.clear_manual_override_blocked(self.entity_id)
 
-        sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
+        sun_hitting, sun_azimuth_difference = self._calculate_effective_sun_hitting(sensor_data, cover_azimuth)
         cover_state.sun_hitting = sun_hitting
         cover_state.sun_azimuth_diff = round(sun_azimuth_difference, 1)
 
@@ -699,6 +702,26 @@ class CoverAutomation:
 
         return sun_hitting, sun_azimuth_difference
 
+    def _calculate_effective_sun_hitting(self, sensor_data: SensorData, cover_azimuth: float) -> tuple[bool, float]:
+        """Calculate whether sun hits this cover for the current automation mode."""
+
+        if not sensor_data.sun_samples:
+            return self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
+
+        best_hit_difference: float | None = None
+        best_overall_difference: float | None = None
+        for sample_azimuth, sample_elevation in sensor_data.sun_samples:
+            sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sample_azimuth, sample_elevation, cover_azimuth)
+            if best_overall_difference is None or sun_azimuth_difference < best_overall_difference:
+                best_overall_difference = sun_azimuth_difference
+            if sun_hitting and (best_hit_difference is None or sun_azimuth_difference < best_hit_difference):
+                best_hit_difference = sun_azimuth_difference
+
+        if best_hit_difference is not None:
+            return True, best_hit_difference
+
+        return False, best_overall_difference if best_overall_difference is not None else 180.0
+
     #
     # _calculate_angle_difference
     #
@@ -770,16 +793,34 @@ class CoverAutomation:
                 # No lockout - close the cover
                 max_closure_limit = self._get_cover_closure_limit(get_max=True)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
-                desired_pos_friendly_name = "closing for heat protection"
-                movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
+                target_pre_closure_pos = desired_pos
+                if sensor_data.pre_closing and target_pre_closure_pos >= current_pos:
+                    desired_pos = current_pos
+                    if target_pre_closure_pos == current_pos:
+                        desired_pos_friendly_name = "keeping current position because it is already at the pre-closure position"
+                    else:
+                        desired_pos_friendly_name = (
+                            "keeping current position because it is already more closed than the pre-closure position"
+                        )
+                    movement_reason = None
+                else:
+                    desired_pos_friendly_name = (
+                        "pre-closing for heat protection" if sensor_data.pre_closing else "closing for heat protection"
+                    )
+                    movement_reason = CoverMovementReason.CLOSING_HEAT_PROTECTION
         elif heat_protection_state is None:
             self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             desired_pos = current_pos
             desired_pos_friendly_name = "keeping current position because required weather data is unavailable"
             movement_reason = None
         else:
-            # Let light in mode - check if opening block after evening closure is active
-            if self._has_missing_external_morning_opening_time(sensor_data):
+            # Heat-protection closing does not apply; handle pre-closing no-op or reopening logic.
+            if sensor_data.pre_closing:
+                self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+                desired_pos = current_pos
+                desired_pos_friendly_name = "keeping current position because pre-closing conditions don't apply"
+                movement_reason = None
+            elif self._has_missing_external_morning_opening_time(sensor_data):
                 self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                 desired_pos = current_pos
                 desired_pos_friendly_name = "keeping current position because external morning opening has no valid time"
@@ -801,8 +842,21 @@ class CoverAutomation:
                     and self._is_passive_reopening_eligible(current_pos)
                 )
                 reopening_allowed = reopening_mode == const.ReopeningMode.ACTIVE or (passive_reopening_eligible)
+                reopening_reason = self._get_opening_movement_reason(
+                    last_automation_closing_reason,
+                    manual_override_just_expired=manual_override_just_expired,
+                )
 
-                if reopening_allowed and self._should_delay_heat_protection_reopen(last_automation_closing_reason):
+                if (
+                    reopening_allowed
+                    and sensor_data.sun_elevation <= 0
+                    and reopening_reason != CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
+                ):
+                    self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+                    desired_pos = current_pos
+                    desired_pos_friendly_name = "keeping current position because the sun is below the horizon"
+                    movement_reason = None
+                elif reopening_allowed and self._should_delay_heat_protection_reopen(last_automation_closing_reason):
                     delay_minutes = self.resolved.tilt_open_to_cover_open_delay
                     if delayed_reopen_action is None:
                         self._cover_pos_history_mgr.set_delayed_reopen_action(
@@ -823,20 +877,14 @@ class CoverAutomation:
                             if current_pos == desired_pos
                             else "opening because delayed reopening after heat protection has expired"
                         )
-                        movement_reason = self._get_opening_movement_reason(
-                            last_automation_closing_reason,
-                            manual_override_just_expired=manual_override_just_expired,
-                        )
+                        movement_reason = reopening_reason
                 elif reopening_mode == const.ReopeningMode.ACTIVE:
                     self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = open_target
                     desired_pos_friendly_name = (
                         "already at the open target" if current_pos == desired_pos else "opening because closing conditions no longer apply"
                     )
-                    movement_reason = self._get_opening_movement_reason(
-                        last_automation_closing_reason,
-                        manual_override_just_expired=manual_override_just_expired,
-                    )
+                    movement_reason = reopening_reason
                 elif passive_reopening_eligible:
                     self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = open_target
@@ -845,10 +893,7 @@ class CoverAutomation:
                         if current_pos == desired_pos
                         else "opening because this cover was previously closed by automation"
                     )
-                    movement_reason = self._get_opening_movement_reason(
-                        last_automation_closing_reason,
-                        manual_override_just_expired=manual_override_just_expired,
-                    )
+                    movement_reason = reopening_reason
                 elif reopening_mode == const.ReopeningMode.PASSIVE:
                     self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = current_pos
@@ -920,6 +965,9 @@ class CoverAutomation:
         Returns:
             Effective hot-weather state for this cover.
         """
+
+        if sensor_data.ignore_weather_external_controls:
+            return sensor_data.temp_hot
 
         per_cover_key = f"{self.entity_id}_{const.COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"
         per_cover_override = self.config.get(per_cover_key)

@@ -34,6 +34,13 @@ class WeatherSnapshot:
 
 
 @dataclass(slots=True)
+class DisabledTimeRangeState:
+    """Tracks whether the current run is inside the blocked time range."""
+
+    was_active_last_run: bool = False
+
+
+@dataclass(slots=True)
 class ScheduledCoverExecution:
     """Tracks one pending delayed cover execution."""
 
@@ -81,6 +88,7 @@ class AutomationEngine:
 
         # Preserve the last successful weather inputs for temporary offline periods.
         self._weather_snapshot = WeatherSnapshot()
+        self._disabled_time_range_state = DisabledTimeRangeState()
         self._pending_cover_executions: dict[str, ScheduledCoverExecution] = {}
         self._schedule_sequence = 0
         self._run_generation = 0
@@ -194,6 +202,7 @@ class AutomationEngine:
             "automation_disabled_time_range": self.resolved.automation_disabled_time_range,
             "automation_disabled_time_range_start": self.resolved.automation_disabled_time_range_start.strftime("%H:%M:%S"),
             "automation_disabled_time_range_end": self.resolved.automation_disabled_time_range_end.strftime("%H:%M:%S"),
+            "automation_disabled_time_range_pre_close_enabled": self.resolved.automation_disabled_time_range_pre_close_enabled,
             "evening_closure_enabled": self.resolved.evening_closure_enabled,
             "evening_closure_mode": self.resolved.evening_closure_mode,
             "evening_closure_time": self.resolved.evening_closure_time.strftime("%H:%M:%S"),
@@ -215,12 +224,43 @@ class AutomationEngine:
         if is_locked:
             self._logger.warning(f"Cover lock active: {lock_mode}")
 
-        # Check global blocking conditions
+        in_disabled_period, period_string = self._in_time_period_automation_disabled()
+        blocked_time_range_started = in_disabled_period and not is_first_run and not self._disabled_time_range_state.was_active_last_run
+        startup_pre_close_window_active = is_first_run and self._is_in_blocked_time_range_pre_close_window()
+        self._disabled_time_range_state.was_active_last_run = in_disabled_period
+
+        if in_disabled_period:
+            self.cancel_pending_cover_executions()
+
+            if (
+                blocked_time_range_started or startup_pre_close_window_active
+            ) and self.resolved.automation_disabled_time_range_pre_close_enabled:
+                message = await self._run_blocked_time_range_pre_close(cover_states, result)
+                self._log_automation_result(message, const.LogSeverity.INFO)
+                return result
+
+            message = f"Automation is disabled for the current time period ({period_string}). Skipping actions"
+            self._log_automation_result(message, const.LogSeverity.DEBUG)
+            return result
+
         success, message, severity = self._check_global_conditions()
         if not success:
             self.cancel_pending_cover_executions()
             self._log_automation_result(message, severity)
             return result
+
+        await self._process_covers(covers, cover_states, sensor_data, result)
+
+        return result
+
+    async def _process_covers(
+        self,
+        covers: tuple[str, ...],
+        cover_states: dict[str, State | None],
+        sensor_data: SensorData,
+        result: CoordinatorData,
+    ) -> None:
+        """Process one sensor snapshot across all configured covers."""
 
         stagger_delay = max(0, self.resolved.cover_movement_stagger_delay)
         if stagger_delay <= 0:
@@ -230,7 +270,6 @@ class AutomationEngine:
         run_generation = self._run_generation
         actionable_index = 0
 
-        # Process each configured cover in user-defined order
         for entity_id in covers:
             state = cover_states.get(entity_id)
             cover_automation = CoverAutomation(
@@ -264,7 +303,135 @@ class AutomationEngine:
 
         self._cancel_pending_cover_executions_for_removed_covers(covers)
 
-        return result
+    async def _run_blocked_time_range_pre_close(
+        self,
+        cover_states: dict[str, State | None],
+        result: CoordinatorData,
+    ) -> str:
+        """Run the forecast-driven pre-close at blocked-time start."""
+
+        pre_close_sensor_data, message = await self._build_blocked_time_range_pre_close_sensor_data()
+        if pre_close_sensor_data is None:
+            return message
+
+        if pre_close_sensor_data.temp_hot is not True or pre_close_sensor_data.weather_sunny is not True:
+            self._logger.debug("Pre-closure weather conditions not met, skipping...")
+            return "Blocked time range started; skipping pre-close because the next morning is not forecast to be both hot and sunny"
+
+        self._logger.debug("Pre-closure weather conditions met, activating...")
+        await self._process_covers(tuple(self.resolved.covers), cover_states, pre_close_sensor_data, result)
+        return "Blocked time range started; ran forecast-based pre-close evaluation for next-morning heat protection"
+
+    async def _build_blocked_time_range_pre_close_sensor_data(self) -> tuple[SensorData | None, str]:
+        """Build the forecast-only sensor snapshot used for blocked-time pre-close."""
+
+        from .ha_interface import InvalidSensorReadingError, WeatherEntityNotFoundError
+
+        target_datetime = self._get_blocked_time_range_end_datetime(dt_util.now())
+        target_date = dt_util.as_local(target_datetime).date()
+
+        try:
+            sun_samples = self._ha_interface.get_sun_samples_from_sunrise_until(target_datetime)
+        except Exception as err:
+            self._logger.error("Unexpected error getting future sun data: %s", err)
+            return (None, f"Blocked time range started; pre-close skipped because future sun data is unavailable: {err}")
+
+        sun_azimuth, sun_elevation = sun_samples[-1]
+
+        weather_messages: list[str] = []
+
+        temp_max: float | None = None
+        temp_min: float | None = None
+        weather_condition: str | None = None
+
+        try:
+            temp_max, temp_min, weather_condition = await self._ha_interface.get_forecast_snapshot_for_date(
+                self.resolved.weather_entity_id,
+                target_date,
+                log_context=f"next-morning pre-close forecast for {target_date.isoformat()}",
+            )
+            if temp_max is None:
+                weather_messages.append("Forecast temperature unavailable for the next blocked-time exit")
+            if weather_condition is None:
+                weather_messages.append("Forecast sunshine state unavailable for the next blocked-time exit")
+        except InvalidSensorReadingError, WeatherEntityNotFoundError:
+            weather_messages.append("Forecast temperature unavailable for the next blocked-time exit")
+            weather_messages.append("Forecast sunshine state unavailable for the next blocked-time exit")
+        except Exception as err:
+            self._logger.error(f"Unexpected error getting forecast snapshot for blocked-time pre-close: {err}")
+            weather_messages.append("Forecast temperature unavailable for the next blocked-time exit")
+            weather_messages.append("Forecast sunshine state unavailable for the next blocked-time exit")
+
+        temp_hot: bool | None = None
+        meets_daily_max_threshold: bool | None = None
+        meets_daily_min_threshold: bool | None = None
+        if temp_max is not None:
+            meets_daily_max_threshold = temp_max >= self.resolved.daily_max_temperature_threshold
+            meets_daily_min_threshold = temp_min >= self.resolved.daily_min_temperature_threshold if temp_min is not None else None
+            temp_hot = meets_daily_max_threshold and (meets_daily_min_threshold is not False)
+
+        weather_sunny = weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS if isinstance(weather_condition, str) else None
+        temp_state = "hot" if temp_hot is True else "not hot" if temp_hot is False else "unknown"
+        sunny_state = "sunny" if weather_sunny is True else "not sunny" if weather_sunny is False else "unknown"
+        self._logger.debug(
+            "Next day weather temperature state for pre-closure: %s (daily_max=%s, daily_min=%s, max_threshold_met=%s, min_threshold_met=%s)",
+            temp_state,
+            temp_max,
+            temp_min,
+            meets_daily_max_threshold,
+            meets_daily_min_threshold,
+        )
+        self._logger.debug("Next day weather condition used for pre-closure: %s", sunny_state)
+        message = "; ".join(dict.fromkeys(weather_messages))
+
+        return (
+            SensorData(
+                sun_azimuth=sun_azimuth,
+                sun_elevation=sun_elevation,
+                temp_max=temp_max,
+                temp_min=temp_min,
+                temp_hot=temp_hot,
+                weather_condition=weather_condition,
+                weather_sunny=weather_sunny,
+                evening_closure=False,
+                post_evening_closure=False,
+                ignore_weather_external_controls=True,
+                sun_samples=sun_samples,
+                pre_closing=True,
+            ),
+            message,
+        )
+
+    def _get_blocked_time_range_end_datetime(self, reference_datetime: datetime) -> datetime:
+        """Return the datetime when the current blocked interval ends."""
+
+        end_date = reference_datetime.date()
+        if self.resolved.automation_disabled_time_range_start >= self.resolved.automation_disabled_time_range_end:
+            end_date += timedelta(days=1)
+
+        return self._get_local_datetime_for_date(end_date, self.resolved.automation_disabled_time_range_end)
+
+    def _get_blocked_time_range_start_datetime(self, reference_datetime: datetime) -> datetime:
+        """Return the datetime when the current blocked interval started."""
+
+        start_date = reference_datetime.date()
+        if self.resolved.automation_disabled_time_range_start >= self.resolved.automation_disabled_time_range_end:
+            if reference_datetime.time() < self.resolved.automation_disabled_time_range_end:
+                start_date -= timedelta(days=1)
+
+        return self._get_local_datetime_for_date(start_date, self.resolved.automation_disabled_time_range_start)
+
+    def _is_in_blocked_time_range_pre_close_window(self) -> bool:
+        """Return whether startup is still close enough to blocked-range start to run pre-close."""
+
+        in_disabled_period, _ = self._in_time_period_automation_disabled()
+        if not in_disabled_period:
+            return False
+
+        now = dt_util.now()
+        window_start = self._get_blocked_time_range_start_datetime(now)
+        window_end = window_start + timedelta(minutes=const.SUNSET_CLOSING_WINDOW_MINUTES)
+        return window_start <= now < window_end
 
     def _schedule_pending_cover_execution(
         self,

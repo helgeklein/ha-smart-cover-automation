@@ -1384,6 +1384,77 @@ class TestOptionsFlowStep6CloseAfterSunset:
         assert section_defaults[ConfKeys.MORNING_OPENING_TIME.value].isoformat() == "08:00:00"
         assert section_defaults[ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value] is True
 
+    async def test_step_6_schema_includes_blocked_time_range_pre_close_toggle(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test that step 6 exposes the blocked-time pre-close toggle with the default enabled."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            }
+        )
+        await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
+        await flow.async_step_3({})
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        result = await flow.async_step_6()
+        result_dict = _as_dict(result)
+        schema = result_dict["data_schema"]
+
+        section_key = next(key for key in schema.schema if str(key) == const.STEP_6_SECTION_TIME_RANGE)
+        section_schema = schema.schema[section_key].schema.schema
+        section_defaults = {key.schema: key.default() for key in section_schema if hasattr(key, "schema") and hasattr(key, "default")}
+
+        assert section_defaults[ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value] is True
+
+    async def test_step_6_saves_blocked_time_range_pre_close_toggle(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test that the blocked-time pre-close toggle is saved from step 6."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            }
+        )
+        await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
+        await flow.async_step_3({})
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        result = await flow.async_step_6(
+            {
+                const.STEP_6_SECTION_TIME_RANGE: {
+                    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+                    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value: "22:00:00",
+                    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value: "06:00:00",
+                    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value: False,
+                }
+            }
+        )
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        assert result_dict["data"][ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value] is False
+
     #
     # test_step_6_saves_close_after_sunset_settings
     #

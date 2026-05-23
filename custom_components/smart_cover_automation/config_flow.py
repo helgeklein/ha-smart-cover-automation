@@ -665,6 +665,13 @@ class FlowHelper:
             )
         ] = selector.TimeSelector()
 
+        time_range_schema_dict[
+            vol.Required(
+                ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value,
+                default=resolved_settings.automation_disabled_time_range_pre_close_enabled,
+            )
+        ] = selector.BooleanSelector()
+
         # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_TIME_RANGE)] = section(
             vol.Schema(time_range_schema_dict),

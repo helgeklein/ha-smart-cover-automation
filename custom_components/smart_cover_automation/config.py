@@ -67,6 +67,7 @@ class ConfKeys(StrEnum):
     AUTOMATION_DISABLED_TIME_RANGE = "automation_disabled_time_range"  # Disable the automation in a time range.
     AUTOMATION_DISABLED_TIME_RANGE_START = "automation_disabled_time_range_start"  # Start time for disabling the automation.
     AUTOMATION_DISABLED_TIME_RANGE_END = "automation_disabled_time_range_end"  # End time for disabling the automation.
+    AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED = "automation_disabled_time_range_pre_close_enabled"  # Pre-close at blocked-time start when the next morning will require heat protection.
     EVENING_CLOSURE_ENABLED = "close_covers_after_sunset"  # Evening closure: enabled.
     EVENING_CLOSURE_MODE = "close_covers_after_sunset_mode"  # Evening closure: timing mode.
     EVENING_CLOSURE_TIME = "close_covers_after_sunset_delay"  # Evening closure: time value.
@@ -225,6 +226,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(8, 0, 0), converter=_Converters.to_time),
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.EVENING_CLOSURE_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.EVENING_CLOSURE_MODE: _ConfSpec(default=EveningClosureMode.AFTER_SUNSET, converter=EveningClosureMode),
     ConfKeys.EVENING_CLOSURE_TIME: _ConfSpec(default=time(0, 15, 0), converter=_Converters.to_time),
@@ -372,6 +374,7 @@ class ResolvedConfig:
     automation_disabled_time_range: bool
     automation_disabled_time_range_start: time
     automation_disabled_time_range_end: time
+    automation_disabled_time_range_pre_close_enabled: bool
     evening_closure_enabled: bool
     evening_closure_mode: EveningClosureMode
     evening_closure_time: time

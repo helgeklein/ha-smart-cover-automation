@@ -128,12 +128,14 @@
                         "data": {
                             "automation_disabled_time_range": "Automatisering uitschakelen binnen tijdvenster:",
                             "automation_disabled_time_range_start": "Uitschakelen vanaf:",
-                            "automation_disabled_time_range_end": "Uitschakelen tot:"
+                            "automation_disabled_time_range_end": "Uitschakelen tot:",
+                            "automation_disabled_time_range_pre_close_enabled": "Vooraf sluiten voor hittebescherming morgenochtend:"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "Wanneer ingeschakeld, draait de automatisering niet tijdens het opgegeven tijdvenster.",
                             "automation_disabled_time_range_start": "Starttijd van de periode waarin de automatisering moet zijn uitgeschakeld.",
-                            "automation_disabled_time_range_end": "Eindtijd van de periode waarin de automatisering moet zijn uitgeschakeld."
+                            "automation_disabled_time_range_end": "Eindtijd van de periode waarin de automatisering moet zijn uitgeschakeld.",
+                            "automation_disabled_time_range_pre_close_enabled": "Wanneer ingeschakeld, worden afdekkingen aan het begin van het geblokkeerde tijdvenster vooraf gesloten als de volgende ochtend heet en zonnig wordt voorspeld."
                         }
                     },
                     "section_close_after_sunset": {

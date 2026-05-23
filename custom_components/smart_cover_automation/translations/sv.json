@@ -128,12 +128,14 @@
                         "data": {
                             "automation_disabled_time_range": "Inaktivera automation i tidsintervall:",
                             "automation_disabled_time_range_start": "Inaktivera från:",
-                            "automation_disabled_time_range_end": "Inaktivera till:"
+                            "automation_disabled_time_range_end": "Inaktivera till:",
+                            "automation_disabled_time_range_pre_close_enabled": "Förstäng för morgondagens värmeskydd:"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "När det är aktiverat körs inte automationen under det angivna tidsintervallet.",
                             "automation_disabled_time_range_start": "Starttid för perioden då automationen ska vara inaktiverad.",
-                            "automation_disabled_time_range_end": "Sluttid för perioden då automationen ska vara inaktiverad."
+                            "automation_disabled_time_range_end": "Sluttid för perioden då automationen ska vara inaktiverad.",
+                            "automation_disabled_time_range_pre_close_enabled": "När den är aktiverad för-stängs skydden i början av det blockerade tidsintervallet om nästa morgon väntas bli varm och solig."
                         }
                     },
                     "section_close_after_sunset": {

@@ -128,12 +128,14 @@
                         "data": {
                             "automation_disabled_time_range": "Disattiva l'automazione in un intervallo orario:",
                             "automation_disabled_time_range_start": "Disattiva da:",
-                            "automation_disabled_time_range_end": "Disattiva fino a:"
+                            "automation_disabled_time_range_end": "Disattiva fino a:",
+                            "automation_disabled_time_range_pre_close_enabled": "Pre-chiusura per protezione dal caldo del mattino successivo:"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "Quando è attivata, l'automazione non viene eseguita durante l'intervallo specificato.",
                             "automation_disabled_time_range_start": "Ora di inizio del periodo in cui l'automazione deve essere disattivata.",
-                            "automation_disabled_time_range_end": "Ora di fine del periodo in cui l'automazione deve essere disattivata."
+                            "automation_disabled_time_range_end": "Ora di fine del periodo in cui l'automazione deve essere disattivata.",
+                            "automation_disabled_time_range_pre_close_enabled": "Quando è attivata, le coperture vengono pre-chiuse all'inizio dell'intervallo bloccato se il mattino successivo è previsto caldo e soleggiato."
                         }
                     },
                     "section_close_after_sunset": {
