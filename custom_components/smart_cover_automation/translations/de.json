@@ -10,6 +10,7 @@
     "options": {
         "error": {
             "invalid_cover": "Ein oder mehrere ausgewählte Rollläden/Jalousien sind ungültig oder nicht verfügbar.",
+            "invalid_integer": "Bitte geben Sie eine ganze Zahl ein.",
             "invalid_weather_entity": "Die ausgewählte Wetterentität unterstützt keine Tagesvorhersagen.",
             "no_covers": "Keine Rollläden ausgewählt.",
             "no_weather_entity": "Keine Wetterentität ausgewählt."
@@ -29,7 +30,15 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Schritt 2 von 6",
-                "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen (erforderlich).\n\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)"
+                "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen. Optional können Sie auch **Sonnen-Azimut-Toleranzwerte** pro Rollladen hinzufügen, die die globale Azimut-Toleranzeinstellung überschreiben, die auf der Geräteseite der Integrationsinstanz konfigurierbar ist.\n\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)",
+                "sections": {
+                    "section_azimuth": {
+                        "name": "Rollladen-Azimut (erforderlich)"
+                    },
+                    "section_sun_azimuth_tolerance": {
+                        "name": "Sonnen-Azimut-Toleranz (optional)"
+                    }
+                }
             },
             "3": {
                 "title": "Smart Cover Automation - Schritt 3 von 6",

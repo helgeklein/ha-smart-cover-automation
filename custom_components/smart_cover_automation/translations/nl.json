@@ -10,6 +10,7 @@
     "options": {
         "error": {
             "invalid_cover": "Een of meer geselecteerde rolluiken zijn ongeldig of niet beschikbaar.",
+            "invalid_integer": "Voer een geheel getal in.",
             "invalid_weather_entity": "De geselecteerde weersentiteit ondersteunt geen dagelijkse voorspellingen.",
             "no_covers": "Geen rolluiken geselecteerd.",
             "no_weather_entity": "Geen weersentiteit geselecteerd."
@@ -29,7 +30,15 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Stap 2 van 6",
-                "description": "Configureer de **azimut** (richting) voor elk rolluik (verplicht).\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)"
+                "description": "Configureer de **azimut** (richting) voor elk rolluik. U kunt ook optionele waarden voor **tolerantie voor zonazimut** per rolluik toevoegen die de globale instelling voor tolerantie voor zonazimut overschrijven, configureerbaar op de apparaats-pagina van deze integratie-instantie.\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)",
+                "sections": {
+                    "section_azimuth": {
+                        "name": "Rolluikazimut (verplicht)"
+                    },
+                    "section_sun_azimuth_tolerance": {
+                        "name": "Tolerantie voor zonazimut (optioneel)"
+                    }
+                }
             },
             "3": {
                 "title": "Smart Cover Automation - Stap 3 van 6",
