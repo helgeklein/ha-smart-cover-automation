@@ -129,8 +129,8 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
         assert cover_result.pos_target_desired is not None
         assert cover_result.pos_target_desired == 0  # Fully closed
 
-    async def test_manual_override_expiry_logs_manual_override_end_reason(self, mock_hass: MagicMock) -> None:
-        """Manual override expiry should emit the dedicated reopen reason in a full coordinator cycle."""
+    async def test_manual_override_expiry_logs_heat_protection_end_reason_after_hand_back(self, mock_hass: MagicMock) -> None:
+        """Manual override expiry should resume the original heat-protection reopen reason after hand-back."""
 
         mock_hass.config = MagicMock()
         mock_hass.config.language = "en"
@@ -156,6 +156,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
             f"{base_key}.{const.TRANSL_LOGBOOK_VERB_OPENING}.{const.TRANSL_ATTR_NAME}": "Opening",
             f"{base_key}.{const.TRANSL_LOGBOOK_VERB_CLOSING}.{const.TRANSL_ATTR_NAME}": "Closing",
             f"{base_key}.{const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION}.{const.TRANSL_ATTR_NAME}": "protect from heat",
+            f"{base_key}.{const.TRANSL_LOGBOOK_REASON_END_HEAT_PROTECTION}.{const.TRANSL_ATTR_NAME}": "end heat protection",
             f"{base_key}.{const.TRANSL_LOGBOOK_REASON_END_MANUAL_OVERRIDE}.{const.TRANSL_ATTR_NAME}": "manual override ended",
             f"{base_key}.{const.TRANSL_LOGBOOK_TEMPLATE_COVER_MOVEMENT}.{const.TRANSL_ATTR_NAME}": "{verb} {entity_id} to {reason}. New position: {position}%.",
         }
@@ -217,7 +218,7 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
             assert third_cover_result.pos_target_final == 100
             assert coordinator._ha_interface.set_cover_position.await_count == 2
             assert mock_log_entry.call_count == 2
-            assert "manual override ended" in mock_log_entry.call_args.kwargs["message"]
+            assert "end heat protection" in mock_log_entry.call_args.kwargs["message"]
 
     async def test_no_manual_override_same_position(self, mock_hass: MagicMock) -> None:
         """Test that no manual override is detected when position hasn't changed.
