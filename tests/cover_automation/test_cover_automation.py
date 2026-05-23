@@ -1602,7 +1602,36 @@ class TestCalculateDesiredPosition:
         assert position == 0
         assert reason is None
         mock_logger.info.assert_any_call(
-            "[cover.test] Current position: 0%, desired position: 0%, keeping current position because pre-closing never opens covers"
+            "[cover.test] Current position: 0%, desired position: 0%, keeping current position because it is already at the pre-closure position"
+        )
+
+    def test_calculate_desired_position_pre_closing_keeps_more_closed_cover(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_logger, mock_resolved_config, basic_config
+    ):
+        """Pre-closing should keep a cover that is already more closed than the target."""
+
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+        mock_resolved_config.covers_max_closure = 30
+        basic_config["cover.test_cover_max_closure"] = 30
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=False,
+            pre_closing=True,
+        )
+
+        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=10)
+
+        assert position == 10
+        assert reason is None
+        mock_logger.info.assert_any_call(
+            "[cover.test] Current position: 10%, desired position: 10%, keeping current position because it is already more closed than the pre-closure position"
         )
 
     def test_calculate_desired_position_pre_closing_skips_reopening_when_conditions_do_not_match(

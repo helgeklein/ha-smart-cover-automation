@@ -793,9 +793,15 @@ class CoverAutomation:
                 # No lockout - close the cover
                 max_closure_limit = self._get_cover_closure_limit(get_max=True)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
-                if sensor_data.pre_closing and desired_pos >= current_pos:
+                target_pre_closure_pos = desired_pos
+                if sensor_data.pre_closing and target_pre_closure_pos >= current_pos:
                     desired_pos = current_pos
-                    desired_pos_friendly_name = "keeping current position because pre-closing never opens covers"
+                    if target_pre_closure_pos == current_pos:
+                        desired_pos_friendly_name = "keeping current position because it is already at the pre-closure position"
+                    else:
+                        desired_pos_friendly_name = (
+                            "keeping current position because it is already more closed than the pre-closure position"
+                        )
                     movement_reason = None
                 else:
                     desired_pos_friendly_name = (

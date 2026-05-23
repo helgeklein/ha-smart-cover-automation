@@ -226,12 +226,15 @@ class AutomationEngine:
 
         in_disabled_period, period_string = self._in_time_period_automation_disabled()
         blocked_time_range_started = in_disabled_period and not is_first_run and not self._disabled_time_range_state.was_active_last_run
+        startup_pre_close_window_active = is_first_run and self._is_in_blocked_time_range_pre_close_window()
         self._disabled_time_range_state.was_active_last_run = in_disabled_period
 
         if in_disabled_period:
             self.cancel_pending_cover_executions()
 
-            if blocked_time_range_started and self.resolved.automation_disabled_time_range_pre_close_enabled:
+            if (
+                blocked_time_range_started or startup_pre_close_window_active
+            ) and self.resolved.automation_disabled_time_range_pre_close_enabled:
                 message = await self._run_blocked_time_range_pre_close(cover_states, result)
                 self._log_automation_result(message, const.LogSeverity.INFO)
                 return result
@@ -407,6 +410,28 @@ class AutomationEngine:
             end_date += timedelta(days=1)
 
         return self._get_local_datetime_for_date(end_date, self.resolved.automation_disabled_time_range_end)
+
+    def _get_blocked_time_range_start_datetime(self, reference_datetime: datetime) -> datetime:
+        """Return the datetime when the current blocked interval started."""
+
+        start_date = reference_datetime.date()
+        if self.resolved.automation_disabled_time_range_start >= self.resolved.automation_disabled_time_range_end:
+            if reference_datetime.time() < self.resolved.automation_disabled_time_range_end:
+                start_date -= timedelta(days=1)
+
+        return self._get_local_datetime_for_date(start_date, self.resolved.automation_disabled_time_range_start)
+
+    def _is_in_blocked_time_range_pre_close_window(self) -> bool:
+        """Return whether startup is still close enough to blocked-range start to run pre-close."""
+
+        in_disabled_period, _ = self._in_time_period_automation_disabled()
+        if not in_disabled_period:
+            return False
+
+        now = dt_util.now()
+        window_start = self._get_blocked_time_range_start_datetime(now)
+        window_end = window_start + timedelta(minutes=const.SUNSET_CLOSING_WINDOW_MINUTES)
+        return window_start <= now < window_end
 
     def _schedule_pending_cover_execution(
         self,
