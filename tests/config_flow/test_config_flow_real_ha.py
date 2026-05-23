@@ -26,8 +26,11 @@ from custom_components.smart_cover_automation import DOMAIN
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
     COVER_SFX_AZIMUTH,
+    COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+    ERROR_INVALID_INTEGER,
     INTEGRATION_NAME,
     STEP_2_SECTION_AZIMUTH,
+    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
     TiltMode,
 )
 
@@ -441,6 +444,53 @@ class TestOptionsFlow:
         delay_default = delay_key.default() if callable(delay_key.default) else delay_key.default
 
         assert delay_default == 2
+
+    async def test_options_flow_step_2_rejects_invalid_per_cover_sun_azimuth_tolerance(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Invalid tolerance text should keep the user on step 2 with an error."""
+
+        _register_cover_entity(hass, TEST_COVER_1)
+        _register_weather_entity(hass)
+
+        entry = _create_loaded_entry(hass)
+
+        result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "init"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    ConfKeys.WEATHER_ENTITY_ID.value: TEST_WEATHER,
+                    ConfKeys.COVERS.value: [TEST_COVER_1],
+                },
+            )
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "2"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    STEP_2_SECTION_AZIMUTH: {
+                        f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180,
+                    },
+                    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
+                        f"{TEST_COVER_1}_{COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "75x",
+                    },
+                },
+            )
+        )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "2"
+        assert result["errors"] == {
+            f"{TEST_COVER_1}_{COVER_SFX_SUN_AZIMUTH_TOLERANCE}": ERROR_INVALID_INTEGER,
+        }
 
     # ------------------------------------------------------------------
     # 3.3  Options flow step 1 validation — invalid cover entity

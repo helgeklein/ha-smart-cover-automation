@@ -162,7 +162,7 @@ class FlowHelper:
         schema_dict: dict[vol.Marker, object] = {}
         value_selector = selector.TextSelector(
             selector.TextSelectorConfig(
-                type=selector.TextSelectorType.NUMBER,
+                type=selector.TextSelectorType.TEXT,
                 suffix="°",
             )
         )
