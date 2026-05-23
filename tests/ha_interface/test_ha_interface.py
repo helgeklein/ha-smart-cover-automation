@@ -1213,6 +1213,25 @@ class TestForecastConditionHelpers:
 
         assert result == ((100.0, 5.0), (130.0, 20.0), (150.0, 33.0))
 
+    @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date")
+    @patch.object(HomeAssistantInterface, "get_sun_data_for_datetime")
+    def test_get_sun_samples_from_sunrise_until_uses_target_when_sunrise_is_unavailable(
+        self,
+        mock_get_sun_data_for_datetime: MagicMock,
+        mock_get_astral_event_date: MagicMock,
+        ha_interface: HomeAssistantInterface,
+    ) -> None:
+        """Pre-close sun sampling should still return the target sample when sunrise is missing."""
+
+        target = datetime(2026, 5, 24, 6, 30, tzinfo=timezone.utc)
+        mock_get_astral_event_date.return_value = None
+        mock_get_sun_data_for_datetime.return_value = (150.0, 33.0)
+
+        result = ha_interface.get_sun_samples_from_sunrise_until(target)
+
+        assert result == ((150.0, 33.0),)
+        mock_get_sun_data_for_datetime.assert_called_once_with(target)
+
     async def test_get_daily_temperature_extrema_for_date_raises_when_entity_missing(
         self,
         ha_interface: HomeAssistantInterface,
@@ -1251,6 +1270,42 @@ class TestForecastConditionHelpers:
             target_date.isoformat(),
         )
 
+    async def test_get_daily_temperature_extrema_for_date_raises_when_forecast_is_unavailable(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Explicit-date forecast extrema should fail when the forecast list cannot be fetched."""
+
+        target_date = date(2026, 5, 24)
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {ATTR_WEATHER_TEMPERATURE_UNIT: UnitOfTemperature.CELSIUS}
+        mock_hass.states.get.return_value = mock_weather_state
+        ha_interface._get_forecast_list = AsyncMock(return_value=None)
+
+        with pytest.raises(InvalidSensorReadingError, match="Forecast temperature unavailable"):
+            await ha_interface.get_daily_temperature_extrema_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
+
+    async def test_get_daily_temperature_extrema_for_date_raises_when_matching_day_is_missing(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Explicit-date forecast extrema should fail when no forecast entry matches the requested day."""
+
+        target_date = date(2026, 5, 24)
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {ATTR_WEATHER_TEMPERATURE_UNIT: UnitOfTemperature.CELSIUS}
+        mock_hass.states.get.return_value = mock_weather_state
+        ha_interface._get_forecast_list = AsyncMock(
+            return_value=[
+                {"datetime": datetime(2026, 5, 23, 0, 0, tzinfo=timezone.utc).isoformat(), "native_temperature": 29.0},
+            ]
+        )
+
+        with pytest.raises(InvalidSensorReadingError, match="Forecast temperature unavailable"):
+            await ha_interface.get_daily_temperature_extrema_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
+
     async def test_get_forecast_condition_for_date_raises_when_condition_missing(
         self,
         ha_interface: HomeAssistantInterface,
@@ -1269,6 +1324,50 @@ class TestForecastConditionHelpers:
         )
 
         with pytest.raises(InvalidSensorReadingError):
+            await ha_interface.get_forecast_condition_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
+
+    async def test_get_forecast_condition_for_date_raises_when_entity_missing(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Explicit-date forecast condition should require a valid weather entity."""
+
+        mock_hass.states.get.return_value = None
+
+        with pytest.raises(WeatherEntityNotFoundError):
+            await ha_interface.get_forecast_condition_for_date(MOCK_WEATHER_ENTITY_ID, date(2026, 5, 24))
+
+    async def test_get_forecast_condition_for_date_raises_when_forecast_is_unavailable(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Explicit-date forecast condition should fail when the forecast list cannot be fetched."""
+
+        target_date = date(2026, 5, 24)
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {ATTR_WEATHER_TEMPERATURE_UNIT: UnitOfTemperature.CELSIUS}
+        mock_hass.states.get.return_value = mock_weather_state
+        ha_interface._get_forecast_list = AsyncMock(return_value=None)
+
+        with pytest.raises(InvalidSensorReadingError, match="Forecast condition unavailable"):
+            await ha_interface.get_forecast_condition_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
+
+    async def test_get_forecast_condition_for_date_raises_when_matching_day_is_missing(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Explicit-date forecast condition should fail when no forecast entry matches the requested day."""
+
+        target_date = date(2026, 5, 24)
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {ATTR_WEATHER_TEMPERATURE_UNIT: UnitOfTemperature.CELSIUS}
+        mock_hass.states.get.return_value = mock_weather_state
+        ha_interface._get_forecast_list = AsyncMock(return_value=[])
+
+        with pytest.raises(InvalidSensorReadingError, match="Forecast condition unavailable"):
             await ha_interface.get_forecast_condition_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
 
     async def test_get_forecast_snapshot_for_date_uses_one_forecast_lookup(
@@ -1303,6 +1402,109 @@ class TestForecastConditionHelpers:
         ha_interface._get_forecast_list.assert_awaited_once_with(
             MOCK_WEATHER_ENTITY_ID,
             log_context="next-morning pre-close forecast for 2026-05-24",
+        )
+
+    async def test_get_forecast_snapshot_for_date_raises_when_entity_missing(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Explicit-date forecast snapshot should require a valid weather entity."""
+
+        mock_hass.states.get.return_value = None
+
+        with pytest.raises(WeatherEntityNotFoundError):
+            await ha_interface.get_forecast_snapshot_for_date(MOCK_WEATHER_ENTITY_ID, date(2026, 5, 24))
+
+    async def test_get_forecast_snapshot_for_date_raises_when_forecast_is_unavailable(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Explicit-date forecast snapshot should fail when the forecast list cannot be fetched."""
+
+        target_date = date(2026, 5, 24)
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {ATTR_WEATHER_TEMPERATURE_UNIT: UnitOfTemperature.CELSIUS}
+        mock_hass.states.get.return_value = mock_weather_state
+        ha_interface._get_forecast_list = AsyncMock(return_value=None)
+
+        with pytest.raises(InvalidSensorReadingError, match="Forecast unavailable"):
+            await ha_interface.get_forecast_snapshot_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
+
+    async def test_get_forecast_snapshot_for_date_raises_when_matching_day_is_missing(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Explicit-date forecast snapshot should fail when no forecast entry matches the requested day."""
+
+        target_date = date(2026, 5, 24)
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {ATTR_WEATHER_TEMPERATURE_UNIT: UnitOfTemperature.CELSIUS}
+        mock_hass.states.get.return_value = mock_weather_state
+        ha_interface._get_forecast_list = AsyncMock(return_value=[])
+
+        with pytest.raises(InvalidSensorReadingError, match="Forecast unavailable"):
+            await ha_interface.get_forecast_snapshot_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
+
+    async def test_get_forecast_snapshot_for_date_logs_missing_temperature_fields(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Explicit-date forecast snapshot should keep partial data and warn when temperatures are missing."""
+
+        target_date = date(2026, 5, 24)
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {ATTR_WEATHER_TEMPERATURE_UNIT: UnitOfTemperature.CELSIUS}
+        mock_hass.states.get.return_value = mock_weather_state
+        ha_interface._get_forecast_list = AsyncMock(
+            return_value=[
+                {
+                    "datetime": datetime(2026, 5, 24, 0, 0, tzinfo=timezone.utc).isoformat(),
+                    "condition": "sunny",
+                },
+            ]
+        )
+
+        result = await ha_interface.get_forecast_snapshot_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
+
+        assert result == (None, None, "sunny")
+        ha_interface._logger.warning.assert_any_call(
+            "Could not extract forecast maximum temperature from %s for %s. max=%s",
+            MOCK_WEATHER_ENTITY_ID,
+            target_date.isoformat(),
+            None,
+        )
+        ha_interface._logger.warning.assert_any_call(
+            "Could not extract forecast minimum temperature from %s for %s. Continuing with daily max only.",
+            MOCK_WEATHER_ENTITY_ID,
+            target_date.isoformat(),
+        )
+
+    async def test_get_forecast_list_logs_response_with_context(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+    ) -> None:
+        """Forecast service helper should include the provided log context in its debug output."""
+
+        response = {
+            MOCK_WEATHER_ENTITY_ID: {
+                "forecast": [{"datetime": "2026-05-24T00:00:00+00:00", "condition": "sunny"}],
+            }
+        }
+        mock_hass.services.async_call = AsyncMock(return_value=response)
+
+        result = await ha_interface._get_forecast_list(
+            MOCK_WEATHER_ENTITY_ID,
+            log_context="next-morning pre-close forecast for 2026-05-24",
+        )
+
+        assert result == response[MOCK_WEATHER_ENTITY_ID]["forecast"]
+        ha_interface._logger.debug.assert_any_call(
+            f"Weather forecast service response for {MOCK_WEATHER_ENTITY_ID} (next-morning pre-close forecast for 2026-05-24): {response}"
         )
 
     def test_find_day_forecast_for_date_returns_requested_entry(self, ha_interface: HomeAssistantInterface) -> None:
@@ -1360,6 +1562,11 @@ class TestForecastConditionHelpers:
         ha_interface._logger.warning.assert_called_with(
             "No condition fields found in forecast. Available fields: ['native_temperature']",
         )
+
+    def test_extract_forecast_condition_returns_none_for_non_dict(self, ha_interface: HomeAssistantInterface) -> None:
+        """Forecast condition extraction should ignore invalid forecast payloads."""
+
+        assert ha_interface._extract_forecast_condition("sunny") is None
 
     @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date")
     def test_find_day_forecast_min_today_before_sunrise_cutover(

@@ -30,6 +30,7 @@ A Home Assistant integration to automate the control of your smart home's window
     - Pause automations for a cover if the door/window is open.
 - **Evening closure**, **night silence** & **morning opening**:
     - Close all or a subset of covers in the evening for privacy.
+    - In the evening before a hot sunny day, pre-close covers the sun will shine on the next morning.
     - Don't move any covers when people are sleeping.
     - Reopen the closed covers in the morning.
 - **Plant light:**

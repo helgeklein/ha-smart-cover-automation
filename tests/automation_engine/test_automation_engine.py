@@ -197,6 +197,22 @@ class TestGatherSensorData:
         assert sensor_data.temp_hot is True
         assert message == ""
 
+    async def test_gather_sensor_data_missing_weather_condition_without_cache_skips_sunshine_logic(
+        self, automation_engine, mock_ha_interface
+    ):
+        """Missing weather condition without a cached fallback should keep sunshine-dependent logic unavailable."""
+
+        from custom_components.smart_cover_automation.ha_interface import InvalidSensorReadingError
+
+        mock_ha_interface.get_weather_condition.side_effect = InvalidSensorReadingError("weather.test", "condition missing")
+
+        sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.weather_condition is None
+        assert sensor_data.weather_sunny is None
+        assert message == "Weather condition unavailable, skipping weather-dependent actions that require sunshine state"
+
     async def test_gather_sensor_data_weather_sunny_external_control_overrides_weather_entity(self, automation_engine, mock_ha_interface):
         """Test that external sunny control overrides the weather entity state."""
         mock_ha_interface.get_weather_condition.return_value = "cloudy"
@@ -547,6 +563,115 @@ class TestGatherSensorData:
             True,
         )
         mock_logger.debug.assert_any_call("Next day weather condition used for pre-closure: %s", "unknown")
+
+    async def test_build_blocked_time_range_pre_close_sensor_data_handles_missing_max_temperature(self, mock_ha_interface, mock_logger):
+        """Blocked-time pre-close should report a missing forecast temperature when the snapshot has no max."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 20.0,
+            ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value: 15.0,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value: time(22, 0),
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value: time(6, 0),
+        }
+        engine = AutomationEngine(resolved=resolve(config), config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+        mock_ha_interface.get_sun_samples_from_sunrise_until.return_value = ((180.0, 45.0),)
+        mock_ha_interface.get_forecast_snapshot_for_date = AsyncMock(return_value=(None, 16.0, "sunny"))
+
+        sensor_data, message = await engine._build_blocked_time_range_pre_close_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.temp_hot is None
+        assert sensor_data.weather_sunny is True
+        assert "Forecast temperature unavailable" in message
+
+    async def test_build_blocked_time_range_pre_close_sensor_data_handles_unexpected_forecast_error(self, mock_ha_interface, mock_logger):
+        """Blocked-time pre-close should degrade gracefully when explicit-date forecast lookup fails unexpectedly."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 20.0,
+            ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value: 15.0,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value: time(22, 0),
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value: time(6, 0),
+        }
+        engine = AutomationEngine(resolved=resolve(config), config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+        mock_ha_interface.get_sun_samples_from_sunrise_until.return_value = ((180.0, 45.0),)
+        mock_ha_interface.get_forecast_snapshot_for_date = AsyncMock(side_effect=RuntimeError("boom"))
+
+        sensor_data, message = await engine._build_blocked_time_range_pre_close_sensor_data()
+
+        assert sensor_data is not None
+        assert sensor_data.temp_hot is None
+        assert sensor_data.weather_sunny is None
+        assert "Forecast temperature unavailable" in message
+        assert "Forecast sunshine state unavailable" in message
+        mock_logger.error.assert_any_call("Unexpected error getting forecast snapshot for blocked-time pre-close: boom")
+
+    def test_get_blocked_time_range_start_datetime_rolls_back_for_overnight_period_before_end(self, mock_ha_interface, mock_logger):
+        """Overnight blocked-range start should resolve to the previous day before the end time."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value: time(22, 0),
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value: time(6, 0),
+        }
+        engine = AutomationEngine(resolved=resolve(config), config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+
+        result = engine._get_blocked_time_range_start_datetime(datetime(2026, 5, 24, 5, 0, tzinfo=timezone.utc))
+
+        assert result == datetime(2026, 5, 23, 22, 0, tzinfo=timezone.utc)
+
+    async def test_run_blocked_time_range_pre_close_skips_when_forecast_does_not_match(self, mock_ha_interface, mock_logger):
+        """Blocked-time pre-close should skip cover processing when the next morning is not both hot and sunny."""
+
+        engine = AutomationEngine(
+            resolved=resolve({ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"}),
+            config={ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"},
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        sensor_data = SensorData(180.0, 45.0, 18.0, 12.0, False, "cloudy", False, False, False, ignore_weather_external_controls=True)
+
+        with patch.object(engine, "_build_blocked_time_range_pre_close_sensor_data", AsyncMock(return_value=(sensor_data, ""))):
+            with patch.object(engine, "_process_covers", AsyncMock()) as mock_process_covers:
+                message = await engine._run_blocked_time_range_pre_close({"cover.test": MagicMock()}, MagicMock())
+
+        mock_process_covers.assert_not_awaited()
+        assert message == "Blocked time range started; skipping pre-close because the next morning is not forecast to be both hot and sunny"
+
+    def test_time_period_disabled_outside_same_day_range(self, mock_ha_interface, mock_logger):
+        """Same-day disabled periods should remain inactive before the configured start time."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value: time(9, 0),
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value: time(17, 0),
+        }
+        engine = AutomationEngine(
+            resolved=resolve(config),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        with patch("homeassistant.util.dt.now") as mock_now:
+            mock_datetime = MagicMock()
+            mock_datetime.time.return_value = time(8, 59)
+            mock_now.return_value = mock_datetime
+
+            is_disabled, period_string = engine._in_time_period_automation_disabled()
+
+        assert is_disabled is False
+        assert period_string == ""
 
     @pytest.mark.parametrize(
         ("start_time", "end_time", "reference_time", "expected_date"),
@@ -1096,6 +1221,51 @@ class TestInTimePeriodAutomationDisabled:
 class TestRunMethod:
     """Test the main run method."""
 
+    async def test_run_with_disabled_automation(self, mock_ha_interface, mock_logger):
+        """Disabled automation should return early before gathering sensor data."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.ENABLED.value: False,
+        }
+        engine = AutomationEngine(
+            resolved=resolve(config),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        with patch.object(engine, "cancel_pending_cover_executions") as mock_cancel:
+            with patch.object(engine, "_gather_sensor_data", AsyncMock()) as mock_gather:
+                result = await engine.run({"cover.test": MagicMock()})
+
+        assert result.covers == {}
+        mock_cancel.assert_called_once()
+        mock_gather.assert_not_awaited()
+
+    async def test_run_with_all_covers_unavailable_skips_sensor_lookup(self, mock_ha_interface, mock_logger):
+        """All-unavailable cover states should return early without sensor lookups."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test_1", "cover.test_2"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+        }
+        engine = AutomationEngine(
+            resolved=resolve(config),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        with patch.object(engine, "cancel_pending_cover_executions") as mock_cancel:
+            with patch.object(engine, "_gather_sensor_data", AsyncMock()) as mock_gather:
+                result = await engine.run({"cover.test_1": None, "cover.test_2": None})
+
+        assert result.covers == {}
+        mock_cancel.assert_called_once()
+        mock_gather.assert_not_awaited()
+
     async def test_run_with_no_covers_configured(self, mock_ha_interface, mock_logger):
         """Test run when no covers are configured."""
         # Configure with no covers
@@ -1354,6 +1524,35 @@ class TestRunMethod:
         assert result.covers["cover.test_1"] == mock_execute_plan.return_value
         assert result.covers["cover.test_2"] == plan_2.cover_state
 
+    @patch("custom_components.smart_cover_automation.automation_engine.CoverAutomation.evaluate", new_callable=AsyncMock)
+    async def test_run_cancels_pending_execution_when_evaluate_returns_no_plan(
+        self,
+        mock_evaluate,
+        mock_ha_interface,
+        mock_logger,
+    ):
+        """Staggered processing should cancel stale queued work when no action remains."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value: 15,
+        }
+        engine = AutomationEngine(
+            resolved=resolve(config),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        cover_state = CoverState(pos_current=10, pos_target_desired=10)
+        mock_evaluate.return_value = (cover_state, None)
+
+        with patch.object(engine, "_cancel_pending_cover_execution") as mock_cancel:
+            result = await engine.run({"cover.test": MagicMock()})
+
+        assert result.covers["cover.test"] == cover_state
+        mock_cancel.assert_called_once_with("cover.test", "no queued action remains valid")
+
 
 class TestPendingCoverExecutionQueue:
     """Test delayed cover execution queue helpers."""
@@ -1403,6 +1602,45 @@ class TestPendingCoverExecutionQueue:
 
         assert engine._pending_cover_executions["cover.test"] is existing
         mock_create_task.assert_not_called()
+
+    def test_schedule_pending_cover_execution_adds_new_plan(self, mock_ha_interface, mock_logger):
+        """A new queued execution should be stored and logged when no pending entry exists yet."""
+
+        engine = AutomationEngine(
+            resolved=resolve({ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"}),
+            config={ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"},
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        plan = self._make_plan()
+        created_task = MagicMock(spec=asyncio.Task)
+
+        def create_task_side_effect(coroutine):
+            coroutine.close()
+            return created_task
+
+        with patch(
+            "custom_components.smart_cover_automation.automation_engine.dt_util.utcnow",
+            return_value=datetime(2026, 5, 23, 10, 0, tzinfo=timezone.utc),
+        ):
+            with patch(
+                "custom_components.smart_cover_automation.automation_engine.asyncio.create_task",
+                side_effect=create_task_side_effect,
+            ):
+                engine._schedule_pending_cover_execution(
+                    "cover.test",
+                    MagicMock(),
+                    plan,
+                    datetime(2026, 5, 23, 10, 1, tzinfo=timezone.utc),
+                    generation=2,
+                )
+
+        scheduled = engine._pending_cover_executions["cover.test"]
+        assert scheduled.schedule_id == 1
+        assert scheduled.generation == 2
+        assert scheduled.plan_signature == plan.signature
+        assert scheduled.task is created_task
+        mock_logger.info.assert_any_call("[%s] Queued cover execution in %.0f s", "cover.test", 60.0)
 
     def test_schedule_pending_cover_execution_replaces_superseded_plan(self, mock_ha_interface, mock_logger):
         """A newer queued execution should replace the existing pending one when the plan changes."""
@@ -1480,6 +1718,78 @@ class TestPendingCoverExecutionQueue:
         assert mock_logger.error.call_args.args[:2] == ("[%s] Failed queued cover execution: %s", "cover.test")
         assert isinstance(mock_logger.error.call_args.args[2], RuntimeError)
         assert str(mock_logger.error.call_args.args[2]) == "boom"
+
+    async def test_run_pending_cover_execution_returns_when_sleep_is_cancelled(self, mock_ha_interface, mock_logger):
+        """Queued execution should stop quietly when the scheduled delay is cancelled."""
+
+        engine = AutomationEngine(
+            resolved=resolve({ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"}),
+            config={ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"},
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        plan = self._make_plan()
+        cover_automation = MagicMock()
+        cover_automation.execute_plan = AsyncMock()
+        engine._pending_cover_executions["cover.test"] = ScheduledCoverExecution(
+            schedule_id=7,
+            execute_at=datetime(2026, 5, 23, 10, 5, tzinfo=timezone.utc),
+            generation=0,
+            plan_signature=plan.signature,
+            task=MagicMock(),
+        )
+
+        async def raise_cancelled(_delay_seconds: float) -> None:
+            raise asyncio.CancelledError
+
+        with patch("custom_components.smart_cover_automation.automation_engine.asyncio.sleep", side_effect=raise_cancelled):
+            await engine._run_pending_cover_execution("cover.test", 7, cover_automation, plan, delay_seconds=0)
+
+        assert "cover.test" in engine._pending_cover_executions
+        cover_automation.execute_plan.assert_not_awaited()
+
+    async def test_run_pending_cover_execution_returns_when_schedule_is_missing(self, mock_ha_interface, mock_logger):
+        """Queued execution should stop quietly when the pending entry was already removed."""
+
+        engine = AutomationEngine(
+            resolved=resolve({ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"}),
+            config={ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"},
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        cover_automation = MagicMock()
+        cover_automation.execute_plan = AsyncMock()
+
+        with patch("custom_components.smart_cover_automation.automation_engine.asyncio.sleep", new=AsyncMock()):
+            await engine._run_pending_cover_execution("cover.test", 7, cover_automation, self._make_plan(), delay_seconds=0)
+
+        cover_automation.execute_plan.assert_not_awaited()
+
+    async def test_run_pending_cover_execution_returns_when_schedule_id_changes(self, mock_ha_interface, mock_logger):
+        """Queued execution should stop when a newer pending schedule replaced the original one."""
+
+        engine = AutomationEngine(
+            resolved=resolve({ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"}),
+            config={ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"},
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        plan = self._make_plan()
+        cover_automation = MagicMock()
+        cover_automation.execute_plan = AsyncMock()
+        engine._pending_cover_executions["cover.test"] = ScheduledCoverExecution(
+            schedule_id=8,
+            execute_at=datetime(2026, 5, 23, 10, 5, tzinfo=timezone.utc),
+            generation=0,
+            plan_signature=plan.signature,
+            task=MagicMock(),
+        )
+
+        with patch("custom_components.smart_cover_automation.automation_engine.asyncio.sleep", new=AsyncMock()):
+            await engine._run_pending_cover_execution("cover.test", 7, cover_automation, plan, delay_seconds=0)
+
+        assert "cover.test" in engine._pending_cover_executions
+        cover_automation.execute_plan.assert_not_awaited()
 
     def test_cancel_pending_cover_executions_for_removed_covers(self, mock_ha_interface, mock_logger):
         """Queued executions should be cancelled when their covers are no longer configured."""

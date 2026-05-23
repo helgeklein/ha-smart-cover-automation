@@ -152,12 +152,17 @@ In this step of the configuration wizard, the following settings can be configur
 
 Blocked time range allows you to disable the automation in a certain time range, e.g., when you sleep. It delays the cover opening in the morning until the end of the configured time range. So, if you configure the blocked time range as 22:00 to 7:00, the covers will not open before 7 am.
 
+You can also have the automation pre-close covers in the evening before a hot sunny day. This ensures silence (no cover movements) during the blocked time range while still providing heat protection through closed covers in the morning. Pre-closure runs at the beginning of the blocked time range and closes all covers the sun will shine on between sunrise and the end of the blocked time range.
 
 Blocked time range settings:
 
 - **Disable automation in time range:** Enable or disable the blocked time range function.
 - **Disable from:** Start time of the time period in which the automation should be inactive.
 - **Disable until:** End time of the time period in which the automation should be inactive.
+
+*New in 4.3:*
+
+- **Pre-close for next-morning heat protection:** In the evening before a hot sunny day, pre-close covers the sun will shine on the next morning.
 
 ### Evening Closure & Morning Opening
 
