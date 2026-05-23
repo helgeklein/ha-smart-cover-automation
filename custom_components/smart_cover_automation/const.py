@@ -218,6 +218,7 @@ NUMBER_KEY_SUN_ELEVATION_THRESHOLD: Final[str] = "sun_elevation_threshold"  # Ke
 
 # Options flow translation keys
 ERROR_INVALID_COVER: Final[str] = "invalid_cover"
+ERROR_INVALID_INTEGER: Final[str] = "invalid_integer"
 ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"
 ERROR_NO_COVERS: Final[str] = "no_covers"
 ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"

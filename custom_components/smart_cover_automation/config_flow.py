@@ -1018,6 +1018,28 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """
         return dict(self._config_entry.options) if self._config_entry.options else {}
 
+    @staticmethod
+    def _validate_step_2_input(user_input: Mapping[str, Any]) -> dict[str, str]:
+        """Validate raw step-2 section input before coercion.
+
+        Per-cover sun azimuth tolerance fields use a text selector so they can
+        be cleared. Invalid non-empty values must be rejected explicitly rather
+        than silently treated as cleared values.
+        """
+
+        errors: dict[str, str] = {}
+        tolerance_section = user_input.get(const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
+        if not isinstance(tolerance_section, Mapping):
+            return errors
+
+        for key, raw_value in tolerance_section.items():
+            if OptionsFlowHandler._is_empty_value(raw_value):
+                continue
+            if to_int_or_none(raw_value) is None:
+                errors[str(key)] = const.ERROR_INVALID_INTEGER
+
+        return errors
+
     def _show_form(
         self,
         *,
@@ -1261,6 +1283,21 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
         else:
             self._logger.debug(f"Options flow step 2 user input: {user_input}")
+
+            errors = self._validate_step_2_input(user_input)
+            if errors:
+                current_settings = self._current_settings()
+                step_2_input, _ = FlowHelper.extract_from_section_input(
+                    user_input,
+                    {const.STEP_2_SECTION_AZIMUTH, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE},
+                )
+                defaults = {**current_settings, **step_2_input}
+                return self._show_form(
+                    step_id="2",
+                    data_schema=FlowHelper.build_schema_step_2(covers=self._get_covers(), defaults=defaults),
+                    errors=errors,
+                    last_step=False,
+                )
 
             covers_in_input = self._get_covers()
             current_settings = self._current_settings()

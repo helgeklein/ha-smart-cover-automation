@@ -245,6 +245,34 @@ class TestOptionsFlowStep2:
         assert result_dict["step_id"] == "3"
         assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 25
 
+    async def test_step_2_rejects_invalid_per_cover_sun_azimuth_tolerance(self, mock_hass_with_covers: MagicMock) -> None:
+        """Step 2 should reject invalid non-integer sun azimuth tolerance input."""
+
+        mock_entry = _create_mock_entry()
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+
+        user_input = {
+            const.STEP_2_SECTION_AZIMUTH: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 225,
+            },
+            const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "75x",
+            },
+        }
+
+        result = await flow.async_step_2(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "2"
+        assert result_dict["errors"] == {
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": const.ERROR_INVALID_INTEGER,
+        }
+
     def test_build_section_cover_settings_with_sun_azimuth_tolerance(self) -> None:
         """Test _build_section_cover_settings handles per-cover sun azimuth tolerance."""
 
