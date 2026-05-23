@@ -842,9 +842,16 @@ class CoverAutomation:
                     and self._is_passive_reopening_eligible(current_pos)
                 )
                 reopening_allowed = reopening_mode == const.ReopeningMode.ACTIVE or (passive_reopening_eligible)
-                default_opening_would_let_light_in = last_automation_closing_reason is None and not manual_override_just_expired
+                reopening_reason = self._get_opening_movement_reason(
+                    last_automation_closing_reason,
+                    manual_override_just_expired=manual_override_just_expired,
+                )
 
-                if default_opening_would_let_light_in and sensor_data.sun_elevation <= 0:
+                if (
+                    reopening_allowed
+                    and sensor_data.sun_elevation <= 0
+                    and reopening_reason != CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
+                ):
                     self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = current_pos
                     desired_pos_friendly_name = "keeping current position because the sun is below the horizon"
@@ -870,20 +877,14 @@ class CoverAutomation:
                             if current_pos == desired_pos
                             else "opening because delayed reopening after heat protection has expired"
                         )
-                        movement_reason = self._get_opening_movement_reason(
-                            last_automation_closing_reason,
-                            manual_override_just_expired=manual_override_just_expired,
-                        )
+                        movement_reason = reopening_reason
                 elif reopening_mode == const.ReopeningMode.ACTIVE:
                     self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = open_target
                     desired_pos_friendly_name = (
                         "already at the open target" if current_pos == desired_pos else "opening because closing conditions no longer apply"
                     )
-                    movement_reason = self._get_opening_movement_reason(
-                        last_automation_closing_reason,
-                        manual_override_just_expired=manual_override_just_expired,
-                    )
+                    movement_reason = reopening_reason
                 elif passive_reopening_eligible:
                     self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = open_target
@@ -892,10 +893,7 @@ class CoverAutomation:
                         if current_pos == desired_pos
                         else "opening because this cover was previously closed by automation"
                     )
-                    movement_reason = self._get_opening_movement_reason(
-                        last_automation_closing_reason,
-                        manual_override_just_expired=manual_override_just_expired,
-                    )
+                    movement_reason = reopening_reason
                 elif reopening_mode == const.ReopeningMode.PASSIVE:
                     self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = current_pos

@@ -1329,6 +1329,39 @@ class TestCalculateDesiredPosition:
         assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
         assert lockout_active is False
 
+    def test_calculate_desired_position_passive_does_not_reopen_below_horizon(
+        self, cover_automation, mock_logger, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Passive reopening should not reopen covers below the horizon."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = PositionEntry(
+            position=0,
+            timestamp=datetime.now(timezone.utc) - timedelta(minutes=5),
+            cover_moved=True,
+        )
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=-5.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=0)
+
+        assert position == 0
+        assert reason is None
+        assert lockout_active is False
+        mock_logger.info.assert_any_call(
+            "[cover.test] Current position: 0%, desired position: 0%, keeping current position because the sun is below the horizon"
+        )
+
     def test_calculate_desired_position_passive_keeps_position_until_user_returns_to_automation_owned_state(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
@@ -1591,6 +1624,26 @@ class TestCalculateDesiredPosition:
         sensor_data = make_sensor_data(
             sun_azimuth=180.0,
             sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
+
+    def test_calculate_desired_position_reopens_after_evening_closure_below_horizon(self, cover_automation, mock_cover_pos_history_mgr):
+        """Evening-closure reopening may still follow the configured morning-opening schedule below the horizon."""
+
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=-5.0,
             temp_max=20.0,
             temp_hot=False,
             weather_condition="cloudy",
