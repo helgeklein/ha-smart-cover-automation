@@ -174,6 +174,8 @@ class FlowHelper:
 
             if default_value is not None:
                 key_marker = vol.Optional(key, description={"suggested_value": str(default_value)})
+            elif raw not in (None, ""):
+                key_marker = vol.Optional(key, description={"suggested_value": str(raw)})
             else:
                 key_marker = vol.Optional(key)
 
@@ -1036,6 +1038,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if OptionsFlowHandler._is_empty_value(raw_value):
                 continue
             if to_int_or_none(raw_value) is None:
+                errors["base"] = const.ERROR_INVALID_INTEGER
                 errors[str(key)] = const.ERROR_INVALID_INTEGER
 
         return errors

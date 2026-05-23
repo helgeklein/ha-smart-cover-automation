@@ -270,8 +270,19 @@ class TestOptionsFlowStep2:
         assert result_dict["type"] == FlowResultType.FORM
         assert result_dict["step_id"] == "2"
         assert result_dict["errors"] == {
+            "base": const.ERROR_INVALID_INTEGER,
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": const.ERROR_INVALID_INTEGER,
         }
+
+        schema = result_dict["data_schema"].schema
+        section_key = next(key for key in schema if getattr(key, "schema", None) == const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
+        section_schema = schema[section_key].schema.schema
+        field_key = next(
+            key
+            for key in section_schema
+            if getattr(key, "schema", None) == f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
+        )
+        assert field_key.description == {"suggested_value": "75x"}
 
     def test_build_section_cover_settings_with_sun_azimuth_tolerance(self) -> None:
         """Test _build_section_cover_settings handles per-cover sun azimuth tolerance."""

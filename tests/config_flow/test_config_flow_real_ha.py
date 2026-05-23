@@ -489,8 +489,17 @@ class TestOptionsFlow:
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == "2"
         assert result["errors"] == {
+            "base": ERROR_INVALID_INTEGER,
             f"{TEST_COVER_1}_{COVER_SFX_SUN_AZIMUTH_TOLERANCE}": ERROR_INVALID_INTEGER,
         }
+
+        schema = result["data_schema"].schema
+        section_key = next(key for key in schema if getattr(key, "schema", None) == STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
+        section_schema = schema[section_key].schema.schema
+        field_key = next(
+            key for key in section_schema if getattr(key, "schema", None) == f"{TEST_COVER_1}_{COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
+        )
+        assert field_key.description == {"suggested_value": "75x"}
 
     # ------------------------------------------------------------------
     # 3.3  Options flow step 1 validation — invalid cover entity
