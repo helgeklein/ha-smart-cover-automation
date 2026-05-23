@@ -76,9 +76,11 @@ class LogSeverity(Enum):
 
 DOMAIN: Final[str] = "smart_cover_automation"
 INTEGRATION_NAME: Final[str] = "Smart Cover Automation"
+DEFAULT_COVER_AZIMUTH: Final[int] = 180
 
 # Per-cover configuration key suffixes
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
+COVER_SFX_SUN_AZIMUTH_TOLERANCE: Final[str] = "cover_sun_azimuth_tolerance"  # Per-cover override for sun azimuth tolerance (°).
 COVER_SFX_MAX_CLOSURE: Final[str] = "cover_max_closure"  # Cover maximum closure position (%)
 COVER_SFX_MIN_CLOSURE: Final[str] = "cover_min_closure"  # Cover minimum closure position (%)
 COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE: Final[str] = (
@@ -217,9 +219,12 @@ NUMBER_KEY_SUN_ELEVATION_THRESHOLD: Final[str] = "sun_elevation_threshold"  # Ke
 
 # Options flow translation keys
 ERROR_INVALID_COVER: Final[str] = "invalid_cover"
+ERROR_INVALID_INTEGER: Final[str] = "invalid_integer"
 ERROR_INVALID_WEATHER_ENTITY: Final[str] = "invalid_weather_entity"
 ERROR_NO_COVERS: Final[str] = "no_covers"
 ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"
+STEP_2_SECTION_AZIMUTH: Final[str] = "section_azimuth"
+STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: Final[str] = "section_sun_azimuth_tolerance"
 STEP_3_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
 STEP_3_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
 STEP_3_SECTION_EVENING_MAX_CLOSURE: Final[str] = "section_evening_max_closure"

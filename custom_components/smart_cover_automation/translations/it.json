@@ -10,6 +10,7 @@
     "options": {
         "error": {
             "invalid_cover": "Una o più tapparelle selezionate non sono valide o non disponibili.",
+            "invalid_integer": "Inserisci un numero intero.",
             "invalid_weather_entity": "L'entità meteo selezionata non supporta le previsioni giornaliere.",
             "no_covers": "Nessuna tapparella selezionata.",
             "no_weather_entity": "Nessuna entità meteo selezionata."
@@ -29,7 +30,15 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Passo 2 di 6",
-                "description": "Configura l'**azimut** (direzione) per ciascuna tapparella (obbligatorio).\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)"
+                "description": "Configura l'**azimut** (direzione) per ciascuna tapparella. Puoi anche aggiungere valori opzionali di **tolleranza dell'azimut solare** per singola tapparella che sovrascrivono l'impostazione globale della tolleranza dell'azimut configurabile nella pagina del dispositivo di questa istanza dell'integrazione.\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)",
+                "sections": {
+                    "section_azimuth": {
+                        "name": "Azimut della tapparella (obbligatorio)"
+                    },
+                    "section_sun_azimuth_tolerance": {
+                        "name": "Tolleranza dell'azimut solare (opzionale)"
+                    }
+                }
             },
             "3": {
                 "title": "Smart Cover Automation - Passo 3 di 6",

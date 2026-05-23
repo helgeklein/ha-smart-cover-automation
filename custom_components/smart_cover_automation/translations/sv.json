@@ -10,6 +10,7 @@
     "options": {
         "error": {
             "invalid_cover": "En eller flera valda persienner är ogiltiga eller otillgängliga.",
+            "invalid_integer": "Ange ett heltal.",
             "invalid_weather_entity": "Den valda väderentiteten stöder inte dagliga prognoser.",
             "no_covers": "Inga persienner valda.",
             "no_weather_entity": "Ingen väderentitet vald."
@@ -29,7 +30,15 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Steg 2 av 6",
-                "description": "Konfigurera **azimut** (riktning) för varje persienn (obligatoriskt).\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)"
+                "description": "Konfigurera **azimut** (riktning) för varje persienn. Du kan också lägga till valfria värden för **tolerans för solens azimut** per persienn som åsidosätter den globala inställningen för tolerans för solens azimut, som kan konfigureras på enhetssidan för denna integrationsinstans.\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)",
+                "sections": {
+                    "section_azimuth": {
+                        "name": "Persiennens azimut (obligatoriskt)"
+                    },
+                    "section_sun_azimuth_tolerance": {
+                        "name": "Tolerans för solens azimut (valfritt)"
+                    }
+                }
             },
             "3": {
                 "title": "Smart Cover Automation - Steg 3 av 6",

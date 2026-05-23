@@ -176,8 +176,8 @@ class TestOptionsFlowStep2:
         schema = result_dict["data_schema"].schema
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.keys()]
 
-        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
-        assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}" in schema_keys
+        assert const.STEP_2_SECTION_AZIMUTH in schema_keys
+        assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE in schema_keys
 
     async def test_step_2_uses_existing_azimuth_as_default(self, mock_hass_with_covers: MagicMock) -> None:
         """Test that existing azimuth values are used as defaults."""
@@ -218,6 +218,123 @@ class TestOptionsFlowStep2:
         assert result_dict["type"] == FlowResultType.FORM
         assert result_dict["step_id"] == "3"
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in flow._config_data
+
+    async def test_step_2_saves_per_cover_sun_azimuth_tolerance_override(self, mock_hass_with_covers: MagicMock) -> None:
+        """Step 2 should store per-cover integer sun azimuth tolerance overrides."""
+
+        mock_entry = _create_mock_entry()
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+
+        user_input = {
+            const.STEP_2_SECTION_AZIMUTH: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 225.0,
+            },
+            const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "25",
+            },
+        }
+
+        result = await flow.async_step_2(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "3"
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 25
+
+    async def test_step_2_assigns_default_azimuth_to_new_cover_when_section_is_omitted(self, mock_hass_with_covers: MagicMock) -> None:
+        """New covers should still get a valid azimuth if the collapsed azimuth section is not submitted."""
+
+        existing_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 135,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
+        }
+
+        user_input = {
+            const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
+                f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "25",
+            },
+        }
+
+        result = await flow.async_step_2(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "3"
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}"] == 135
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}"] == 180
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 25
+
+    async def test_step_2_rejects_invalid_per_cover_sun_azimuth_tolerance(self, mock_hass_with_covers: MagicMock) -> None:
+        """Step 2 should reject invalid non-integer sun azimuth tolerance input."""
+
+        mock_entry = _create_mock_entry()
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+
+        user_input = {
+            const.STEP_2_SECTION_AZIMUTH: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 225,
+            },
+            const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "75x",
+            },
+        }
+
+        result = await flow.async_step_2(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "2"
+        assert result_dict["errors"] == {
+            "base": const.ERROR_INVALID_INTEGER,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": const.ERROR_INVALID_INTEGER,
+        }
+
+        schema = result_dict["data_schema"].schema
+        section_key = next(key for key in schema if getattr(key, "schema", None) == const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
+        section_schema = schema[section_key].schema.schema
+        field_key = next(
+            key
+            for key in section_schema
+            if getattr(key, "schema", None) == f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
+        )
+        assert field_key.description == {"suggested_value": "75x"}
+
+    def test_build_section_cover_settings_with_sun_azimuth_tolerance(self) -> None:
+        """Test _build_section_cover_settings handles per-cover sun azimuth tolerance."""
+
+        user_input = {
+            const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "20",
+            },
+        }
+
+        covers = [MOCK_COVER_ENTITY_ID]
+        current_settings: dict[str, Any] = {}
+
+        result = OptionsFlowHandler._build_section_cover_settings(
+            user_input,
+            const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
+            const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+            covers,
+            current_settings,
+        )
+
+        assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 20
 
 
 class TestOptionsFlowNavigation:

@@ -558,6 +558,380 @@ class TestCheckManualOverride:
         result = cover_automation._check_manual_override(75)  # Position changed
         assert result is True
 
+
+class TestProcessLockMode:
+    """Test _process_lock_mode behavior."""
+
+    async def test_process_lock_mode_hold_position_blocks_automation(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface
+    ):
+        """Hold-position lock should set lock attrs without moving cover or tilt."""
+
+        mock_resolved_config.lock_mode = LockMode.HOLD_POSITION
+        cover_state = CoverState()
+
+        locked = await cover_automation._process_lock_mode(
+            cover_state,
+            current_pos=55,
+            features=CoverEntityFeature.SET_POSITION,
+        )
+
+        assert locked is True
+        assert cover_state.pos_target_desired == 55
+        assert cover_state.pos_target_final == 55
+        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
+        mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=55, cover_moved=False)
+        mock_ha_interface.set_cover_position.assert_not_called()
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+
+    async def test_process_lock_mode_force_open_applies_open_tilt_when_supported(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface
+    ):
+        """Force-open lock should enforce both cover position and fully open tilt."""
+
+        mock_resolved_config.lock_mode = LockMode.FORCE_OPEN
+        cover_automation._cover_supports_tilt = True
+        mock_ha_interface.set_cover_position.return_value = 100
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=100)
+        cover_state = CoverState()
+
+        locked = await cover_automation._process_lock_mode(
+            cover_state,
+            current_pos=25,
+            features=CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION,
+        )
+
+        assert locked is True
+        assert cover_state.pos_target_desired == 100
+        assert cover_state.pos_target_final == 100
+        assert cover_state.tilt_target == 100
+        mock_ha_interface.set_cover_position.assert_called_once_with(
+            "cover.test",
+            100,
+            CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION,
+        )
+        mock_ha_interface.set_cover_tilt_position.assert_called_once_with(
+            "cover.test",
+            100,
+            CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION,
+        )
+        assert mock_cover_pos_history_mgr.add.call_count == 1
+
+    async def test_process_lock_mode_force_open_logs_tilt_errors(
+        self, cover_automation, mock_resolved_config, mock_ha_interface, mock_logger
+    ):
+        """Force-open lock should log tilt-service failures without aborting lock enforcement."""
+
+        mock_resolved_config.lock_mode = LockMode.FORCE_OPEN
+        cover_automation._cover_supports_tilt = True
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(side_effect=RuntimeError("lock open tilt boom"))
+        cover_state = CoverState()
+
+        locked = await cover_automation._process_lock_mode(
+            cover_state,
+            current_pos=100,
+            features=CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION,
+        )
+
+        assert locked is True
+        assert cover_state.pos_target_desired == 100
+        assert cover_state.pos_target_final == 100
+        assert cover_state.tilt_target is None
+        mock_logger.error.assert_called_once_with("[cover.test] Failed to set lock tilt: lock open tilt boom")
+
+    async def test_process_lock_mode_force_close_logs_tilt_errors(
+        self, cover_automation, mock_resolved_config, mock_ha_interface, mock_logger
+    ):
+        """Force-close lock should log tilt-service failures without aborting lock enforcement."""
+
+        mock_resolved_config.lock_mode = LockMode.FORCE_CLOSE
+        cover_automation._cover_supports_tilt = True
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(side_effect=RuntimeError("lock tilt boom"))
+        cover_state = CoverState()
+
+        locked = await cover_automation._process_lock_mode(
+            cover_state,
+            current_pos=0,
+            features=CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION,
+        )
+
+        assert locked is True
+        assert cover_state.pos_target_desired == 0
+        assert cover_state.pos_target_final == 0
+        assert cover_state.tilt_target is None
+        mock_logger.error.assert_called_once_with("[cover.test] Failed to set lock tilt: lock tilt boom")
+
+
+class TestEnforceLockedPosition:
+    """Test direct locked-position enforcement branches."""
+
+    async def test_enforce_locked_position_skips_move_when_already_at_target(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
+        """Lock enforcement should only log and persist state when the cover is already at target."""
+
+        cover_automation.resolved.lock_mode = LockMode.FORCE_CLOSE
+        cover_state = CoverState()
+
+        await cover_automation._enforce_locked_position(
+            cover_state,
+            current_pos=0,
+            target_pos=0,
+            features=CoverEntityFeature.SET_POSITION,
+        )
+
+        assert cover_state.pos_target_desired == 0
+        assert cover_state.pos_target_final == 0
+        mock_ha_interface.set_cover_position.assert_not_called()
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=False)
+        mock_logger.info.assert_any_call("[cover.test] Lock active (force_close), already at target position (0%)")
+
+    async def test_enforce_locked_position_moves_cover_and_records_recent_action(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
+        """Lock enforcement should move the cover, record the action, and persist moved state."""
+
+        cover_automation.resolved.lock_mode = LockMode.FORCE_OPEN
+        mock_ha_interface.set_cover_position.return_value = 100
+        cover_state = CoverState()
+
+        await cover_automation._enforce_locked_position(
+            cover_state,
+            current_pos=35,
+            target_pos=100,
+            features=CoverEntityFeature.SET_POSITION,
+        )
+
+        assert cover_state.pos_target_desired == 100
+        assert cover_state.pos_target_final == 100
+        mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 100, CoverEntityFeature.SET_POSITION)
+        mock_cover_pos_history_mgr.set_recent_automation_action.assert_called_once()
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=True)
+        mock_logger.info.assert_any_call("[cover.test] Lock active (force_open), moving to target position (100%)")
+
+
+class TestDetermineTargetTilt:
+    """Test _determine_target_tilt branch selection."""
+
+    def test_determine_target_tilt_external_uses_global_external_value(
+        self, cover_automation, basic_config, sensor_data, mock_resolved_config
+    ):
+        """Global EXTERNAL tilt mode should use the configured global external value."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.EXTERNAL
+        basic_config[const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY] = 37
+        cover_automation._cover_supports_tilt = True
+        cover_state = CoverState(pos_current=0, tilt_current=10, sun_hitting=True, sun_azimuth_diff=10.0)
+
+        target = cover_automation._determine_target_tilt(
+            cover_state,
+            sensor_data,
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            cover_moved=False,
+        )
+
+        assert target == 37
+
+    def test_determine_target_tilt_external_prefers_per_cover_value_when_per_cover_mode_is_external(
+        self, cover_automation, basic_config, sensor_data, mock_resolved_config
+    ):
+        """Per-cover EXTERNAL mode should use the per-cover external tilt value over the global one."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.MANUAL
+        basic_config[f"cover.test_{const.COVER_SFX_TILT_MODE_DAY}"] = TiltMode.EXTERNAL
+        basic_config[f"cover.test_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}"] = 61
+        basic_config[const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY] = 22
+        cover_automation._cover_supports_tilt = True
+        cover_state = CoverState(pos_current=0, tilt_current=10, sun_hitting=True, sun_azimuth_diff=10.0)
+
+        target = cover_automation._determine_target_tilt(
+            cover_state,
+            sensor_data,
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            cover_moved=False,
+        )
+
+        assert target == 61
+
+    def test_determine_target_tilt_external_logs_and_skips_without_value(
+        self, cover_automation, sensor_data, mock_resolved_config, mock_logger
+    ):
+        """External tilt mode should log and skip when no external value is available."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.EXTERNAL
+        cover_automation._cover_supports_tilt = True
+        cover_state = CoverState(pos_current=0, tilt_current=10, sun_hitting=True, sun_azimuth_diff=10.0)
+
+        target = cover_automation._determine_target_tilt(
+            cover_state,
+            sensor_data,
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            cover_moved=False,
+        )
+
+        assert target is None
+        mock_logger.debug.assert_any_call("[cover.test] External tilt mode active but no external value is set, skipping")
+
+    def test_determine_target_tilt_external_uses_per_cover_night_value_when_night_mode_is_external(
+        self, cover_automation, basic_config, sensor_data, mock_resolved_config
+    ):
+        """Night closure should resolve the per-cover night external tilt value when overridden."""
+
+        mock_resolved_config.tilt_mode_night = TiltMode.MANUAL
+        basic_config[f"cover.test_{const.COVER_SFX_TILT_MODE_NIGHT}"] = TiltMode.EXTERNAL
+        basic_config[f"cover.test_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}"] = 13
+        basic_config[const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT] = 71
+        cover_automation._cover_supports_tilt = True
+        cover_state = CoverState(pos_current=0, tilt_current=10, sun_hitting=True, sun_azimuth_diff=10.0)
+
+        target = cover_automation._determine_target_tilt(
+            cover_state,
+            sensor_data,
+            CoverMovementReason.CLOSING_AFTER_SUNSET,
+            cover_moved=False,
+        )
+
+        assert target == 13
+
+    def test_determine_target_tilt_set_value_uses_day_and_night_config(self, cover_automation, sensor_data, mock_resolved_config):
+        """Set-value tilt mode should use the configured fixed day/night tilt values."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.SET_VALUE
+        mock_resolved_config.tilt_mode_night = TiltMode.SET_VALUE
+        mock_resolved_config.tilt_set_value_day = 42
+        mock_resolved_config.tilt_set_value_night = 7
+        cover_automation._cover_supports_tilt = True
+        cover_state = CoverState(pos_current=0, tilt_current=10, sun_hitting=True, sun_azimuth_diff=10.0)
+
+        day_target = cover_automation._determine_target_tilt(
+            cover_state,
+            sensor_data,
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            cover_moved=False,
+        )
+        night_target = cover_automation._determine_target_tilt(
+            cover_state,
+            sensor_data,
+            CoverMovementReason.CLOSING_AFTER_SUNSET,
+            cover_moved=False,
+        )
+
+        assert day_target == 42
+        assert night_target == 7
+
+    def test_determine_target_tilt_returns_none_for_unknown_mode(self, cover_automation, sensor_data, mock_resolved_config):
+        """Unexpected tilt modes should safely return no target."""
+
+        mock_resolved_config.tilt_mode_day = "unexpected"
+        cover_automation._cover_supports_tilt = True
+        cover_state = CoverState(pos_current=0, tilt_current=10, sun_hitting=True, sun_azimuth_diff=10.0)
+
+        target = cover_automation._determine_target_tilt(
+            cover_state,
+            sensor_data,
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            cover_moved=False,
+        )
+
+        assert target is None
+
+    def test_determine_target_tilt_returns_none_when_cover_moved_to_fully_open(self, cover_automation, sensor_data, mock_resolved_config):
+        """Tilt resolution should short-circuit when the effective position is fully open after movement."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.OPEN
+        cover_automation._cover_supports_tilt = True
+        cover_state = CoverState(pos_current=0, pos_target_final=100, tilt_current=10, sun_hitting=True, sun_azimuth_diff=10.0)
+
+        target = cover_automation._determine_target_tilt(
+            cover_state,
+            sensor_data,
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            cover_moved=True,
+        )
+
+        assert target is None
+
+
+class TestExternalTiltValueResolution:
+    """Test raw external tilt value resolution and validation."""
+
+    def test_get_external_tilt_value_logs_and_skips_invalid_global_day_value(self, cover_automation, basic_config, mock_logger):
+        """Invalid global day external tilt values should be rejected before service calls."""
+
+        basic_config[const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY] = "bad-value"
+
+        target = cover_automation._get_external_tilt_value(is_night=False)
+
+        assert target is None
+        mock_logger.warning.assert_any_call("[cover.test] Invalid external tilt value for tilt_external_value_day: 'bad-value', skipping")
+
+    def test_get_external_tilt_value_logs_and_skips_out_of_range_per_cover_night_value(self, cover_automation, basic_config, mock_logger):
+        """Out-of-range per-cover night external tilt values should be rejected when night mode is overridden."""
+
+        basic_config[f"cover.test_{const.COVER_SFX_TILT_MODE_NIGHT}"] = TiltMode.EXTERNAL
+        basic_config[f"cover.test_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}"] = 101
+        basic_config[const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT] = 44
+
+        target = cover_automation._get_external_tilt_value(is_night=True)
+
+        assert target is None
+        mock_logger.warning.assert_any_call(
+            "[cover.test] External tilt value out of range for cover.test_cover_tilt_external_value_night: 101, skipping"
+        )
+
+
+class TestMovementReasonHelpers:
+    """Test movement-reason helper mappings."""
+
+    def test_is_opening_movement_reason_true_for_all_opening_reasons(self):
+        """All opening reasons should be recognized as reopening actions."""
+
+        opening_reasons = (
+            CoverMovementReason.OPENING_LET_LIGHT_IN,
+            CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION,
+            CoverMovementReason.OPENING_AFTER_MANUAL_OVERRIDE,
+            CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE,
+        )
+
+        for reason in opening_reasons:
+            assert CoverAutomation._is_opening_movement_reason(reason) is True
+
+    def test_is_opening_movement_reason_false_for_closing_and_preparation_reasons(self):
+        """Closing and delayed-reopen preparation reasons should not count as opening reasons."""
+
+        non_opening_reasons = (
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            CoverMovementReason.CLOSING_AFTER_SUNSET,
+            CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE,
+            CoverMovementReason.PREPARING_REOPEN_AFTER_HEAT_PROTECTION,
+        )
+
+        for reason in non_opening_reasons:
+            assert CoverAutomation._is_opening_movement_reason(reason) is False
+
+    def test_get_closing_logbook_reason_key_maps_all_supported_closing_reasons(self):
+        """Each supported closing reason should map to the matching logbook key."""
+
+        assert (
+            CoverAutomation._get_closing_logbook_reason_key(CoverMovementReason.CLOSING_HEAT_PROTECTION)
+            == const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+        )
+        assert (
+            CoverAutomation._get_closing_logbook_reason_key(CoverMovementReason.CLOSING_AFTER_SUNSET)
+            == const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+        )
+        assert (
+            CoverAutomation._get_closing_logbook_reason_key(CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE)
+            == const.TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE
+        )
+
+    def test_get_closing_logbook_reason_key_rejects_non_closing_reason(self):
+        """Non-closing movement reasons should fail fast in the closing-reason mapper."""
+
+        with pytest.raises(ValueError, match="Unsupported closing movement reason"):
+            CoverAutomation._get_closing_logbook_reason_key(CoverMovementReason.OPENING_LET_LIGHT_IN)
+
     def test_get_manual_override_remaining_ignores_expected_recent_automation_drift(
         self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
     ):
@@ -694,6 +1068,28 @@ class TestCheckManualOverride:
 
 class TestCalculateSunHitting:
     """Test _calculate_sun_hitting method."""
+
+    def test_calculate_sun_hitting_uses_per_cover_tolerance_override(self, cover_automation, mock_resolved_config):
+        """Test that per-cover tolerance overrides the global tolerance."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] = 10
+
+        sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=195.0, sun_elevation=45.0, cover_azimuth=180.0)
+        assert sun_hitting is False
+        assert diff == 15.0
+
+    def test_calculate_sun_hitting_falls_back_when_per_cover_tolerance_invalid(self, cover_automation, mock_resolved_config):
+        """Test that invalid per-cover tolerance falls back to the global tolerance."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] = "invalid"
+
+        sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=195.0, sun_elevation=45.0, cover_azimuth=180.0)
+        assert sun_hitting is True
+        assert diff == 15.0
 
     def test_calculate_sun_hitting_direct_hit(self, cover_automation, mock_resolved_config):
         """Test when sun is directly hitting the window."""
@@ -1754,6 +2150,27 @@ class TestGetEffectiveTempHot:
 class TestApplyTilt:
     """Test tilt handling for weather-aware automation paths."""
 
+    async def test_apply_tilt_returns_immediately_without_movement_reason(
+        self,
+        cover_automation,
+        sensor_data,
+        mock_ha_interface,
+    ):
+        """Tilt handling should do nothing when no movement reason is active."""
+
+        cover_state = CoverState(pos_current=0, tilt_current=40, sun_hitting=True, sun_azimuth_diff=10.0)
+
+        await cover_automation._apply_tilt(
+            cover_state,
+            sensor_data,
+            CoverEntityFeature.SET_TILT_POSITION,
+            None,
+            cover_moved=False,
+        )
+
+        assert cover_state.tilt_target is None
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+
     async def test_apply_tilt_skips_when_sunshine_state_unknown_and_sun_hitting(
         self,
         cover_automation,
@@ -1819,6 +2236,60 @@ class TestApplyTilt:
             CoverEntityFeature.SET_TILT_POSITION,
         )
 
+    async def test_apply_tilt_skips_small_change_without_cover_movement(
+        self,
+        cover_automation,
+        sensor_data,
+        mock_resolved_config,
+        mock_ha_interface,
+        mock_logger,
+    ):
+        """Tilt updates below the minimum delta should be skipped when the cover itself did not move."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.CLOSED
+        mock_resolved_config.tilt_min_change_delta = 5
+        cover_automation._cover_supports_tilt = True
+        cover_state = CoverState(pos_current=0, tilt_current=2, sun_hitting=True, sun_azimuth_diff=10.0)
+
+        await cover_automation._apply_tilt(
+            cover_state,
+            sensor_data,
+            CoverEntityFeature.SET_TILT_POSITION,
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            cover_moved=False,
+        )
+
+        assert cover_state.tilt_target == 0
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+        mock_logger.debug.assert_any_call("[cover.test] Tilt change too small (2% → 0%), skipping")
+
+    async def test_apply_tilt_logs_error_when_service_call_fails(
+        self,
+        cover_automation,
+        sensor_data,
+        mock_resolved_config,
+        mock_ha_interface,
+        mock_logger,
+    ):
+        """Tilt-service failures should be logged and should not raise out of the automation loop."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.CLOSED
+        mock_resolved_config.tilt_min_change_delta = 5
+        cover_automation._cover_supports_tilt = True
+        mock_ha_interface.set_cover_tilt_position.side_effect = RuntimeError("tilt boom")
+        cover_state = CoverState(pos_current=0, tilt_current=100, sun_hitting=True, sun_azimuth_diff=10.0)
+
+        await cover_automation._apply_tilt(
+            cover_state,
+            sensor_data,
+            CoverEntityFeature.SET_TILT_POSITION,
+            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            cover_moved=False,
+        )
+
+        assert cover_state.tilt_target == 0
+        mock_logger.error.assert_called_once_with("[cover.test] Failed to set tilt: tilt boom")
+
 
 class TestIsLockoutActive:
     """Test _is_lockout_protection_active method."""
@@ -1872,6 +2343,65 @@ class TestIsLockoutActive:
         result = cover_automation._is_lockout_protection_active(CoverMovementReason.CLOSING_AFTER_SUNSET)
         assert result is True
 
+    def test_is_lockout_active_keep_closed_after_evening_closure(self, cover_automation, basic_config, mock_ha_interface):
+        """Test lockout also applies during the overnight keep-closed period."""
+        basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
+        mock_ha_interface.get_entity_state.return_value = STATE_ON
+
+        result = cover_automation._is_lockout_protection_active(CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE)
+        assert result is True
+
+    def test_is_lockout_active_ignores_non_list_window_sensor_config(self, cover_automation, basic_config, mock_ha_interface):
+        """Test malformed window sensor config does not trigger lockout or sensor lookups."""
+        basic_config["cover.test_cover_window_sensors"] = "binary_sensor.window1"
+
+        result = cover_automation._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION)
+
+        assert result is False
+        mock_ha_interface.get_entity_state.assert_not_called()
+
+
+class TestExternalTimeAvailability:
+    """Test external-time availability helpers."""
+
+    def test_has_missing_external_evening_closure_time_requires_target_cover(self, cover_automation, sensor_data, mock_resolved_config):
+        """Missing external evening time should only matter for covers in the evening-closure list."""
+
+        mock_resolved_config.evening_closure_enabled = True
+        mock_resolved_config.evening_closure_mode = const.EveningClosureMode.EXTERNAL
+        mock_resolved_config.evening_closure_cover_list = ("cover.other",)
+        sensor_data.has_valid_external_evening_closure_time = False
+
+        result = cover_automation._has_missing_external_evening_closure_time(sensor_data)
+
+        assert result is False
+
+    def test_has_missing_external_morning_opening_time_requires_external_mode(self, cover_automation, sensor_data, mock_resolved_config):
+        """Missing morning time should not block reopening outside external morning mode."""
+
+        mock_resolved_config.evening_closure_enabled = True
+        mock_resolved_config.morning_opening_mode = const.MorningOpeningMode.FIXED_TIME
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.has_valid_external_morning_opening_time = False
+
+        result = cover_automation._has_missing_external_morning_opening_time(sensor_data)
+
+        assert result is False
+
+    def test_has_missing_external_morning_opening_time_requires_evening_closure_enabled(
+        self, cover_automation, sensor_data, mock_resolved_config
+    ):
+        """Missing morning time should not apply when evening closure is disabled."""
+
+        mock_resolved_config.evening_closure_enabled = False
+        mock_resolved_config.morning_opening_mode = const.MorningOpeningMode.EXTERNAL
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        sensor_data.has_valid_external_morning_opening_time = False
+
+        result = cover_automation._has_missing_external_morning_opening_time(sensor_data)
+
+        assert result is False
+
 
 class TestMaoveCoverIfNeeded:
     """Test _move_cover_if_needed method."""
@@ -1900,6 +2430,42 @@ class TestMaoveCoverIfNeeded:
         assert movement_needed is False
         assert actual_pos is None
         assert message == "Skipped minor adjustment"
+
+    async def test_move_cover_if_needed_clears_reopen_state_when_already_open(self, cover_automation, mock_cover_pos_history_mgr):
+        """Opening no-op should still clear automation-closed and delayed-reopen markers."""
+
+        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
+            current_pos=100,
+            desired_pos=100,
+            features=CoverEntityFeature.SET_POSITION,
+            movement_reason=CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION,
+        )
+
+        assert movement_needed is False
+        assert actual_pos is None
+        assert message == "No movement needed"
+        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
+        mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
+
+    async def test_move_cover_if_needed_clears_reopen_state_for_minor_opening_adjustment(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Opening adjustments below the min delta should still clear reopen bookkeeping."""
+
+        mock_resolved_config.covers_min_position_delta = 5
+
+        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
+            current_pos=96,
+            desired_pos=100,
+            features=CoverEntityFeature.SET_POSITION,
+            movement_reason=CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE,
+        )
+
+        assert movement_needed is False
+        assert actual_pos is None
+        assert message == "Skipped minor adjustment"
+        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
+        mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
 
     async def test_move_cover_if_needed_closing_heat_protection(self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr):
         """Test moving cover for heat protection."""
@@ -1994,6 +2560,27 @@ class TestMaoveCoverIfNeeded:
         assert message == "Moved cover"
         call_kwargs = mock_ha_interface.add_logbook_entry.call_args[1]
         assert call_kwargs["reason_key"] == const.TRANSL_LOGBOOK_REASON_END_MANUAL_OVERRIDE
+
+    async def test_move_cover_if_needed_logs_and_recovers_from_service_error(
+        self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr, mock_logger
+    ):
+        """Cover-position service failures should be logged and reported without mutating history."""
+
+        mock_ha_interface.set_cover_position.side_effect = RuntimeError("move boom")
+
+        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
+            current_pos=20,
+            desired_pos=80,
+            features=CoverEntityFeature.SET_POSITION,
+            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+        )
+
+        assert movement_needed is False
+        assert actual_pos is None
+        assert message == "Error: move boom"
+        mock_cover_pos_history_mgr.add.assert_not_called()
+        mock_cover_pos_history_mgr.mark_closed_by_automation.assert_not_called()
+        mock_logger.error.assert_called_once_with("[cover.test] Failed to control cover: move boom")
 
     async def test_process_marks_manual_override_blocked_when_skipping(
         self, cover_automation, mock_cover_pos_history_mgr, mock_state, sensor_data

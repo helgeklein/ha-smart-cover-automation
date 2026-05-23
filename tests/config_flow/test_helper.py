@@ -248,8 +248,8 @@ class TestFlowHelperSchemaBuilding:
         schema = FlowHelper.build_schema_step_2(covers, defaults)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
-        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
-        assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}" in schema_keys
+        assert const.STEP_2_SECTION_AZIMUTH in schema_keys
+        assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE in schema_keys
 
     def test_build_schema_step_2_uses_default_azimuth(self, mock_hass_with_covers: MagicMock) -> None:
         """Test step 2 schema uses default azimuth when not in defaults."""
@@ -260,7 +260,7 @@ class TestFlowHelperSchemaBuilding:
 
         # Schema should be created (default 180 will be used internally)
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
-        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
+        assert const.STEP_2_SECTION_AZIMUTH in schema_keys
 
     def test_build_schema_step_2_uses_existing_azimuth(self, mock_hass_with_covers: MagicMock) -> None:
         """Test step 2 schema uses existing azimuth from defaults."""
@@ -272,7 +272,7 @@ class TestFlowHelperSchemaBuilding:
         schema = FlowHelper.build_schema_step_2(covers, defaults)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
-        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
+        assert const.STEP_2_SECTION_AZIMUTH in schema_keys
 
     def test_build_schema_step_2_uses_cover_friendly_name(self, mock_hass_with_covers: MagicMock) -> None:
         """Test step 2 schema uses cover friendly name when available."""
@@ -297,7 +297,20 @@ class TestFlowHelperSchemaBuilding:
         schema = FlowHelper.build_schema_step_2(covers, defaults)
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
-        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in schema_keys
+        assert const.STEP_2_SECTION_AZIMUTH in schema_keys
+
+    def test_build_schema_step_2_uses_existing_sun_azimuth_tolerance_override(self) -> None:
+        """Test step 2 schema exposes the per-cover tolerance override section."""
+
+        covers = [MOCK_COVER_ENTITY_ID]
+        defaults = {
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": 25,
+        }
+
+        schema = FlowHelper.build_schema_step_2(covers, defaults)
+        schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
+
+        assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE in schema_keys
 
     def test_build_schema_step_3_with_no_per_cover_defaults(self) -> None:
         """Test step 3 schema when covers have no per-cover min/max closure defaults.

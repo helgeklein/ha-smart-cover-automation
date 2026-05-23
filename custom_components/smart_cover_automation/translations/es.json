@@ -10,6 +10,7 @@
     "options": {
         "error": {
             "invalid_cover": "Una o más persianas/toldos seleccionados son inválidos o no están disponibles.",
+            "invalid_integer": "Introduzca un número entero.",
             "invalid_weather_entity": "La entidad meteorológica seleccionada no admite pronósticos diarios.",
             "no_covers": "No se seleccionaron persianas.",
             "no_weather_entity": "No se seleccionó entidad meteorológica."
@@ -29,7 +30,15 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Paso 2 de 6",
-                "description": "Configure el **azimut** (dirección) de cada persiana (obligatorio).\n\n(0°=Norte, 90°=Este, 180°=Sur, 270°=Oeste)"
+                "description": "Configure el **azimut** (dirección) de cada persiana. También puede añadir valores opcionales de **tolerancia de azimut solar** por persiana que sobrescriben la configuración global de tolerancia de azimut solar, configurable en la página del dispositivo de esta instancia de integración.\n\n(0°=Norte, 90°=Este, 180°=Sur, 270°=Oeste)",
+                "sections": {
+                    "section_azimuth": {
+                        "name": "Azimut de la persiana (obligatorio)"
+                    },
+                    "section_sun_azimuth_tolerance": {
+                        "name": "Tolerancia de azimut solar (opcional)"
+                    }
+                }
             },
             "3": {
                 "title": "Smart Cover Automation - Paso 3 de 6",

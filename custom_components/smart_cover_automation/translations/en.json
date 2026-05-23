@@ -10,6 +10,7 @@
     "options": {
         "error": {
             "invalid_cover": "One or more selected covers are invalid or unavailable.",
+            "invalid_integer": "Please enter a whole number.",
             "invalid_weather_entity": "The selected weather entity does not support daily forecasts.",
             "no_covers": "No covers selected.",
             "no_weather_entity": "No weather entity selected."
@@ -29,7 +30,15 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Step 2 of 6",
-                "description": "Configure the **azimuth** (direction) for each cover (required).\n\n(0°=North, 90°=East, 180°=South, 270°=West)"
+                "description": "Configure the **azimuth** (direction) for each cover. You can also add optional per-cover **sun azimuth tolerance** values that override the global azimuth tolerance setting configurable on the device page of the integration instance.\n\n(0°=North, 90°=East, 180°=South, 270°=West)",
+                "sections": {
+                    "section_azimuth": {
+                        "name": "Cover azimuth (required)"
+                    },
+                    "section_sun_azimuth_tolerance": {
+                        "name": "Sun azimuth tolerance (optional)"
+                    }
+                }
             },
             "3": {
                 "title": "Smart Cover Automation - Step 3 of 6",

@@ -14,7 +14,7 @@ from homeassistant.helpers import selector  # pyright: ignore[reportMissingImpor
 from . import const
 from .config import CONF_SPECS, ConfKeys, ResolvedConfig, resolve
 from .log import Log
-from .util import to_float_or_none, to_int_or_none
+from .util import to_int_or_none
 
 
 #
@@ -115,6 +115,7 @@ class FlowHelper:
             Schema for step 2 form
         """
         schema_dict: dict[vol.Marker, object] = {}
+        azimuth_schema_dict: dict[vol.Marker, object] = {}
 
         for cover in sorted(covers):
             # Build a key for storage
@@ -122,24 +123,65 @@ class FlowHelper:
 
             # Get the default value
             raw = defaults.get(key)
-            default_value = to_float_or_none(raw)
+            default_value = to_int_or_none(raw)
             if default_value is None:
-                default_value = 180
+                default_value = const.DEFAULT_COVER_AZIMUTH
 
             # Configure a selector
             value_selector = selector.NumberSelector(
                 selector.NumberSelectorConfig(
                     min=0,
                     max=359,
-                    step=0.1,
+                    step=1,
                     unit_of_measurement="°",
                     mode=selector.NumberSelectorMode.BOX,
                 )
             )
 
-            schema_dict[vol.Required(key, default=default_value)] = value_selector
+            azimuth_schema_dict[vol.Required(key, default=default_value)] = value_selector
+
+        if azimuth_schema_dict:
+            schema_dict[vol.Optional(const.STEP_2_SECTION_AZIMUTH)] = section(
+                vol.Schema(azimuth_schema_dict),
+                {"collapsed": True},
+            )
+
+        sun_azimuth_tolerance_schema_dict = FlowHelper._build_schema_cover_sun_azimuth_tolerance(covers, defaults)
+        if sun_azimuth_tolerance_schema_dict:
+            schema_dict[vol.Optional(const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)] = section(
+                vol.Schema(sun_azimuth_tolerance_schema_dict),
+                {"collapsed": True},
+            )
 
         return vol.Schema(schema_dict)
+
+    @staticmethod
+    def _build_schema_cover_sun_azimuth_tolerance(covers: list[str], defaults: Mapping[str, Any]) -> dict[vol.Marker, object]:
+        """Build schema for per-cover sun azimuth tolerance overrides."""
+
+        schema_dict: dict[vol.Marker, object] = {}
+        value_selector = selector.TextSelector(
+            selector.TextSelectorConfig(
+                type=selector.TextSelectorType.TEXT,
+                suffix="°",
+            )
+        )
+
+        for cover in sorted(covers):
+            key = f"{cover}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
+            raw = defaults.get(key)
+            default_value = to_int_or_none(raw)
+
+            if default_value is not None:
+                key_marker = vol.Optional(key, description={"suggested_value": str(default_value)})
+            elif raw not in (None, ""):
+                key_marker = vol.Optional(key, description={"suggested_value": str(raw)})
+            else:
+                key_marker = vol.Optional(key)
+
+            schema_dict[key_marker] = value_selector
+
+        return schema_dict
 
     #
     # build_schema_step_3
@@ -900,7 +942,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             Dictionary with normalized per-cover settings for this section
         """
         # Determine which section names are possible based on the suffix
-        if suffix in (
+        if suffix == const.COVER_SFX_SUN_AZIMUTH_TOLERANCE:
+            section_names = {const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE}
+        elif suffix in (
             const.COVER_SFX_MIN_CLOSURE,
             const.COVER_SFX_MAX_CLOSURE,
             const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
@@ -944,7 +988,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     raw_val = user_input_extracted[key]
                     new_value = str(raw_val) if not OptionsFlowHandler._is_empty_value(raw_val) else None
                 else:
-                    # Min/max closures are integers (or None if cleared)
+                    # Numeric per-cover overrides are integers (or None if cleared)
                     new_value = OptionsFlowHandler._to_int(user_input_extracted[key])
 
                 # Only include if the value actually changed or is being explicitly cleared
@@ -975,6 +1019,29 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             Dictionary of current option values
         """
         return dict(self._config_entry.options) if self._config_entry.options else {}
+
+    @staticmethod
+    def _validate_step_2_input(user_input: Mapping[str, Any]) -> dict[str, str]:
+        """Validate raw step-2 section input before coercion.
+
+        Per-cover sun azimuth tolerance fields use a text selector so they can
+        be cleared. Invalid non-empty values must be rejected explicitly rather
+        than silently treated as cleared values.
+        """
+
+        errors: dict[str, str] = {}
+        tolerance_section = user_input.get(const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
+        if not isinstance(tolerance_section, Mapping):
+            return errors
+
+        for key, raw_value in tolerance_section.items():
+            if OptionsFlowHandler._is_empty_value(raw_value):
+                continue
+            if to_int_or_none(raw_value) is None:
+                errors["base"] = const.ERROR_INVALID_INTEGER
+                errors[str(key)] = const.ERROR_INVALID_INTEGER
+
+        return errors
 
     def _show_form(
         self,
@@ -1121,6 +1188,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         keys_to_remove = []
         suffixes = (
             f"_{const.COVER_SFX_AZIMUTH}",
+            f"_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}",
             f"_{const.COVER_SFX_MAX_CLOSURE}",
             f"_{const.COVER_SFX_MIN_CLOSURE}",
             f"_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}",
@@ -1219,8 +1287,49 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         else:
             self._logger.debug(f"Options flow step 2 user input: {user_input}")
 
+            errors = self._validate_step_2_input(user_input)
+            if errors:
+                current_settings = self._current_settings()
+                step_2_input, _ = FlowHelper.extract_from_section_input(
+                    user_input,
+                    {const.STEP_2_SECTION_AZIMUTH, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE},
+                )
+                defaults = {**current_settings, **step_2_input}
+                return self._show_form(
+                    step_id="2",
+                    data_schema=FlowHelper.build_schema_step_2(covers=self._get_covers(), defaults=defaults),
+                    errors=errors,
+                    last_step=False,
+                )
+
+            covers_in_input = self._get_covers()
+            current_settings = self._current_settings()
+            step_2_input, _ = FlowHelper.extract_from_section_input(
+                user_input,
+                {const.STEP_2_SECTION_AZIMUTH, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE},
+            )
+
+            for cover in covers_in_input:
+                azimuth_key = f"{cover}_{const.COVER_SFX_AZIMUTH}"
+                if azimuth_key in step_2_input:
+                    self._config_data[azimuth_key] = int(step_2_input[azimuth_key])
+                    continue
+
+                current_azimuth = self._to_int(current_settings.get(azimuth_key))
+                if current_azimuth is None:
+                    current_azimuth = const.DEFAULT_COVER_AZIMUTH
+                self._config_data[azimuth_key] = current_azimuth
+
+            sun_azimuth_tolerance_data = self._build_section_cover_settings(
+                user_input,
+                const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
+                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+                covers_in_input,
+                current_settings,
+            )
+            self._config_data.update(sun_azimuth_tolerance_data)
+
             # Store step 2 data (temporarily, for the next step of the flow) and proceed to step 3
-            self._config_data.update(user_input)
             return await self.async_step_3()
 
     #

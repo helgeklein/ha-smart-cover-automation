@@ -83,7 +83,7 @@ The entities in this section control at which temperatures and sun positions the
 
 ### Sun Azimuth
 
-**Sun azimuth tolerance:** The maximum horizontal angle at which the sun is considered to be shining on the window (degrees).
+**Sun azimuth tolerance:** The maximum horizontal angle at which the sun is considered to be shining on the window (degrees). This global value can be overridden per cover in the configuration wizard.
 
 ### Sun Elevation
 

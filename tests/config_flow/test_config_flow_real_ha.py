@@ -26,7 +26,11 @@ from custom_components.smart_cover_automation import DOMAIN
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
     COVER_SFX_AZIMUTH,
+    COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+    ERROR_INVALID_INTEGER,
     INTEGRATION_NAME,
+    STEP_2_SECTION_AZIMUTH,
+    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
     TiltMode,
 )
 
@@ -89,6 +93,12 @@ def _as_dict(result: ConfigFlowResult) -> dict[str, Any]:
     """Convert flow result TypedDict to plain dict for test assertions."""
 
     return cast(dict[str, Any], result)
+
+
+def _step_2_azimuth_input(azimuths: dict[str, float]) -> dict[str, Any]:
+    """Wrap step-2 azimuth data in the options-flow section payload."""
+
+    return {STEP_2_SECTION_AZIMUTH: azimuths}
 
 
 #
@@ -234,7 +244,7 @@ async def _step_through_options_flow(
         result = _as_dict(
             await hass.config_entries.options.async_configure(
                 result["flow_id"],
-                user_input=inputs[i],
+                user_input=_step_2_azimuth_input(inputs[i]) if step_id == "2" else inputs[i],
             )
         )
         if result["type"] is FlowResultType.CREATE_ENTRY:
@@ -411,7 +421,7 @@ class TestOptionsFlow:
         result = _as_dict(
             await hass.config_entries.options.async_configure(
                 result["flow_id"],
-                user_input={f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180.0},
+                user_input=_step_2_azimuth_input({f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180.0}),
             )
         )
         assert result["type"] is FlowResultType.FORM
@@ -434,6 +444,131 @@ class TestOptionsFlow:
         delay_default = delay_key.default() if callable(delay_key.default) else delay_key.default
 
         assert delay_default == 2
+
+    async def test_options_flow_step_2_rejects_invalid_per_cover_sun_azimuth_tolerance(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Invalid tolerance text should keep the user on step 2 with an error."""
+
+        _register_cover_entity(hass, TEST_COVER_1)
+        _register_weather_entity(hass)
+
+        entry = _create_loaded_entry(hass)
+
+        result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "init"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    ConfKeys.WEATHER_ENTITY_ID.value: TEST_WEATHER,
+                    ConfKeys.COVERS.value: [TEST_COVER_1],
+                },
+            )
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "2"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    STEP_2_SECTION_AZIMUTH: {
+                        f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180,
+                    },
+                    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
+                        f"{TEST_COVER_1}_{COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "75x",
+                    },
+                },
+            )
+        )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "2"
+        assert result["errors"] == {
+            "base": ERROR_INVALID_INTEGER,
+            f"{TEST_COVER_1}_{COVER_SFX_SUN_AZIMUTH_TOLERANCE}": ERROR_INVALID_INTEGER,
+        }
+
+        schema = result["data_schema"].schema
+        section_key = next(key for key in schema if getattr(key, "schema", None) == STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
+        section_schema = schema[section_key].schema.schema
+        field_key = next(
+            key for key in section_schema if getattr(key, "schema", None) == f"{TEST_COVER_1}_{COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
+        )
+        assert field_key.description == {"suggested_value": "75x"}
+
+    async def test_options_flow_step_2_assigns_default_azimuth_to_new_cover_when_section_is_omitted(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """A newly added cover should still receive the default azimuth when step 2 stays collapsed."""
+
+        _register_cover_entity(hass, TEST_COVER_1)
+        _register_cover_entity(hass, TEST_COVER_2)
+        _register_weather_entity(hass)
+
+        entry = _create_loaded_entry(hass, covers=[TEST_COVER_1])
+
+        result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "init"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    ConfKeys.WEATHER_ENTITY_ID.value: TEST_WEATHER,
+                    ConfKeys.COVERS.value: [TEST_COVER_1, TEST_COVER_2],
+                },
+            )
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "2"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
+                        f"{TEST_COVER_2}_{COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "25",
+                    },
+                },
+            )
+        )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "3"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    ConfKeys.COVERS_MIN_CLOSURE.value: 100,
+                    ConfKeys.COVERS_MAX_CLOSURE.value: 0,
+                },
+            )
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "4"
+
+        result = _as_dict(await hass.config_entries.options.async_configure(result["flow_id"], user_input={}))
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "5"
+
+        result = _as_dict(await hass.config_entries.options.async_configure(result["flow_id"], user_input={}))
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "6"
+
+        result = _as_dict(await hass.config_entries.options.async_configure(result["flow_id"], user_input={}))
+
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        assert entry.options[f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}"] == 180.0
+        assert entry.options[f"{TEST_COVER_2}_{COVER_SFX_AZIMUTH}"] == 180
+        assert entry.options[f"{TEST_COVER_2}_{COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 25
 
     # ------------------------------------------------------------------
     # 3.3  Options flow step 1 validation — invalid cover entity

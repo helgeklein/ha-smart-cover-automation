@@ -54,11 +54,21 @@ The integration caches the weather forecast response for situations when interne
 
 Select the covers the integration should automate.
 
-## Step 2: Cover Azimuth
+## Step 2: Azimuth Settings
 
-In this step of the configuration wizard, specify each cover's azimuth (the direction), as an angle from north. This is necessary so that the integration can calculate when the sun is shining on a window.
+In this step of the configuration wizard, you can specify two kinds of azimuths for each cover. An azimuth, by the way, is an angle measured from north.
 
-There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). You can find instructions for both on [this website](https://doc.forecast.solar/find_your_azimuth).
+### Cover Azimuth
+
+Specify each cover's azimuth (direction). This is necessary so that the integration can calculate when the sun is shining on a window.
+
+There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). You can find instructions for both on [this website](https://doc.forecast.solar/find_your_azimuth). Your phone's compass app might also be accurate enough.
+
+*New in 4.2:*
+
+### Sun Azimuth Tolerance
+
+The sun azimuth tolerance specifies at which angle between sun and cover the sun is considered to be shining on the window. The values you can optionally specify here override the global azimuth tolerance setting configurable on the device page of the integration instance.
 
 ## Step 3: Max/Min Positions (Optional)
 
