@@ -170,6 +170,30 @@ def test_translation_has_evening_closure_section_keys(language_code: str) -> Non
 
 
 @pytest.mark.parametrize("language_code", _get_available_languages())
+def test_translation_has_blocked_time_range_section_keys(language_code: str) -> None:
+    """Test that blocked-time-range section fields are translated in every language."""
+
+    data = _load_translations(language_code)
+    section = data.get(const.HA_OPTIONS, {}).get("step", {}).get("6", {}).get("sections", {}).get(const.STEP_6_SECTION_TIME_RANGE, {})
+    section_data = section.get("data", {})
+    section_descriptions = section.get("data_description", {})
+    expected_fields = {
+        ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value,
+        ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value,
+        ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value,
+        ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value,
+    }
+
+    missing_labels = expected_fields - set(section_data.keys())
+    missing_descriptions = expected_fields - set(section_descriptions.keys())
+
+    assert not missing_labels, f"Missing blocked time range field labels in {language_code}.json: {sorted(missing_labels)}"
+    assert not missing_descriptions, (
+        f"Missing blocked time range field descriptions in {language_code}.json: {sorted(missing_descriptions)}"
+    )
+
+
+@pytest.mark.parametrize("language_code", _get_available_languages())
 def test_translation_has_evening_external_time_keys(language_code: str) -> None:
     """Test that evening external mode and entity labels are translated in every language."""
 

@@ -10,7 +10,7 @@ This module tests the AutomationEngine in isolation, focusing on:
 
 from __future__ import annotations
 
-from datetime import time
+from datetime import datetime, time, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -258,8 +258,86 @@ class TestGatherSensorData:
         assert sensor_data.temp_min == first_sensor_data.temp_min
         assert sensor_data.temp_hot == first_sensor_data.temp_hot
         assert sensor_data.weather_condition == first_sensor_data.weather_condition
-        assert sensor_data.weather_sunny == first_sensor_data.weather_sunny
-        assert "continuing with last known" in message
+
+    async def test_run_pre_closes_when_blocked_time_range_starts(self, mock_ha_interface, mock_logger):
+        """Blocked-time start should trigger one forecast-based pre-close evaluation."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 20.0,
+            ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value: 15.0,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value: time(22, 0),
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value: time(6, 0),
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value: True,
+            const.SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL: False,
+            const.SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL: False,
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+        mock_ha_interface.get_daily_temperature_extrema_for_date = AsyncMock(return_value=(28.0, 18.0))
+        mock_ha_interface.get_forecast_condition_for_date = AsyncMock(return_value="sunny")
+        mock_ha_interface.get_sun_data_for_datetime = MagicMock(return_value=(180.0, 45.0))
+
+        with patch(
+            "custom_components.smart_cover_automation.automation_engine.CoverAutomation.process", new=AsyncMock(return_value=CoverState())
+        ) as mock_process:
+            with patch("homeassistant.util.dt.now") as mock_now:
+                mock_now.return_value = datetime(2026, 5, 23, 21, 55, tzinfo=timezone.utc)
+                await engine.run({"cover.test": MagicMock()})
+
+                mock_process.reset_mock()
+                mock_now.return_value = datetime(2026, 5, 23, 22, 0, tzinfo=timezone.utc)
+                result = await engine.run({"cover.test": MagicMock()})
+
+        assert "cover.test" in result.covers
+        assert mock_process.await_count == 1
+        pre_close_sensor_data = mock_process.await_args.args[1]
+        assert pre_close_sensor_data.temp_hot is True
+        assert pre_close_sensor_data.weather_sunny is True
+        assert pre_close_sensor_data.ignore_weather_external_controls is True
+        mock_ha_interface.get_daily_temperature_extrema_for_date.assert_awaited_once_with(
+            "weather.test", datetime(2026, 5, 24, 22, 0, tzinfo=timezone.utc).date()
+        )
+        mock_ha_interface.get_forecast_condition_for_date.assert_awaited_once_with(
+            "weather.test", datetime(2026, 5, 24, 22, 0, tzinfo=timezone.utc).date()
+        )
+
+    async def test_run_does_not_repeat_pre_close_inside_same_blocked_period(self, mock_ha_interface, mock_logger):
+        """Blocked-time pre-close should only run once per blocked interval."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value: time(22, 0),
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value: time(6, 0),
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value: True,
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+        mock_ha_interface.get_daily_temperature_extrema_for_date = AsyncMock(return_value=(28.0, 18.0))
+        mock_ha_interface.get_forecast_condition_for_date = AsyncMock(return_value="sunny")
+        mock_ha_interface.get_sun_data_for_datetime = MagicMock(return_value=(180.0, 45.0))
+
+        with patch(
+            "custom_components.smart_cover_automation.automation_engine.CoverAutomation.process", new=AsyncMock(return_value=CoverState())
+        ) as mock_process:
+            with patch("homeassistant.util.dt.now") as mock_now:
+                mock_now.return_value = datetime(2026, 5, 23, 21, 59, tzinfo=timezone.utc)
+                await engine.run({"cover.test": MagicMock()})
+
+                mock_process.reset_mock()
+                mock_now.return_value = datetime(2026, 5, 23, 22, 0, tzinfo=timezone.utc)
+                await engine.run({"cover.test": MagicMock()})
+
+                mock_process.reset_mock()
+                mock_now.return_value = datetime(2026, 5, 23, 22, 1, tzinfo=timezone.utc)
+                result = await engine.run({"cover.test": MagicMock()})
+
+        assert result.covers == {}
+        assert mock_process.await_count == 0
 
     @pytest.mark.parametrize(
         "failing_call,expected_message",

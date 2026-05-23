@@ -61,6 +61,7 @@ class SensorData:
     post_evening_closure: bool
     has_valid_external_evening_closure_time: bool = True
     has_valid_external_morning_opening_time: bool = True
+    ignore_weather_external_controls: bool = False
 
 
 @dataclass(slots=True)
@@ -920,6 +921,9 @@ class CoverAutomation:
         Returns:
             Effective hot-weather state for this cover.
         """
+
+        if sensor_data.ignore_weather_external_controls:
+            return sensor_data.temp_hot
 
         per_cover_key = f"{self.entity_id}_{const.COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"
         per_cover_override = self.config.get(per_cover_key)

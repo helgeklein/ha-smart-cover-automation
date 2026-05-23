@@ -12,12 +12,13 @@ a clean abstraction layer over Home Assistant's APIs. Tests cover:
 
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from typing import TYPE_CHECKING
 from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
 import pytest
 from homeassistant.components.cover import ATTR_POSITION, ATTR_TILT_POSITION, CoverEntityFeature
+from homeassistant.components.weather.const import ATTR_WEATHER_TEMPERATURE_UNIT
 from homeassistant.const import (
     ATTR_ENTITY_ID,
     SERVICE_CLOSE_COVER,
@@ -27,6 +28,7 @@ from homeassistant.const import (
     SERVICE_SET_COVER_POSITION,
     SERVICE_SET_COVER_TILT_POSITION,
     Platform,
+    UnitOfTemperature,
 )
 from homeassistant.exceptions import HomeAssistantError
 
@@ -1154,6 +1156,41 @@ class TestFindDayForecast:
         day_name, forecast = result
         assert day_name == "tomorrow"
         assert forecast["native_temperature"] == 30.0
+
+
+class TestForecastConditionHelpers:
+    """Test forecast-condition helpers used by blocked-time pre-close."""
+
+    async def test_get_forecast_condition_for_date(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
+        """Forecast condition should be resolved from the explicit target date."""
+
+        target_date = date(2026, 5, 24)
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {ATTR_WEATHER_TEMPERATURE_UNIT: UnitOfTemperature.CELSIUS}
+        mock_hass.states.get.return_value = mock_weather_state
+        ha_interface._get_forecast_list = AsyncMock(
+            return_value=[
+                {"datetime": datetime(2026, 5, 24, 0, 0, tzinfo=timezone.utc).isoformat(), "condition": "sunny"},
+            ]
+        )
+
+        result = await ha_interface.get_forecast_condition_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
+
+        assert result == "sunny"
+
+    @patch("custom_components.smart_cover_automation.ha_interface.get_astral_location")
+    def test_get_sun_data_for_datetime(self, mock_get_astral_location: MagicMock, ha_interface: HomeAssistantInterface) -> None:
+        """Future sun-data helper should delegate to the Astral location object."""
+
+        mock_location = MagicMock()
+        mock_location.solar_azimuth.return_value = 150.0
+        mock_location.solar_elevation.return_value = 33.0
+        mock_get_astral_location.return_value = (mock_location, 120.0)
+        target_datetime = datetime(2026, 5, 24, 6, 0, tzinfo=timezone.utc)
+
+        result = ha_interface.get_sun_data_for_datetime(target_datetime)
+
+        assert result == (150.0, 33.0)
 
     @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date")
     def test_find_day_forecast_min_today_before_sunrise_cutover(

@@ -128,12 +128,14 @@
                         "data": {
                             "automation_disabled_time_range": "Désactiver l'automatisation sur une plage horaire :",
                             "automation_disabled_time_range_start": "Désactiver à partir de :",
-                            "automation_disabled_time_range_end": "Désactiver jusqu'à :"
+                            "automation_disabled_time_range_end": "Désactiver jusqu'à :",
+                            "automation_disabled_time_range_pre_close_enabled": "Pré-fermeture pour la protection thermique du lendemain matin :"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "Lorsque cette option est activée, l'automatisation ne fonctionne pas pendant la plage horaire indiquée.",
                             "automation_disabled_time_range_start": "Heure de début de la période pendant laquelle l'automatisation doit être désactivée.",
-                            "automation_disabled_time_range_end": "Heure de fin de la période pendant laquelle l'automatisation doit être désactivée."
+                            "automation_disabled_time_range_end": "Heure de fin de la période pendant laquelle l'automatisation doit être désactivée.",
+                            "automation_disabled_time_range_pre_close_enabled": "Lorsque cette option est activée, les protections sont pré-fermées au début de la plage bloquée si le lendemain matin doit être chaud et ensoleillé."
                         }
                     },
                     "section_close_after_sunset": {

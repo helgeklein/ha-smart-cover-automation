@@ -28,7 +28,7 @@ from homeassistant.const import (
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as ha_entity_registry
 from homeassistant.helpers import translation
-from homeassistant.helpers.sun import get_astral_event_date
+from homeassistant.helpers.sun import get_astral_event_date, get_astral_location
 from homeassistant.util import dt as dt_util
 
 from . import const
@@ -324,6 +324,16 @@ class HomeAssistantInterface:
 
         return (sun_azimuth, sun_elevation)
 
+    def get_sun_data_for_datetime(self, target_datetime: datetime) -> tuple[float, float]:
+        """Return sun azimuth and elevation for a specific local datetime."""
+
+        location, elevation = get_astral_location(self.hass)
+        local_datetime = dt_util.as_local(target_datetime)
+        return (
+            location.solar_azimuth(local_datetime, observer_elevation=elevation),
+            location.solar_elevation(local_datetime, observer_elevation=elevation),
+        )
+
     #
     # get_sun_state
     #
@@ -421,6 +431,67 @@ class HomeAssistantInterface:
             self._convert_forecast_temperature_to_celsius(state, max_temp),
             self._convert_forecast_temperature_to_celsius(state, min_temp) if min_temp is not None else None,
         )
+
+    async def get_daily_temperature_extrema_for_date(self, entity_id: str, target_date: date) -> tuple[float, float | None]:
+        """Get forecasted maximum and minimum temperatures for a specific date."""
+
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            raise WeatherEntityNotFoundError(entity_id)
+
+        forecast_list = await self._get_forecast_list(entity_id)
+        if forecast_list is None:
+            raise InvalidSensorReadingError(entity_id, "Forecast temperature unavailable")
+
+        label = target_date.isoformat()
+        max_forecast_result = self._find_day_forecast_for_date(forecast_list, target_date, label)
+        if max_forecast_result is None:
+            raise InvalidSensorReadingError(entity_id, "Forecast temperature unavailable")
+
+        _, max_day_forecast = max_forecast_result
+        max_temp = self._extract_max_temperature(max_day_forecast)
+        if max_temp is None:
+            raise InvalidSensorReadingError(entity_id, "Forecast temperature unavailable")
+
+        min_forecast_result = self._find_day_forecast_for_date(forecast_list, target_date, label)
+        min_temp = None
+        if min_forecast_result is not None:
+            _, min_day_forecast = min_forecast_result
+            min_temp = self._extract_min_temperature(min_day_forecast)
+
+        if min_temp is None:
+            self._logger.warning(
+                "Could not extract forecast minimum temperature from %s for %s. Continuing with daily max only.",
+                entity_id,
+                label,
+            )
+
+        return (
+            self._convert_forecast_temperature_to_celsius(state, max_temp),
+            self._convert_forecast_temperature_to_celsius(state, min_temp) if min_temp is not None else None,
+        )
+
+    async def get_forecast_condition_for_date(self, entity_id: str, target_date: date) -> str:
+        """Get the forecast weather condition for a specific date."""
+
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            raise WeatherEntityNotFoundError(entity_id)
+
+        forecast_list = await self._get_forecast_list(entity_id)
+        if forecast_list is None:
+            raise InvalidSensorReadingError(entity_id, "Forecast condition unavailable")
+
+        forecast_result = self._find_day_forecast_for_date(forecast_list, target_date, target_date.isoformat())
+        if forecast_result is None:
+            raise InvalidSensorReadingError(entity_id, "Forecast condition unavailable")
+
+        _, day_forecast = forecast_result
+        condition = self._extract_forecast_condition(day_forecast)
+        if condition is None:
+            raise InvalidSensorReadingError(entity_id, "Forecast condition unavailable")
+
+        return condition
 
     #
     # get_max_temperature
@@ -604,35 +675,46 @@ class HomeAssistantInterface:
         now_local = dt_util.now()
         applicable_day, applicable_day_friendly = self._get_applicable_forecast_day(now_local, temperature_kind)
 
+        return self._find_day_forecast_for_date(forecast_list, applicable_day, applicable_day_friendly)
+
+    def _find_day_forecast_for_date(
+        self,
+        forecast_list: list[Any],
+        target_date: date,
+        target_label: str,
+    ) -> tuple[str, dict[str, Any]] | None:
+        """Return the forecast entry for one explicit date."""
+
         # Try to find forecast entry for applicable day by datetime
         for forecast in forecast_list:
             if not isinstance(forecast, dict):
                 continue
 
-            # Check common datetime field names
-            datetime_field = forecast.get("datetime") or forecast.get("date")
-            if not datetime_field:
-                continue
-
-            try:
-                # Parse the datetime field
-                if isinstance(datetime_field, str):
-                    forecast_date = datetime.fromisoformat(datetime_field.replace("Z", "+00:00")).date()
-                elif hasattr(datetime_field, "date"):
-                    # Assume it's a datetime object
-                    forecast_date = datetime_field.date()
-                else:
-                    continue
-
-                if forecast_date == applicable_day:
-                    return (applicable_day_friendly, forecast)
-
-            except (ValueError, TypeError, AttributeError) as err:
-                self._logger.debug(f"Could not parse forecast datetime '{datetime_field}': {err}")
-                continue
+            forecast_date = self._extract_forecast_date(forecast)
+            if forecast_date == target_date:
+                return (target_label, forecast)
 
         # Fallback: could not find forecast by date
-        self._logger.warning("Could not find weather forecast by date")
+        self._logger.warning("Could not find weather forecast by date for %s", target_label)
+        return None
+
+    def _extract_forecast_date(self, forecast: dict[str, Any]) -> date | None:
+        """Extract the forecast date from a forecast entry."""
+
+        datetime_field = forecast.get("datetime") or forecast.get("date")
+        if not datetime_field:
+            return None
+
+        try:
+            if isinstance(datetime_field, str):
+                return datetime.fromisoformat(datetime_field.replace("Z", "+00:00")).date()
+            if isinstance(datetime_field, datetime):
+                return datetime_field.date()
+            if isinstance(datetime_field, date):
+                return datetime_field
+        except (ValueError, TypeError, AttributeError) as err:
+            self._logger.debug(f"Could not parse forecast datetime '{datetime_field}': {err}")
+
         return None
 
     #
@@ -751,6 +833,20 @@ class HomeAssistantInterface:
                     self._logger.debug(f"Field '{field_name}' is not a number: {temp_value}")
 
         self._logger.warning(f"No temperature fields found in forecast. Available fields: {list(forecast.keys())}")
+        return None
+
+    def _extract_forecast_condition(self, forecast: dict[str, Any]) -> str | None:
+        """Extract a weather condition string from a forecast entry."""
+
+        if not isinstance(forecast, dict):
+            return None
+
+        for field_name in ("native_condition", "condition"):
+            value = forecast.get(field_name)
+            if isinstance(value, str) and value:
+                return value
+
+        self._logger.warning(f"No condition fields found in forecast. Available fields: {list(forecast.keys())}")
         return None
 
     #

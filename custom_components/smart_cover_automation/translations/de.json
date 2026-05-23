@@ -128,12 +128,14 @@
                         "data": {
                             "automation_disabled_time_range": "Automatisierung im Zeitraum deaktivieren:",
                             "automation_disabled_time_range_start": "Deaktivieren ab:",
-                            "automation_disabled_time_range_end": "Deaktivieren bis:"
+                            "automation_disabled_time_range_end": "Deaktivieren bis:",
+                            "automation_disabled_time_range_pre_close_enabled": "Vorab schließen für Hitzeschutz am nächsten Morgen:"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "Wenn aktiviert, läuft die Automatisierung im angegebenen Zeitraum nicht.",
                             "automation_disabled_time_range_start": "Startzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll.",
-                            "automation_disabled_time_range_end": "Endzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll."
+                            "automation_disabled_time_range_end": "Endzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll.",
+                            "automation_disabled_time_range_pre_close_enabled": "Wenn aktiviert, werden Rollläden zu Beginn des blockierten Zeitraums vorab geschlossen, wenn der nächste Morgen heiß und sonnig vorhergesagt ist."
                         }
                     },
                     "section_close_after_sunset": {

@@ -128,12 +128,14 @@
                         "data": {
                             "automation_disabled_time_range": "Desativar a automação num intervalo de tempo:",
                             "automation_disabled_time_range_start": "Desativar de:",
-                            "automation_disabled_time_range_end": "Desativar até:"
+                            "automation_disabled_time_range_end": "Desativar até:",
+                            "automation_disabled_time_range_pre_close_enabled": "Pré-fecho para proteção térmica na manhã seguinte:"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "Quando ativada, a automação não será executada durante o intervalo de tempo especificado.",
                             "automation_disabled_time_range_start": "Hora de início do período em que a automação deve ser desativada.",
-                            "automation_disabled_time_range_end": "Hora de fim do período em que a automação deve ser desativada."
+                            "automation_disabled_time_range_end": "Hora de fim do período em que a automação deve ser desativada.",
+                            "automation_disabled_time_range_pre_close_enabled": "Quando ativada, as coberturas são pré-fechadas no início do intervalo bloqueado se a manhã seguinte estiver prevista como quente e ensolarada."
                         }
                     },
                     "section_close_after_sunset": {
