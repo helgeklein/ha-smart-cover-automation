@@ -304,6 +304,7 @@ class TestGatherSensorData:
             datetime(2026, 5, 24, 22, 0, tzinfo=timezone.utc).date(),
             log_context="next-morning pre-close forecast for 2026-05-24",
         )
+        mock_logger.debug.assert_any_call("Pre-closure weather conditions met, activating...")
 
     async def test_run_does_not_repeat_pre_close_inside_same_blocked_period(self, mock_ha_interface, mock_logger):
         """Blocked-time pre-close should only run once per blocked interval."""
@@ -368,6 +369,7 @@ class TestGatherSensorData:
 
         assert result.covers == {}
         assert mock_process.await_count == 0
+        mock_logger.debug.assert_any_call("Pre-closure weather conditions not met, skipping...")
         mock_logger.info.assert_any_call(
             "Blocked time range started; skipping pre-close because the next morning is not forecast to be both hot and sunny"
         )
@@ -398,6 +400,15 @@ class TestGatherSensorData:
         assert sensor_data.pre_closing is True
         assert sensor_data.sun_samples == ((150.0, 12.0), (200.0, 30.0))
         assert message == ""
+        mock_logger.debug.assert_any_call(
+            "Next day weather temperature state for pre-closure: %s (daily_max=%s, daily_min=%s, max_threshold_met=%s, min_threshold_met=%s)",
+            "hot",
+            24.0,
+            16.0,
+            True,
+            True,
+        )
+        mock_logger.debug.assert_any_call("Next day weather condition used for pre-closure: %s", "sunny")
         mock_ha_interface.get_forecast_snapshot_for_date.assert_awaited_once_with(
             "weather.test",
             datetime(2026, 5, 23, 17, 0, tzinfo=timezone.utc).date(),
@@ -472,6 +483,15 @@ class TestGatherSensorData:
         assert sensor_data.temp_hot is True
         assert sensor_data.weather_sunny is None
         assert "Forecast sunshine state unavailable" in message
+        mock_logger.debug.assert_any_call(
+            "Next day weather temperature state for pre-closure: %s (daily_max=%s, daily_min=%s, max_threshold_met=%s, min_threshold_met=%s)",
+            "hot",
+            24.0,
+            16.0,
+            True,
+            True,
+        )
+        mock_logger.debug.assert_any_call("Next day weather condition used for pre-closure: %s", "unknown")
 
     @pytest.mark.parametrize(
         ("start_time", "end_time", "reference_time", "expected_date"),

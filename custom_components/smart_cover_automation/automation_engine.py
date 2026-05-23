@@ -312,8 +312,10 @@ class AutomationEngine:
             return message
 
         if pre_close_sensor_data.temp_hot is not True or pre_close_sensor_data.weather_sunny is not True:
+            self._logger.debug("Pre-closure weather conditions not met, skipping...")
             return "Blocked time range started; skipping pre-close because the next morning is not forecast to be both hot and sunny"
 
+        self._logger.debug("Pre-closure weather conditions met, activating...")
         await self._process_covers(tuple(self.resolved.covers), cover_states, pre_close_sensor_data, result)
         return "Blocked time range started; evaluating forecast-based pre-close for next-morning heat protection"
 
@@ -358,12 +360,25 @@ class AutomationEngine:
             weather_messages.append("Forecast sunshine state unavailable for the next blocked-time exit")
 
         temp_hot: bool | None = None
+        meets_daily_max_threshold: bool | None = None
+        meets_daily_min_threshold: bool | None = None
         if temp_max is not None:
             meets_daily_max_threshold = temp_max >= self.resolved.daily_max_temperature_threshold
             meets_daily_min_threshold = temp_min >= self.resolved.daily_min_temperature_threshold if temp_min is not None else None
             temp_hot = meets_daily_max_threshold and (meets_daily_min_threshold is not False)
 
         weather_sunny = weather_condition.lower() in const.WEATHER_SUNNY_CONDITIONS if isinstance(weather_condition, str) else None
+        temp_state = "hot" if temp_hot is True else "not hot" if temp_hot is False else "unknown"
+        sunny_state = "sunny" if weather_sunny is True else "not sunny" if weather_sunny is False else "unknown"
+        self._logger.debug(
+            "Next day weather temperature state for pre-closure: %s (daily_max=%s, daily_min=%s, max_threshold_met=%s, min_threshold_met=%s)",
+            temp_state,
+            temp_max,
+            temp_min,
+            meets_daily_max_threshold,
+            meets_daily_min_threshold,
+        )
+        self._logger.debug("Next day weather condition used for pre-closure: %s", sunny_state)
         message = "; ".join(dict.fromkeys(weather_messages))
 
         return (
