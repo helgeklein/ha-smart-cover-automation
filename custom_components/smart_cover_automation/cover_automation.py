@@ -211,7 +211,6 @@ class CoverAutomation:
         was_manual_override_blocking = self._cover_pos_history_mgr.was_manual_override_blocking(self.entity_id)
         manual_override_remaining = self._get_manual_override_remaining(current_pos)
         if manual_override_remaining is not None:
-            self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
             self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             if self._should_ignore_manual_override(sensor_data):
                 self._cover_pos_history_mgr.clear_manual_override_blocked(self.entity_id)
@@ -640,6 +639,20 @@ class CoverAutomation:
             expires_at=expires_at,
         )
 
+    def _is_passive_reopening_eligible(self, current_pos: int) -> bool:
+        """Return whether passive reopening may resume automation ownership.
+
+        Passive reopening should only resume when the cover is still at the last
+        position automation considered owned. This lets a user briefly move the
+        cover and hand control back by returning it to that same position.
+        """
+
+        last_history_entry = self._cover_pos_history_mgr.get_latest_entry(self.entity_id)
+        if last_history_entry is None:
+            return True
+
+        return current_pos == last_history_entry.position
+
     #
     # _should_ignore_manual_override
     #
@@ -782,9 +795,12 @@ class CoverAutomation:
             else:
                 reopening_mode = self.resolved.automatic_reopening_mode
                 open_target = min(const.COVER_POS_FULLY_OPEN, self._get_cover_closure_limit(get_max=False))
-                reopening_allowed = reopening_mode == const.ReopeningMode.ACTIVE or (
-                    reopening_mode == const.ReopeningMode.PASSIVE and last_automation_closing_reason is not None
+                passive_reopening_eligible = (
+                    reopening_mode == const.ReopeningMode.PASSIVE
+                    and last_automation_closing_reason is not None
+                    and self._is_passive_reopening_eligible(current_pos)
                 )
+                reopening_allowed = reopening_mode == const.ReopeningMode.ACTIVE or (passive_reopening_eligible)
 
                 if reopening_allowed and self._should_delay_heat_protection_reopen(last_automation_closing_reason):
                     delay_minutes = self.resolved.tilt_open_to_cover_open_delay
@@ -821,7 +837,7 @@ class CoverAutomation:
                         last_automation_closing_reason,
                         manual_override_just_expired=manual_override_just_expired,
                     )
-                elif reopening_mode == const.ReopeningMode.PASSIVE and last_automation_closing_reason is not None:
+                elif passive_reopening_eligible:
                     self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = open_target
                     desired_pos_friendly_name = (

@@ -1024,14 +1024,14 @@ class TestMovementReasonHelpers:
 
         assert result is False
 
-    async def test_process_clears_automation_closed_marker_on_manual_override(
+    async def test_process_keeps_automation_closed_marker_available_during_manual_override(
         self,
         cover_automation,
         mock_cover_pos_history_mgr,
         mock_state,
         sensor_data,
     ):
-        """Manual override should clear passive reopening eligibility."""
+        """Manual override should keep passive reopening resumable after returning to the prior state."""
 
         entry = PositionEntry(position=0, timestamp=datetime.now(timezone.utc) - timedelta(seconds=30), cover_moved=True)
         mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
@@ -1039,7 +1039,7 @@ class TestMovementReasonHelpers:
 
         await cover_automation.process(mock_state, sensor_data)
 
-        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
+        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_not_called()
 
     def test_get_evening_closure_movement_reason_for_keep_closed(self, cover_automation, sensor_data, mock_resolved_config):
         """Test overnight keep-closed maps to its dedicated evening movement reason."""
@@ -1259,6 +1259,11 @@ class TestCalculateDesiredPosition:
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = PositionEntry(
+            position=50,
+            timestamp=datetime.now(timezone.utc) - timedelta(minutes=5),
+            cover_moved=True,
+        )
 
         sensor_data = make_sensor_data(
             sun_azimuth=180.0,
@@ -1274,6 +1279,36 @@ class TestCalculateDesiredPosition:
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
         assert position == 100
         assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
+        assert lockout_active is False
+
+    def test_calculate_desired_position_passive_keeps_position_until_user_returns_to_automation_owned_state(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Passive mode should wait while the user leaves the cover away from the last automation-owned position."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = PositionEntry(
+            position=0,
+            timestamp=datetime.now(timezone.utc) - timedelta(minutes=5),
+            cover_moved=True,
+        )
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+
+        assert position == 50
+        assert reason is None
         assert lockout_active is False
 
     def test_calculate_desired_position_passive_keeps_position_without_automation_closure(
