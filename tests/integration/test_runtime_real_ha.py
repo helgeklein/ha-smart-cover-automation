@@ -704,9 +704,20 @@ class TestRuntimeBehavior:
                 ConfKeys.AUTOMATIC_REOPENING_MODE.value: ReopeningMode.ACTIVE.value,
             },
         )
-        with patch(
-            "custom_components.smart_cover_automation.automation_engine.AutomationEngine._compute_post_evening_closure",
-            side_effect=_post_evening_closure,
+        with (
+            patch.object(
+                HomeAssistantInterface,
+                "get_sun_data",
+                return_value=(SUN_INDIRECT_AZIMUTH, SUN_HIGH_ELEVATION),
+            ),
+            patch(
+                "custom_components.smart_cover_automation.automation_engine.AutomationEngine._check_evening_closure",
+                return_value=False,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.automation_engine.AutomationEngine._compute_post_evening_closure",
+                side_effect=_post_evening_closure,
+            ),
         ):
             await _setup_integration(
                 hass,
@@ -1031,36 +1042,41 @@ class TestRuntimeBehavior:
                 ConfKeys.AUTOMATIC_REOPENING_MODE.value: ReopeningMode.ACTIVE.value,
             },
         )
-        await _setup_integration(
-            hass,
-            entry,
-            temp_max=COMFORTABLE_TEMP,
-            sun_elevation=SUN_HIGH_ELEVATION,
-            sun_azimuth=SUN_INDIRECT_AZIMUTH,
-            cover_positions={TEST_COVER_1: COVER_POS_FULLY_CLOSED},
-        )
-
-        coordinator = _get_coordinator(hass, entry)
-        initial_cover_data = coordinator.data.covers.get(TEST_COVER_1)
-
-        assert initial_cover_data is not None
-        assert initial_cover_data.pos_target_desired == COVER_POS_FULLY_OPEN
-        assert initial_cover_data.pos_target_final == COVER_POS_FULLY_OPEN
-        assert len(cover_calls) == 1
-        assert cover_calls[0].data["entity_id"] == TEST_COVER_1
-        assert cover_calls[0].data["position"] == COVER_POS_FULLY_OPEN
-
-        _setup_cover_entity(hass, TEST_COVER_1, position=98)
-
         with patch.object(
             HomeAssistantInterface,
-            "get_daily_temperature_extrema",
-            new_callable=AsyncMock,
-            return_value=(COMFORTABLE_TEMP, 18.0),
+            "get_sun_data",
+            return_value=(SUN_INDIRECT_AZIMUTH, SUN_HIGH_ELEVATION),
         ):
-            await _trigger_coordinator_update(hass)
+            await _setup_integration(
+                hass,
+                entry,
+                temp_max=COMFORTABLE_TEMP,
+                sun_elevation=SUN_HIGH_ELEVATION,
+                sun_azimuth=SUN_INDIRECT_AZIMUTH,
+                cover_positions={TEST_COVER_1: COVER_POS_FULLY_CLOSED},
+            )
 
-        drifted_cover_data = coordinator.data.covers.get(TEST_COVER_1)
+            coordinator = _get_coordinator(hass, entry)
+            initial_cover_data = coordinator.data.covers.get(TEST_COVER_1)
+
+            assert initial_cover_data is not None
+            assert initial_cover_data.pos_target_desired == COVER_POS_FULLY_OPEN
+            assert initial_cover_data.pos_target_final == COVER_POS_FULLY_OPEN
+            assert len(cover_calls) == 1
+            assert cover_calls[0].data["entity_id"] == TEST_COVER_1
+            assert cover_calls[0].data["position"] == COVER_POS_FULLY_OPEN
+
+            _setup_cover_entity(hass, TEST_COVER_1, position=98)
+
+            with patch.object(
+                HomeAssistantInterface,
+                "get_daily_temperature_extrema",
+                new_callable=AsyncMock,
+                return_value=(COMFORTABLE_TEMP, 18.0),
+            ):
+                await _trigger_coordinator_update(hass)
+
+            drifted_cover_data = coordinator.data.covers.get(TEST_COVER_1)
         assert drifted_cover_data is not None
         assert drifted_cover_data.pos_current == 98
         assert drifted_cover_data.pos_target_desired == COVER_POS_FULLY_OPEN
