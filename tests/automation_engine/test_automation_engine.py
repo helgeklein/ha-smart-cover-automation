@@ -276,24 +276,24 @@ class TestGatherSensorData:
         assert sensor_data.temp_hot == first_sensor_data.temp_hot
         assert sensor_data.weather_condition == first_sensor_data.weather_condition
 
-    async def test_gather_sensor_data_keeps_highest_seen_max_for_day(self, automation_engine, mock_ha_interface):
-        """The daytime max should never decrease within the same day once a higher value was seen."""
+    async def test_gather_sensor_data_keeps_effective_daily_extrema_for_day(self, automation_engine, mock_ha_interface):
+        """The stored daily max should not decrease and the stored daily min should not increase within one day."""
 
         first_now = datetime(2026, 5, 26, 15, 0, tzinfo=timezone.utc)
         second_now = datetime(2026, 5, 26, 18, 0, tzinfo=timezone.utc)
 
         with patch("homeassistant.util.dt.now", return_value=first_now):
-            mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, 18.0)
+            mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, 16.0)
             first_sensor_data, _ = await automation_engine._gather_sensor_data()
 
         with patch("homeassistant.util.dt.now", return_value=second_now):
-            mock_ha_interface.get_daily_temperature_extrema.return_value = (24.0, 18.0)
+            mock_ha_interface.get_daily_temperature_extrema.return_value = (24.0, 19.0)
             sensor_data, message = await automation_engine._gather_sensor_data()
 
         assert first_sensor_data is not None
         assert sensor_data is not None
         assert sensor_data.temp_max == 28.0
-        assert sensor_data.temp_min == 18.0
+        assert sensor_data.temp_min == 16.0
         assert sensor_data.temp_hot == first_sensor_data.temp_hot
         assert message == ""
 

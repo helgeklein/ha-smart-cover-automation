@@ -302,7 +302,7 @@ class TestAutomationClosedMarkers:
             "cover.test_cover",
             TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
         )
-        coordinator._automation_engine.restore_current_day_temperature_extrema({"date": "2026-05-26", "temp_max": 29.0})
+        coordinator._automation_engine.restore_current_day_temperature_extrema({"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0})
         await coordinator.async_persist_runtime_state()
 
         restored_entry = create_test_config_entry(create_temperature_config(), entry_id="persistent_entry")
@@ -316,6 +316,7 @@ class TestAutomationClosedMarkers:
         assert restored_coordinator._automation_engine.export_current_day_temperature_extrema() == {
             "date": "2026-05-26",
             "temp_max": 29.0,
+            "temp_min": 18.0,
         }
 
     def test_cover_position_history_add_with_explicit_timestamp(self):

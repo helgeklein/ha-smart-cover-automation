@@ -12,9 +12,9 @@ a clean abstraction layer over Home Assistant's APIs. Tests cover:
 
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timezone
 from typing import TYPE_CHECKING, Any, cast
-from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from homeassistant.components.cover import ATTR_POSITION, ATTR_TILT_POSITION, CoverEntityFeature
@@ -1580,7 +1580,7 @@ class TestForecastConditionHelpers:
         mock_get_sunrise: MagicMock,
         ha_interface: HomeAssistantInterface,
     ) -> None:
-        """Minimum temperature should use today's forecast before sunrise minus 30 minutes."""
+        """Minimum temperature should use today's forecast before the former sunrise cutover."""
 
         now = datetime(2023, 1, 1, 5, 45, tzinfo=timezone.utc)
         today = now.date()
@@ -1605,11 +1605,10 @@ class TestForecastConditionHelpers:
         mock_get_sunrise: MagicMock,
         ha_interface: HomeAssistantInterface,
     ) -> None:
-        """Minimum temperature should use tomorrow's forecast after sunrise minus 30 minutes."""
+        """Minimum temperature should continue using today's forecast after the former sunrise cutover."""
 
         now = datetime(2023, 1, 1, 6, 15, tzinfo=timezone.utc)
-        tomorrow = now.date() + timedelta(days=1)
-        forecast_datetime = datetime.combine(tomorrow, datetime.min.time(), tzinfo=timezone.utc)
+        forecast_datetime = datetime.combine(now.date(), datetime.min.time(), tzinfo=timezone.utc)
         mock_get_sunrise.return_value = datetime(2023, 1, 1, 6, 30, tzinfo=timezone.utc)
 
         forecast_list = [{"datetime": forecast_datetime.isoformat(), "native_templow": 3.0}]
@@ -1621,7 +1620,7 @@ class TestForecastConditionHelpers:
 
         assert result is not None
         day_name, forecast = result
-        assert day_name == "tomorrow"
+        assert day_name == "today"
         assert forecast["native_templow"] == 3.0
 
     @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date", return_value=None)
@@ -1629,9 +1628,8 @@ class TestForecastConditionHelpers:
         self,
         _mock_get_sunrise: MagicMock,
         ha_interface: HomeAssistantInterface,
-        mock_logger: MagicMock,
     ) -> None:
-        """Minimum temperature should stay on today if sunrise is unavailable."""
+        """Minimum temperature should stay on today's forecast when sunrise is unavailable."""
 
         now = datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc)
         forecast_datetime = datetime.combine(now.date(), datetime.min.time(), tzinfo=timezone.utc)
@@ -1646,10 +1644,6 @@ class TestForecastConditionHelpers:
         day_name, forecast = result
         assert day_name == "today"
         assert forecast["native_templow"] == 2.0
-        mock_logger.debug.assert_any_call(
-            "Could not determine sunrise-based min temperature cutover for %s; continuing to use today's minimum forecast",
-            "2023-01-01",
-        )
 
     @patch(
         "custom_components.smart_cover_automation.ha_interface.get_astral_event_date",
@@ -1659,9 +1653,8 @@ class TestForecastConditionHelpers:
         self,
         _mock_get_sunrise: MagicMock,
         ha_interface: HomeAssistantInterface,
-        mock_logger: MagicMock,
     ) -> None:
-        """Minimum temperature should stay on today when sunrise lookup raises."""
+        """Minimum temperature should stay on today's forecast when sunrise lookup raises."""
 
         now = datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc)
         forecast_datetime = datetime.combine(now.date(), datetime.min.time(), tzinfo=timezone.utc)
@@ -1676,20 +1669,14 @@ class TestForecastConditionHelpers:
         day_name, forecast = result
         assert day_name == "today"
         assert forecast["native_templow"] == 2.0
-        mock_logger.debug.assert_any_call(
-            "Could not determine sunrise time for %s while resolving min temperature cutover: %s",
-            "2023-01-01",
-            ANY,
-        )
 
     @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date", return_value=MagicMock())
     def test_find_day_forecast_min_falls_back_to_max_cutover_when_sunrise_lookup_returns_unexpected_type(
         self,
         _mock_get_sunrise: MagicMock,
         ha_interface: HomeAssistantInterface,
-        mock_logger: MagicMock,
     ) -> None:
-        """Minimum temperature should stay on today when sunrise lookup returns a non-datetime."""
+        """Minimum temperature should stay on today's forecast when sunrise lookup returns a non-datetime."""
 
         now = datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc)
         forecast_datetime = datetime.combine(now.date(), datetime.min.time(), tzinfo=timezone.utc)
@@ -1704,11 +1691,6 @@ class TestForecastConditionHelpers:
         day_name, forecast = result
         assert day_name == "today"
         assert forecast["native_templow"] == 2.0
-        mock_logger.debug.assert_any_call(
-            "Could not determine sunrise time for %s while resolving min temperature cutover: unexpected type %s",
-            "2023-01-01",
-            "MagicMock",
-        )
 
     #
     # test_find_day_forecast_empty_list

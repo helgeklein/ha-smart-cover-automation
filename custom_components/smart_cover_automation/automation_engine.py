@@ -35,10 +35,11 @@ class WeatherSnapshot:
 
 @dataclass(slots=True)
 class CurrentDayTemperatureExtrema:
-    """Stored highest seen forecast maximum for the current local day."""
+    """Stored effective forecast extrema for the current local day."""
 
     forecast_date: date
     temp_max: float
+    temp_min: float | None
 
 
 @dataclass(slots=True)
@@ -123,6 +124,7 @@ class AutomationEngine:
         return {
             "date": self._current_day_temperature_extrema.forecast_date.isoformat(),
             "temp_max": self._current_day_temperature_extrema.temp_max,
+            "temp_min": self._current_day_temperature_extrema.temp_min,
         }
 
     def restore_current_day_temperature_extrema(self, payload: Mapping[str, Any] | None) -> None:
@@ -134,7 +136,11 @@ class AutomationEngine:
 
         raw_date = payload.get("date")
         raw_temp_max = payload.get("temp_max")
+        raw_temp_min = payload.get("temp_min")
         if not isinstance(raw_date, str) or not isinstance(raw_temp_max, int | float):
+            self._current_day_temperature_extrema = None
+            return
+        if raw_temp_min is not None and not isinstance(raw_temp_min, int | float):
             self._current_day_temperature_extrema = None
             return
 
@@ -147,6 +153,7 @@ class AutomationEngine:
         self._current_day_temperature_extrema = CurrentDayTemperatureExtrema(
             forecast_date=forecast_date,
             temp_max=float(raw_temp_max),
+            temp_min=float(raw_temp_min) if raw_temp_min is not None else None,
         )
 
     def cancel_pending_cover_executions(self) -> None:
@@ -586,15 +593,16 @@ class AutomationEngine:
         self._clear_expired_current_day_temperature_extrema(current_day)
 
         temp_max = self._current_day_temperature_extrema.temp_max if self._current_day_temperature_extrema is not None else None
-        temp_min = self._weather_snapshot.temp_min
+        temp_min = self._current_day_temperature_extrema.temp_min if self._current_day_temperature_extrema is not None else None
         if temp_max is None:
             temp_max = self._weather_snapshot.temp_max
+        if temp_min is None:
+            temp_min = self._weather_snapshot.temp_min
         temperature_available = temp_max is not None
 
         try:
             forecast_temp_max, forecast_temp_min = await self._ha_interface.get_daily_temperature_extrema(self.resolved.weather_entity_id)
-            temp_max = self._set_current_day_temperature_extrema(current_day, forecast_temp_max)
-            temp_min = forecast_temp_min
+            temp_max, temp_min = self._set_current_day_temperature_extrema(current_day, forecast_temp_max, forecast_temp_min)
             self._weather_snapshot.temp_max = temp_max
             self._weather_snapshot.temp_min = temp_min
             temperature_available = True
@@ -723,21 +731,33 @@ class AutomationEngine:
         if self._on_current_day_temperature_extrema_changed is not None:
             self._on_current_day_temperature_extrema_changed(None)
 
-    def _set_current_day_temperature_extrema(self, current_day: date, temp_max: float) -> float:
-        """Store the highest seen forecast max for the current day and return it."""
+    def _set_current_day_temperature_extrema(
+        self, current_day: date, temp_max: float, temp_min: float | None
+    ) -> tuple[float, float | None]:
+        """Store the effective daily extrema for the current day and return them."""
 
         effective_temp_max = temp_max
+        effective_temp_min = temp_min
         if self._current_day_temperature_extrema is not None and self._current_day_temperature_extrema.forecast_date == current_day:
             effective_temp_max = max(self._current_day_temperature_extrema.temp_max, temp_max)
+            if self._current_day_temperature_extrema.temp_min is not None:
+                if effective_temp_min is None:
+                    effective_temp_min = self._current_day_temperature_extrema.temp_min
+                else:
+                    effective_temp_min = min(self._current_day_temperature_extrema.temp_min, effective_temp_min)
 
-        new_state = CurrentDayTemperatureExtrema(forecast_date=current_day, temp_max=effective_temp_max)
+        new_state = CurrentDayTemperatureExtrema(
+            forecast_date=current_day,
+            temp_max=effective_temp_max,
+            temp_min=effective_temp_min,
+        )
         if self._current_day_temperature_extrema == new_state:
-            return effective_temp_max
+            return (effective_temp_max, effective_temp_min)
 
         self._current_day_temperature_extrema = new_state
         if self._on_current_day_temperature_extrema_changed is not None:
             self._on_current_day_temperature_extrema_changed(self.export_current_day_temperature_extrema())
-        return effective_temp_max
+        return (effective_temp_max, effective_temp_min)
 
     #
     # _get_local_datetime_for_date
