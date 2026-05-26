@@ -110,7 +110,6 @@ class ConfKeys(StrEnum):
     TILT_SLAT_OVERLAP_RATIO = "tilt_slat_overlap_ratio"  # Slat spacing/width ratio (d/L) for Auto tilt calculation.
     VERBOSE_LOGGING = "verbose_logging"  # Enable DEBUG logs for this entry.
     WEATHER_ENTITY_ID = "weather_entity_id"  # Weather entity_id.
-    WEATHER_HOT_CUTOVER_TIME = "weather_hot_cutover_time"  # Time of day to switch max-temperature checks to next day's forecast.
 
 
 class _Converters:
@@ -268,7 +267,6 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.TILT_SLAT_OVERLAP_RATIO: _ConfSpec(default=0.9, converter=_Converters.to_float),
     ConfKeys.VERBOSE_LOGGING: _ConfSpec(default=False, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.WEATHER_ENTITY_ID: _ConfSpec(default="", converter=_Converters.to_str),
-    ConfKeys.WEATHER_HOT_CUTOVER_TIME: _ConfSpec(default=time(16, 0, 0), converter=_Converters.to_time),
 }
 
 # Public API of this module (keep helper class internal)
@@ -409,7 +407,6 @@ class ResolvedConfig:
     tilt_slat_overlap_ratio: float
     verbose_logging: bool
     weather_entity_id: str
-    weather_hot_cutover_time: time
 
     def get(self, key: ConfKeys) -> Any:
         # Generic access via mapping (field names may differ from ConfKeys values)

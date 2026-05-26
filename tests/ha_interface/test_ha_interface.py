@@ -13,7 +13,7 @@ a clean abstraction layer over Home Assistant's APIs. Tests cover:
 from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
 import pytest
@@ -75,7 +75,6 @@ def mock_resolved_config() -> MagicMock:  # type: ignore[type-arg]
 
     config = MagicMock(spec=ResolvedConfig)
     config.simulation_mode = False
-    config.weather_hot_cutover_time = time(16, 0)
     config.verbose_logging = False
     return config
 
@@ -1107,8 +1106,6 @@ class TestFindDayForecast:
     ) -> None:
         """Test finding today's forecast before cutover time."""
 
-        mock_resolved_config.weather_hot_cutover_time = time(16, 0)
-
         # Create forecast for today
         now = datetime.now(timezone.utc)
         today = now.date()
@@ -1136,8 +1133,6 @@ class TestFindDayForecast:
         mock_resolved_config: MagicMock,  # type: ignore[type-arg]
     ) -> None:
         """Maximum-temperature lookups should keep using today's forecast after cutover time."""
-
-        mock_resolved_config.weather_hot_cutover_time = time(16, 0)
 
         # Create forecast for today
         now = datetime.now(timezone.utc)
@@ -1248,6 +1243,7 @@ class TestForecastConditionHelpers:
         self,
         ha_interface: HomeAssistantInterface,
         mock_hass: MagicMock,
+        mock_logger: MagicMock,
     ) -> None:
         """Explicit-date forecast extrema should still return a max when no low is available."""
 
@@ -1264,7 +1260,7 @@ class TestForecastConditionHelpers:
         result = await ha_interface.get_daily_temperature_extrema_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
 
         assert result == (29.0, None)
-        ha_interface._logger.warning.assert_called_with(
+        mock_logger.warning.assert_called_with(
             "Could not extract forecast minimum temperature from %s for %s. Continuing with daily max only.",
             MOCK_WEATHER_ENTITY_ID,
             target_date.isoformat(),
@@ -1452,6 +1448,7 @@ class TestForecastConditionHelpers:
         self,
         ha_interface: HomeAssistantInterface,
         mock_hass: MagicMock,
+        mock_logger: MagicMock,
     ) -> None:
         """Explicit-date forecast snapshot should keep partial data and warn when temperatures are missing."""
 
@@ -1471,13 +1468,13 @@ class TestForecastConditionHelpers:
         result = await ha_interface.get_forecast_snapshot_for_date(MOCK_WEATHER_ENTITY_ID, target_date)
 
         assert result == (None, None, "sunny")
-        ha_interface._logger.warning.assert_any_call(
+        mock_logger.warning.assert_any_call(
             "Could not extract forecast maximum temperature from %s for %s. max=%s",
             MOCK_WEATHER_ENTITY_ID,
             target_date.isoformat(),
             None,
         )
-        ha_interface._logger.warning.assert_any_call(
+        mock_logger.warning.assert_any_call(
             "Could not extract forecast minimum temperature from %s for %s. Continuing with daily max only.",
             MOCK_WEATHER_ENTITY_ID,
             target_date.isoformat(),
@@ -1487,6 +1484,7 @@ class TestForecastConditionHelpers:
         self,
         ha_interface: HomeAssistantInterface,
         mock_hass: MagicMock,
+        mock_logger: MagicMock,
     ) -> None:
         """Forecast service helper should include the provided log context in its debug output."""
 
@@ -1503,7 +1501,7 @@ class TestForecastConditionHelpers:
         )
 
         assert result == response[MOCK_WEATHER_ENTITY_ID]["forecast"]
-        ha_interface._logger.debug.assert_any_call(
+        mock_logger.debug.assert_any_call(
             f"Weather forecast service response for {MOCK_WEATHER_ENTITY_ID} (next-morning pre-close forecast for 2026-05-24): {response}"
         )
 
@@ -1523,13 +1521,17 @@ class TestForecastConditionHelpers:
         assert day_name == "tomorrow"
         assert forecast["native_temperature"] == 26.0
 
-    def test_find_day_forecast_for_date_logs_when_missing(self, ha_interface: HomeAssistantInterface) -> None:
+    def test_find_day_forecast_for_date_logs_when_missing(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_logger: MagicMock,
+    ) -> None:
         """Explicit-date lookup should log and return None when no entry matches."""
 
         result = ha_interface._find_day_forecast_for_date([], date(2026, 5, 24), "tomorrow")
 
         assert result is None
-        ha_interface._logger.warning.assert_called_with("Could not find weather forecast by date for %s", "tomorrow")
+        mock_logger.warning.assert_called_with("Could not find weather forecast by date for %s", "tomorrow")
 
     @pytest.mark.parametrize(
         ("forecast", "expected"),
@@ -1553,20 +1555,24 @@ class TestForecastConditionHelpers:
 
         assert result == "sunny"
 
-    def test_extract_forecast_condition_logs_when_missing(self, ha_interface: HomeAssistantInterface) -> None:
+    def test_extract_forecast_condition_logs_when_missing(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_logger: MagicMock,
+    ) -> None:
         """Forecast condition extraction should log when no condition field exists."""
 
         result = ha_interface._extract_forecast_condition({"native_temperature": 25.0})
 
         assert result is None
-        ha_interface._logger.warning.assert_called_with(
+        mock_logger.warning.assert_called_with(
             "No condition fields found in forecast. Available fields: ['native_temperature']",
         )
 
     def test_extract_forecast_condition_returns_none_for_non_dict(self, ha_interface: HomeAssistantInterface) -> None:
         """Forecast condition extraction should ignore invalid forecast payloads."""
 
-        assert ha_interface._extract_forecast_condition("sunny") is None
+        assert ha_interface._extract_forecast_condition(cast(Any, "sunny")) is None
 
     @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date")
     def test_find_day_forecast_min_today_before_sunrise_cutover(
@@ -1623,15 +1629,12 @@ class TestForecastConditionHelpers:
         self,
         _mock_get_sunrise: MagicMock,
         ha_interface: HomeAssistantInterface,
-        mock_resolved_config: MagicMock,  # type: ignore[type-arg]
         mock_logger: MagicMock,
     ) -> None:
-        """Minimum temperature should fall back to the max cutover time if sunrise is unavailable."""
+        """Minimum temperature should stay on today if sunrise is unavailable."""
 
-        mock_resolved_config.weather_hot_cutover_time = time(16, 0)
         now = datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc)
-        tomorrow = now.date() + timedelta(days=1)
-        forecast_datetime = datetime.combine(tomorrow, datetime.min.time(), tzinfo=timezone.utc)
+        forecast_datetime = datetime.combine(now.date(), datetime.min.time(), tzinfo=timezone.utc)
         forecast_list = [{"datetime": forecast_datetime.isoformat(), "native_templow": 2.0}]
 
         with patch("homeassistant.util.dt.now") as mock_now:
@@ -1641,10 +1644,10 @@ class TestForecastConditionHelpers:
 
         assert result is not None
         day_name, forecast = result
-        assert day_name == "tomorrow"
+        assert day_name == "today"
         assert forecast["native_templow"] == 2.0
         mock_logger.debug.assert_any_call(
-            "Could not determine sunrise-based min temperature cutover for %s; falling back to max temperature cutover time",
+            "Could not determine sunrise-based min temperature cutover for %s; continuing to use today's minimum forecast",
             "2023-01-01",
         )
 
@@ -1656,15 +1659,12 @@ class TestForecastConditionHelpers:
         self,
         _mock_get_sunrise: MagicMock,
         ha_interface: HomeAssistantInterface,
-        mock_resolved_config: MagicMock,  # type: ignore[type-arg]
         mock_logger: MagicMock,
     ) -> None:
-        """Minimum temperature should fall back cleanly when sunrise lookup raises."""
+        """Minimum temperature should stay on today when sunrise lookup raises."""
 
-        mock_resolved_config.weather_hot_cutover_time = time(16, 0)
         now = datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc)
-        tomorrow = now.date() + timedelta(days=1)
-        forecast_datetime = datetime.combine(tomorrow, datetime.min.time(), tzinfo=timezone.utc)
+        forecast_datetime = datetime.combine(now.date(), datetime.min.time(), tzinfo=timezone.utc)
         forecast_list = [{"datetime": forecast_datetime.isoformat(), "native_templow": 2.0}]
 
         with patch("homeassistant.util.dt.now") as mock_now:
@@ -1674,7 +1674,7 @@ class TestForecastConditionHelpers:
 
         assert result is not None
         day_name, forecast = result
-        assert day_name == "tomorrow"
+        assert day_name == "today"
         assert forecast["native_templow"] == 2.0
         mock_logger.debug.assert_any_call(
             "Could not determine sunrise time for %s while resolving min temperature cutover: %s",
@@ -1687,15 +1687,12 @@ class TestForecastConditionHelpers:
         self,
         _mock_get_sunrise: MagicMock,
         ha_interface: HomeAssistantInterface,
-        mock_resolved_config: MagicMock,  # type: ignore[type-arg]
         mock_logger: MagicMock,
     ) -> None:
-        """Minimum temperature should fall back cleanly when sunrise lookup returns a non-datetime."""
+        """Minimum temperature should stay on today when sunrise lookup returns a non-datetime."""
 
-        mock_resolved_config.weather_hot_cutover_time = time(16, 0)
         now = datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc)
-        tomorrow = now.date() + timedelta(days=1)
-        forecast_datetime = datetime.combine(tomorrow, datetime.min.time(), tzinfo=timezone.utc)
+        forecast_datetime = datetime.combine(now.date(), datetime.min.time(), tzinfo=timezone.utc)
         forecast_list = [{"datetime": forecast_datetime.isoformat(), "native_templow": 2.0}]
 
         with patch("homeassistant.util.dt.now") as mock_now:
@@ -1705,7 +1702,7 @@ class TestForecastConditionHelpers:
 
         assert result is not None
         day_name, forecast = result
-        assert day_name == "tomorrow"
+        assert day_name == "today"
         assert forecast["native_templow"] == 2.0
         mock_logger.debug.assert_any_call(
             "Could not determine sunrise time for %s while resolving min temperature cutover: unexpected type %s",

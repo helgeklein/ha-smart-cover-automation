@@ -788,8 +788,6 @@ class HomeAssistantInterface:
     def _get_applicable_forecast_day(self, now_local: datetime, temperature_kind: str) -> tuple[date, str]:
         """Return the applicable forecast day for maximum or minimum temperatures."""
 
-        resolved = self._resolved_settings_callback()
-
         if temperature_kind == "max":
             return (now_local.date(), "today")
 
@@ -801,12 +799,9 @@ class HomeAssistantInterface:
                 return (now_local.date(), "today")
 
             self._logger.debug(
-                "Could not determine sunrise-based min temperature cutover for %s; falling back to max temperature cutover time",
+                "Could not determine sunrise-based min temperature cutover for %s; continuing to use today's minimum forecast",
                 now_local.date().isoformat(),
             )
-
-        if now_local.time() >= resolved.weather_hot_cutover_time:
-            return ((now_local + timedelta(days=1)).date(), "tomorrow")
 
         return (now_local.date(), "today")
 

@@ -243,7 +243,6 @@ class AutomationEngine:
             "sun_elevation_threshold": self.resolved.sun_elevation_threshold,
             "daily_max_temperature_threshold": self.resolved.daily_max_temperature_threshold,
             "daily_min_temperature_threshold": self.resolved.daily_min_temperature_threshold,
-            "weather_hot_cutover_time": self.resolved.weather_hot_cutover_time.strftime("%H:%M:%S"),
             "manual_override_duration": self.resolved.manual_override_duration,
             "automation_disabled_time_range": self.resolved.automation_disabled_time_range,
             "automation_disabled_time_range_start": self.resolved.automation_disabled_time_range_start.strftime("%H:%M:%S"),
