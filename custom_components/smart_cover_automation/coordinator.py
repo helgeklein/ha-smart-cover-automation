@@ -83,6 +83,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             ha_interface=self._ha_interface,
             logger=self._logger,
             on_closed_by_automation_changed=self._automation_state_store.schedule_save_closed_markers,
+            on_current_day_temperature_extrema_changed=self._automation_state_store.schedule_save_current_day_temperature_extrema,
         )
 
         # Track verbose logging state to avoid redundant setLevel calls
@@ -154,11 +155,16 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
 
         stored_markers = await self._automation_state_store.async_load_closed_markers()
         self._automation_engine.restore_closed_by_automation_markers(stored_markers)
+        stored_extrema = await self._automation_state_store.async_load_current_day_temperature_extrema()
+        self._automation_engine.restore_current_day_temperature_extrema(stored_extrema)
 
     async def async_persist_runtime_state(self) -> None:
         """Persist runtime state immediately."""
 
         await self._automation_state_store.async_save_closed_markers(self._automation_engine.export_closed_by_automation_markers())
+        await self._automation_state_store.async_save_current_day_temperature_extrema(
+            self._automation_engine.export_current_day_temperature_extrema()
+        )
 
     async def async_remove_runtime_state(self) -> None:
         """Remove persisted runtime state for this config entry."""

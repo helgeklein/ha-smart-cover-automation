@@ -39,8 +39,6 @@ The following weather integrations have been **tested** successfully:
 
 To determine if the **weather is hot enough** to require sun protection, the integration uses both the daily minimum and maximum temperatures. If both are above their respective [thresholds]({{ '/ui-configuration-entities/#sun--temperature-settings' | relative_url }}), the weather is considered to be hot.
 
-Some weather forecast services only provide minimum/maximum temperatures for the remaining hours of the day. To compensate, this integration switches to the next day's temperature reading starting at 16:00 (afternoon) to determine the maximum, and 30 minutes before sunrise to determine the minimum.
-
 The integration considers the following current weather conditions as the **sun is shining** (as reported by the weather forecast service):
 
 - `sunny`

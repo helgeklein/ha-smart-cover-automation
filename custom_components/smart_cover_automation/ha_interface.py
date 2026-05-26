@@ -34,7 +34,6 @@ from homeassistant.util import dt as dt_util
 from . import const
 from .log import Log
 
-MIN_TEMPERATURE_CUTOVER_OFFSET = timedelta(minutes=30)
 PRE_CLOSE_SUN_SAMPLE_INTERVAL = timedelta(minutes=15)
 
 if TYPE_CHECKING:
@@ -788,53 +787,7 @@ class HomeAssistantInterface:
     def _get_applicable_forecast_day(self, now_local: datetime, temperature_kind: str) -> tuple[date, str]:
         """Return the applicable forecast day for maximum or minimum temperatures."""
 
-        resolved = self._resolved_settings_callback()
-
-        if temperature_kind == "min":
-            min_cutover = self._get_min_temperature_cutover_datetime(now_local.date())
-            if min_cutover is not None:
-                if now_local >= min_cutover:
-                    return ((now_local + timedelta(days=1)).date(), "tomorrow")
-                return (now_local.date(), "today")
-
-            self._logger.debug(
-                "Could not determine sunrise-based min temperature cutover for %s; falling back to max temperature cutover time",
-                now_local.date().isoformat(),
-            )
-
-        if now_local.time() >= resolved.weather_hot_cutover_time:
-            return ((now_local + timedelta(days=1)).date(), "tomorrow")
-
         return (now_local.date(), "today")
-
-    #
-    # _get_min_temperature_cutover_datetime
-    #
-    def _get_min_temperature_cutover_datetime(self, target_date: date) -> datetime | None:
-        """Return the min-temperature cutover datetime, 30 minutes before sunrise."""
-
-        try:
-            sunrise_time = get_astral_event_date(self.hass, SUN_EVENT_SUNRISE, target_date)
-        except (AttributeError, KeyError, TypeError, ValueError) as err:
-            self._logger.debug(
-                "Could not determine sunrise time for %s while resolving min temperature cutover: %s",
-                target_date.isoformat(),
-                err,
-            )
-            return None
-
-        if sunrise_time is None:
-            return None
-
-        if not isinstance(sunrise_time, datetime):
-            self._logger.debug(
-                "Could not determine sunrise time for %s while resolving min temperature cutover: unexpected type %s",
-                target_date.isoformat(),
-                type(sunrise_time).__name__,
-            )
-            return None
-
-        return dt_util.as_local(sunrise_time - MIN_TEMPERATURE_CUTOVER_OFFSET)
 
     #
     # _extract_max_temperature

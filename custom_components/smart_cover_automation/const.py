@@ -282,6 +282,7 @@ DATA_COORDINATORS: Final[str] = "coordinators"
 STORAGE_VERSION: Final[int] = 1
 STORAGE_KEY_AUTOMATION_STATE: Final[str] = "automation_state"
 STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: Final[str] = "automation_closed_markers"
+STORAGE_KEY_CURRENT_DAY_TEMPERATURE_EXTREMA: Final[str] = "current_day_temperature_extrema"
 STORAGE_SAVE_DELAY_SECONDS: Final[int] = 1
 
 # Initialize the module-level logger

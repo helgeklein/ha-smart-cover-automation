@@ -19,6 +19,7 @@ from custom_components.smart_cover_automation.coordinator import (
     DataUpdateCoordinator,
     WeatherEntityNotFoundError,
 )
+from custom_components.smart_cover_automation.ha_interface import InvalidSensorReadingError
 
 MOCK_CONFIG = {
     "covers": ["cover.test_cover"],
@@ -44,29 +45,14 @@ class TestGetMaxTemperature:
             await coordinator._ha_interface.get_max_temperature("sensor.non_existent")
 
     async def test_invalid_sensor_state(self, mock_hass: MagicMock, coordinator: DataUpdateCoordinator):
-        """Test that InvalidSensorReadingError is raised for a non-numeric state."""
-        # Mock a weather entity that the method can find
+        """Test that a weather entity with no usable forecast raises InvalidSensorReadingError."""
+
         weather_state = State(WEATHER_ENTITY_ID, HA_WEATHER_COND_SUNNY)
-        sensor_state = State(SENSOR_ENTITY_ID, "unavailable")
+        mock_hass.states.get.return_value = weather_state
+        mock_hass.services.async_call = AsyncMock(return_value={WEATHER_ENTITY_ID: {"forecast": []}})
 
-        # Mock async_all to return the weather entity
-        mock_hass.states.async_all.return_value = [weather_state]
-
-        # Mock get to return the appropriate states
-        def mock_get(entity_id):
-            if entity_id == WEATHER_ENTITY_ID:
-                return weather_state
-            elif entity_id == SENSOR_ENTITY_ID:
-                return sensor_state
-            return None
-
-        mock_hass.states.get.side_effect = mock_get
-
-        # The method should now find the weather entity and try to get forecast
-        # Since the weather service mock returns forecast data, it should succeed
-        # Let's check that it doesn't raise the old InvalidSensorReadingError
-        result = await coordinator._ha_interface.get_max_temperature(SENSOR_ENTITY_ID)
-        assert isinstance(result, float)
+        with pytest.raises(InvalidSensorReadingError, match="Forecast temperature unavailable"):
+            await coordinator._ha_interface.get_max_temperature(WEATHER_ENTITY_ID)
 
 
 class TestGetForecastMaxTemp:
@@ -132,7 +118,7 @@ class TestFindTodayForecast:
         today = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         mock_dt_util.now.return_value = today
 
-        forecast_list = [{"date": today.isoformat(), "native_temperature": 15}]
+        forecast_list = [{"date": today.date(), "native_temperature": 15}]
         result = coordinator._ha_interface._find_day_forecast(forecast_list)
         assert result is not None
         applicable_day, forecast = result

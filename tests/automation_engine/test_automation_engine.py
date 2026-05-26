@@ -11,7 +11,7 @@ This module tests the AutomationEngine in isolation, focusing on:
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, time, timezone
+from datetime import date, datetime, time, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -275,6 +275,50 @@ class TestGatherSensorData:
         assert sensor_data.temp_min == first_sensor_data.temp_min
         assert sensor_data.temp_hot == first_sensor_data.temp_hot
         assert sensor_data.weather_condition == first_sensor_data.weather_condition
+
+    async def test_gather_sensor_data_keeps_effective_daily_extrema_for_day(self, automation_engine, mock_ha_interface):
+        """The stored daily max should not decrease and the stored daily min should not increase within one day."""
+
+        first_now = datetime(2026, 5, 26, 15, 0, tzinfo=timezone.utc)
+        second_now = datetime(2026, 5, 26, 18, 0, tzinfo=timezone.utc)
+
+        with patch("homeassistant.util.dt.now", return_value=first_now):
+            mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, 16.0)
+            first_sensor_data, _ = await automation_engine._gather_sensor_data()
+
+        with patch("homeassistant.util.dt.now", return_value=second_now):
+            mock_ha_interface.get_daily_temperature_extrema.return_value = (24.0, 19.0)
+            sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert first_sensor_data is not None
+        assert sensor_data is not None
+        assert sensor_data.temp_max == 28.0
+        assert sensor_data.temp_min == 16.0
+        assert sensor_data.temp_hot == first_sensor_data.temp_hot
+        assert message == ""
+
+    async def test_gather_sensor_data_does_not_reuse_previous_day_values(self, automation_engine, mock_ha_interface):
+        """Stored extrema must expire when the local day changes."""
+
+        from custom_components.smart_cover_automation.ha_interface import InvalidSensorReadingError
+
+        first_now = datetime(2026, 5, 26, 15, 0, tzinfo=timezone.utc)
+        second_now = datetime(2026, 5, 27, 8, 0, tzinfo=timezone.utc)
+
+        with patch("homeassistant.util.dt.now", return_value=first_now):
+            first_sensor_data, _ = await automation_engine._gather_sensor_data()
+
+        mock_ha_interface.get_daily_temperature_extrema.side_effect = InvalidSensorReadingError("weather.test", "Forecast unavailable")
+
+        with patch("homeassistant.util.dt.now", return_value=second_now):
+            sensor_data, message = await automation_engine._gather_sensor_data()
+
+        assert first_sensor_data is not None
+        assert sensor_data is not None
+        assert sensor_data.temp_max is None
+        assert sensor_data.temp_min is None
+        assert sensor_data.temp_hot is None
+        assert "skipping weather-dependent actions" in message
 
     async def test_run_pre_closes_when_blocked_time_range_starts(self, mock_ha_interface, mock_logger):
         """Blocked-time start should trigger one forecast-based pre-close evaluation."""
@@ -914,7 +958,7 @@ class TestTimeCalculationHelpers:
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
     def test_get_evening_closure_time_for_date_after_sunset_applies_delay(self, mock_get_astral, mock_ha_interface, mock_logger):
         """Test evening closure datetime calculation in after-sunset mode."""
-        from datetime import date, datetime
+        from datetime import datetime
 
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
@@ -939,7 +983,6 @@ class TestTimeCalculationHelpers:
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
     def test_get_evening_closure_time_for_date_returns_none_when_sunset_unavailable(self, mock_get_astral, mock_ha_interface, mock_logger):
         """Test evening closure datetime calculation when sunset data is unavailable."""
-        from datetime import date
 
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
@@ -961,7 +1004,6 @@ class TestTimeCalculationHelpers:
 
     def test_get_evening_closure_time_for_date_external_valid(self, mock_ha_interface, mock_logger, freezer):
         """Test evening closure datetime calculation in external mode with a valid entity time."""
-        from datetime import date
 
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
@@ -986,7 +1028,6 @@ class TestTimeCalculationHelpers:
 
     def test_get_evening_closure_time_for_date_external_missing_returns_none(self, mock_ha_interface, mock_logger):
         """Test evening closure datetime calculation in external mode without an entity time."""
-        from datetime import date
 
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
@@ -1005,7 +1046,6 @@ class TestTimeCalculationHelpers:
 
     def test_get_evening_closure_time_for_date_external_invalid_returns_none(self, mock_ha_interface, mock_logger):
         """Test evening closure datetime calculation in external mode with an invalid entity time."""
-        from datetime import date
 
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
@@ -1025,7 +1065,6 @@ class TestTimeCalculationHelpers:
 
     def test_get_morning_opening_time_for_date_external_valid(self, mock_ha_interface, mock_logger, freezer):
         """Test morning opening datetime calculation in external mode with a valid entity time."""
-        from datetime import date
 
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
@@ -1050,7 +1089,6 @@ class TestTimeCalculationHelpers:
 
     def test_get_morning_opening_time_for_date_external_missing_returns_none(self, mock_ha_interface, mock_logger):
         """Test morning opening datetime calculation in external mode without an entity time."""
-        from datetime import date
 
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
@@ -1069,7 +1107,6 @@ class TestTimeCalculationHelpers:
 
     def test_get_morning_opening_time_for_date_external_invalid_returns_none(self, mock_ha_interface, mock_logger):
         """Test morning opening datetime calculation in external mode with an invalid entity time."""
-        from datetime import date
 
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
@@ -1092,7 +1129,6 @@ class TestTimeCalculationHelpers:
         self, mock_get_astral, mock_ha_interface, mock_logger
     ):
         """Test relative morning opening when sunrise data is unavailable."""
-        from datetime import date
 
         config = {
             ConfKeys.COVERS.value: ["cover.test"],

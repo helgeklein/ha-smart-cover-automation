@@ -291,7 +291,7 @@ class TestAutomationClosedMarkers:
 
     @pytest.mark.asyncio
     async def test_coordinator_runtime_state_round_trip(self, hass) -> None:
-        """Persisted automation-closed markers should survive coordinator recreation."""
+        """Persisted runtime state should survive coordinator recreation."""
 
         from custom_components.smart_cover_automation.data import IntegrationConfigEntry
         from tests.conftest import create_temperature_config, create_test_config_entry
@@ -302,6 +302,7 @@ class TestAutomationClosedMarkers:
             "cover.test_cover",
             TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
         )
+        coordinator._automation_engine.restore_current_day_temperature_extrema({"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0})
         await coordinator.async_persist_runtime_state()
 
         restored_entry = create_test_config_entry(create_temperature_config(), entry_id="persistent_entry")
@@ -312,6 +313,11 @@ class TestAutomationClosedMarkers:
             restored_coordinator._automation_engine._cover_pos_history_mgr.get_closed_by_automation_reason("cover.test_cover")
             == TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
         )
+        assert restored_coordinator._automation_engine.export_current_day_temperature_extrema() == {
+            "date": "2026-05-26",
+            "temp_max": 29.0,
+            "temp_min": 18.0,
+        }
 
     def test_cover_position_history_add_with_explicit_timestamp(self):
         """Test adding positions with explicit timestamps."""

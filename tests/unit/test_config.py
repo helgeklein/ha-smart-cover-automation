@@ -620,46 +620,6 @@ class TestTimeConverter:
         # Verify that an exception was raised (the specific type may vary)
         assert exc_info.value is not None, f"Should raise exception for {test_description}"
 
-    def test_time_converter_integration_with_conf_specs(self):
-        """Test that the time converter works correctly with CONF_SPECS."""
-        from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
-
-        # Get the weather hot cutover time spec
-        spec = CONF_SPECS[ConfKeys.WEATHER_HOT_CUTOVER_TIME]
-
-        # Test that the default value is handled correctly
-        default_time = spec.converter(spec.default)
-        assert isinstance(default_time, time)
-        assert default_time == time(16, 0, 0)  # Default should be 16:00:00
-
-        # Test that the converter is the correct function
-        assert spec.converter.__name__ == "to_time"
-
-        # Test various inputs through the spec converter
-        assert spec.converter("14:30") == time(14, 30, 0)
-        assert spec.converter("18:45:30") == time(18, 45, 30)
-        assert spec.converter(time(20, 0, 0)) == time(20, 0, 0)
-
-    def test_time_converter_in_resolved_config(self):
-        """Test that time values are properly resolved in ResolvedConfig."""
-        from custom_components.smart_cover_automation.config import ConfKeys, resolve
-
-        # Test with string input
-        config = resolve(options={ConfKeys.WEATHER_HOT_CUTOVER_TIME.value: "15:30"})
-        assert config.weather_hot_cutover_time == time(15, 30, 0)
-
-        # Test with time object input
-        config = resolve(options={ConfKeys.WEATHER_HOT_CUTOVER_TIME.value: time(17, 45, 0)})
-        assert config.weather_hot_cutover_time == time(17, 45, 0)
-
-        # Test with default
-        config = resolve(options={})
-        assert config.weather_hot_cutover_time == time(16, 0, 0)
-
-        # Test fallback on invalid input
-        config = resolve(options={ConfKeys.WEATHER_HOT_CUTOVER_TIME.value: "invalid"})
-        assert config.weather_hot_cutover_time == time(16, 0, 0)  # Should fall back to default
-
 
 # =============================================================================
 # Duration Converter Tests
