@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import importlib
 import logging
+import sys
 
 from custom_components.smart_cover_automation.log import (
     _BASE_LOGGER_NAME,
@@ -230,7 +232,9 @@ class TestLog:
     def test_logger_from_const_uses_base_logger(self) -> None:
         """Test that LOGGER from const.py uses the base logger name."""
 
-        from custom_components.smart_cover_automation.const import LOGGER
+        sys.modules.pop("custom_components.smart_cover_automation.const", None)
+        const_module = importlib.import_module("custom_components.smart_cover_automation.const")
+        LOGGER = const_module.LOGGER
 
         assert LOGGER.underlying_logger.name == _BASE_LOGGER_NAME
 
