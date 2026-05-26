@@ -1208,6 +1208,34 @@ class TestCalculateDesiredPosition:
         assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
         assert lockout_active is False
 
+    def test_calculate_desired_position_heat_protection_keeps_more_closed_cover(
+        self, cover_automation, mock_logger, mock_resolved_config, basic_config
+    ):
+        """Heat protection should not open a cover that is already more closed than the target."""
+
+        mock_resolved_config.covers_max_closure = 30
+        basic_config["cover.test_cover_max_closure"] = 30
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=0)
+
+        assert position == 0
+        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
+        assert lockout_active is False
+        mock_logger.info.assert_any_call(
+            "[cover.test] Current position: 0%, desired position: 0%, keeping current position because it is already more closed than the heat protection position"
+        )
+
     def test_calculate_desired_position_let_light_in(self, cover_automation, mock_resolved_config):
         """Test desired position for letting light in (opening)."""
         mock_resolved_config.covers_min_closure = 100

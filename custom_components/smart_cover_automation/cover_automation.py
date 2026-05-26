@@ -794,15 +794,21 @@ class CoverAutomation:
                 max_closure_limit = self._get_cover_closure_limit(get_max=True)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
                 target_pre_closure_pos = desired_pos
-                if sensor_data.pre_closing and target_pre_closure_pos >= current_pos:
+                if target_pre_closure_pos >= current_pos:
                     desired_pos = current_pos
-                    if target_pre_closure_pos == current_pos:
+                    if sensor_data.pre_closing and target_pre_closure_pos == current_pos:
                         desired_pos_friendly_name = "keeping current position because it is already at the pre-closure position"
-                    else:
+                    elif sensor_data.pre_closing:
                         desired_pos_friendly_name = (
                             "keeping current position because it is already more closed than the pre-closure position"
                         )
-                    movement_reason = None
+                    elif target_pre_closure_pos == current_pos:
+                        desired_pos_friendly_name = "keeping current position because it is already at the heat protection position"
+                    else:
+                        desired_pos_friendly_name = (
+                            "keeping current position because it is already more closed than the heat protection position"
+                        )
+                    movement_reason = None if sensor_data.pre_closing else CoverMovementReason.CLOSING_HEAT_PROTECTION
                 else:
                     desired_pos_friendly_name = (
                         "pre-closing for heat protection" if sensor_data.pre_closing else "closing for heat protection"
