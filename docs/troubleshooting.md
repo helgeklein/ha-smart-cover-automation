@@ -32,7 +32,6 @@ The integration comes with the following sensors that help you understand the in
 - **Temperature: today's maximum:** Maximum (expected) temperature of the current day. Derived from the configured weather forecast sensor.
 - **Time range: disabled:** Start and end of a configured time interval during which the automation is disabled. `Off` if this is not configured.
 - **Weather: hot?** Is today's forecast maximum temperature expected to rise above the configured threshold temperature?
-  - After 16:00, tomorrow's forecast maximum temperature is used instead of today's.
 - **Weather: sunny?** Is the day expected to be at least partly sunny? Derived from the configured weather forecast sensor.
 
 ## Debugging
