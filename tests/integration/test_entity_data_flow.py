@@ -202,7 +202,7 @@ async def _setup_integration(
 
     # Patch the forecast retrieval
     with patch(
-        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema_for_date",
+        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
         new_callable=AsyncMock,
         return_value=(temp_max, 18.0),
     ):
@@ -918,7 +918,7 @@ class TestTimeEntityDataFlow:
         )
 
         with patch(
-            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema_for_date",
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
             new_callable=AsyncMock,
             return_value=(HOT_TEMP, 18.0),
         ):
@@ -990,7 +990,7 @@ class TestTimeEntityDataFlow:
         )
 
         with patch(
-            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema_for_date",
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
             new_callable=AsyncMock,
             return_value=(HOT_TEMP, 18.0),
         ):

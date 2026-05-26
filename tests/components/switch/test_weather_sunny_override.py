@@ -416,7 +416,7 @@ class TestWeatherSunnyOverrideInEngine:
 
         ha_interface = MagicMock()
         ha_interface.get_sun_data = MagicMock(return_value=(180.0, 45.0))
-        ha_interface.get_daily_temperature_extrema_for_date = AsyncMock(return_value=(28.0, 18.0))
+        ha_interface.get_daily_temperature_extrema = AsyncMock(return_value=(28.0, 18.0))
         ha_interface.get_weather_condition = MagicMock(return_value="cloudy")
         return ha_interface
 
@@ -534,7 +534,7 @@ class TestWeatherHotOverrideInEngine:
 
         ha_interface = MagicMock()
         ha_interface.get_sun_data = MagicMock(return_value=(180.0, 45.0))
-        ha_interface.get_daily_temperature_extrema_for_date = AsyncMock(return_value=(18.0, 16.0))
+        ha_interface.get_daily_temperature_extrema = AsyncMock(return_value=(18.0, 16.0))
         ha_interface.get_weather_condition = MagicMock(return_value="cloudy")
         return ha_interface
 
@@ -574,7 +574,7 @@ class TestWeatherHotOverrideInEngine:
 
         from custom_components.smart_cover_automation.automation_engine import AutomationEngine
 
-        mock_ha_interface.get_daily_temperature_extrema_for_date.return_value = (28.0, 18.0)
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, 18.0)
         config_with_override = {**basic_config, SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL: False}
         resolved = resolve(basic_config)
 

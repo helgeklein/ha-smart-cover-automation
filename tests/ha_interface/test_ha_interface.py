@@ -1128,21 +1128,21 @@ class TestFindDayForecast:
         assert forecast["native_temperature"] == 25.0
 
     #
-    # test_find_day_forecast_tomorrow_after_cutover
+    # test_find_day_forecast_today_after_cutover_for_max
     #
-    def test_find_day_forecast_tomorrow_after_cutover(
+    def test_find_day_forecast_today_after_cutover_for_max(
         self,
         ha_interface: HomeAssistantInterface,
         mock_resolved_config: MagicMock,  # type: ignore[type-arg]
     ) -> None:
-        """Test finding tomorrow's forecast after cutover time."""
+        """Maximum-temperature lookups should keep using today's forecast after cutover time."""
 
         mock_resolved_config.weather_hot_cutover_time = time(16, 0)
 
-        # Create forecast for tomorrow
+        # Create forecast for today
         now = datetime.now(timezone.utc)
-        tomorrow = now.date() + timedelta(days=1)
-        forecast_datetime = datetime.combine(tomorrow, datetime.min.time(), tzinfo=timezone.utc)
+        today = now.date()
+        forecast_datetime = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
 
         forecast_list = [{"datetime": forecast_datetime.isoformat(), "native_temperature": 30.0}]
 
@@ -1150,11 +1150,11 @@ class TestFindDayForecast:
             # Mock time after cutover (18:00)
             mock_now.return_value = datetime.combine(now.date(), time(18, 0), tzinfo=timezone.utc)
 
-            result = ha_interface._find_day_forecast(forecast_list)
+            result = ha_interface._find_day_forecast(forecast_list, "max")
 
         assert result is not None
         day_name, forecast = result
-        assert day_name == "tomorrow"
+        assert day_name == "today"
         assert forecast["native_temperature"] == 30.0
 
 

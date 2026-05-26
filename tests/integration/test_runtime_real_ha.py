@@ -264,7 +264,7 @@ async def _setup_integration(
 
     The ``weather.get_forecasts`` HA service requires a real weather
     platform entity (not just a state), so we patch
-    ``HomeAssistantInterface.get_daily_temperature_extrema_for_date`` to return the desired
+    ``HomeAssistantInterface.get_daily_temperature_extrema`` to return the desired
     forecast temperatures directly. Everything else in the chain — coordinator,
     automation engine, cover automation, and cover service calls — runs
     through real HA code.
@@ -308,7 +308,7 @@ async def _setup_integration(
     # The rest of the chain (coordinator → engine → cover automation → HA service calls)
     # runs unpatched through real HA code.
     with patch(
-        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema_for_date",
+        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
         new_callable=AsyncMock,
         return_value=(temp_max, 18.0),
     ):
@@ -740,7 +740,7 @@ class TestRuntimeBehavior:
 
             with patch.object(
                 HomeAssistantInterface,
-                "get_daily_temperature_extrema_for_date",
+                "get_daily_temperature_extrema",
                 new_callable=AsyncMock,
                 return_value=(COMFORTABLE_TEMP, 18.0),
             ):
@@ -998,7 +998,7 @@ class TestRuntimeBehavior:
         # Now change the weather forecast to hot by patching the forecast method
         with patch.object(
             HomeAssistantInterface,
-            "get_daily_temperature_extrema_for_date",
+            "get_daily_temperature_extrema",
             new_callable=AsyncMock,
             return_value=(HOT_TEMP, 18.0),
         ):
@@ -1070,7 +1070,7 @@ class TestRuntimeBehavior:
 
             with patch.object(
                 HomeAssistantInterface,
-                "get_daily_temperature_extrema_for_date",
+                "get_daily_temperature_extrema",
                 new_callable=AsyncMock,
                 return_value=(COMFORTABLE_TEMP, 18.0),
             ):

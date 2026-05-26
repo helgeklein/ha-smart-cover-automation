@@ -790,6 +790,9 @@ class HomeAssistantInterface:
 
         resolved = self._resolved_settings_callback()
 
+        if temperature_kind == "max":
+            return (now_local.date(), "today")
+
         if temperature_kind == "min":
             min_cutover = self._get_min_temperature_cutover_datetime(now_local.date())
             if min_cutover is not None:

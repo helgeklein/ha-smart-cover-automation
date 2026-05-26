@@ -33,7 +33,7 @@ def mock_ha_interface():
     """Create a mock Home Assistant interface."""
     ha_interface = MagicMock()
     ha_interface.get_sun_data = MagicMock(return_value=(180.0, 45.0))
-    ha_interface.get_daily_temperature_extrema_for_date = AsyncMock(return_value=(25.0, 18.0))
+    ha_interface.get_daily_temperature_extrema = AsyncMock(return_value=(25.0, 18.0))
     ha_interface.get_weather_condition = MagicMock(return_value="sunny")
     ha_interface.get_sun_state = MagicMock(return_value="above_horizon")
     return ha_interface
@@ -99,7 +99,7 @@ class TestGatherSensorData:
         """Test successful sensor data gathering."""
         # Configure mocks
         mock_ha_interface.get_sun_data.return_value = (180.0, 45.0)
-        mock_ha_interface.get_daily_temperature_extrema_for_date.return_value = (28.0, 18.0)
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, 18.0)
         mock_ha_interface.get_weather_condition.return_value = "sunny"
 
         # Call method
@@ -120,7 +120,7 @@ class TestGatherSensorData:
     async def test_gather_sensor_data_temp_hot_when_both_thresholds_equal(self, automation_engine, mock_ha_interface):
         """Test sensor data when both daily extrema equal the configured thresholds."""
 
-        mock_ha_interface.get_daily_temperature_extrema_for_date.return_value = (20.0, 15.0)
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (20.0, 15.0)
 
         sensor_data, message = await automation_engine._gather_sensor_data()
 
@@ -131,7 +131,7 @@ class TestGatherSensorData:
     async def test_gather_sensor_data_temp_not_hot(self, automation_engine, mock_ha_interface):
         """Test sensor data when temperature is below threshold."""
         # Configure mocks
-        mock_ha_interface.get_daily_temperature_extrema_for_date.return_value = (15.0, 16.0)
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (15.0, 16.0)
 
         # Call method
         sensor_data, message = await automation_engine._gather_sensor_data()
@@ -143,7 +143,7 @@ class TestGatherSensorData:
     async def test_gather_sensor_data_daily_min_threshold_not_met(self, automation_engine, mock_ha_interface):
         """Test sensor data when the daily minimum temperature is below threshold."""
 
-        mock_ha_interface.get_daily_temperature_extrema_for_date.return_value = (28.0, 10.0)
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, 10.0)
 
         sensor_data, message = await automation_engine._gather_sensor_data()
 
@@ -154,7 +154,7 @@ class TestGatherSensorData:
     async def test_gather_sensor_data_missing_daily_min_uses_daily_max_only(self, automation_engine, mock_ha_interface):
         """Test that a missing forecast low falls back to the daily max threshold."""
 
-        mock_ha_interface.get_daily_temperature_extrema_for_date.return_value = (28.0, None)
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, None)
 
         sensor_data, message = await automation_engine._gather_sensor_data()
 
@@ -166,7 +166,7 @@ class TestGatherSensorData:
     async def test_gather_sensor_data_temp_not_hot_when_daily_min_below_equal_max(self, automation_engine, mock_ha_interface):
         """Test sensor data when max equals threshold but daily minimum stays below it."""
 
-        mock_ha_interface.get_daily_temperature_extrema_for_date.return_value = (20.0, 14.5)
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (20.0, 14.5)
 
         sensor_data, message = await automation_engine._gather_sensor_data()
 
@@ -188,7 +188,7 @@ class TestGatherSensorData:
 
     async def test_gather_sensor_data_weather_hot_external_control_overrides_forecast(self, automation_engine, mock_ha_interface):
         """Test that external hot control overrides the forecast-derived temperature state."""
-        mock_ha_interface.get_daily_temperature_extrema_for_date.return_value = (15.0, 16.0)
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (15.0, 16.0)
         automation_engine.config[const.SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL] = True
 
         sensor_data, message = await automation_engine._gather_sensor_data()
@@ -243,7 +243,7 @@ class TestGatherSensorData:
         from custom_components.smart_cover_automation.ha_interface import WeatherEntityNotFoundError
 
         # Configure mock to raise error
-        mock_ha_interface.get_daily_temperature_extrema_for_date.side_effect = WeatherEntityNotFoundError("Weather entity not found")
+        mock_ha_interface.get_daily_temperature_extrema.side_effect = WeatherEntityNotFoundError("Weather entity not found")
 
         # Call method
         sensor_data, message = await automation_engine._gather_sensor_data()
@@ -265,9 +265,7 @@ class TestGatherSensorData:
 
         from custom_components.smart_cover_automation.ha_interface import InvalidSensorReadingError
 
-        mock_ha_interface.get_daily_temperature_extrema_for_date.side_effect = InvalidSensorReadingError(
-            "weather.test", "Forecast unavailable"
-        )
+        mock_ha_interface.get_daily_temperature_extrema.side_effect = InvalidSensorReadingError("weather.test", "Forecast unavailable")
         mock_ha_interface.get_weather_condition.side_effect = InvalidSensorReadingError("weather.test", "state is unavailable")
 
         sensor_data, message = await automation_engine._gather_sensor_data()
@@ -278,30 +276,26 @@ class TestGatherSensorData:
         assert sensor_data.temp_hot == first_sensor_data.temp_hot
         assert sensor_data.weather_condition == first_sensor_data.weather_condition
 
-    async def test_gather_sensor_data_uses_stored_current_day_values_after_cutover(self, automation_engine, mock_ha_interface):
-        """Current-day extrema should continue to drive daytime logic after the cutover time."""
-
-        from custom_components.smart_cover_automation.ha_interface import InvalidSensorReadingError
+    async def test_gather_sensor_data_keeps_highest_seen_max_for_day(self, automation_engine, mock_ha_interface):
+        """The daytime max should never decrease within the same day once a higher value was seen."""
 
         first_now = datetime(2026, 5, 26, 15, 0, tzinfo=timezone.utc)
         second_now = datetime(2026, 5, 26, 18, 0, tzinfo=timezone.utc)
 
         with patch("homeassistant.util.dt.now", return_value=first_now):
+            mock_ha_interface.get_daily_temperature_extrema.return_value = (28.0, 18.0)
             first_sensor_data, _ = await automation_engine._gather_sensor_data()
 
-        mock_ha_interface.get_daily_temperature_extrema_for_date.side_effect = InvalidSensorReadingError(
-            "weather.test", "Forecast unavailable"
-        )
-
         with patch("homeassistant.util.dt.now", return_value=second_now):
+            mock_ha_interface.get_daily_temperature_extrema.return_value = (24.0, 18.0)
             sensor_data, message = await automation_engine._gather_sensor_data()
 
         assert first_sensor_data is not None
         assert sensor_data is not None
-        assert sensor_data.temp_max == first_sensor_data.temp_max
-        assert sensor_data.temp_min == first_sensor_data.temp_min
+        assert sensor_data.temp_max == 28.0
+        assert sensor_data.temp_min == 18.0
         assert sensor_data.temp_hot == first_sensor_data.temp_hot
-        assert "stored current-day forecast temperatures" in message
+        assert message == ""
 
     async def test_gather_sensor_data_does_not_reuse_previous_day_values(self, automation_engine, mock_ha_interface):
         """Stored extrema must expire when the local day changes."""
@@ -314,9 +308,7 @@ class TestGatherSensorData:
         with patch("homeassistant.util.dt.now", return_value=first_now):
             first_sensor_data, _ = await automation_engine._gather_sensor_data()
 
-        mock_ha_interface.get_daily_temperature_extrema_for_date.side_effect = InvalidSensorReadingError(
-            "weather.test", "Forecast unavailable"
-        )
+        mock_ha_interface.get_daily_temperature_extrema.side_effect = InvalidSensorReadingError("weather.test", "Forecast unavailable")
 
         with patch("homeassistant.util.dt.now", return_value=second_now):
             sensor_data, message = await automation_engine._gather_sensor_data()
@@ -799,7 +791,7 @@ class TestGatherSensorData:
         [
             (
                 "forecast",
-                "Weather forecast unavailable due to an unexpected error, continuing with stored current-day forecast temperatures",
+                "Weather forecast unavailable due to an unexpected error, continuing with last known forecast temperatures",
             ),
             (
                 "condition",
@@ -822,7 +814,7 @@ class TestGatherSensorData:
         assert first_message == ""
 
         if failing_call == "forecast":
-            mock_ha_interface.get_daily_temperature_extrema_for_date.side_effect = RuntimeError("Unexpected weather error")
+            mock_ha_interface.get_daily_temperature_extrema.side_effect = RuntimeError("Unexpected weather error")
         else:
             mock_ha_interface.get_weather_condition.side_effect = RuntimeError("Unexpected weather condition error")
 
@@ -862,7 +854,7 @@ class TestGatherSensorData:
     async def test_gather_sensor_data_unexpected_weather_error(self, automation_engine, mock_ha_interface):
         """Test handling of unexpected errors when getting weather data."""
         # Configure mock to raise unexpected error
-        mock_ha_interface.get_daily_temperature_extrema_for_date.side_effect = RuntimeError("Unexpected weather error")
+        mock_ha_interface.get_daily_temperature_extrema.side_effect = RuntimeError("Unexpected weather error")
 
         # Call method
         sensor_data, message = await automation_engine._gather_sensor_data()
@@ -1381,7 +1373,7 @@ class TestRunMethod:
         """Test that sensor data is stored in the result."""
         # Configure mocks
         mock_ha_interface.get_sun_data.return_value = (180.0, 45.0)
-        mock_ha_interface.get_daily_temperature_extrema_for_date.return_value = (25.0, 18.0)
+        mock_ha_interface.get_daily_temperature_extrema.return_value = (25.0, 18.0)
         mock_ha_interface.get_weather_condition.return_value = "sunny"
 
         # Call run
