@@ -11,6 +11,7 @@ from custom_components.smart_cover_automation.const import (
     DOMAIN,
     STORAGE_KEY_AUTOMATION_CLOSED_MARKERS,
     STORAGE_KEY_AUTOMATION_STATE,
+    STORAGE_KEY_CURRENT_DAY_TEMPERATURE_EXTREMA,
     STORAGE_SAVE_DELAY_SECONDS,
     STORAGE_VERSION,
 )
@@ -57,19 +58,23 @@ class TestAutomationStateStore:
         store.schedule_save_closed_markers(markers)
         markers["cover.kitchen"] = "mutated"
 
-        assert AutomationStateStore._fallback_storage["entry_123"] == {"cover.kitchen": "evening_close"}
+        assert AutomationStateStore._fallback_storage["entry_123"] == {
+            STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"}
+        }
 
     @pytest.mark.asyncio
     async def test_load_returns_fallback_copy_when_store_is_unavailable(self) -> None:
         """Fallback loads should return a copy so callers cannot mutate shared state."""
 
-        AutomationStateStore._fallback_storage["entry_123"] = {"cover.kitchen": "evening_close"}
+        AutomationStateStore._fallback_storage["entry_123"] = {STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"}}
         store = AutomationStateStore(object(), "entry_123")
 
         result = await store.async_load_closed_markers()
         result["cover.kitchen"] = "mutated"
 
-        assert AutomationStateStore._fallback_storage["entry_123"] == {"cover.kitchen": "evening_close"}
+        assert AutomationStateStore._fallback_storage["entry_123"] == {
+            STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"}
+        }
 
     @pytest.mark.asyncio
     async def test_async_save_uses_fallback_storage_when_store_is_unavailable(self) -> None:
@@ -79,20 +84,22 @@ class TestAutomationStateStore:
 
         await store.async_save_closed_markers({"cover.kitchen": "evening_close"})
 
-        assert AutomationStateStore._fallback_storage["entry_123"] == {"cover.kitchen": "evening_close"}
+        assert AutomationStateStore._fallback_storage["entry_123"] == {
+            STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"}
+        }
 
     @pytest.mark.asyncio
     async def test_async_remove_uses_fallback_storage_when_store_is_unavailable(self) -> None:
         """Removal should delete only the targeted entry in fallback mode."""
 
-        AutomationStateStore._fallback_storage["entry_123"] = {"cover.kitchen": "evening_close"}
-        AutomationStateStore._fallback_storage["other_entry"] = {"cover.office": "manual"}
+        AutomationStateStore._fallback_storage["entry_123"] = {STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"}}
+        AutomationStateStore._fallback_storage["other_entry"] = {STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.office": "manual"}}
         store = AutomationStateStore(object(), "entry_123")
 
         await store.async_remove()
 
         assert "entry_123" not in AutomationStateStore._fallback_storage
-        assert AutomationStateStore._fallback_storage["other_entry"] == {"cover.office": "manual"}
+        assert AutomationStateStore._fallback_storage["other_entry"] == {STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.office": "manual"}}
 
     def test_schedule_save_passes_snapshot_and_delay_to_store(self, mock_hass: MagicMock) -> None:
         """Delayed saves should persist a snapshot instead of a live mapping reference."""
@@ -116,6 +123,61 @@ class TestAutomationStateStore:
         markers["cover.kitchen"] = "mutated"
 
         assert delayed_payloads == [{STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"}}]
+
+    def test_schedule_save_current_day_extrema_uses_fallback_storage_when_store_is_unavailable(self) -> None:
+        """Fallback mode should cache current-day extrema snapshots in memory."""
+
+        store = AutomationStateStore(object(), "entry_123")
+        extrema = {"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0}
+
+        store.schedule_save_current_day_temperature_extrema(extrema)
+        extrema["temp_max"] = 35.0
+
+        assert AutomationStateStore._fallback_storage["entry_123"] == {
+            STORAGE_KEY_CURRENT_DAY_TEMPERATURE_EXTREMA: {"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0}
+        }
+
+    @pytest.mark.asyncio
+    async def test_load_current_day_extrema_returns_valid_snapshot(self, mock_hass: MagicMock) -> None:
+        """Stored current-day extrema should be validated and returned as numeric values."""
+
+        self._prepare_hass(mock_hass)
+
+        mock_store = MagicMock()
+        mock_store.async_load = AsyncMock(
+            return_value={STORAGE_KEY_CURRENT_DAY_TEMPERATURE_EXTREMA: {"date": "2026-05-26", "temp_max": 29, "temp_min": 18}}
+        )
+
+        with patch("custom_components.smart_cover_automation.automation_state_store.Store", return_value=mock_store):
+            store = AutomationStateStore(mock_hass, "entry_123")
+
+        assert await store.async_load_current_day_temperature_extrema() == {
+            "date": "2026-05-26",
+            "temp_max": 29.0,
+            "temp_min": 18.0,
+        }
+
+    @pytest.mark.asyncio
+    async def test_async_save_current_day_extrema_preserves_existing_closed_markers(self, mock_hass: MagicMock) -> None:
+        """Saving extrema should not overwrite other persisted runtime-state sections."""
+
+        self._prepare_hass(mock_hass)
+
+        mock_store = MagicMock()
+        mock_store.async_save = AsyncMock()
+
+        with patch("custom_components.smart_cover_automation.automation_state_store.Store", return_value=mock_store):
+            store = AutomationStateStore(mock_hass, "entry_123")
+
+        await store.async_save_closed_markers({"cover.kitchen": "evening_close"})
+        await store.async_save_current_day_temperature_extrema({"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0})
+
+        mock_store.async_save.assert_awaited_with(
+            {
+                STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"},
+                STORAGE_KEY_CURRENT_DAY_TEMPERATURE_EXTREMA: {"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0},
+            }
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(

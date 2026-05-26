@@ -179,7 +179,7 @@ async def _create_and_load_entry(
 
     # Patch forecast and load
     with patch(
-        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
+        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema_for_date",
         new_callable=AsyncMock,
         return_value=(30.0, 18.0),
     ):
@@ -236,7 +236,7 @@ class TestSmartReload:
         new_options = {**entry.options, ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 30.0}
 
         with patch(
-            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema_for_date",
             new_callable=AsyncMock,
             return_value=(30.0, 18.0),
         ):
@@ -281,7 +281,7 @@ class TestSmartReload:
         }
 
         with patch(
-            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema_for_date",
             new_callable=AsyncMock,
             return_value=(30.0, 18.0),
         ):
@@ -324,7 +324,7 @@ class TestSmartReload:
         new_options = {**entry.options, ConfKeys.LOCK_MODE.value: LockMode.FORCE_OPEN}
 
         with patch(
-            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema_for_date",
             new_callable=AsyncMock,
             return_value=(30.0, 18.0),
         ):

@@ -28,9 +28,16 @@ if TYPE_CHECKING:
 class WeatherSnapshot:
     """Last successfully resolved weather inputs."""
 
-    temp_max: float | None = None
-    temp_min: float | None = None
     weather_condition: str | None = None
+
+
+@dataclass(slots=True)
+class CurrentDayTemperatureExtrema:
+    """Stored forecast extrema for the current local day."""
+
+    forecast_date: date
+    temp_max: float
+    temp_min: float | None = None
 
 
 @dataclass(slots=True)
@@ -64,6 +71,7 @@ class AutomationEngine:
         ha_interface: Any,
         logger: Log,
         on_closed_by_automation_changed: Callable[[dict[str, str]], None] | None = None,
+        on_current_day_temperature_extrema_changed: Callable[[dict[str, Any] | None], None] | None = None,
     ) -> None:
         """Initialize the automation engine.
 
@@ -79,6 +87,7 @@ class AutomationEngine:
         self._cover_pos_history_mgr = CoverPositionHistoryManager(on_closed_by_automation_changed=on_closed_by_automation_changed)
         self._ha_interface = ha_interface
         self._logger = logger
+        self._on_current_day_temperature_extrema_changed = on_current_day_temperature_extrema_changed
 
         # First run tracking
         self._first_run: bool = True  # Track first iteration to suppress startup warnings
@@ -88,6 +97,7 @@ class AutomationEngine:
 
         # Preserve the last successful weather inputs for temporary offline periods.
         self._weather_snapshot = WeatherSnapshot()
+        self._current_day_temperature_extrema: CurrentDayTemperatureExtrema | None = None
         self._disabled_time_range_state = DisabledTimeRangeState()
         self._pending_cover_executions: dict[str, ScheduledCoverExecution] = {}
         self._schedule_sequence = 0
@@ -102,6 +112,48 @@ class AutomationEngine:
         """Restore automation-closed markers from persistent storage."""
 
         self._cover_pos_history_mgr.restore_closed_by_automation_markers(markers)
+
+    def export_current_day_temperature_extrema(self) -> dict[str, Any] | None:
+        """Return persisted current-day extrema state, if available."""
+
+        if self._current_day_temperature_extrema is None:
+            return None
+
+        return {
+            "date": self._current_day_temperature_extrema.forecast_date.isoformat(),
+            "temp_max": self._current_day_temperature_extrema.temp_max,
+            "temp_min": self._current_day_temperature_extrema.temp_min,
+        }
+
+    def restore_current_day_temperature_extrema(self, payload: Mapping[str, Any] | None) -> None:
+        """Restore persisted current-day extrema state."""
+
+        if payload is None:
+            self._current_day_temperature_extrema = None
+            return
+
+        raw_date = payload.get("date")
+        raw_temp_max = payload.get("temp_max")
+        raw_temp_min = payload.get("temp_min")
+        if not isinstance(raw_date, str) or not isinstance(raw_temp_max, int | float):
+            self._current_day_temperature_extrema = None
+            return
+
+        try:
+            forecast_date = date.fromisoformat(raw_date)
+        except ValueError:
+            self._current_day_temperature_extrema = None
+            return
+
+        if raw_temp_min is not None and not isinstance(raw_temp_min, int | float):
+            self._current_day_temperature_extrema = None
+            return
+
+        self._current_day_temperature_extrema = CurrentDayTemperatureExtrema(
+            forecast_date=forecast_date,
+            temp_max=float(raw_temp_max),
+            temp_min=float(raw_temp_min) if raw_temp_min is not None else None,
+        )
 
     def cancel_pending_cover_executions(self) -> None:
         """Cancel all queued staggered cover executions."""
@@ -537,25 +589,30 @@ class AutomationEngine:
 
         weather_messages: list[str] = []
 
-        temp_max = self._weather_snapshot.temp_max
-        temp_min = self._weather_snapshot.temp_min
+        current_day = dt_util.as_local(dt_util.now()).date()
+        self._clear_expired_current_day_temperature_extrema(current_day)
+
+        temp_max = self._current_day_temperature_extrema.temp_max if self._current_day_temperature_extrema is not None else None
+        temp_min = self._current_day_temperature_extrema.temp_min if self._current_day_temperature_extrema is not None else None
         temperature_available = temp_max is not None
 
         try:
-            temp_max, temp_min = await self._ha_interface.get_daily_temperature_extrema(self.resolved.weather_entity_id)
-            self._weather_snapshot.temp_max = temp_max
-            self._weather_snapshot.temp_min = temp_min
+            temp_max, temp_min = await self._ha_interface.get_daily_temperature_extrema_for_date(
+                self.resolved.weather_entity_id,
+                current_day,
+            )
+            self._set_current_day_temperature_extrema(current_day, temp_max, temp_min)
             temperature_available = True
         except InvalidSensorReadingError, WeatherEntityNotFoundError:
             if temperature_available:
-                weather_messages.append("Weather forecast unavailable, continuing with last known forecast temperatures")
+                weather_messages.append("Weather forecast unavailable, continuing with stored current-day forecast temperatures")
             else:
                 weather_messages.append("Weather forecast unavailable, skipping weather-dependent actions that require forecast data")
         except Exception as err:
             self._logger.error(f"Unexpected error getting weather forecast data: {err}")
             if temperature_available:
                 weather_messages.append(
-                    "Weather forecast unavailable due to an unexpected error, continuing with last known forecast temperatures"
+                    "Weather forecast unavailable due to an unexpected error, continuing with stored current-day forecast temperatures"
                 )
             else:
                 weather_messages.append("Weather forecast unavailable due to an unexpected error")
@@ -655,6 +712,30 @@ class AutomationEngine:
             ),
             message,
         )
+
+    def _clear_expired_current_day_temperature_extrema(self, current_day: date) -> None:
+        """Drop persisted day-specific extrema when the local date rolls over."""
+
+        if self._current_day_temperature_extrema is None:
+            return
+
+        if self._current_day_temperature_extrema.forecast_date == current_day:
+            return
+
+        self._current_day_temperature_extrema = None
+        if self._on_current_day_temperature_extrema_changed is not None:
+            self._on_current_day_temperature_extrema_changed(None)
+
+    def _set_current_day_temperature_extrema(self, current_day: date, temp_max: float, temp_min: float | None) -> None:
+        """Store current-day extrema and notify persistence listeners on change."""
+
+        new_state = CurrentDayTemperatureExtrema(forecast_date=current_day, temp_max=temp_max, temp_min=temp_min)
+        if self._current_day_temperature_extrema == new_state:
+            return
+
+        self._current_day_temperature_extrema = new_state
+        if self._on_current_day_temperature_extrema_changed is not None:
+            self._on_current_day_temperature_extrema_changed(self.export_current_day_temperature_extrema())
 
     #
     # _get_local_datetime_for_date

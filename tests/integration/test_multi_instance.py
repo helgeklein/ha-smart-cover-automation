@@ -204,7 +204,7 @@ async def _setup_two_instances(
     entry_b = _create_entry(hass, COVER_B, WEATHER_B, ENTRY_ID_B)
 
     with patch(
-        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
+        "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema_for_date",
         new_callable=AsyncMock,
         return_value=(30.0, 18.0),
     ):
