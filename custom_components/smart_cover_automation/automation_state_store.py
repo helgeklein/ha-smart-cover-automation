@@ -40,19 +40,19 @@ class AutomationStateStore:
         """Load and validate the full persisted runtime-state payload."""
 
         if self._store is None:
-            data = self._fallback_storage.get(self._entry_id, {})
-            return dict(data) if isinstance(data, dict) else {}
+            cached_data = self._fallback_storage.get(self._entry_id, {})
+            return dict(cached_data) if isinstance(cached_data, dict) else {}
 
         try:
-            data = await self._store.async_load()
+            loaded_data = await self._store.async_load()
         except (AttributeError, OSError, TypeError, ValueError) as err:
             self._logger.warning("Failed to load persisted automation state: %s", err)
             return {}
 
-        if not isinstance(data, dict):
+        if not isinstance(loaded_data, dict):
             return {}
 
-        return dict(data)
+        return dict(loaded_data)
 
     def _build_save_payload(self) -> dict[str, Any]:
         """Return a copy of the cached runtime-state payload."""

@@ -130,36 +130,17 @@ def _reset_weather_temp():
 
 
 def get_applicable_forecast_date(cutover_time: time | None = None) -> date:
-    """Get the date that forecast matching logic will use.
+    """Get the date generic daily forecast helpers should use.
 
-    This centralizes the logic for determining which day's forecast to use based on
-    the current time and cutover time. Before cutover (default 16:00), uses today's
-    forecast. After cutover, uses tomorrow's forecast.
-
-    This ensures tests provide forecasts for the correct day, avoiding time-dependent
-    test failures.
-
-    Args:
-        cutover_time: Time to switch from today to tomorrow forecast.
-                     If None, uses default from CONF_SPECS.
-
-    Returns:
-        The date that should be used in forecast data for matching.
+    Generic forecast consumers now keep using today's forecast for daily maximum
+    temperature lookups throughout the day. The legacy ``cutover_time`` parameter
+    remains for compatibility with older helper call sites, but it no longer
+    changes the returned date.
     """
-    from datetime import timedelta
-
     from homeassistant.util import dt as dt_util
 
-    cutover = cutover_time if cutover_time is not None else time(16, 0)
-
     now_local = dt_util.now()
-    current_time = now_local.time()
-
-    # If current time is after cutover time, use tomorrow's forecast
-    if current_time >= cutover:
-        return (now_local + timedelta(days=1)).date()
-    else:
-        return now_local.date()
+    return now_local.date()
 
 
 def create_forecast_with_applicable_date(temp: float, cutover_time: time | None = None) -> dict[str, Any]:
@@ -181,6 +162,9 @@ def create_forecast_with_applicable_date(temp: float, cutover_time: time | None 
     return {
         "datetime": forecast_datetime.isoformat(),
         "native_temperature": temp,
+        "native_templow": 18.0,
+        "temp_max": temp,
+        "temp_min": 18.0,
     }
 
 

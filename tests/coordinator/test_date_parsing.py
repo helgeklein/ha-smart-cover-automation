@@ -45,8 +45,7 @@ class TestDateParsingEdgeCases:
         result = mock_coordinator_basic._ha_interface._find_day_forecast(forecast_list)
         assert result is not None
         applicable_day, forecast = result
-        # Should match whichever day is applicable based on current time
-        assert applicable_day in ("today", "tomorrow")
+        assert applicable_day == "today"
         assert forecast["native_temperature"] == forecast_temp
 
     @patch("custom_components.smart_cover_automation.ha_interface.dt_util")
@@ -119,7 +118,7 @@ class TestDateParsingEdgeCases:
         result = mock_coordinator_basic._ha_interface._find_day_forecast(forecast_list)
         assert result is not None
         applicable_day, forecast = result
-        assert applicable_day in ("today", "tomorrow")  # Accept either depending on actual time
+        assert applicable_day == "today"
         assert forecast["native_temperature"] == forecast_temp
 
     @patch("custom_components.smart_cover_automation.ha_interface.dt_util")
