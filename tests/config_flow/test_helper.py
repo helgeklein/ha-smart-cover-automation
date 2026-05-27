@@ -300,11 +300,12 @@ class TestFlowHelperSchemaBuilding:
         assert const.STEP_2_SECTION_AZIMUTH in schema_keys
 
     def test_build_schema_step_2_uses_existing_sun_azimuth_tolerance_override(self) -> None:
-        """Test step 2 schema exposes the per-cover tolerance override section."""
+        """Test step 2 schema exposes the per-cover sun azimuth window section."""
 
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {
-            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": 25,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}": 25,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}": 35,
         }
 
         schema = FlowHelper.build_schema_step_2(covers, defaults)

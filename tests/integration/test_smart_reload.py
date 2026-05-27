@@ -277,7 +277,7 @@ class TestSmartReload:
             **entry.options,
             ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 28.0,
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 15.0,
-            ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 60.0,
+            ConfKeys.SUN_AZIMUTH_TOLERANCE_START.value: 60.0,
         }
 
         with patch(
@@ -297,7 +297,7 @@ class TestSmartReload:
         cfg = current_coordinator._merged_config
         assert cfg.get(ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value) == 28.0
         assert cfg.get(ConfKeys.SUN_ELEVATION_THRESHOLD.value) == 15.0
-        assert cfg.get(ConfKeys.SUN_AZIMUTH_TOLERANCE.value) == 60.0
+        assert cfg.get(ConfKeys.SUN_AZIMUTH_TOLERANCE_START.value) == 60.0
 
     # ------------------------------------------------------------------
     # 4.4  Lock mode change via options update → coordinator refresh

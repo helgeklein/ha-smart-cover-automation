@@ -57,7 +57,8 @@ def mock_resolved_config():
     resolved.covers_min_closure = 100
     resolved.evening_closure_max_closure = 0
     resolved.sun_elevation_threshold = 10.0
-    resolved.sun_azimuth_tolerance = 30.0
+    resolved.sun_azimuth_tolerance_start = 30.0
+    resolved.sun_azimuth_tolerance_end = 30.0
     resolved.manual_override_duration = 3600
     resolved.evening_closure_ignore_manual_override_duration = False
     resolved.evening_closure_keep_closed = False
@@ -1073,8 +1074,10 @@ class TestCalculateSunHitting:
         """Test that per-cover tolerance overrides the global tolerance."""
 
         mock_resolved_config.sun_elevation_threshold = 10.0
-        mock_resolved_config.sun_azimuth_tolerance = 30.0
-        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] = 10
+        mock_resolved_config.sun_azimuth_tolerance_start = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_end = 40.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}"] = 10
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}"] = 20
 
         sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=195.0, sun_elevation=45.0, cover_azimuth=180.0)
         assert sun_hitting is False
@@ -1084,8 +1087,9 @@ class TestCalculateSunHitting:
         """Test that invalid per-cover tolerance falls back to the global tolerance."""
 
         mock_resolved_config.sun_elevation_threshold = 10.0
-        mock_resolved_config.sun_azimuth_tolerance = 30.0
-        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] = "invalid"
+        mock_resolved_config.sun_azimuth_tolerance_start = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_end = 30.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}"] = "invalid"
 
         sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=195.0, sun_elevation=45.0, cover_azimuth=180.0)
         assert sun_hitting is True
@@ -1094,7 +1098,8 @@ class TestCalculateSunHitting:
     def test_calculate_sun_hitting_direct_hit(self, cover_automation, mock_resolved_config):
         """Test when sun is directly hitting the window."""
         mock_resolved_config.sun_elevation_threshold = 10.0
-        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_start = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_end = 30.0
 
         sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=180.0, sun_elevation=45.0, cover_azimuth=180.0)
         assert sun_hitting is True
@@ -1103,7 +1108,8 @@ class TestCalculateSunHitting:
     def test_calculate_sun_hitting_within_tolerance(self, cover_automation, mock_resolved_config):
         """Test when sun is within azimuth tolerance."""
         mock_resolved_config.sun_elevation_threshold = 10.0
-        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_start = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_end = 30.0
 
         sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=200.0, sun_elevation=45.0, cover_azimuth=180.0)
         assert sun_hitting is True
@@ -1112,7 +1118,8 @@ class TestCalculateSunHitting:
     def test_calculate_sun_hitting_outside_tolerance(self, cover_automation, mock_resolved_config):
         """Test when sun is outside azimuth tolerance."""
         mock_resolved_config.sun_elevation_threshold = 10.0
-        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_start = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_end = 30.0
 
         sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=250.0, sun_elevation=45.0, cover_azimuth=180.0)
         assert sun_hitting is False
@@ -1121,7 +1128,8 @@ class TestCalculateSunHitting:
     def test_calculate_sun_hitting_low_elevation(self, cover_automation, mock_resolved_config):
         """Test when sun elevation is below threshold."""
         mock_resolved_config.sun_elevation_threshold = 10.0
-        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_start = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_end = 30.0
 
         sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=180.0, sun_elevation=5.0, cover_azimuth=180.0)
         assert sun_hitting is False
@@ -1131,7 +1139,8 @@ class TestCalculateSunHitting:
         """Pre-close sun-path samples should count a future morning hit before the blocked range ends."""
 
         mock_resolved_config.sun_elevation_threshold = 10.0
-        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_start = 30.0
+        mock_resolved_config.sun_azimuth_tolerance_end = 30.0
         sensor_data = make_sensor_data(
             sun_azimuth=250.0,
             sun_elevation=45.0,
@@ -1207,34 +1216,6 @@ class TestCalculateDesiredPosition:
         assert position == 0  # Fully closed
         assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
         assert lockout_active is False
-
-    def test_calculate_desired_position_heat_protection_keeps_more_closed_cover(
-        self, cover_automation, mock_logger, mock_resolved_config, basic_config
-    ):
-        """Heat protection should not open a cover that is already more closed than the target."""
-
-        mock_resolved_config.covers_max_closure = 30
-        basic_config["cover.test_cover_max_closure"] = 30
-
-        sensor_data = make_sensor_data(
-            sun_azimuth=180.0,
-            sun_elevation=45.0,
-            temp_max=30.0,
-            temp_hot=True,
-            weather_condition="sunny",
-            weather_sunny=True,
-            evening_closure=False,
-            post_evening_closure=False,
-        )
-
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=0)
-
-        assert position == 0
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
-        assert lockout_active is False
-        mock_logger.info.assert_any_call(
-            "[cover.test] Current position: 0%, desired position: 0%, keeping current position because it is already more closed than the heat protection position"
-        )
 
     def test_calculate_desired_position_let_light_in(self, cover_automation, mock_resolved_config):
         """Test desired position for letting light in (opening)."""

@@ -98,6 +98,7 @@ class CoverPositionHistoryManager:
         "_manual_override_blocked",
         "_on_closed_by_automation_changed",
         "_recent_automation_actions",
+        "_sun_hitting_state",
     )
 
     def __init__(self, on_closed_by_automation_changed: Callable[[dict[str, str]], None] | None = None) -> None:
@@ -108,6 +109,7 @@ class CoverPositionHistoryManager:
         self._manual_override_blocked: set[str] = set()
         self._on_closed_by_automation_changed = on_closed_by_automation_changed
         self._recent_automation_actions: dict[str, RecentAutomationAction] = {}
+        self._sun_hitting_state: dict[str, bool] = {}
 
     def _notify_closed_by_automation_changed(self) -> None:
         """Persist automation-closed markers when they change."""
@@ -283,3 +285,13 @@ class CoverPositionHistoryManager:
         """Return whether the cover was previously blocked by manual override."""
 
         return entity_id in self._manual_override_blocked
+
+    def get_last_sun_hitting_state(self, entity_id: str) -> bool | None:
+        """Return the last recorded sun-hitting state for a cover, if any."""
+
+        return self._sun_hitting_state.get(entity_id)
+
+    def set_last_sun_hitting_state(self, entity_id: str, sun_hitting: bool) -> None:
+        """Store the latest sun-hitting state for a cover."""
+
+        self._sun_hitting_state[entity_id] = sun_hitting

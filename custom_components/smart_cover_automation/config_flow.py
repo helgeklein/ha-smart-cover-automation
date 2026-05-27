@@ -168,18 +168,22 @@ class FlowHelper:
         )
 
         for cover in sorted(covers):
-            key = f"{cover}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
-            raw = defaults.get(key)
-            default_value = to_int_or_none(raw)
+            for suffix in (const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START, const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END):
+                key = f"{cover}_{suffix}"
+                legacy_key = f"{cover}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
+                raw = defaults.get(key)
+                if raw is None:
+                    raw = defaults.get(legacy_key)
+                default_value = to_int_or_none(raw)
 
-            if default_value is not None:
-                key_marker = vol.Optional(key, description={"suggested_value": str(default_value)})
-            elif raw not in (None, ""):
-                key_marker = vol.Optional(key, description={"suggested_value": str(raw)})
-            else:
-                key_marker = vol.Optional(key)
+                if default_value is not None:
+                    key_marker = vol.Optional(key, description={"suggested_value": str(default_value)})
+                elif raw not in (None, ""):
+                    key_marker = vol.Optional(key, description={"suggested_value": str(raw)})
+                else:
+                    key_marker = vol.Optional(key)
 
-            schema_dict[key_marker] = value_selector
+                schema_dict[key_marker] = value_selector
 
         return schema_dict
 
@@ -949,7 +953,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             Dictionary with normalized per-cover settings for this section
         """
         # Determine which section names are possible based on the suffix
-        if suffix == const.COVER_SFX_SUN_AZIMUTH_TOLERANCE:
+        if suffix in (
+            const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+            const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START,
+            const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END,
+        ):
             section_names = {const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE}
         elif suffix in (
             const.COVER_SFX_MIN_CLOSURE,
@@ -984,6 +992,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         for cover in covers:
             key = f"{cover}_{suffix}"
             current_value = current_settings.get(key)
+            if current_value is None and suffix in (
+                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START,
+                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END,
+            ):
+                current_value = current_settings.get(f"{cover}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}")
 
             if key in user_input_extracted:
                 # We have the field in the input, convert it based on suffix type
@@ -1196,6 +1209,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         suffixes = (
             f"_{const.COVER_SFX_AZIMUTH}",
             f"_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}",
+            f"_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}",
+            f"_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}",
             f"_{const.COVER_SFX_MAX_CLOSURE}",
             f"_{const.COVER_SFX_MIN_CLOSURE}",
             f"_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}",
@@ -1327,14 +1342,22 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     current_azimuth = const.DEFAULT_COVER_AZIMUTH
                 self._config_data[azimuth_key] = current_azimuth
 
-            sun_azimuth_tolerance_data = self._build_section_cover_settings(
+            sun_azimuth_tolerance_start_data = self._build_section_cover_settings(
                 user_input,
                 const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
-                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START,
                 covers_in_input,
                 current_settings,
             )
-            self._config_data.update(sun_azimuth_tolerance_data)
+            sun_azimuth_tolerance_end_data = self._build_section_cover_settings(
+                user_input,
+                const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
+                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END,
+                covers_in_input,
+                current_settings,
+            )
+            self._config_data.update(sun_azimuth_tolerance_start_data)
+            self._config_data.update(sun_azimuth_tolerance_end_data)
 
             # Store step 2 data (temporarily, for the next step of the flow) and proceed to step 3
             return await self.async_step_3()

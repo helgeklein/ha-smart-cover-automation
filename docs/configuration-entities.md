@@ -83,7 +83,14 @@ The entities in this section control at which temperatures and sun positions the
 
 ### Sun Azimuth
 
-**Sun azimuth tolerance:** The maximum horizontal angle at which the sun is considered to be shining on the window (degrees). This global value can be overridden per cover in the configuration wizard.
+The integration uses two separate thresholds to determine when the sun is shining on a window:
+
+- **Sun azimuth: start** — The maximum horizontal angle (°) at which the sun *begins* to be considered as shining on the window (entering threshold).
+- **Sun azimuth: end** — The maximum horizontal angle (°) until the sun is no longer considered to be shining on the window (leaving threshold).
+
+Setting a larger end value than start value creates **hysteresis**: the sun-hit state activates at the narrower start angle and only deactivates once the sun moves beyond the wider end angle. This prevents the sun-hit state from flickering when the sun is near the edge of the exposure range.
+
+Both values can be overridden per cover in the configuration wizard (step 2).
 
 ### Sun Elevation
 

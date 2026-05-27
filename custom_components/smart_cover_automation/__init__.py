@@ -29,6 +29,7 @@ from .const import (
     HA_OPTIONS,
     INTEGRATION_NAME,
     LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD,
+    LEGACY_OPTION_KEY_SUN_AZIMUTH_TOLERANCE,
     LOGGER,
     NUMBER_KEY_COVERS_MAX_CLOSURE,
     NUMBER_KEY_COVERS_MIN_CLOSURE,
@@ -67,6 +68,7 @@ REMOVED_ENTITY_UNIQUE_ID_KEYS: Final[tuple[str, ...]] = (
     "nighttime_block_opening",
     NUMBER_KEY_COVERS_MAX_CLOSURE,
     NUMBER_KEY_COVERS_MIN_CLOSURE,
+    LEGACY_OPTION_KEY_SUN_AZIMUTH_TOLERANCE,
 )
 
 
@@ -231,6 +233,49 @@ async def _async_migrate_temperature_threshold_keys(hass: HomeAssistant, entry: 
                 entity.entity_id,
                 err,
             )
+
+
+async def _async_migrate_sun_azimuth_tolerance_keys(hass: HomeAssistant, entry: IntegrationConfigEntry) -> None:
+    """Migrate the legacy single sun azimuth tolerance into start/end thresholds."""
+
+    logger = Log(entry_id=entry.entry_id)
+    current_options = _get_entry_options_dict(entry)
+    updated_options = dict(current_options)
+    changed = False
+
+    if LEGACY_OPTION_KEY_SUN_AZIMUTH_TOLERANCE in updated_options:
+        legacy_value = updated_options.pop(LEGACY_OPTION_KEY_SUN_AZIMUTH_TOLERANCE)
+        if ConfKeys.SUN_AZIMUTH_TOLERANCE_START.value not in updated_options:
+            updated_options[ConfKeys.SUN_AZIMUTH_TOLERANCE_START.value] = legacy_value
+        if ConfKeys.SUN_AZIMUTH_TOLERANCE_END.value not in updated_options:
+            updated_options[ConfKeys.SUN_AZIMUTH_TOLERANCE_END.value] = legacy_value
+        changed = True
+
+    if changed:
+        logger.info("Migrating single sun azimuth tolerance into start/end thresholds")
+        hass.config_entries.async_update_entry(entry, options=updated_options)
+
+    try:
+        registry = er.async_get(hass)
+        entries = er.async_entries_for_config_entry(registry, entry.entry_id)
+    except (AttributeError, KeyError, TypeError, ValueError) as err:
+        logger.debug("Skipping sun azimuth entity migration for entry %s: %s", entry.entry_id, err)
+        return
+
+    old_unique_ids = {
+        f"{entry.entry_id}_{LEGACY_OPTION_KEY_SUN_AZIMUTH_TOLERANCE}",
+        f"{const.DOMAIN}_{LEGACY_OPTION_KEY_SUN_AZIMUTH_TOLERANCE}",
+    }
+
+    for entity in entries:
+        if entity.unique_id not in old_unique_ids:
+            continue
+
+        logger.info("Removing legacy sun azimuth entity %s (%s)", entity.entity_id, entity.unique_id)
+        try:
+            registry.async_remove(entity.entity_id)
+        except (AttributeError, KeyError, TypeError, ValueError) as err:
+            logger.warning("Could not remove legacy sun azimuth entity %s: %s", entity.entity_id, err)
 
 
 #
@@ -503,7 +548,7 @@ async def _handle_logbook_entry_service(hass: HomeAssistant, call: ServiceCall) 
 
     try:
         target_pos_int = int(target_position)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         LOGGER.warning("Invalid target_position '%s' provided to logbook service", target_position)
         return
 
@@ -577,6 +622,7 @@ async def async_setup_entry(
 
     try:
         await _async_migrate_temperature_threshold_keys(hass, entry)
+        await _async_migrate_sun_azimuth_tolerance_keys(hass, entry)
 
         # Migrate unique IDs if needed
         await _async_migrate_unique_ids(hass, entry)

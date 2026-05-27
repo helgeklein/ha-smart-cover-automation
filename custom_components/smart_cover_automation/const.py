@@ -80,7 +80,9 @@ DEFAULT_COVER_AZIMUTH: Final[int] = 180
 
 # Per-cover configuration key suffixes
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
-COVER_SFX_SUN_AZIMUTH_TOLERANCE: Final[str] = "cover_sun_azimuth_tolerance"  # Per-cover override for sun azimuth tolerance (°).
+COVER_SFX_SUN_AZIMUTH_TOLERANCE: Final[str] = "cover_sun_azimuth_tolerance"  # Legacy per-cover override for sun azimuth tolerance (°).
+COVER_SFX_SUN_AZIMUTH_TOLERANCE_START: Final[str] = "cover_sun_azimuth_tolerance_start"  # Per-cover override for sun entering the window (°).
+COVER_SFX_SUN_AZIMUTH_TOLERANCE_END: Final[str] = "cover_sun_azimuth_tolerance_end"  # Per-cover override for sun leaving the window (°).
 COVER_SFX_MAX_CLOSURE: Final[str] = "cover_max_closure"  # Cover maximum closure position (%)
 COVER_SFX_MIN_CLOSURE: Final[str] = "cover_min_closure"  # Cover minimum closure position (%)
 COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE: Final[str] = (
@@ -184,6 +186,8 @@ SENSOR_KEY_EVENING_CLOSURE_MODE: Final[str] = "close_covers_after_sunset_mode"  
 SENSOR_KEY_MORNING_OPENING_TIME: Final[str] = "morning_opening_time"  # Key for the morning opening time sensor entity
 SENSOR_KEY_MORNING_OPENING_MODE: Final[str] = "morning_opening_mode"  # Key for the morning opening mode sensor entity
 NUMBER_KEY_SUN_AZIMUTH_TOLERANCE: Final[str] = "sun_azimuth_tolerance"  # Key for the sun azimuth tolerance number entity
+NUMBER_KEY_SUN_AZIMUTH_TOLERANCE_START: Final[str] = "sun_azimuth_tolerance_start"  # Key for the sun entering-window tolerance number entity
+NUMBER_KEY_SUN_AZIMUTH_TOLERANCE_END: Final[str] = "sun_azimuth_tolerance_end"  # Key for the sun leaving-window tolerance number entity
 NUMBER_KEY_COVERS_MAX_CLOSURE: Final[str] = "covers_max_closure"  # Key for the covers maximum closure number entity
 NUMBER_KEY_COVERS_MIN_CLOSURE: Final[str] = "covers_min_closure"  # Key for the covers minimum closure number entity
 NUMBER_KEY_MANUAL_OVERRIDE_DURATION: Final[str] = "manual_override_duration"  # Key for the manual override duration number entity
@@ -209,6 +213,7 @@ SENSOR_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode sensor e
 SELECT_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode select entity
 SELECT_KEY_AUTOMATIC_REOPENING_MODE: Final[str] = "automatic_reopening_mode"  # Key for the automatic reopening mode select entity
 LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD: Final[str] = "temp_threshold"  # Legacy key for the old heat-protection max threshold option
+LEGACY_OPTION_KEY_SUN_AZIMUTH_TOLERANCE: Final[str] = "sun_azimuth_tolerance"  # Legacy key for the old single sun azimuth tolerance option
 NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD: Final[str] = (
     "daily_max_temperature_threshold"  # Key for the daily max temperature threshold number entity
 )

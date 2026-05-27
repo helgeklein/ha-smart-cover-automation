@@ -22,7 +22,8 @@ from custom_components.smart_cover_automation.number import (
     GlobalExternalTiltDayNumber,
     GlobalExternalTiltNightNumber,
     ManualOverrideDurationNumber,
-    SunAzimuthToleranceNumber,
+    SunAzimuthToleranceEndNumber,
+    SunAzimuthToleranceStartNumber,
     SunElevationThresholdNumber,
     async_setup_entry,
 )
@@ -62,15 +63,16 @@ async def test_async_setup_entry_creates_all_numbers(mock_coordinator_basic: Dat
     # Get the list of entities that were passed to async_add_entities
     entities_list = mock_add_entities.call_args[0][0]
 
-    # Verify we have exactly 5 entities
-    assert len(entities_list) == 5
+    # Verify we have exactly 6 entities
+    assert len(entities_list) == 6
 
     # Verify entity types (alphabetically ordered)
     assert isinstance(entities_list[0], ManualOverrideDurationNumber)
-    assert isinstance(entities_list[1], SunAzimuthToleranceNumber)
-    assert isinstance(entities_list[2], SunElevationThresholdNumber)
-    assert isinstance(entities_list[3], DailyMaxTemperatureThresholdNumber)
-    assert isinstance(entities_list[4], DailyMinTemperatureThresholdNumber)
+    assert isinstance(entities_list[1], SunAzimuthToleranceStartNumber)
+    assert isinstance(entities_list[2], SunAzimuthToleranceEndNumber)
+    assert isinstance(entities_list[3], SunElevationThresholdNumber)
+    assert isinstance(entities_list[4], DailyMaxTemperatureThresholdNumber)
+    assert isinstance(entities_list[5], DailyMinTemperatureThresholdNumber)
 
 
 async def test_async_setup_entry_entities_use_coordinator(mock_coordinator_basic: DataUpdateCoordinator) -> None:
@@ -140,13 +142,14 @@ async def test_async_setup_entry_with_real_hass_instance(
         add_entities,
     )
 
-    # Should have 5 number entities
-    assert len(captured) == 5
+    # Should have 6 number entities
+    assert len(captured) == 6
     assert isinstance(captured[0], ManualOverrideDurationNumber)
-    assert isinstance(captured[1], SunAzimuthToleranceNumber)
-    assert isinstance(captured[2], SunElevationThresholdNumber)
-    assert isinstance(captured[3], DailyMaxTemperatureThresholdNumber)
-    assert isinstance(captured[4], DailyMinTemperatureThresholdNumber)
+    assert isinstance(captured[1], SunAzimuthToleranceStartNumber)
+    assert isinstance(captured[2], SunAzimuthToleranceEndNumber)
+    assert isinstance(captured[3], SunElevationThresholdNumber)
+    assert isinstance(captured[4], DailyMaxTemperatureThresholdNumber)
+    assert isinstance(captured[5], DailyMinTemperatureThresholdNumber)
 
 
 async def test_async_setup_entry_adds_external_tilt_numbers_when_modes_external(mock_coordinator_basic: DataUpdateCoordinator) -> None:
@@ -175,11 +178,11 @@ async def test_async_setup_entry_adds_external_tilt_numbers_when_modes_external(
 
     await async_setup_entry(mock_coordinator_basic.hass, entry, add_entities)
 
-    assert len(captured) == 9
-    assert isinstance(captured[5], GlobalExternalTiltDayNumber)
-    assert isinstance(captured[6], GlobalExternalTiltNightNumber)
-    assert isinstance(captured[7], CoverExternalTiltDayNumber)
-    assert isinstance(captured[8], CoverExternalTiltNightNumber)
+    assert len(captured) == 10
+    assert isinstance(captured[6], GlobalExternalTiltDayNumber)
+    assert isinstance(captured[7], GlobalExternalTiltNightNumber)
+    assert isinstance(captured[8], CoverExternalTiltDayNumber)
+    assert isinstance(captured[9], CoverExternalTiltNightNumber)
 
 
 async def test_async_setup_entry_skips_per_cover_external_tilt_numbers_without_tilt_support(
@@ -209,8 +212,8 @@ async def test_async_setup_entry_skips_per_cover_external_tilt_numbers_without_t
 
     await async_setup_entry(mock_coordinator_basic.hass, entry, add_entities)
 
-    assert len(captured) == 7
-    assert isinstance(captured[5], GlobalExternalTiltDayNumber)
-    assert isinstance(captured[6], GlobalExternalTiltNightNumber)
+    assert len(captured) == 8
+    assert isinstance(captured[6], GlobalExternalTiltDayNumber)
+    assert isinstance(captured[7], GlobalExternalTiltNightNumber)
     assert not any(isinstance(entity, CoverExternalTiltDayNumber) for entity in captured)
     assert not any(isinstance(entity, CoverExternalTiltNightNumber) for entity in captured)

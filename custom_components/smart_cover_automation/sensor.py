@@ -137,7 +137,7 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):  # pyright: ignore[rep
 
         try:
             return _Converters.to_time(raw_value)
-        except AttributeError, TypeError, ValueError:
+        except (AttributeError, TypeError, ValueError):
             return None
 
     @staticmethod

@@ -713,7 +713,8 @@ class TestOptionsFlowScenarios:
         result = await flow.async_step_6(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 30.0,  # Changed
-                ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 45.0,  # Changed
+                ConfKeys.SUN_AZIMUTH_TOLERANCE_START.value: 45.0,  # Changed
+                ConfKeys.SUN_AZIMUTH_TOLERANCE_END.value: 55.0,  # Changed
                 ConfKeys.COVERS_MAX_CLOSURE.value: 75.0,  # Changed
                 ConfKeys.COVERS_MIN_CLOSURE.value: 25.0,  # Changed
                 ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 1, "minutes": 0, "seconds": 0},  # Changed
@@ -725,7 +726,8 @@ class TestOptionsFlowScenarios:
 
         # Verify all global settings changed
         assert final_options[ConfKeys.SUN_ELEVATION_THRESHOLD.value] == 30.0
-        assert final_options[ConfKeys.SUN_AZIMUTH_TOLERANCE.value] == 45.0
+        assert final_options[ConfKeys.SUN_AZIMUTH_TOLERANCE_START.value] == 45.0
+        assert final_options[ConfKeys.SUN_AZIMUTH_TOLERANCE_END.value] == 55.0
         assert final_options[ConfKeys.COVERS_MAX_CLOSURE.value] == 75.0
         assert final_options[ConfKeys.COVERS_MIN_CLOSURE.value] == 25.0
         assert final_options[ConfKeys.MANUAL_OVERRIDE_DURATION.value] == {"hours": 1, "minutes": 0, "seconds": 0}

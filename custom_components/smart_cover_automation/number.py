@@ -27,7 +27,8 @@ from .const import (
     NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
-    NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
+    NUMBER_KEY_SUN_AZIMUTH_TOLERANCE_END,
+    NUMBER_KEY_SUN_AZIMUTH_TOLERANCE_START,
     NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
@@ -68,7 +69,8 @@ async def async_setup_entry(
     # Create all number entities
     entities = [
         ManualOverrideDurationNumber(coordinator),
-        SunAzimuthToleranceNumber(coordinator),
+        SunAzimuthToleranceStartNumber(coordinator),
+        SunAzimuthToleranceEndNumber(coordinator),
         SunElevationThresholdNumber(coordinator),
         DailyMaxTemperatureThresholdNumber(coordinator),
         DailyMinTemperatureThresholdNumber(coordinator),
@@ -452,21 +454,17 @@ class CoverExternalTiltNightNumber(ExternalTiltNumber):
 
 
 #
-# SunAzimuthToleranceNumber
+# SunAzimuthToleranceStartNumber
 #
-class SunAzimuthToleranceNumber(IntegrationNumber):
-    """Number entity for controlling the sun azimuth tolerance."""
+class SunAzimuthToleranceStartNumber(IntegrationNumber):
+    """Number entity for controlling when the sun starts hitting a window."""
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        """Initialize the sun azimuth tolerance number entity.
+        """Initialize the sun azimuth start threshold number entity."""
 
-        Args:
-            coordinator: The DataUpdateCoordinator that manages automation logic
-                        and provides state management for this number entity
-        """
         entity_description = NumberEntityDescription(
-            key=NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
-            translation_key=NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
+            key=NUMBER_KEY_SUN_AZIMUTH_TOLERANCE_START,
+            translation_key=NUMBER_KEY_SUN_AZIMUTH_TOLERANCE_START,
             entity_category=EntityCategory.CONFIG,
             icon="mdi:sun-compass",
             native_min_value=0,
@@ -475,7 +473,29 @@ class SunAzimuthToleranceNumber(IntegrationNumber):
             mode=NumberMode.BOX,
             native_unit_of_measurement="°",
         )
-        super().__init__(coordinator, entity_description, ConfKeys.SUN_AZIMUTH_TOLERANCE.value)
+        super().__init__(coordinator, entity_description, ConfKeys.SUN_AZIMUTH_TOLERANCE_START.value)
+
+
+# SunAzimuthToleranceEndNumber
+#
+class SunAzimuthToleranceEndNumber(IntegrationNumber):
+    """Number entity for controlling when the sun stops hitting a window."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the sun azimuth end threshold number entity."""
+
+        entity_description = NumberEntityDescription(
+            key=NUMBER_KEY_SUN_AZIMUTH_TOLERANCE_END,
+            translation_key=NUMBER_KEY_SUN_AZIMUTH_TOLERANCE_END,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:sun-compass-outline",
+            native_min_value=0,
+            native_max_value=180,
+            native_step=1,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement="°",
+        )
+        super().__init__(coordinator, entity_description, ConfKeys.SUN_AZIMUTH_TOLERANCE_END.value)
 
 
 #

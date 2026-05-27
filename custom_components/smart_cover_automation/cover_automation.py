@@ -329,14 +329,43 @@ class CoverAutomation:
             return None
         return cover_azimuth
 
-    def _get_cover_sun_azimuth_tolerance(self) -> int:
-        """Get per-cover sun azimuth tolerance or fall back to the global setting."""
+    def _get_cover_sun_azimuth_tolerance_start(self) -> int:
+        """Get per-cover sun-entering tolerance or fall back to the global setting."""
 
-        cover_tolerance_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}")
+        cover_tolerance_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}")
+        if cover_tolerance_raw is None:
+            cover_tolerance_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}")
+
         cover_tolerance = to_int_or_none(cover_tolerance_raw)
         if cover_tolerance is None:
-            return self.resolved.sun_azimuth_tolerance
+            return self.resolved.sun_azimuth_tolerance_start
         return cover_tolerance
+
+    def _get_cover_sun_azimuth_tolerance_end(self) -> int:
+        """Get per-cover sun-leaving tolerance or fall back to the global setting."""
+
+        cover_tolerance_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}")
+        if cover_tolerance_raw is None:
+            cover_tolerance_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}")
+
+        cover_tolerance = to_int_or_none(cover_tolerance_raw)
+        if cover_tolerance is None:
+            return self.resolved.sun_azimuth_tolerance_end
+        return cover_tolerance
+
+    def _get_ordered_sun_azimuth_tolerances(self) -> tuple[int, int]:
+        """Return the ordered start/end thresholds for sun-hit hysteresis."""
+
+        start = self._get_cover_sun_azimuth_tolerance_start()
+        end = self._get_cover_sun_azimuth_tolerance_end()
+        if start <= end:
+            return start, end
+
+        self._log_cover_msg(
+            f"Sun azimuth thresholds are inverted (start={start}, end={end}); using the smaller value as the entry threshold",
+            const.LogSeverity.WARNING,
+        )
+        return end, start
 
     #
     # _validate_cover_state
@@ -681,7 +710,14 @@ class CoverAutomation:
     #
     # _calculate_sun_hitting
     #
-    def _calculate_sun_hitting(self, sun_azimuth: float, sun_elevation: float, cover_azimuth: float) -> tuple[bool, float]:
+    def _calculate_sun_hitting(
+        self,
+        sun_azimuth: float,
+        sun_elevation: float,
+        cover_azimuth: float,
+        previous_sun_hitting: bool | None = None,
+        update_state: bool = True,
+    ) -> tuple[bool, float]:
         """Calculate if sun is hitting the window.
 
         Args:
@@ -694,29 +730,51 @@ class CoverAutomation:
         """
 
         sun_azimuth_difference = self._calculate_angle_difference(sun_azimuth, cover_azimuth)
-        sun_azimuth_tolerance = self._get_cover_sun_azimuth_tolerance()
+        sun_azimuth_tolerance_start, sun_azimuth_tolerance_end = self._get_ordered_sun_azimuth_tolerances()
         if sun_elevation >= self.resolved.sun_elevation_threshold:
-            sun_hitting = sun_azimuth_difference < sun_azimuth_tolerance
+            if previous_sun_hitting is True:
+                sun_hitting = sun_azimuth_difference <= sun_azimuth_tolerance_end
+            else:
+                sun_hitting = sun_azimuth_difference <= sun_azimuth_tolerance_start
         else:
             sun_hitting = False
+
+        if update_state:
+            self._cover_pos_history_mgr.set_last_sun_hitting_state(self.entity_id, sun_hitting)
 
         return sun_hitting, sun_azimuth_difference
 
     def _calculate_effective_sun_hitting(self, sensor_data: SensorData, cover_azimuth: float) -> tuple[bool, float]:
         """Calculate whether sun hits this cover for the current automation mode."""
 
+        previous_sun_hitting = self._cover_pos_history_mgr.get_last_sun_hitting_state(self.entity_id)
         if not sensor_data.sun_samples:
-            return self._calculate_sun_hitting(sensor_data.sun_azimuth, sensor_data.sun_elevation, cover_azimuth)
+            return self._calculate_sun_hitting(
+                sensor_data.sun_azimuth,
+                sensor_data.sun_elevation,
+                cover_azimuth,
+                previous_sun_hitting=previous_sun_hitting,
+                update_state=True,
+            )
 
         best_hit_difference: float | None = None
         best_overall_difference: float | None = None
+        sun_hitting = False
         for sample_azimuth, sample_elevation in sensor_data.sun_samples:
-            sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(sample_azimuth, sample_elevation, cover_azimuth)
+            sample_sun_hitting, sun_azimuth_difference = self._calculate_sun_hitting(
+                sample_azimuth,
+                sample_elevation,
+                cover_azimuth,
+                previous_sun_hitting=previous_sun_hitting,
+                update_state=False,
+            )
             if best_overall_difference is None or sun_azimuth_difference < best_overall_difference:
                 best_overall_difference = sun_azimuth_difference
-            if sun_hitting and (best_hit_difference is None or sun_azimuth_difference < best_hit_difference):
+            if sample_sun_hitting and (best_hit_difference is None or sun_azimuth_difference < best_hit_difference):
                 best_hit_difference = sun_azimuth_difference
+                sun_hitting = True
 
+        self._cover_pos_history_mgr.set_last_sun_hitting_state(self.entity_id, sun_hitting)
         if best_hit_difference is not None:
             return True, best_hit_difference
 
@@ -794,21 +852,15 @@ class CoverAutomation:
                 max_closure_limit = self._get_cover_closure_limit(get_max=True)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
                 target_pre_closure_pos = desired_pos
-                if target_pre_closure_pos >= current_pos:
+                if sensor_data.pre_closing and target_pre_closure_pos >= current_pos:
                     desired_pos = current_pos
-                    if sensor_data.pre_closing and target_pre_closure_pos == current_pos:
+                    if target_pre_closure_pos == current_pos:
                         desired_pos_friendly_name = "keeping current position because it is already at the pre-closure position"
-                    elif sensor_data.pre_closing:
+                    else:
                         desired_pos_friendly_name = (
                             "keeping current position because it is already more closed than the pre-closure position"
                         )
-                    elif target_pre_closure_pos == current_pos:
-                        desired_pos_friendly_name = "keeping current position because it is already at the heat protection position"
-                    else:
-                        desired_pos_friendly_name = (
-                            "keeping current position because it is already more closed than the heat protection position"
-                        )
-                    movement_reason = None if sensor_data.pre_closing else CoverMovementReason.CLOSING_HEAT_PROTECTION
+                    movement_reason = None
                 else:
                     desired_pos_friendly_name = (
                         "pre-closing for heat protection" if sensor_data.pre_closing else "closing for heat protection"
