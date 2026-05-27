@@ -12,6 +12,12 @@ body:
     description: "Paste the data from the System Health card in Home Assistant (https://www.home-assistant.io/more-info/system-health#github-issues)"
   validations:
     required: true
+- type: input
+  attributes:
+    label: Integration version
+    description: "Which version of the integration are you using?"
+  validations:
+    required: true
 - type: checkboxes
   attributes:
     label: Checklist
@@ -32,17 +38,12 @@ body:
   attributes:
     label: Reproduction steps
     description: "Without steps to reproduce, issues are hard to fix. It is very important that you fill out this part. Issues without it will be closed."
-    value: |
-      1.
-      2.
-      3.
-      ...
   validations:
     required: true
 - type: textarea
   attributes:
     label: Debug logs
-    description: "Enable verbose logging in the integration's settings, reproduce the issue, and then copy the relevant log lines here."
+    description: "Enable verbose logging in the integration's settings, reproduce the issue, and then copy the relevant log lines here. Bug reports without debug logs will be closed."
     render: text
   validations:
     required: true
