@@ -137,10 +137,16 @@ class HomeAssistantInterface:
 
         # Initialize service name and actual position for error handling and return value
         service = "unknown_service"
+        service_data: dict[str, Any]
         actual_position = None
 
         try:
-            if int(features) & CoverEntityFeature.SET_POSITION:
+            if desired_pos == const.COVER_POS_FULLY_OPEN:
+                service = SERVICE_OPEN_COVER
+                service_data = {ATTR_ENTITY_ID: entity_id}
+                actual_position = const.COVER_POS_FULLY_OPEN
+                self._logger.debug(f"[{entity_id}] Opening fully via open_cover service")
+            elif int(features) & CoverEntityFeature.SET_POSITION:
                 # The cover supports setting a specific position
                 service = SERVICE_SET_COVER_POSITION
                 service_data = {ATTR_ENTITY_ID: entity_id, ATTR_POSITION: desired_pos}
