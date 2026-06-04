@@ -254,8 +254,11 @@ async def test_boundary_angle_equals_tolerance_is_not_hitting(
     # Execute automation logic
     await coordinator.async_refresh()
 
-    # Verify expected cover position based on angle calculation
-    await assert_service_called(hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=expected_position)
+    # Fully open targets now use open_cover even when position control is supported.
+    if expected_position == COVER_POS_FULLY_OPEN:
+        await assert_service_called(hass.services, "cover", "open_cover", MOCK_COVER_ENTITY_ID)
+    else:
+        await assert_service_called(hass.services, "cover", "set_cover_position", MOCK_COVER_ENTITY_ID, position=expected_position)
 
 
 @pytest.mark.parametrize(

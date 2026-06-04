@@ -293,15 +293,21 @@ async def _setup_integration(
         _setup_cover_entity(hass, cover_id, position=pos)
 
     # --- Register mock cover services ---
-    # The integration calls cover.set_cover_position to move covers.
     # Since we set cover state directly rather than loading a real cover
-    # platform, we must register the service ourselves.
+    # platform, we must register the cover movement services used by the integration.
     if not hass.services.has_service("cover", "set_cover_position"):
 
         async def _mock_set_cover_position(call: ServiceCall) -> None:  # noqa: ARG001
             """No-op handler for cover.set_cover_position."""
 
         hass.services.async_register("cover", "set_cover_position", _mock_set_cover_position)
+
+    if not hass.services.has_service("cover", "open_cover"):
+
+        async def _mock_open_cover(call: ServiceCall) -> None:  # noqa: ARG001
+            """No-op handler for cover.open_cover."""
+
+        hass.services.async_register("cover", "open_cover", _mock_open_cover)
 
     # --- Load integration with patched weather forecast ---
     # Patch the forecast retrieval so we don't need a real weather platform entity.
@@ -684,7 +690,7 @@ class TestRuntimeBehavior:
         cover_calls: list[ServiceCall] = []
         post_evening_closure_state = True
 
-        async def _record_set_cover_position(call: ServiceCall) -> None:
+        async def _record_cover_call(call: ServiceCall) -> None:
             """Record real cover service calls issued by the integration."""
 
             cover_calls.append(call)
@@ -694,7 +700,8 @@ class TestRuntimeBehavior:
 
             return post_evening_closure_state
 
-        hass.services.async_register("cover", "set_cover_position", _record_set_cover_position)
+        hass.services.async_register("cover", "set_cover_position", _record_cover_call)
+        hass.services.async_register("cover", "open_cover", _record_cover_call)
 
         entry = _create_config_entry(
             hass,
@@ -752,8 +759,9 @@ class TestRuntimeBehavior:
         assert released_cover_data.pos_target_desired == COVER_POS_FULLY_OPEN
         assert released_cover_data.pos_target_final == COVER_POS_FULLY_OPEN
         assert len(cover_calls) == 1
+        assert cover_calls[0].service == "open_cover"
         assert cover_calls[0].data["entity_id"] == TEST_COVER_1
-        assert cover_calls[0].data["position"] == COVER_POS_FULLY_OPEN
+        assert "position" not in cover_calls[0].data
 
     async def test_post_evening_closure_keep_closed_recloses_open_cover(self, hass: HomeAssistant) -> None:
         """An overnight keep-closed cover is re-closed after being opened."""
@@ -1028,12 +1036,13 @@ class TestRuntimeBehavior:
 
         cover_calls: list[ServiceCall] = []
 
-        async def _record_set_cover_position(call: ServiceCall) -> None:
+        async def _record_cover_call(call: ServiceCall) -> None:
             """Record real cover service calls issued by the integration."""
 
             cover_calls.append(call)
 
-        hass.services.async_register("cover", "set_cover_position", _record_set_cover_position)
+        hass.services.async_register("cover", "set_cover_position", _record_cover_call)
+        hass.services.async_register("cover", "open_cover", _record_cover_call)
 
         entry = _create_config_entry(
             hass,
@@ -1063,8 +1072,9 @@ class TestRuntimeBehavior:
             assert initial_cover_data.pos_target_desired == COVER_POS_FULLY_OPEN
             assert initial_cover_data.pos_target_final == COVER_POS_FULLY_OPEN
             assert len(cover_calls) == 1
+            assert cover_calls[0].service == "open_cover"
             assert cover_calls[0].data["entity_id"] == TEST_COVER_1
-            assert cover_calls[0].data["position"] == COVER_POS_FULLY_OPEN
+            assert "position" not in cover_calls[0].data
 
             _setup_cover_entity(hass, TEST_COVER_1, position=98)
 

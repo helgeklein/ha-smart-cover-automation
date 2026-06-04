@@ -614,10 +614,10 @@ class TestIntegrationScenarios:
             f"Expected at least {TEST_MIN_SERVICE_CALLS} service calls, got {len(cover_calls)}"
         )
 
-        # Smart cover should use precise position control service
+        # Fully open targets now use open_cover even when precise position control is available.
         smart_call = next((call for call in cover_calls if call[2]["entity_id"] == "cover.smart"), None)
         assert smart_call is not None, "No call found for smart cover"
-        assert smart_call[1] == "set_cover_position", "Smart cover should use set_cover_position"
+        assert smart_call[1] == "open_cover", "Smart cover should use open_cover when fully opening"
 
         # Basic cover should use simple open service (no position control available)
         basic_call = next((call for call in cover_calls if call[2]["entity_id"] == "cover.basic"), None)

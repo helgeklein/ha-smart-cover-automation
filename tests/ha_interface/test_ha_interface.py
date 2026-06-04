@@ -166,6 +166,26 @@ class TestSetCoverPosition:
         )
 
     #
+    # test_full_open_with_position_support_uses_open_cover
+    #
+    async def test_full_open_with_position_support_uses_open_cover(
+        self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock
+    ) -> None:
+        """Test that fully open requests prefer open_cover even with SET_POSITION support."""
+
+        features = CoverEntityFeature.SET_POSITION
+        desired_pos = const.COVER_POS_FULLY_OPEN
+
+        result = await ha_interface.set_cover_position(MOCK_COVER_ENTITY_ID, desired_pos, int(features))
+
+        assert result == desired_pos
+        mock_hass.services.async_call.assert_called_once_with(
+            Platform.COVER,
+            SERVICE_OPEN_COVER,
+            {ATTR_ENTITY_ID: MOCK_COVER_ENTITY_ID},
+        )
+
+    #
     # test_open_cover_without_position_support
     #
     async def test_open_cover_without_position_support(self, ha_interface: HomeAssistantInterface, mock_hass: MagicMock) -> None:
