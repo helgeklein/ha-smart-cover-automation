@@ -710,6 +710,28 @@ class TestEnforceLockedPosition:
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=True)
         mock_logger.info.assert_any_call("[cover.test] Lock active (force_open), moving to target position (100%)")
 
+    async def test_enforce_locked_position_logs_and_recovers_from_service_error(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
+        """Lock enforcement should not propagate position service failures."""
+
+        cover_automation.resolved.lock_mode = LockMode.FORCE_OPEN
+        mock_ha_interface.set_cover_position.side_effect = RuntimeError("lock move boom")
+        cover_state = CoverState()
+
+        await cover_automation._enforce_locked_position(
+            cover_state,
+            current_pos=35,
+            target_pos=100,
+            features=CoverEntityFeature.SET_POSITION,
+        )
+
+        assert cover_state.pos_target_desired == 100
+        assert cover_state.pos_target_final == 35
+        mock_cover_pos_history_mgr.set_recent_automation_action.assert_not_called()
+        mock_cover_pos_history_mgr.add.assert_not_called()
+        mock_logger.error.assert_called_once_with("[cover.test] Failed to enforce lock position: lock move boom")
+
 
 class TestDetermineTargetTilt:
     """Test _determine_target_tilt branch selection."""

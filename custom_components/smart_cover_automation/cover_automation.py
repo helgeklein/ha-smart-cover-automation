@@ -1265,10 +1265,16 @@ class CoverAutomation:
             move_msg = "already at target position"
             new_pos = current_pos
         else:
-            # Move the cover to the target position
+            try:
+                new_pos = await self._ha_interface.set_cover_position(self.entity_id, target_pos, features)
+            except Exception as err:
+                self._logger.error(f"[{self.entity_id}] Failed to enforce lock position: {err}")
+                cover_state.pos_target_desired = target_pos
+                cover_state.pos_target_final = current_pos
+                return
+
             cover_moved = True
             move_msg = "moving to target position"
-            new_pos = await self._ha_interface.set_cover_position(self.entity_id, target_pos, features)
             self._record_recent_automation_action(new_pos)
 
         # Log and store position
