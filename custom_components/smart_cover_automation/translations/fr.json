@@ -35,8 +35,11 @@
                     "section_azimuth": {
                         "name": "Azimut du volet (obligatoire)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolérance de l'azimut solaire (facultatif)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Début de la tolérance de l'azimut solaire (facultatif)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Fin de la tolérance de l'azimut solaire (facultatif)"
                     }
                 }
             },

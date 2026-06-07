@@ -35,8 +35,11 @@
                     "section_azimuth": {
                         "name": "遮阳设备方位角（必需）"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "太阳方位角容差（可选）"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "太阳方位角容差起始值（可选）"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "太阳方位角容差结束值（可选）"
                     }
                 }
             },

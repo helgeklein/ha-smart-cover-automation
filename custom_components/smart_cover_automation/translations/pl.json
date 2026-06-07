@@ -35,8 +35,11 @@
                     "section_azimuth": {
                         "name": "Azymut rolety (wymagane)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolerancja azymutu słońca (opcjonalne)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Początek tolerancji azymutu słońca (opcjonalne)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Koniec tolerancji azymutu słońca (opcjonalne)"
                     }
                 }
             },

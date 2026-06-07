@@ -31,7 +31,8 @@ from custom_components.smart_cover_automation.const import (
     ERROR_INVALID_INTEGER,
     INTEGRATION_NAME,
     STEP_2_SECTION_AZIMUTH,
-    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
+    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END,
+    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START,
     TiltMode,
 )
 
@@ -492,8 +493,8 @@ class TestOptionsFlow:
                     STEP_2_SECTION_AZIMUTH: {
                         "Flow Test Cover 1": 180,
                     },
-                    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                        "Flow Test Cover 1: start": "75x",
+                    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START: {
+                        "Flow Test Cover 1": "75x",
                     },
                 },
             )
@@ -503,14 +504,13 @@ class TestOptionsFlow:
         assert result["step_id"] == "2"
         assert result["errors"] == {
             "base": ERROR_INVALID_INTEGER,
-            "Flow Test Cover 1: start": ERROR_INVALID_INTEGER,
         }
 
         schema = result["data_schema"].schema
-        section_key = next(key for key in schema if getattr(key, "schema", None) == STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
+        section_key = next(key for key in schema if getattr(key, "schema", None) == STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START)
         section_schema = schema[section_key].schema.schema
-        field_key = next(key for key in section_schema if getattr(key, "schema", None) == "Flow Test Cover 1: start")
-        assert field_key.description == {"name": "Flow Test Cover 1: start", "suggested_value": "75x"}
+        field_key = next(key for key in section_schema if getattr(key, "schema", None) == "Flow Test Cover 1")
+        assert field_key.description == {"name": "Flow Test Cover 1", "suggested_value": "75x"}
 
     async def test_options_flow_step_2_assigns_default_azimuth_to_new_cover_when_section_is_omitted(
         self,
@@ -544,9 +544,11 @@ class TestOptionsFlow:
             await hass.config_entries.options.async_configure(
                 result["flow_id"],
                 user_input={
-                    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                        f"{_cover_label(TEST_COVER_2)}: start": "25",
-                        f"{_cover_label(TEST_COVER_2)}: end": "35",
+                    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START: {
+                        _cover_label(TEST_COVER_2): "25",
+                    },
+                    STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END: {
+                        _cover_label(TEST_COVER_2): "35",
                     },
                 },
             )

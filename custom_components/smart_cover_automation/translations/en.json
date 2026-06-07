@@ -35,8 +35,11 @@
                     "section_azimuth": {
                         "name": "Cover azimuth (required)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Sun azimuth tolerance (optional)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Sun azimuth tolerance start (optional)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Sun azimuth tolerance end (optional)"
                     }
                 }
             },

@@ -35,8 +35,11 @@
                     "section_azimuth": {
                         "name": "Rolluikazimut (verplicht)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolerantie voor zonazimut (optioneel)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Start van tolerantie voor zonazimut (optioneel)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Einde van tolerantie voor zonazimut (optioneel)"
                     }
                 }
             },

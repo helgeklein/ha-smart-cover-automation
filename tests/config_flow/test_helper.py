@@ -263,7 +263,8 @@ class TestFlowHelperSchemaBuilding:
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert const.STEP_2_SECTION_AZIMUTH in schema_keys
-        assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE in schema_keys
+        assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START in schema_keys
+        assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END in schema_keys
 
     def test_build_schema_step_2_uses_default_azimuth(self, mock_hass_with_covers: MagicMock) -> None:
         """Test step 2 schema uses default azimuth when not in defaults."""
@@ -345,14 +346,16 @@ class TestFlowHelperSchemaBuilding:
         schema = FlowHelper.build_schema_step_2(covers, defaults)
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
 
-        assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE in schema_keys
+        assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START in schema_keys
+        assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END in schema_keys
 
-        section_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
-        start_field_marker = _get_field_marker(section_schema, "Test Cover: start")
-        end_field_marker = _get_field_marker(section_schema, "Test Cover: end")
+        start_section_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START)
+        end_section_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END)
+        start_field_marker = _get_field_marker(start_section_schema, "Test Cover")
+        end_field_marker = _get_field_marker(end_section_schema, "Test Cover")
 
-        assert start_field_marker.description == {"name": "Test Cover: start", "suggested_value": "25"}
-        assert end_field_marker.description == {"name": "Test Cover: end", "suggested_value": "40"}
+        assert start_field_marker.description == {"name": "Test Cover", "suggested_value": "25"}
+        assert end_field_marker.description == {"name": "Test Cover", "suggested_value": "40"}
 
     def test_build_schema_step_2_disambiguates_duplicate_cover_labels(self) -> None:
         """Duplicate friendly names should include the entity ID for clarity."""
@@ -433,11 +436,15 @@ class TestFlowHelperSchemaBuilding:
         schema = FlowHelper.build_schema_step_2(covers, {}, rendered_field_maps=rendered_field_maps)
 
         azimuth_schema = _get_section_schema(schema, const.STEP_2_SECTION_AZIMUTH)
-        tolerance_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
+        tolerance_start_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START)
+        tolerance_end_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END)
 
         assert set(rendered_field_maps[const.STEP_2_SECTION_AZIMUTH]) == {getattr(key, "schema", None) for key in azimuth_schema}
-        assert set(rendered_field_maps[const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE]) == {
-            getattr(key, "schema", None) for key in tolerance_schema
+        assert set(rendered_field_maps[const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START]) == {
+            getattr(key, "schema", None) for key in tolerance_start_schema
+        }
+        assert set(rendered_field_maps[const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END]) == {
+            getattr(key, "schema", None) for key in tolerance_end_schema
         }
 
     def test_build_schema_step_3_with_no_per_cover_defaults(self) -> None:

@@ -35,8 +35,11 @@
                     "section_azimuth": {
                         "name": "Azimut de la persiana (obligatorio)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolerancia de azimut solar (opcional)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Inicio de tolerancia de azimut solar (opcional)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Fin de tolerancia de azimut solar (opcional)"
                     }
                 }
             },

@@ -35,8 +35,11 @@
                     "section_azimuth": {
                         "name": "Persiennens azimut (obligatoriskt)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolerans för solens azimut (valfritt)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Start för tolerans för solens azimut (valfritt)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Slut för tolerans för solens azimut (valfritt)"
                     }
                 }
             },

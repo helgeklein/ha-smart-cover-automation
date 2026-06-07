@@ -35,8 +35,11 @@
                     "section_azimuth": {
                         "name": "Azimut della tapparella (obbligatorio)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolleranza dell'azimut solare (opzionale)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Inizio tolleranza dell'azimut solare (opzionale)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Fine tolleranza dell'azimut solare (opzionale)"
                     }
                 }
             },
