@@ -310,6 +310,50 @@ class TestOptionsFlowStep2:
         field_key = next(key for key in section_schema if getattr(key, "schema", None) == "Test Cover")
         assert field_key.description == {"name": "Test Cover", "suggested_value": "75x"}
 
+    async def test_step_2_uses_rendered_label_map_when_cover_name_changes(self, mock_hass_with_covers: MagicMock) -> None:
+        """Step 2 should honor the labels that were rendered even if HA names change before submit."""
+
+        mock_entry = _create_mock_entry()
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+
+        await flow.async_step_2(None)
+
+        original_side_effect = mock_hass_with_covers.states.get.side_effect
+
+        def renamed_get(entity_id: str) -> Any:
+            state = original_side_effect(entity_id) if callable(original_side_effect) else mock_hass_with_covers.states.get.return_value
+            if entity_id != MOCK_COVER_ENTITY_ID:
+                return state
+
+            renamed_state = MagicMock()
+            renamed_state.attributes = dict(getattr(state, "attributes", {}))
+            renamed_state.attributes["friendly_name"] = "Renamed Cover"
+            return renamed_state
+
+        mock_hass_with_covers.states.get.side_effect = renamed_get
+
+        result = await flow.async_step_2(
+            {
+                const.STEP_2_SECTION_AZIMUTH: {
+                    "Test Cover": 225,
+                },
+                const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
+                    "Test Cover": "30",
+                },
+            }
+        )
+
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "3"
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}"] == 225
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 30
+
     def test_validate_step_2_input_ignores_cleared_per_cover_sun_azimuth_tolerance(self) -> None:
         """Cleared per-cover tolerance input should be treated as empty, not invalid."""
 

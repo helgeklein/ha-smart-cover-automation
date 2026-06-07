@@ -372,6 +372,32 @@ class TestFlowHelperSchemaBuilding:
 
         assert field_marker.description == {"name": f"Living Room Cover ({MOCK_COVER_ENTITY_ID})"}
 
+    def test_build_schema_step_2_keeps_colliding_cover_labels_unique(self) -> None:
+        """A literal friendly name should not collide with another cover's disambiguated label."""
+
+        extra_cover = "cover.test_cover_3"
+        hass = MagicMock()
+
+        def mock_get_state(entity_id: str) -> MagicMock:
+            state = MagicMock()
+            if entity_id in {MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2}:
+                state.attributes = {"friendly_name": "Living Room Cover"}
+            else:
+                state.attributes = {"friendly_name": f"Living Room Cover ({MOCK_COVER_ENTITY_ID})"}
+            return state
+
+        hass.states.get.side_effect = mock_get_state
+
+        schema = FlowHelper.build_schema_step_2([MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2, extra_cover], {}, hass)
+        section_schema = _get_section_schema(schema, const.STEP_2_SECTION_AZIMUTH)
+
+        field_names = {getattr(key, "schema", None) for key in section_schema}
+
+        assert f"Living Room Cover ({MOCK_COVER_ENTITY_ID})" in field_names
+        assert f"Living Room Cover ({MOCK_COVER_ENTITY_ID_2})" in field_names
+        assert f"Living Room Cover ({MOCK_COVER_ENTITY_ID}) ({extra_cover})" in field_names
+        assert len(field_names) == 3
+
     def test_build_schema_step_3_with_no_per_cover_defaults(self) -> None:
         """Test step 3 schema when covers have no per-cover min/max closure defaults.
 

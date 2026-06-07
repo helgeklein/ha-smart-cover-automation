@@ -32,7 +32,26 @@ class FlowHelper:
         for label in preferred_labels.values():
             label_counts[label] = label_counts.get(label, 0) + 1
 
-        return {cover: f"{label} ({cover})" if label_counts[label] > 1 else label for cover, label in preferred_labels.items()}
+        labels: dict[str, str] = {}
+        used_labels: set[str] = set()
+
+        for cover, preferred_label in preferred_labels.items():
+            label = preferred_label
+            if label_counts[preferred_label] > 1:
+                label = f"{preferred_label} ({cover})"
+
+            if label in used_labels:
+                base_label = f"{preferred_label} ({cover})"
+                label = base_label
+                suffix = 2
+                while label in used_labels:
+                    label = f"{base_label} [{suffix}]"
+                    suffix += 1
+
+            labels[cover] = label
+            used_labels.add(label)
+
+        return labels
 
     @staticmethod
     def _build_field_description(cover_label: str, suggested_value: str | None = None) -> dict[str, str]:
@@ -988,6 +1007,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         self._config_entry = config_entry
         self._config_data: dict[str, Any] = {}
+        self._rendered_cover_field_maps: dict[str, dict[str, str]] = {}
         self._logger = Log(entry_id=config_entry.entry_id)
 
     #
@@ -1019,6 +1039,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         covers: list[str],
         current_settings: dict[str, Any],
         hass: Any | None = None,
+        field_key_map: Mapping[str, str] | None = None,
     ) -> dict[str, Any]:
         """Build a dict with per-cover settings for a section.
 
@@ -1043,7 +1064,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         section_input = user_input.get(section_name)
         if isinstance(section_input, Mapping):
-            user_input_extracted = OptionsFlowHandler._translate_cover_field_keys(section_input, covers, suffix, hass)
+            if field_key_map is None:
+                field_key_map = OptionsFlowHandler._build_cover_field_map(covers, suffix, hass)
+            user_input_extracted = OptionsFlowHandler._translate_cover_field_keys(section_input, field_key_map)
         elif section_input in (None, vol.UNDEFINED):
             user_input_extracted = {}
         else:
@@ -1092,14 +1115,70 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     @staticmethod
     def _translate_cover_field_keys(
         user_input: Mapping[str, Any],
-        covers: list[str],
-        suffix: str,
-        hass: Any | None = None,
+        field_key_map: Mapping[str, str] | None = None,
     ) -> dict[str, Any]:
         """Translate display labels from per-cover sections back to internal keys."""
 
-        label_to_key = {label: f"{cover}_{suffix}" for cover, label in FlowHelper._build_cover_labels(covers, hass).items()}
-        return {label_to_key.get(str(key), str(key)): value for key, value in user_input.items()}
+        return {field_key_map.get(str(key), str(key)) if field_key_map else str(key): value for key, value in user_input.items()}
+
+    @staticmethod
+    def _build_cover_field_map(covers: list[str], suffix: str, hass: Any | None = None) -> dict[str, str]:
+        """Build a mapping from rendered per-cover labels to stored option keys."""
+
+        return {label: f"{cover}_{suffix}" for cover, label in FlowHelper._build_cover_labels(covers, hass).items()}
+
+    def _set_rendered_cover_field_maps(self, step_id: str) -> None:
+        """Capture the exact per-cover labels rendered for the current step."""
+
+        self._rendered_cover_field_maps = {}
+        covers = self._get_covers()
+        if not covers:
+            return
+
+        if step_id == "2":
+            self._rendered_cover_field_maps = {
+                const.STEP_2_SECTION_AZIMUTH: self._build_cover_field_map(covers, const.COVER_SFX_AZIMUTH, self.hass),
+                const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: self._build_cover_field_map(
+                    covers,
+                    const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+                    self.hass,
+                ),
+            }
+            return
+
+        if step_id == "3":
+            self._rendered_cover_field_maps = {
+                const.STEP_3_SECTION_MIN_CLOSURE: self._build_cover_field_map(covers, const.COVER_SFX_MIN_CLOSURE, self.hass),
+                const.STEP_3_SECTION_MAX_CLOSURE: self._build_cover_field_map(covers, const.COVER_SFX_MAX_CLOSURE, self.hass),
+                const.STEP_3_SECTION_EVENING_MAX_CLOSURE: self._build_cover_field_map(
+                    covers,
+                    const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
+                    self.hass,
+                ),
+            }
+            return
+
+        if step_id == "4":
+            self._rendered_cover_field_maps = {
+                const.STEP_4_SECTION_TILT_DAY: self._build_cover_field_map(covers, const.COVER_SFX_TILT_MODE_DAY, self.hass),
+                const.STEP_4_SECTION_TILT_NIGHT: self._build_cover_field_map(covers, const.COVER_SFX_TILT_MODE_NIGHT, self.hass),
+            }
+            return
+
+        if step_id == "5":
+            self._rendered_cover_field_maps = {
+                const.STEP_5_SECTION_WINDOW_SENSORS: self._build_cover_field_map(covers, const.COVER_SFX_WINDOW_SENSORS, self.hass),
+            }
+
+    def _get_rendered_cover_field_map(self, section_name: str) -> Mapping[str, str] | None:
+        """Return the render-time label mapping for a per-cover section."""
+
+        return self._rendered_cover_field_maps.get(section_name)
+
+    def _get_cover_field_map(self, section_name: str, covers: list[str], suffix: str) -> Mapping[str, str]:
+        """Return the rendered field map, or derive one if the step was not rendered first."""
+
+        return self._get_rendered_cover_field_map(section_name) or self._build_cover_field_map(covers, suffix, self.hass)
 
     #
     # _current_settings
@@ -1144,6 +1223,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         last_step: bool,
     ) -> config_entries.ConfigFlowResult:
         """Show an options-flow form with an explicit last-step flag."""
+
+        self._set_rendered_cover_field_maps(step_id)
 
         return self.async_show_form(
             step_id=step_id,
@@ -1388,15 +1469,19 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 current_settings = self._current_settings()
                 azimuth_input = self._translate_cover_field_keys(
                     user_input.get(const.STEP_2_SECTION_AZIMUTH, {}),
-                    self._get_covers(),
-                    const.COVER_SFX_AZIMUTH,
-                    self.hass,
+                    self._get_cover_field_map(
+                        const.STEP_2_SECTION_AZIMUTH,
+                        self._get_covers(),
+                        const.COVER_SFX_AZIMUTH,
+                    ),
                 )
                 tolerance_input = self._translate_cover_field_keys(
                     user_input.get(const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE, {}),
-                    self._get_covers(),
-                    const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
-                    self.hass,
+                    self._get_cover_field_map(
+                        const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
+                        self._get_covers(),
+                        const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+                    ),
                 )
                 defaults = {**current_settings, **azimuth_input, **tolerance_input}
                 return self._show_form(
@@ -1416,9 +1501,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if isinstance(raw_azimuth_input, Mapping):
                 step_2_input = self._translate_cover_field_keys(
                     raw_azimuth_input,
-                    covers_in_input,
-                    const.COVER_SFX_AZIMUTH,
-                    self.hass,
+                    self._get_cover_field_map(
+                        const.STEP_2_SECTION_AZIMUTH,
+                        covers_in_input,
+                        const.COVER_SFX_AZIMUTH,
+                    ),
                 )
             else:
                 step_2_input = {
@@ -1445,6 +1532,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 covers_in_input,
                 current_settings,
                 self.hass,
+                self._get_cover_field_map(
+                    const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
+                    covers_in_input,
+                    const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+                ),
             )
             self._config_data.update(sun_azimuth_tolerance_data)
 
@@ -1503,10 +1595,22 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Build complete lists of min and max closure settings for all covers
         min_closure_data = self._build_section_cover_settings(
-            user_input, const.STEP_3_SECTION_MIN_CLOSURE, const.COVER_SFX_MIN_CLOSURE, covers_in_input, current_settings, self.hass
+            user_input,
+            const.STEP_3_SECTION_MIN_CLOSURE,
+            const.COVER_SFX_MIN_CLOSURE,
+            covers_in_input,
+            current_settings,
+            self.hass,
+            self._get_cover_field_map(const.STEP_3_SECTION_MIN_CLOSURE, covers_in_input, const.COVER_SFX_MIN_CLOSURE),
         )
         max_closure_data = self._build_section_cover_settings(
-            user_input, const.STEP_3_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers_in_input, current_settings, self.hass
+            user_input,
+            const.STEP_3_SECTION_MAX_CLOSURE,
+            const.COVER_SFX_MAX_CLOSURE,
+            covers_in_input,
+            current_settings,
+            self.hass,
+            self._get_cover_field_map(const.STEP_3_SECTION_MAX_CLOSURE, covers_in_input, const.COVER_SFX_MAX_CLOSURE),
         )
         evening_max_closure_data = self._build_section_cover_settings(
             user_input,
@@ -1515,6 +1619,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             covers_in_input,
             current_settings,
             self.hass,
+            self._get_cover_field_map(
+                const.STEP_3_SECTION_EVENING_MAX_CLOSURE,
+                covers_in_input,
+                const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
+            ),
         )
 
         # Store the complete min and max per-cover settings
@@ -1574,10 +1683,22 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Build per-cover tilt mode settings
         tilt_day_data = self._build_section_cover_settings(
-            user_input, const.STEP_4_SECTION_TILT_DAY, const.COVER_SFX_TILT_MODE_DAY, covers_in_input, current_settings, self.hass
+            user_input,
+            const.STEP_4_SECTION_TILT_DAY,
+            const.COVER_SFX_TILT_MODE_DAY,
+            covers_in_input,
+            current_settings,
+            self.hass,
+            self._get_cover_field_map(const.STEP_4_SECTION_TILT_DAY, covers_in_input, const.COVER_SFX_TILT_MODE_DAY),
         )
         tilt_night_data = self._build_section_cover_settings(
-            user_input, const.STEP_4_SECTION_TILT_NIGHT, const.COVER_SFX_TILT_MODE_NIGHT, covers_in_input, current_settings, self.hass
+            user_input,
+            const.STEP_4_SECTION_TILT_NIGHT,
+            const.COVER_SFX_TILT_MODE_NIGHT,
+            covers_in_input,
+            current_settings,
+            self.hass,
+            self._get_cover_field_map(const.STEP_4_SECTION_TILT_NIGHT, covers_in_input, const.COVER_SFX_TILT_MODE_NIGHT),
         )
 
         # Store the per-cover tilt settings
@@ -1630,7 +1751,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Build complete lists of window sensor settings for all covers
         window_sensor_data = self._build_section_cover_settings(
-            user_input, const.STEP_5_SECTION_WINDOW_SENSORS, const.COVER_SFX_WINDOW_SENSORS, covers_in_input, current_settings, self.hass
+            user_input,
+            const.STEP_5_SECTION_WINDOW_SENSORS,
+            const.COVER_SFX_WINDOW_SENSORS,
+            covers_in_input,
+            current_settings,
+            self.hass,
+            self._get_cover_field_map(const.STEP_5_SECTION_WINDOW_SENSORS, covers_in_input, const.COVER_SFX_WINDOW_SENSORS),
         )
 
         # Store the complete per-cover settings
