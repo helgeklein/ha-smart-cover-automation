@@ -1135,6 +1135,35 @@ class TestOptionsFlowHelperMethods:
         assert OptionsFlowHandler._to_int(42) == 42
         assert OptionsFlowHandler._to_int("100") == 100
 
+    def test_translate_cover_field_keys_preserves_unknown_labels(self) -> None:
+        """Unknown labels should be preserved unchanged during translation."""
+
+        translated = OptionsFlowHandler._translate_cover_field_keys(
+            {"Test Cover": 10, "Unknown Cover": 20},
+            {"Test Cover": f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}"},
+        )
+
+        assert translated == {
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 10,
+            "Unknown Cover": 20,
+        }
+
+    def test_get_cover_field_map_rebuilds_from_hass_when_no_rendered_map_exists(self, mock_hass_with_covers: MagicMock) -> None:
+        """Direct-submit fallback should rebuild the field map from current HA state."""
+
+        flow = OptionsFlowHandler(_create_mock_entry())
+        flow.hass = mock_hass_with_covers
+
+        field_map = flow._get_cover_field_map(
+            const.STEP_2_SECTION_AZIMUTH,
+            [MOCK_COVER_ENTITY_ID],
+            const.COVER_SFX_AZIMUTH,
+        )
+
+        assert field_map == {
+            "Test Cover": f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}",
+        }
+
     def test_build_section_cover_settings_with_missing_key(self) -> None:
         """Test _build_section_cover_settings when key is not in user input."""
         from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler

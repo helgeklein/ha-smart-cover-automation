@@ -424,6 +424,22 @@ class TestFlowHelperSchemaBuilding:
         assert f"Living Room Cover ({MOCK_COVER_ENTITY_ID})" in field_names
         assert f"Living Room Cover ({MOCK_COVER_ENTITY_ID}) [2]" in field_names
 
+    def test_build_schema_step_2_populates_rendered_field_maps_with_schema_keys(self) -> None:
+        """Rendered field maps should exactly match the generated step-2 schema keys."""
+
+        covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
+        rendered_field_maps: dict[str, dict[str, str]] = {}
+
+        schema = FlowHelper.build_schema_step_2(covers, {}, rendered_field_maps=rendered_field_maps)
+
+        azimuth_schema = _get_section_schema(schema, const.STEP_2_SECTION_AZIMUTH)
+        tolerance_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
+
+        assert set(rendered_field_maps[const.STEP_2_SECTION_AZIMUTH]) == {getattr(key, "schema", None) for key in azimuth_schema}
+        assert set(rendered_field_maps[const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE]) == {
+            getattr(key, "schema", None) for key in tolerance_schema
+        }
+
     def test_build_schema_step_3_with_no_per_cover_defaults(self) -> None:
         """Test step 3 schema when covers have no per-cover min/max closure defaults.
 
@@ -777,6 +793,33 @@ class TestFlowHelperStep4TiltSchema:
         assert ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value in schema_keys
         assert const.STEP_4_SECTION_TILT_DAY not in schema_keys
         assert const.STEP_4_SECTION_TILT_NIGHT not in schema_keys
+
+    def test_step_4_rendered_field_maps_only_include_tilt_capable_schema_keys(self) -> None:
+        """Rendered step-4 field maps should only include tilt-capable covers and match schema keys."""
+
+        from custom_components.smart_cover_automation.config import resolve
+
+        covers = [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2]
+        hass = self._make_tilt_hass(covers, {MOCK_COVER_ENTITY_ID_2})
+        rendered_field_maps: dict[str, dict[str, str]] = {}
+
+        schema = FlowHelper.build_schema_step_4_tilt(
+            covers=covers,
+            defaults={},
+            resolved_settings=resolve({}),
+            hass=hass,
+            rendered_field_maps=rendered_field_maps,
+        )
+
+        day_schema = _get_section_schema(schema, const.STEP_4_SECTION_TILT_DAY)
+        night_schema = _get_section_schema(schema, const.STEP_4_SECTION_TILT_NIGHT)
+
+        expected_keys = {"Test Cover 2"}
+
+        assert set(rendered_field_maps[const.STEP_4_SECTION_TILT_DAY]) == expected_keys
+        assert set(rendered_field_maps[const.STEP_4_SECTION_TILT_NIGHT]) == expected_keys
+        assert {getattr(key, "schema", None) for key in day_schema} == expected_keys
+        assert {getattr(key, "schema", None) for key in night_schema} == expected_keys
 
     def test_step_4_ignores_covers_with_missing_state(self) -> None:
         """Test that covers with missing states are skipped when building per-cover tilt sections."""
