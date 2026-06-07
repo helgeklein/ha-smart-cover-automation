@@ -42,6 +42,8 @@ from custom_components.smart_cover_automation.const import (
 TEST_COVER_1 = "cover.test_cover_1"
 TEST_COVER_2 = "cover.test_cover_2"
 TEST_WEATHER = "weather.test_weather"
+TEST_COVER_1_NAME = "Kitchen Cover"
+TEST_COVER_2_NAME = "Office Cover"
 
 
 @pytest.fixture(autouse=True)
@@ -118,10 +120,27 @@ def _as_dict(result: Any) -> dict[str, Any]:
     return cast(dict[str, Any], result)
 
 
+def _cover_label(entity_id: str) -> str:
+    """Return the options-flow display label for a cover entity used in tests."""
+
+    if entity_id == TEST_COVER_1:
+        return TEST_COVER_1_NAME
+    if entity_id == TEST_COVER_2:
+        return TEST_COVER_2_NAME
+
+    object_id = entity_id.split(".", 1)[-1]
+    return object_id.replace("_", " ").strip().title()
+
+
 def _step_2_azimuth_input(azimuths: dict[str, float]) -> dict[str, Any]:
     """Wrap step-2 azimuth data in the options-flow section payload."""
 
-    return {STEP_2_SECTION_AZIMUTH: azimuths}
+    return {
+        STEP_2_SECTION_AZIMUTH: {
+            _cover_label(entity_id[: -len(f"_{COVER_SFX_AZIMUTH}")]) if entity_id.endswith(f"_{COVER_SFX_AZIMUTH}") else entity_id: value
+            for entity_id, value in azimuths.items()
+        }
+    }
 
 
 #
@@ -140,7 +159,7 @@ def _set_test_entity_states(hass: HomeAssistant) -> None:
         {
             "current_position": 100,
             "current_tilt_position": 100,
-            "friendly_name": "Kitchen Cover",
+            "friendly_name": TEST_COVER_1_NAME,
             "supported_features": cover_features,
         },
     )
@@ -150,7 +169,7 @@ def _set_test_entity_states(hass: HomeAssistant) -> None:
         {
             "current_position": 100,
             "current_tilt_position": 100,
-            "friendly_name": "Office Cover",
+            "friendly_name": TEST_COVER_2_NAME,
             "supported_features": cover_features,
         },
     )
@@ -625,7 +644,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {per_cover_mode_key: TiltMode.EXTERNAL},
+                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.EXTERNAL},
             },
         )
         await hass.async_block_till_done()
@@ -650,7 +669,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {per_cover_mode_key: TiltMode.AUTO},
+                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.AUTO},
             },
         )
         await hass.async_block_till_done()
@@ -688,7 +707,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {per_cover_mode_key: TiltMode.EXTERNAL},
+                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.EXTERNAL},
             },
         )
         await hass.async_block_till_done()
@@ -720,7 +739,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {per_cover_mode_key: TiltMode.AUTO},
+                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.AUTO},
             },
         )
         await hass.async_block_till_done()

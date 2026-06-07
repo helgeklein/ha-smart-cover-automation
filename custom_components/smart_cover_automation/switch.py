@@ -25,6 +25,7 @@ from .const import (
     SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
 )
 from .entity import IntegrationEntity
+from .util import format_cover_name
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -69,33 +70,6 @@ async def async_setup_entry(
     entities.extend(CoverWeatherHotExternalControlSwitch(coordinator, cover_entity_id) for cover_entity_id in resolved.covers)
 
     async_add_entities(entities)
-
-
-#
-# _format_cover_name
-#
-def _format_cover_name(coordinator: DataUpdateCoordinator, cover_entity_id: str) -> str:
-    """Return a human-friendly name for a cover entity.
-
-    Uses the current state friendly name when available. Falls back to a title-
-    cased object ID so names remain readable during startup or in unit tests.
-
-    Args:
-        coordinator: Coordinator providing access to Home Assistant state.
-        cover_entity_id: Entity ID of the cover.
-
-    Returns:
-        Human-friendly cover name.
-    """
-
-    state = coordinator.hass.states.get(cover_entity_id)
-    if state is not None:
-        friendly_name = state.attributes.get("friendly_name")
-        if isinstance(friendly_name, str) and friendly_name.strip():
-            return friendly_name.strip()
-
-    object_id = cover_entity_id.split(".", 1)[-1]
-    return object_id.replace("_", " ").strip().title()
 
 
 #
@@ -496,7 +470,7 @@ class CoverWeatherHotExternalControlSwitch(TriStateExternalControlSwitch):
         """
 
         self._cover_entity_id = cover_entity_id
-        cover_name = _format_cover_name(coordinator, cover_entity_id)
+        cover_name = format_cover_name(coordinator.hass, cover_entity_id)
         config_key = f"{cover_entity_id}_{COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"
         super().__init__(
             coordinator,
