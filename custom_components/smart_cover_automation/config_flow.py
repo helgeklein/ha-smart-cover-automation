@@ -23,6 +23,11 @@ from .util import format_cover_name, to_int_or_none
 class FlowHelper:
     """Helper class for config flow validation and schema building."""
 
+    _STEP_2_TOLERANCE_FIELD_VARIANTS: tuple[tuple[str, str], ...] = (
+        (const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START, "start"),
+        (const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END, "end"),
+    )
+
     @staticmethod
     def _store_cover_field_map(
         rendered_field_maps: dict[str, dict[str, str]] | None,
@@ -225,11 +230,9 @@ class FlowHelper:
             cover_labels,
         )
         if sun_azimuth_tolerance_schema_dict:
-            FlowHelper._store_cover_field_map(
+            FlowHelper._store_step_2_tolerance_field_map(
                 rendered_field_maps,
-                const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
                 covers,
-                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
                 cover_labels,
             )
             schema_dict[vol.Optional(const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)] = section(
@@ -245,7 +248,7 @@ class FlowHelper:
         defaults: Mapping[str, Any],
         cover_labels: Mapping[str, str],
     ) -> dict[vol.Marker, object]:
-        """Build schema for per-cover sun azimuth tolerance overrides."""
+        """Build schema for per-cover start/end sun azimuth tolerance overrides."""
 
         schema_dict: dict[vol.Marker, object] = {}
         value_selector = selector.TextSelector(
@@ -256,27 +259,47 @@ class FlowHelper:
         )
 
         for cover in sorted(covers):
-            key = f"{cover}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
-            field_name = cover_labels[cover]
-            raw = defaults.get(key)
-            default_value = to_int_or_none(raw)
+            base_field_name = cover_labels[cover]
+            for suffix, label in FlowHelper._STEP_2_TOLERANCE_FIELD_VARIANTS:
+                key = f"{cover}_{suffix}"
+                field_name = f"{base_field_name}: {label}"
+                raw = defaults.get(key)
+                default_value = to_int_or_none(raw)
 
-            if default_value is not None:
-                key_marker = vol.Optional(
-                    field_name,
-                    description=FlowHelper._build_field_description(cover_labels[cover], str(default_value)),
-                )
-            elif raw not in (None, ""):
-                key_marker = vol.Optional(
-                    field_name,
-                    description=FlowHelper._build_field_description(cover_labels[cover], str(raw)),
-                )
-            else:
-                key_marker = vol.Optional(field_name, description=FlowHelper._build_field_description(cover_labels[cover]))
+                if default_value is not None:
+                    key_marker = vol.Optional(
+                        field_name,
+                        description=FlowHelper._build_field_description(field_name, str(default_value)),
+                    )
+                elif raw not in (None, ""):
+                    key_marker = vol.Optional(
+                        field_name,
+                        description=FlowHelper._build_field_description(field_name, str(raw)),
+                    )
+                else:
+                    key_marker = vol.Optional(field_name, description=FlowHelper._build_field_description(field_name))
 
-            schema_dict[key_marker] = value_selector
+                schema_dict[key_marker] = value_selector
 
         return schema_dict
+
+    @staticmethod
+    def _store_step_2_tolerance_field_map(
+        rendered_field_maps: dict[str, dict[str, str]] | None,
+        covers: list[str],
+        cover_labels: Mapping[str, str],
+    ) -> None:
+        """Store the rendered label-to-key mapping for step-2 tolerance fields."""
+
+        if rendered_field_maps is None:
+            return
+
+        rendered_field_maps[const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE] = {
+            f"{cover_labels[cover]}: {label}": f"{cover}_{suffix}"
+            for cover in sorted(covers)
+            if cover in cover_labels
+            for suffix, label in FlowHelper._STEP_2_TOLERANCE_FIELD_VARIANTS
+        }
 
     #
     # build_schema_step_3
@@ -1218,6 +1241,22 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     def _get_cover_field_map(self, section_name: str, covers: list[str], suffix: str) -> Mapping[str, str]:
         """Return the rendered field map, or derive one if the step was not rendered first."""
 
+        if section_name == const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE and suffix in {
+            const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START,
+            const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END,
+        }:
+            rendered_field_map = self._get_rendered_cover_field_map(section_name)
+            if rendered_field_map is not None:
+                return rendered_field_map
+
+            cover_labels = FlowHelper._build_cover_labels(covers, self.hass)
+            return {
+                f"{cover_labels[cover]}: {label}": f"{cover}_{field_suffix}"
+                for cover in sorted(covers)
+                if cover in cover_labels
+                for field_suffix, label in FlowHelper._STEP_2_TOLERANCE_FIELD_VARIANTS
+            }
+
         return self._get_rendered_cover_field_map(section_name) or self._build_cover_field_map(covers, suffix, self.hass)
 
     #
@@ -1235,7 +1274,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     def _validate_step_2_input(user_input: Mapping[str, Any]) -> dict[str, str]:
         """Validate raw step-2 section input before coercion.
 
-        Per-cover sun azimuth tolerance fields use a text selector so they can
+        Per-cover start/end sun azimuth tolerance fields use text selectors so they can
         be cleared. Invalid non-empty values must be rejected explicitly rather
         than silently treated as cleared values.
         """
@@ -1403,6 +1442,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         suffixes = (
             f"_{const.COVER_SFX_AZIMUTH}",
             f"_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}",
+            f"_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}",
+            f"_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}",
             f"_{const.COVER_SFX_MAX_CLOSURE}",
             f"_{const.COVER_SFX_MIN_CLOSURE}",
             f"_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}",
@@ -1526,7 +1567,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     self._get_cover_field_map(
                         const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
                         self._get_covers(),
-                        const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+                        const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START,
                     ),
                 )
                 defaults = {**current_settings, **azimuth_input, **tolerance_input}
@@ -1578,15 +1619,30 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             sun_azimuth_tolerance_data = self._build_section_cover_settings(
                 user_input,
                 const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
-                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START,
                 covers_in_input,
                 current_settings,
                 self.hass,
                 self._get_cover_field_map(
                     const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
                     covers_in_input,
-                    const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+                    const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START,
                 ),
+            )
+            sun_azimuth_tolerance_data.update(
+                self._build_section_cover_settings(
+                    user_input,
+                    const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
+                    const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END,
+                    covers_in_input,
+                    current_settings,
+                    self.hass,
+                    self._get_cover_field_map(
+                        const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
+                        covers_in_input,
+                        const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END,
+                    ),
+                )
             )
             self._config_data.update(sun_azimuth_tolerance_data)
 

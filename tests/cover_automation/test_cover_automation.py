@@ -1091,23 +1091,45 @@ class TestMovementReasonHelpers:
 class TestCalculateSunHitting:
     """Test _calculate_sun_hitting method."""
 
-    def test_calculate_sun_hitting_uses_per_cover_tolerance_override(self, cover_automation, mock_resolved_config):
-        """Test that per-cover tolerance overrides the global tolerance."""
+    def test_calculate_sun_hitting_uses_per_cover_end_tolerance_override(self, cover_automation, mock_resolved_config):
+        """Test that the per-cover end tolerance overrides the global tolerance."""
 
         mock_resolved_config.sun_elevation_threshold = 10.0
         mock_resolved_config.sun_azimuth_tolerance = 30.0
-        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] = 10
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}"] = 10
 
         sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=195.0, sun_elevation=45.0, cover_azimuth=180.0)
         assert sun_hitting is False
         assert diff == 15.0
 
-    def test_calculate_sun_hitting_falls_back_when_per_cover_tolerance_invalid(self, cover_automation, mock_resolved_config):
-        """Test that invalid per-cover tolerance falls back to the global tolerance."""
+    def test_calculate_sun_hitting_uses_per_cover_start_tolerance_override(self, cover_automation, mock_resolved_config):
+        """Test that the per-cover start tolerance overrides the global tolerance."""
 
         mock_resolved_config.sun_elevation_threshold = 10.0
         mock_resolved_config.sun_azimuth_tolerance = 30.0
-        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] = "invalid"
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}"] = 10
+
+        sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=165.0, sun_elevation=45.0, cover_azimuth=180.0)
+        assert sun_hitting is False
+        assert diff == 15.0
+
+    def test_calculate_sun_hitting_falls_back_when_per_cover_start_tolerance_invalid(self, cover_automation, mock_resolved_config):
+        """Test that invalid per-cover start tolerance falls back to the global tolerance."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}"] = "invalid"
+
+        sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=165.0, sun_elevation=45.0, cover_azimuth=180.0)
+        assert sun_hitting is True
+        assert diff == 15.0
+
+    def test_calculate_sun_hitting_falls_back_to_global_end_when_only_start_is_overridden(self, cover_automation, mock_resolved_config):
+        """Test that the global tolerance still applies on the end side when only start is overridden."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}"] = 10
 
         sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=195.0, sun_elevation=45.0, cover_azimuth=180.0)
         assert sun_hitting is True
@@ -1123,7 +1145,7 @@ class TestCalculateSunHitting:
         assert diff == 0.0
 
     def test_calculate_sun_hitting_within_tolerance(self, cover_automation, mock_resolved_config):
-        """Test when sun is within azimuth tolerance."""
+        """Test when sun is within the global start/end tolerances."""
         mock_resolved_config.sun_elevation_threshold = 10.0
         mock_resolved_config.sun_azimuth_tolerance = 30.0
 

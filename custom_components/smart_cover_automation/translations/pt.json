@@ -30,7 +30,7 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Passo 2 de 6",
-                "description": "Configure o **azimute** (direção) de cada persiana. Também pode adicionar valores opcionais de **tolerância do azimute solar** por persiana que substituem a definição global de tolerância do azimute configurável na página do dispositivo desta instância da integração.\n\n(0°=Norte, 90°=Este, 180°=Sul, 270°=Oeste)",
+                "description": "Configure o **azimute** (direção) de cada persiana. Também pode adicionar valores opcionais de início e fim da **tolerância do azimute solar** por persiana que substituem a definição global de tolerância do azimute configurável na página do dispositivo desta instância da integração.\n\n(0°=Norte, 90°=Este, 180°=Sul, 270°=Oeste)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Azimute da persiana (obrigatório)"

@@ -334,11 +334,12 @@ class TestFlowHelperSchemaBuilding:
         assert schema.schema == {}
 
     def test_build_schema_step_2_uses_existing_sun_azimuth_tolerance_override(self) -> None:
-        """Test step 2 schema exposes the per-cover tolerance override section."""
+        """Test step 2 schema exposes the per-cover start/end override section."""
 
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {
-            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": 25,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}": 25,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}": 40,
         }
 
         schema = FlowHelper.build_schema_step_2(covers, defaults)
@@ -347,12 +348,11 @@ class TestFlowHelperSchemaBuilding:
         assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE in schema_keys
 
         section_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
-        field_marker = _get_field_marker(
-            section_schema,
-            "Test Cover",
-        )
+        start_field_marker = _get_field_marker(section_schema, "Test Cover: start")
+        end_field_marker = _get_field_marker(section_schema, "Test Cover: end")
 
-        assert field_marker.description == {"name": "Test Cover", "suggested_value": "25"}
+        assert start_field_marker.description == {"name": "Test Cover: start", "suggested_value": "25"}
+        assert end_field_marker.description == {"name": "Test Cover: end", "suggested_value": "40"}
 
     def test_build_schema_step_2_disambiguates_duplicate_cover_labels(self) -> None:
         """Duplicate friendly names should include the entity ID for clarity."""

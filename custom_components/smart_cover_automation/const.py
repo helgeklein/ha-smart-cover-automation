@@ -81,6 +81,12 @@ DEFAULT_COVER_AZIMUTH: Final[int] = 180
 # Per-cover configuration key suffixes
 COVER_SFX_AZIMUTH: Final[str] = "cover_azimuth"  # Cover/window azimuth (°)
 COVER_SFX_SUN_AZIMUTH_TOLERANCE: Final[str] = "cover_sun_azimuth_tolerance"  # Per-cover override for sun azimuth tolerance (°).
+COVER_SFX_SUN_AZIMUTH_TOLERANCE_START: Final[str] = (
+    "cover_sun_azimuth_tolerance_start"  # Per-cover override for when sun starts hitting the cover (° before cover azimuth).
+)
+COVER_SFX_SUN_AZIMUTH_TOLERANCE_END: Final[str] = (
+    "cover_sun_azimuth_tolerance_end"  # Per-cover override for when sun stops hitting the cover (° after cover azimuth).
+)
 COVER_SFX_MAX_CLOSURE: Final[str] = "cover_max_closure"  # Cover maximum closure position (%)
 COVER_SFX_MIN_CLOSURE: Final[str] = "cover_min_closure"  # Cover minimum closure position (%)
 COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE: Final[str] = (

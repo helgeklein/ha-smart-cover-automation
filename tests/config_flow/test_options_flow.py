@@ -251,7 +251,7 @@ class TestOptionsFlowStep2:
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}" in flow._config_data
 
     async def test_step_2_saves_per_cover_sun_azimuth_tolerance_override(self, mock_hass_with_covers: MagicMock) -> None:
-        """Step 2 should store per-cover integer sun azimuth tolerance overrides."""
+        """Step 2 should store per-cover integer sun azimuth start/end overrides."""
 
         mock_entry = _create_mock_entry()
         flow = OptionsFlowHandler(mock_entry)
@@ -265,7 +265,8 @@ class TestOptionsFlowStep2:
                 f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 225.0,
             },
             const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "25",
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}": "25",
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}": "40",
             },
         }
 
@@ -274,7 +275,8 @@ class TestOptionsFlowStep2:
 
         assert result_dict["type"] == FlowResultType.FORM
         assert result_dict["step_id"] == "3"
-        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 25
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}"] == 25
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}"] == 40
 
     async def test_step_2_assigns_default_azimuth_to_new_cover_when_section_is_omitted(self, mock_hass_with_covers: MagicMock) -> None:
         """New covers should still get a valid azimuth if the collapsed azimuth section is not submitted."""
@@ -293,7 +295,8 @@ class TestOptionsFlowStep2:
 
         user_input = {
             const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                "Test Cover 2": "25",
+                "Test Cover 2: start": "25",
+                "Test Cover 2: end": "35",
             },
         }
 
@@ -304,10 +307,11 @@ class TestOptionsFlowStep2:
         assert result_dict["step_id"] == "3"
         assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}"] == 135
         assert flow._config_data[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_AZIMUTH}"] == 180
-        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 25
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}"] == 25
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}"] == 35
 
     async def test_step_2_rejects_invalid_per_cover_sun_azimuth_tolerance(self, mock_hass_with_covers: MagicMock) -> None:
-        """Step 2 should reject invalid non-integer sun azimuth tolerance input."""
+        """Step 2 should reject invalid non-integer sun azimuth start/end input."""
 
         mock_entry = _create_mock_entry()
         flow = OptionsFlowHandler(mock_entry)
@@ -321,7 +325,7 @@ class TestOptionsFlowStep2:
                 "Test Cover": 225,
             },
             const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                "Test Cover": "75x",
+                "Test Cover: start": "75x",
             },
         }
 
@@ -332,14 +336,14 @@ class TestOptionsFlowStep2:
         assert result_dict["step_id"] == "2"
         assert result_dict["errors"] == {
             "base": const.ERROR_INVALID_INTEGER,
-            "Test Cover": const.ERROR_INVALID_INTEGER,
+            "Test Cover: start": const.ERROR_INVALID_INTEGER,
         }
 
         schema = result_dict["data_schema"].schema
         section_key = next(key for key in schema if getattr(key, "schema", None) == const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
         section_schema = schema[section_key].schema.schema
-        field_key = next(key for key in section_schema if getattr(key, "schema", None) == "Test Cover")
-        assert field_key.description == {"name": "Test Cover", "suggested_value": "75x"}
+        field_key = next(key for key in section_schema if getattr(key, "schema", None) == "Test Cover: start")
+        assert field_key.description == {"name": "Test Cover: start", "suggested_value": "75x"}
 
     async def test_step_2_uses_rendered_label_map_when_cover_name_changes(self, mock_hass_with_covers: MagicMock) -> None:
         """Step 2 should honor the labels that were rendered even if HA names change before submit."""
@@ -361,7 +365,8 @@ class TestOptionsFlowStep2:
                     "Test Cover": 225,
                 },
                 const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                    "Test Cover": "30",
+                    "Test Cover: start": "30",
+                    "Test Cover: end": "45",
                 },
             }
         )
@@ -371,7 +376,8 @@ class TestOptionsFlowStep2:
         assert result_dict["type"] == FlowResultType.FORM
         assert result_dict["step_id"] == "3"
         assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}"] == 225
-        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 30
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}"] == 30
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}"] == 45
 
     async def test_step_3_uses_rendered_label_map_when_cover_name_changes(self, mock_hass_with_covers: MagicMock) -> None:
         """Step 3 should keep using the labels that were rendered even if HA names change before submit."""
@@ -459,22 +465,24 @@ class TestOptionsFlowStep2:
         assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}"] == ["binary_sensor.window_1"]
 
     def test_validate_step_2_input_ignores_cleared_per_cover_sun_azimuth_tolerance(self) -> None:
-        """Cleared per-cover tolerance input should be treated as empty, not invalid."""
+        """Cleared per-cover start/end input should be treated as empty, not invalid."""
 
         user_input = {
             const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                "Test Cover": "",
+                "Test Cover: start": "",
+                "Test Cover: end": "",
             },
         }
 
         assert OptionsFlowHandler._validate_step_2_input(user_input) == {}
 
     def test_build_section_cover_settings_with_sun_azimuth_tolerance(self, mock_hass_with_covers: MagicMock) -> None:
-        """Test _build_section_cover_settings handles per-cover sun azimuth tolerance."""
+        """Test _build_section_cover_settings handles per-cover sun azimuth start/end overrides."""
 
         user_input = {
             const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                "Test Cover": "20",
+                "Test Cover: start": "20",
+                "Test Cover: end": "35",
             },
         }
 
@@ -484,13 +492,33 @@ class TestOptionsFlowStep2:
         result = OptionsFlowHandler._build_section_cover_settings(
             user_input,
             const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
-            const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+            const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START,
             covers,
             current_settings,
             mock_hass_with_covers,
+            {
+                "Test Cover: start": f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}",
+                "Test Cover: end": f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}",
+            },
         )
 
-        assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 20
+        result.update(
+            OptionsFlowHandler._build_section_cover_settings(
+                user_input,
+                const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
+                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END,
+                covers,
+                current_settings,
+                mock_hass_with_covers,
+                {
+                    "Test Cover: start": f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}",
+                    "Test Cover: end": f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}",
+                },
+            )
+        )
+
+        assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}"] == 20
+        assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}"] == 35
 
 
 class TestOptionsFlowNavigation:
