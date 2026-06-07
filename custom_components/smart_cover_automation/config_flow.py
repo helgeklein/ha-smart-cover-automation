@@ -161,7 +161,7 @@ class FlowHelper:
 
             azimuth_schema_dict[
                 vol.Required(
-                    key,
+                    cover_labels[cover],
                     default=default_value,
                     description=FlowHelper._build_field_description(cover_labels[cover]),
                 )
@@ -204,21 +204,22 @@ class FlowHelper:
 
         for cover in sorted(covers):
             key = f"{cover}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
+            field_name = cover_labels[cover]
             raw = defaults.get(key)
             default_value = to_int_or_none(raw)
 
             if default_value is not None:
                 key_marker = vol.Optional(
-                    key,
+                    field_name,
                     description=FlowHelper._build_field_description(cover_labels[cover], str(default_value)),
                 )
             elif raw not in (None, ""):
                 key_marker = vol.Optional(
-                    key,
+                    field_name,
                     description=FlowHelper._build_field_description(cover_labels[cover], str(raw)),
                 )
             else:
-                key_marker = vol.Optional(key, description=FlowHelper._build_field_description(cover_labels[cover]))
+                key_marker = vol.Optional(field_name, description=FlowHelper._build_field_description(cover_labels[cover]))
 
             schema_dict[key_marker] = value_selector
 
@@ -353,6 +354,7 @@ class FlowHelper:
         for cover in sorted(covers):
             # Build a key for storage
             key = f"{cover}_{suffix}"
+            field_name = cover_labels[cover]
 
             # Get the default value
             raw = defaults.get(key)
@@ -369,11 +371,11 @@ class FlowHelper:
             # Use suggested value instead of setting a default to allow clearing the field
             if default_value is not None:
                 key_marker = vol.Optional(
-                    key,
+                    field_name,
                     description=FlowHelper._build_field_description(cover_labels[cover], str(default_value)),
                 )
             else:
-                key_marker = vol.Optional(key, description=FlowHelper._build_field_description(cover_labels[cover]))
+                key_marker = vol.Optional(field_name, description=FlowHelper._build_field_description(cover_labels[cover]))
 
             schema_dict[key_marker] = value_selector
 
@@ -590,16 +592,17 @@ class FlowHelper:
 
         for cover in sorted(covers):
             key = f"{cover}_{suffix}"
+            field_name = cover_labels[cover]
 
             raw = defaults.get(key)
 
             if raw is not None:
                 key_marker = vol.Optional(
-                    key,
+                    field_name,
                     description=FlowHelper._build_field_description(cover_labels[cover], str(raw)),
                 )
             else:
-                key_marker = vol.Optional(key, description=FlowHelper._build_field_description(cover_labels[cover]))
+                key_marker = vol.Optional(field_name, description=FlowHelper._build_field_description(cover_labels[cover]))
 
             schema_dict[key_marker] = tilt_mode_selector
 
@@ -679,6 +682,7 @@ class FlowHelper:
         for cover in sorted(covers):
             # Build a key for storage
             key = f"{cover}_{suffix}"
+            field_name = cover_labels[cover]
 
             # Get the default value
             raw = defaults.get(key)
@@ -694,7 +698,7 @@ class FlowHelper:
 
             # Use default value for entity selector
             key_marker = vol.Optional(
-                key,
+                field_name,
                 default=default_value,
                 description=FlowHelper._build_field_description(cover_labels[cover]),
             )
@@ -1014,6 +1018,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         suffix: str,
         covers: list[str],
         current_settings: dict[str, Any],
+        hass: Any | None = None,
     ) -> dict[str, Any]:
         """Build a dict with per-cover settings for a section.
 
@@ -1032,32 +1037,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         Returns:
             Dictionary with normalized per-cover settings for this section
         """
-        # Determine which section names are possible based on the suffix
-        if suffix == const.COVER_SFX_SUN_AZIMUTH_TOLERANCE:
-            section_names = {const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE}
-        elif suffix in (
-            const.COVER_SFX_MIN_CLOSURE,
-            const.COVER_SFX_MAX_CLOSURE,
-            const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
-        ):
-            section_names = {
-                const.STEP_3_SECTION_MIN_CLOSURE,
-                const.STEP_3_SECTION_MAX_CLOSURE,
-                const.STEP_3_SECTION_EVENING_MAX_CLOSURE,
-            }
-        elif suffix in (const.COVER_SFX_TILT_MODE_DAY, const.COVER_SFX_TILT_MODE_NIGHT):
-            section_names = {const.STEP_4_SECTION_TILT_DAY, const.STEP_4_SECTION_TILT_NIGHT}
-        elif suffix == const.COVER_SFX_WINDOW_SENSORS:
-            section_names = {const.STEP_5_SECTION_WINDOW_SENSORS}
-        else:
-            # If you add a new per-cover section, update this method
-            raise AssertionError(f"Unknown suffix '{suffix}' in _build_section_cover_settings")
-
-        # Extract cover data and determine which sections are present
-        user_input_extracted, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
-
         result: dict[str, Any] = {}
-        if section_name not in sections_present:
+        if section_name not in user_input:
+            return result
+
+        section_input = user_input.get(section_name)
+        if isinstance(section_input, Mapping):
+            user_input_extracted = OptionsFlowHandler._translate_cover_field_keys(section_input, covers, suffix, hass)
+        elif section_input in (None, vol.UNDEFINED):
+            user_input_extracted = {}
+        else:
             return result
 
         # When a section is present, we need to distinguish between:
@@ -1099,6 +1088,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     # Only record explicit clearing if there was a previous value
                     result[key] = None
         return result
+
+    @staticmethod
+    def _translate_cover_field_keys(
+        user_input: Mapping[str, Any],
+        covers: list[str],
+        suffix: str,
+        hass: Any | None = None,
+    ) -> dict[str, Any]:
+        """Translate display labels from per-cover sections back to internal keys."""
+
+        label_to_key = {label: f"{cover}_{suffix}" for cover, label in FlowHelper._build_cover_labels(covers, hass).items()}
+        return {label_to_key.get(str(key), str(key)): value for key, value in user_input.items()}
 
     #
     # _current_settings
@@ -1385,11 +1386,19 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             errors = self._validate_step_2_input(user_input)
             if errors:
                 current_settings = self._current_settings()
-                step_2_input, _ = FlowHelper.extract_from_section_input(
-                    user_input,
-                    {const.STEP_2_SECTION_AZIMUTH, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE},
+                azimuth_input = self._translate_cover_field_keys(
+                    user_input.get(const.STEP_2_SECTION_AZIMUTH, {}),
+                    self._get_covers(),
+                    const.COVER_SFX_AZIMUTH,
+                    self.hass,
                 )
-                defaults = {**current_settings, **step_2_input}
+                tolerance_input = self._translate_cover_field_keys(
+                    user_input.get(const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE, {}),
+                    self._get_covers(),
+                    const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+                    self.hass,
+                )
+                defaults = {**current_settings, **azimuth_input, **tolerance_input}
                 return self._show_form(
                     step_id="2",
                     data_schema=FlowHelper.build_schema_step_2(
@@ -1403,10 +1412,20 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             covers_in_input = self._get_covers()
             current_settings = self._current_settings()
-            step_2_input, _ = FlowHelper.extract_from_section_input(
-                user_input,
-                {const.STEP_2_SECTION_AZIMUTH, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE},
-            )
+            raw_azimuth_input = user_input.get(const.STEP_2_SECTION_AZIMUTH)
+            if isinstance(raw_azimuth_input, Mapping):
+                step_2_input = self._translate_cover_field_keys(
+                    raw_azimuth_input,
+                    covers_in_input,
+                    const.COVER_SFX_AZIMUTH,
+                    self.hass,
+                )
+            else:
+                step_2_input = {
+                    str(key): value
+                    for key, value in user_input.items()
+                    if key not in {const.STEP_2_SECTION_AZIMUTH, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE}
+                }
 
             for cover in covers_in_input:
                 azimuth_key = f"{cover}_{const.COVER_SFX_AZIMUTH}"
@@ -1425,6 +1444,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
                 covers_in_input,
                 current_settings,
+                self.hass,
             )
             self._config_data.update(sun_azimuth_tolerance_data)
 
@@ -1483,10 +1503,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Build complete lists of min and max closure settings for all covers
         min_closure_data = self._build_section_cover_settings(
-            user_input, const.STEP_3_SECTION_MIN_CLOSURE, const.COVER_SFX_MIN_CLOSURE, covers_in_input, current_settings
+            user_input, const.STEP_3_SECTION_MIN_CLOSURE, const.COVER_SFX_MIN_CLOSURE, covers_in_input, current_settings, self.hass
         )
         max_closure_data = self._build_section_cover_settings(
-            user_input, const.STEP_3_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers_in_input, current_settings
+            user_input, const.STEP_3_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers_in_input, current_settings, self.hass
         )
         evening_max_closure_data = self._build_section_cover_settings(
             user_input,
@@ -1494,6 +1514,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
             covers_in_input,
             current_settings,
+            self.hass,
         )
 
         # Store the complete min and max per-cover settings
@@ -1553,10 +1574,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Build per-cover tilt mode settings
         tilt_day_data = self._build_section_cover_settings(
-            user_input, const.STEP_4_SECTION_TILT_DAY, const.COVER_SFX_TILT_MODE_DAY, covers_in_input, current_settings
+            user_input, const.STEP_4_SECTION_TILT_DAY, const.COVER_SFX_TILT_MODE_DAY, covers_in_input, current_settings, self.hass
         )
         tilt_night_data = self._build_section_cover_settings(
-            user_input, const.STEP_4_SECTION_TILT_NIGHT, const.COVER_SFX_TILT_MODE_NIGHT, covers_in_input, current_settings
+            user_input, const.STEP_4_SECTION_TILT_NIGHT, const.COVER_SFX_TILT_MODE_NIGHT, covers_in_input, current_settings, self.hass
         )
 
         # Store the per-cover tilt settings
@@ -1609,7 +1630,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Build complete lists of window sensor settings for all covers
         window_sensor_data = self._build_section_cover_settings(
-            user_input, const.STEP_5_SECTION_WINDOW_SENSORS, const.COVER_SFX_WINDOW_SENSORS, covers_in_input, current_settings
+            user_input, const.STEP_5_SECTION_WINDOW_SENSORS, const.COVER_SFX_WINDOW_SENSORS, covers_in_input, current_settings, self.hass
         )
 
         # Store the complete per-cover settings

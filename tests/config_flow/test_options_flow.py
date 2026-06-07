@@ -262,7 +262,7 @@ class TestOptionsFlowStep2:
 
         user_input = {
             const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "25",
+                "Test Cover 2": "25",
             },
         }
 
@@ -287,10 +287,10 @@ class TestOptionsFlowStep2:
 
         user_input = {
             const.STEP_2_SECTION_AZIMUTH: {
-                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 225,
+                "Test Cover": 225,
             },
             const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "75x",
+                "Test Cover": "75x",
             },
         }
 
@@ -301,17 +301,13 @@ class TestOptionsFlowStep2:
         assert result_dict["step_id"] == "2"
         assert result_dict["errors"] == {
             "base": const.ERROR_INVALID_INTEGER,
-            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": const.ERROR_INVALID_INTEGER,
+            "Test Cover": const.ERROR_INVALID_INTEGER,
         }
 
         schema = result_dict["data_schema"].schema
         section_key = next(key for key in schema if getattr(key, "schema", None) == const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
         section_schema = schema[section_key].schema.schema
-        field_key = next(
-            key
-            for key in section_schema
-            if getattr(key, "schema", None) == f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
-        )
+        field_key = next(key for key in section_schema if getattr(key, "schema", None) == "Test Cover")
         assert field_key.description == {"name": "Test Cover", "suggested_value": "75x"}
 
     def test_validate_step_2_input_ignores_cleared_per_cover_sun_azimuth_tolerance(self) -> None:
@@ -319,18 +315,18 @@ class TestOptionsFlowStep2:
 
         user_input = {
             const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "",
+                "Test Cover": "",
             },
         }
 
         assert OptionsFlowHandler._validate_step_2_input(user_input) == {}
 
-    def test_build_section_cover_settings_with_sun_azimuth_tolerance(self) -> None:
+    def test_build_section_cover_settings_with_sun_azimuth_tolerance(self, mock_hass_with_covers: MagicMock) -> None:
         """Test _build_section_cover_settings handles per-cover sun azimuth tolerance."""
 
         user_input = {
             const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
-                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "20",
+                "Test Cover": "20",
             },
         }
 
@@ -343,6 +339,7 @@ class TestOptionsFlowStep2:
             const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
             covers,
             current_settings,
+            mock_hass_with_covers,
         )
 
         assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 20

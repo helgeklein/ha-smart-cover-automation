@@ -307,7 +307,7 @@ class TestFlowHelperSchemaBuilding:
         schema = FlowHelper.build_schema_step_2(covers, defaults, mock_hass_with_covers)
 
         section_schema = _get_section_schema(schema, const.STEP_2_SECTION_AZIMUTH)
-        field_marker = _get_field_marker(section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}")
+        field_marker = _get_field_marker(section_schema, "Living Room Cover")
 
         assert field_marker.description == {"name": "Living Room Cover"}
 
@@ -322,7 +322,7 @@ class TestFlowHelperSchemaBuilding:
         assert const.STEP_2_SECTION_AZIMUTH in schema_keys
 
         section_schema = _get_section_schema(schema, const.STEP_2_SECTION_AZIMUTH)
-        field_marker = _get_field_marker(section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}")
+        field_marker = _get_field_marker(section_schema, "Test Cover")
 
         assert field_marker.description == {"name": "Test Cover"}
 
@@ -349,7 +349,7 @@ class TestFlowHelperSchemaBuilding:
         section_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
         field_marker = _get_field_marker(
             section_schema,
-            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}",
+            "Test Cover",
         )
 
         assert field_marker.description == {"name": "Test Cover", "suggested_value": "25"}
@@ -368,7 +368,7 @@ class TestFlowHelperSchemaBuilding:
 
         schema = FlowHelper.build_schema_step_2([MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2], {}, hass)
         section_schema = _get_section_schema(schema, const.STEP_2_SECTION_AZIMUTH)
-        field_marker = _get_field_marker(section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}")
+        field_marker = _get_field_marker(section_schema, f"Living Room Cover ({MOCK_COVER_ENTITY_ID})")
 
         assert field_marker.description == {"name": f"Living Room Cover ({MOCK_COVER_ENTITY_ID})"}
 
@@ -440,7 +440,7 @@ class TestFlowHelperSchemaBuilding:
         assert ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value in sections
 
         min_section_schema = _get_section_schema(schema, const.STEP_3_SECTION_MIN_CLOSURE)
-        min_field = _get_field_marker(min_section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}")
+        min_field = _get_field_marker(min_section_schema, "Test Cover")
         assert min_field.description == {"name": "Test Cover", "suggested_value": "20"}
 
     def test_build_schema_step_3_omits_sections_when_cover_position_helper_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -687,7 +687,7 @@ class TestFlowHelperStep4TiltSchema:
         assert const.STEP_4_SECTION_TILT_NIGHT in schema_keys
 
         day_section_schema = _get_section_schema(schema, const.STEP_4_SECTION_TILT_DAY)
-        day_field = _get_field_marker(day_section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_DAY}")
+        day_field = _get_field_marker(day_section_schema, "Test Cover")
         assert day_field.description == {"name": "Test Cover", "suggested_value": "closed"}
 
     def test_step_4_works_without_hass_and_omits_per_cover_sections(self) -> None:
@@ -804,6 +804,6 @@ class TestFlowHelperStep4TiltSchema:
 
         schema = FlowHelper.build_schema_step_5(covers, defaults, mock_hass_with_covers)
         section_schema = _get_section_schema(schema, const.STEP_5_SECTION_WINDOW_SENSORS)
-        field_marker = _get_field_marker(section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}")
+        field_marker = _get_field_marker(section_schema, "Test Cover")
 
         assert field_marker.description == {"name": "Test Cover"}
