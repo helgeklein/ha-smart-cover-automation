@@ -30,13 +30,16 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Steg 2 av 6",
-                "description": "Konfigurera **azimut** (riktning) för varje persienn. Du kan också lägga till valfria värden för **tolerans för solens azimut** per persienn som åsidosätter den globala inställningen för tolerans för solens azimut, som kan konfigureras på enhetssidan för denna integrationsinstans.\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)",
+                "description": "Konfigurera **azimut** (riktning) för varje persienn. Du kan också lägga till valfria start- och slutvärden för **tolerans för solens azimut** per persienn som åsidosätter den globala inställningen för tolerans för solens azimut, som kan konfigureras på enhetssidan för denna integrationsinstans.\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Persiennens azimut (obligatoriskt)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolerans för solens azimut (valfritt)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Start för tolerans för solens azimut (valfritt)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Slut för tolerans för solens azimut (valfritt)"
                     }
                 }
             },

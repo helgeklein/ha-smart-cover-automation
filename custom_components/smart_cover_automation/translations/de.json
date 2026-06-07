@@ -30,13 +30,16 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Schritt 2 von 6",
-                "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen. Optional können Sie auch **Sonnen-Azimut-Toleranzwerte** pro Rollladen hinzufügen, die die globale Azimut-Toleranzeinstellung überschreiben, die auf der Geräteseite der Integrationsinstanz konfigurierbar ist.\n\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)",
+                "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen. Optional können Sie auch **Start- und Endwerte der Sonnen-Azimut-Toleranz** pro Rollladen hinzufügen, die die globale Azimut-Toleranzeinstellung überschreiben, die auf der Geräteseite der Integrationsinstanz konfigurierbar ist.\n\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Rollladen-Azimut (erforderlich)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Sonnen-Azimut-Toleranz (optional)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Sonnen-Azimut-Toleranz Start (optional)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Sonnen-Azimut-Toleranz Ende (optional)"
                     }
                 }
             },

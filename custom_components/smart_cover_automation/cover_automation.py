@@ -329,14 +329,17 @@ class CoverAutomation:
             return None
         return cover_azimuth
 
-    def _get_cover_sun_azimuth_tolerance(self) -> int:
-        """Get per-cover sun azimuth tolerance or fall back to the global setting."""
+    def _get_cover_sun_azimuth_tolerance_range(self) -> tuple[int, int]:
+        cover_tolerance_start_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}")
+        cover_tolerance_end_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}")
+        cover_tolerance_start = to_int_or_none(cover_tolerance_start_raw)
+        cover_tolerance_end = to_int_or_none(cover_tolerance_end_raw)
+        fallback_tolerance = self.resolved.sun_azimuth_tolerance
 
-        cover_tolerance_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}")
-        cover_tolerance = to_int_or_none(cover_tolerance_raw)
-        if cover_tolerance is None:
-            return self.resolved.sun_azimuth_tolerance
-        return cover_tolerance
+        return (
+            fallback_tolerance if cover_tolerance_start is None else cover_tolerance_start,
+            fallback_tolerance if cover_tolerance_end is None else cover_tolerance_end,
+        )
 
     #
     # _validate_cover_state
@@ -694,9 +697,10 @@ class CoverAutomation:
         """
 
         sun_azimuth_difference = self._calculate_angle_difference(sun_azimuth, cover_azimuth)
-        sun_azimuth_tolerance = self._get_cover_sun_azimuth_tolerance()
+        signed_sun_azimuth_difference = self._calculate_signed_angle_difference(sun_azimuth, cover_azimuth)
+        sun_azimuth_tolerance_start, sun_azimuth_tolerance_end = self._get_cover_sun_azimuth_tolerance_range()
         if sun_elevation >= self.resolved.sun_elevation_threshold:
-            sun_hitting = sun_azimuth_difference < sun_azimuth_tolerance
+            sun_hitting = -sun_azimuth_tolerance_start < signed_sun_azimuth_difference < sun_azimuth_tolerance_end
         else:
             sun_hitting = False
 
@@ -741,6 +745,12 @@ class CoverAutomation:
         if diff > 180:
             diff = 360 - diff
         return diff
+
+    @staticmethod
+    def _calculate_signed_angle_difference(angle1: float, angle2: float) -> float:
+        """Calculate signed angle difference in degrees within the range [-180, 180)."""
+
+        return (angle1 - angle2 + 180) % 360 - 180
 
     #
     # _calculate_desired_position

@@ -30,13 +30,16 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Stap 2 van 6",
-                "description": "Configureer de **azimut** (richting) voor elk rolluik. U kunt ook optionele waarden voor **tolerantie voor zonazimut** per rolluik toevoegen die de globale instelling voor tolerantie voor zonazimut overschrijven, configureerbaar op de apparaats-pagina van deze integratie-instantie.\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)",
+                "description": "Configureer de **azimut** (richting) voor elk rolluik. U kunt ook optionele begin- en eindwaarden voor **tolerantie voor zonazimut** per rolluik toevoegen die de globale instelling voor tolerantie voor zonazimut overschrijven, configureerbaar op de apparaats-pagina van deze integratie-instantie.\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Rolluikazimut (verplicht)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolerantie voor zonazimut (optioneel)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Start van tolerantie voor zonazimut (optioneel)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Einde van tolerantie voor zonazimut (optioneel)"
                     }
                 }
             },

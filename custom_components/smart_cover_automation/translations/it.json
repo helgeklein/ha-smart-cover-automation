@@ -30,13 +30,16 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Passo 2 di 6",
-                "description": "Configura l'**azimut** (direzione) per ciascuna tapparella. Puoi anche aggiungere valori opzionali di **tolleranza dell'azimut solare** per singola tapparella che sovrascrivono l'impostazione globale della tolleranza dell'azimut configurabile nella pagina del dispositivo di questa istanza dell'integrazione.\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)",
+                "description": "Configura l'**azimut** (direzione) per ciascuna tapparella. Puoi anche aggiungere valori iniziali e finali opzionali di **tolleranza dell'azimut solare** per singola tapparella che sovrascrivono l'impostazione globale della tolleranza dell'azimut configurabile nella pagina del dispositivo di questa istanza dell'integrazione.\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Azimut della tapparella (obbligatorio)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolleranza dell'azimut solare (opzionale)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Inizio tolleranza dell'azimut solare (opzionale)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Fine tolleranza dell'azimut solare (opzionale)"
                     }
                 }
             },

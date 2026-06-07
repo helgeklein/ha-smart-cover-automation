@@ -30,13 +30,16 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Étape 2 sur 6",
-                "description": "Configurez l'**azimut** (direction) pour chaque volet. Vous pouvez également ajouter des valeurs facultatives de **tolérance de l'azimut solaire** par volet qui remplacent le réglage global de tolérance de l'azimut solaire configurable sur la page de l'appareil de cette instance d'intégration.\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest)",
+                "description": "Configurez l'**azimut** (direction) pour chaque volet. Vous pouvez également ajouter des valeurs de début et de fin facultatives de **tolérance de l'azimut solaire** par volet qui remplacent le réglage global de tolérance de l'azimut solaire configurable sur la page de l'appareil de cette instance d'intégration.\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Azimut du volet (obligatoire)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolérance de l'azimut solaire (facultatif)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Début de la tolérance de l'azimut solaire (facultatif)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Fin de la tolérance de l'azimut solaire (facultatif)"
                     }
                 }
             },

@@ -30,13 +30,16 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Krok 2 z 6",
-                "description": "Skonfiguruj **azymut** (kierunek) dla każdej rolety. Możesz także dodać opcjonalne wartości **tolerancji azymutu słońca** dla poszczególnych rolet, które nadpisują globalne ustawienie tolerancji azymutu konfigurowalne na stronie urządzenia tej instancji integracji.\n\n(0°=Północ, 90°=Wschód, 180°=Południe, 270°=Zachód)",
+                "description": "Skonfiguruj **azymut** (kierunek) dla każdej rolety. Możesz także dodać opcjonalne wartości początkowe i końcowe **tolerancji azymutu słońca** dla poszczególnych rolet, które nadpisują globalne ustawienie tolerancji azymutu konfigurowalne na stronie urządzenia tej instancji integracji.\n\n(0°=Północ, 90°=Wschód, 180°=Południe, 270°=Zachód)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Azymut rolety (wymagane)"
                     },
-                    "section_sun_azimuth_tolerance": {
-                        "name": "Tolerancja azymutu słońca (opcjonalne)"
+                    "section_sun_azimuth_tolerance_start": {
+                        "name": "Początek tolerancji azymutu słońca (opcjonalne)"
+                    },
+                    "section_sun_azimuth_tolerance_end": {
+                        "name": "Koniec tolerancji azymutu słońca (opcjonalne)"
                     }
                 }
             },
