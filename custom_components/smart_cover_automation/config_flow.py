@@ -24,6 +24,21 @@ class FlowHelper:
     """Helper class for config flow validation and schema building."""
 
     @staticmethod
+    def _store_cover_field_map(
+        rendered_field_maps: dict[str, dict[str, str]] | None,
+        section_name: str,
+        covers: list[str],
+        suffix: str,
+        cover_labels: Mapping[str, str],
+    ) -> None:
+        """Store the exact label-to-key mapping used while building a section schema."""
+
+        if rendered_field_maps is None:
+            return
+
+        rendered_field_maps[section_name] = {cover_labels[cover]: f"{cover}_{suffix}" for cover in sorted(covers) if cover in cover_labels}
+
+    @staticmethod
     def _build_cover_labels(covers: list[str], hass: Any | None) -> dict[str, str]:
         """Build stable display labels for per-cover config fields."""
 
@@ -143,7 +158,12 @@ class FlowHelper:
     # build_schema_step_2
     #
     @staticmethod
-    def build_schema_step_2(covers: list[str], defaults: Mapping[str, Any], hass: Any | None = None) -> vol.Schema:
+    def build_schema_step_2(
+        covers: list[str],
+        defaults: Mapping[str, Any],
+        hass: Any | None = None,
+        rendered_field_maps: dict[str, dict[str, str]] | None = None,
+    ) -> vol.Schema:
         """Build schema for step 2: azimuth configuration per cover.
 
         Args:
@@ -187,6 +207,13 @@ class FlowHelper:
             ] = value_selector
 
         if azimuth_schema_dict:
+            FlowHelper._store_cover_field_map(
+                rendered_field_maps,
+                const.STEP_2_SECTION_AZIMUTH,
+                covers,
+                const.COVER_SFX_AZIMUTH,
+                cover_labels,
+            )
             schema_dict[vol.Optional(const.STEP_2_SECTION_AZIMUTH)] = section(
                 vol.Schema(azimuth_schema_dict),
                 {"collapsed": True},
@@ -198,6 +225,13 @@ class FlowHelper:
             cover_labels,
         )
         if sun_azimuth_tolerance_schema_dict:
+            FlowHelper._store_cover_field_map(
+                rendered_field_maps,
+                const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE,
+                covers,
+                const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
+                cover_labels,
+            )
             schema_dict[vol.Optional(const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)] = section(
                 vol.Schema(sun_azimuth_tolerance_schema_dict),
                 {"collapsed": True},
@@ -253,6 +287,7 @@ class FlowHelper:
         defaults: Mapping[str, Any],
         resolved_settings: ResolvedConfig,
         hass: Any | None = None,
+        rendered_field_maps: dict[str, dict[str, str]] | None = None,
     ) -> vol.Schema:
         """Build schema for step 3: min/max position per cover.
 
@@ -323,6 +358,13 @@ class FlowHelper:
         # Build schema dict for min closure positions and group inside collapsible section
         min_schema_dict = FlowHelper._build_schema_cover_positions(covers, const.COVER_SFX_MIN_CLOSURE, defaults, cover_labels)
         if min_schema_dict:
+            FlowHelper._store_cover_field_map(
+                rendered_field_maps,
+                const.STEP_3_SECTION_MIN_CLOSURE,
+                covers,
+                const.COVER_SFX_MIN_CLOSURE,
+                cover_labels,
+            )
             schema_dict[vol.Optional(const.STEP_3_SECTION_MIN_CLOSURE)] = section(
                 vol.Schema(min_schema_dict),
                 {"collapsed": True},
@@ -331,6 +373,13 @@ class FlowHelper:
         # Build schema dict for max closure positions and group inside collapsible section
         max_schema_dict = FlowHelper._build_schema_cover_positions(covers, const.COVER_SFX_MAX_CLOSURE, defaults, cover_labels)
         if max_schema_dict:
+            FlowHelper._store_cover_field_map(
+                rendered_field_maps,
+                const.STEP_3_SECTION_MAX_CLOSURE,
+                covers,
+                const.COVER_SFX_MAX_CLOSURE,
+                cover_labels,
+            )
             schema_dict[vol.Optional(const.STEP_3_SECTION_MAX_CLOSURE)] = section(
                 vol.Schema(max_schema_dict),
                 {"collapsed": True},
@@ -343,6 +392,13 @@ class FlowHelper:
             cover_labels,
         )
         if evening_max_schema_dict:
+            FlowHelper._store_cover_field_map(
+                rendered_field_maps,
+                const.STEP_3_SECTION_EVENING_MAX_CLOSURE,
+                covers,
+                const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
+                cover_labels,
+            )
             schema_dict[vol.Optional(const.STEP_3_SECTION_EVENING_MAX_CLOSURE)] = section(
                 vol.Schema(evening_max_schema_dict),
                 {"collapsed": True},
@@ -409,6 +465,7 @@ class FlowHelper:
         defaults: Mapping[str, Any],
         resolved_settings: ResolvedConfig,
         hass: Any,
+        rendered_field_maps: dict[str, dict[str, str]] | None = None,
     ) -> vol.Schema:
         """Build schema for step 4: tilt angle control.
 
@@ -566,6 +623,13 @@ class FlowHelper:
                 cover_labels,
             )
             if day_schema_dict:
+                FlowHelper._store_cover_field_map(
+                    rendered_field_maps,
+                    const.STEP_4_SECTION_TILT_DAY,
+                    tilt_capable_covers,
+                    const.COVER_SFX_TILT_MODE_DAY,
+                    cover_labels,
+                )
                 schema_dict[vol.Optional(const.STEP_4_SECTION_TILT_DAY)] = section(
                     vol.Schema(day_schema_dict),
                     {"collapsed": True},
@@ -580,6 +644,13 @@ class FlowHelper:
                 cover_labels,
             )
             if night_schema_dict:
+                FlowHelper._store_cover_field_map(
+                    rendered_field_maps,
+                    const.STEP_4_SECTION_TILT_NIGHT,
+                    tilt_capable_covers,
+                    const.COVER_SFX_TILT_MODE_NIGHT,
+                    cover_labels,
+                )
                 schema_dict[vol.Optional(const.STEP_4_SECTION_TILT_NIGHT)] = section(
                     vol.Schema(night_schema_dict),
                     {"collapsed": True},
@@ -631,7 +702,12 @@ class FlowHelper:
     # build_schema_step_5
     #
     @staticmethod
-    def build_schema_step_5(covers: list[str], defaults: Mapping[str, Any], hass: Any | None = None) -> vol.Schema:
+    def build_schema_step_5(
+        covers: list[str],
+        defaults: Mapping[str, Any],
+        hass: Any | None = None,
+        rendered_field_maps: dict[str, dict[str, str]] | None = None,
+    ) -> vol.Schema:
         """Build schema for step 5: additional settings and window sensors.
 
         Args:
@@ -671,6 +747,13 @@ class FlowHelper:
             cover_labels,
         )
         if window_sensors_schema_dict:
+            FlowHelper._store_cover_field_map(
+                rendered_field_maps,
+                const.STEP_5_SECTION_WINDOW_SENSORS,
+                covers,
+                const.COVER_SFX_WINDOW_SENSORS,
+                cover_labels,
+            )
             schema_dict[vol.Optional(const.STEP_5_SECTION_WINDOW_SENSORS)] = section(
                 vol.Schema(window_sensors_schema_dict),
                 {"collapsed": True},
@@ -1127,49 +1210,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         return {label: f"{cover}_{suffix}" for cover, label in FlowHelper._build_cover_labels(covers, hass).items()}
 
-    def _set_rendered_cover_field_maps(self, step_id: str) -> None:
-        """Capture the exact per-cover labels rendered for the current step."""
-
-        self._rendered_cover_field_maps = {}
-        covers = self._get_covers()
-        if not covers:
-            return
-
-        if step_id == "2":
-            self._rendered_cover_field_maps = {
-                const.STEP_2_SECTION_AZIMUTH: self._build_cover_field_map(covers, const.COVER_SFX_AZIMUTH, self.hass),
-                const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: self._build_cover_field_map(
-                    covers,
-                    const.COVER_SFX_SUN_AZIMUTH_TOLERANCE,
-                    self.hass,
-                ),
-            }
-            return
-
-        if step_id == "3":
-            self._rendered_cover_field_maps = {
-                const.STEP_3_SECTION_MIN_CLOSURE: self._build_cover_field_map(covers, const.COVER_SFX_MIN_CLOSURE, self.hass),
-                const.STEP_3_SECTION_MAX_CLOSURE: self._build_cover_field_map(covers, const.COVER_SFX_MAX_CLOSURE, self.hass),
-                const.STEP_3_SECTION_EVENING_MAX_CLOSURE: self._build_cover_field_map(
-                    covers,
-                    const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
-                    self.hass,
-                ),
-            }
-            return
-
-        if step_id == "4":
-            self._rendered_cover_field_maps = {
-                const.STEP_4_SECTION_TILT_DAY: self._build_cover_field_map(covers, const.COVER_SFX_TILT_MODE_DAY, self.hass),
-                const.STEP_4_SECTION_TILT_NIGHT: self._build_cover_field_map(covers, const.COVER_SFX_TILT_MODE_NIGHT, self.hass),
-            }
-            return
-
-        if step_id == "5":
-            self._rendered_cover_field_maps = {
-                const.STEP_5_SECTION_WINDOW_SENSORS: self._build_cover_field_map(covers, const.COVER_SFX_WINDOW_SENSORS, self.hass),
-            }
-
     def _get_rendered_cover_field_map(self, section_name: str) -> Mapping[str, str] | None:
         """Return the render-time label mapping for a per-cover section."""
 
@@ -1221,10 +1261,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         data_schema: vol.Schema,
         errors: dict[str, str] | None = None,
         last_step: bool,
+        rendered_cover_field_maps: dict[str, dict[str, str]] | None = None,
     ) -> config_entries.ConfigFlowResult:
         """Show an options-flow form with an explicit last-step flag."""
 
-        self._set_rendered_cover_field_maps(step_id)
+        self._rendered_cover_field_maps = rendered_cover_field_maps or {}
 
         return self.async_show_form(
             step_id=step_id,
@@ -1451,15 +1492,20 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Get the selected covers
             selected_covers = self._get_covers()
 
+            rendered_cover_field_maps: dict[str, dict[str, str]] = {}
+            data_schema = FlowHelper.build_schema_step_2(
+                covers=selected_covers,
+                defaults=current_settings,
+                hass=self.hass,
+                rendered_field_maps=rendered_cover_field_maps,
+            )
+
             # Show the form
             return self._show_form(
                 step_id="2",
-                data_schema=FlowHelper.build_schema_step_2(
-                    covers=selected_covers,
-                    defaults=current_settings,
-                    hass=self.hass,
-                ),
+                data_schema=data_schema,
                 last_step=False,
+                rendered_cover_field_maps=rendered_cover_field_maps,
             )
         else:
             self._logger.debug(f"Options flow step 2 user input: {user_input}")
@@ -1484,15 +1530,19 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     ),
                 )
                 defaults = {**current_settings, **azimuth_input, **tolerance_input}
+                rendered_cover_field_maps = {}
+                data_schema = FlowHelper.build_schema_step_2(
+                    covers=self._get_covers(),
+                    defaults=defaults,
+                    hass=self.hass,
+                    rendered_field_maps=rendered_cover_field_maps,
+                )
                 return self._show_form(
                     step_id="2",
-                    data_schema=FlowHelper.build_schema_step_2(
-                        covers=self._get_covers(),
-                        defaults=defaults,
-                        hass=self.hass,
-                    ),
+                    data_schema=data_schema,
                     errors=errors,
                     last_step=False,
+                    rendered_cover_field_maps=rendered_cover_field_maps,
                 )
 
             covers_in_input = self._get_covers()
@@ -1557,16 +1607,21 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Get the selected covers
             selected_covers = self._get_covers()
 
+            rendered_cover_field_maps: dict[str, dict[str, str]] = {}
+            data_schema = FlowHelper.build_schema_step_3(
+                covers=selected_covers,
+                defaults=current_settings,
+                resolved_settings=resolved_settings,
+                hass=self.hass,
+                rendered_field_maps=rendered_cover_field_maps,
+            )
+
             # Show the form
             return self._show_form(
                 step_id="3",
-                data_schema=FlowHelper.build_schema_step_3(
-                    covers=selected_covers,
-                    defaults=current_settings,
-                    resolved_settings=resolved_settings,
-                    hass=self.hass,
-                ),
+                data_schema=data_schema,
                 last_step=False,
+                rendered_cover_field_maps=rendered_cover_field_maps,
             )
 
         self._logger.debug(f"Options flow step 3 user input: {user_input}")
@@ -1648,16 +1703,21 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Get the selected covers
             selected_covers = self._get_covers()
 
+            rendered_cover_field_maps: dict[str, dict[str, str]] = {}
+            data_schema = FlowHelper.build_schema_step_4_tilt(
+                covers=selected_covers,
+                defaults=current_settings,
+                resolved_settings=resolved_settings,
+                hass=self.hass,
+                rendered_field_maps=rendered_cover_field_maps,
+            )
+
             # Show the form
             return self._show_form(
                 step_id="4",
-                data_schema=FlowHelper.build_schema_step_4_tilt(
-                    covers=selected_covers,
-                    defaults=current_settings,
-                    resolved_settings=resolved_settings,
-                    hass=self.hass,
-                ),
+                data_schema=data_schema,
                 last_step=False,
+                rendered_cover_field_maps=rendered_cover_field_maps,
             )
 
         self._logger.debug(f"Options flow step 4 user input: {user_input}")
@@ -1721,15 +1781,20 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Get the selected covers
             selected_covers = self._get_covers()
 
+            rendered_cover_field_maps: dict[str, dict[str, str]] = {}
+            data_schema = FlowHelper.build_schema_step_5(
+                covers=selected_covers,
+                defaults=current_settings,
+                hass=self.hass,
+                rendered_field_maps=rendered_cover_field_maps,
+            )
+
             # Show the form
             return self._show_form(
                 step_id="5",
-                data_schema=FlowHelper.build_schema_step_5(
-                    covers=selected_covers,
-                    defaults=current_settings,
-                    hass=self.hass,
-                ),
+                data_schema=data_schema,
                 last_step=False,
+                rendered_cover_field_maps=rendered_cover_field_maps,
             )
 
         self._logger.debug(f"Options flow step 5 user input: {user_input}")

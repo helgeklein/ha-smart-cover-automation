@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any, cast
 from unittest.mock import MagicMock
 
+from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.data_entry_flow import FlowResultType
 
@@ -45,6 +46,36 @@ def _create_mock_entry(data: dict[str, Any] | None = None, options: dict[str, An
     else:
         mock_entry.options = {}
     return mock_entry
+
+
+def _rename_cover_state(
+    mock_hass_with_covers: MagicMock,
+    renamed_cover: str,
+    renamed_name: str,
+    *,
+    tilt_capable: set[str] | None = None,
+) -> None:
+    """Wrap the hass state lookup so one cover is renamed without changing its other attributes."""
+
+    original_side_effect = mock_hass_with_covers.states.get.side_effect
+
+    def renamed_get(entity_id: str) -> Any:
+        state = original_side_effect(entity_id) if callable(original_side_effect) else mock_hass_with_covers.states.get.return_value
+        if entity_id is None or not str(entity_id).startswith("cover."):
+            return state
+
+        wrapped_state = MagicMock()
+        wrapped_state.state = getattr(state, "state", "closed")
+        wrapped_state.attributes = dict(getattr(state, "attributes", {}))
+        if entity_id in (tilt_capable or set()):
+            wrapped_state.attributes["supported_features"] = int(CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION)
+        if entity_id == renamed_cover:
+            wrapped_state.attributes["friendly_name"] = renamed_name
+        else:
+            wrapped_state.attributes.setdefault("friendly_name", "Test Cover")
+        return wrapped_state
+
+    mock_hass_with_covers.states.get.side_effect = renamed_get
 
 
 class TestOptionsFlowStep1:
@@ -322,19 +353,7 @@ class TestOptionsFlowStep2:
 
         await flow.async_step_2(None)
 
-        original_side_effect = mock_hass_with_covers.states.get.side_effect
-
-        def renamed_get(entity_id: str) -> Any:
-            state = original_side_effect(entity_id) if callable(original_side_effect) else mock_hass_with_covers.states.get.return_value
-            if entity_id != MOCK_COVER_ENTITY_ID:
-                return state
-
-            renamed_state = MagicMock()
-            renamed_state.attributes = dict(getattr(state, "attributes", {}))
-            renamed_state.attributes["friendly_name"] = "Renamed Cover"
-            return renamed_state
-
-        mock_hass_with_covers.states.get.side_effect = renamed_get
+        _rename_cover_state(mock_hass_with_covers, MOCK_COVER_ENTITY_ID, "Renamed Cover")
 
         result = await flow.async_step_2(
             {
@@ -353,6 +372,91 @@ class TestOptionsFlowStep2:
         assert result_dict["step_id"] == "3"
         assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}"] == 225
         assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"] == 30
+
+    async def test_step_3_uses_rendered_label_map_when_cover_name_changes(self, mock_hass_with_covers: MagicMock) -> None:
+        """Step 3 should keep using the labels that were rendered even if HA names change before submit."""
+
+        mock_entry = _create_mock_entry()
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+
+        await flow.async_step_3(None)
+
+        _rename_cover_state(mock_hass_with_covers, MOCK_COVER_ENTITY_ID, "Renamed Cover")
+
+        result = await flow.async_step_3(
+            {
+                const.STEP_3_SECTION_MIN_CLOSURE: {
+                    "Test Cover": "40",
+                },
+            }
+        )
+
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "4"
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}"] == 40
+
+    async def test_step_4_uses_rendered_label_map_when_cover_name_changes(self, mock_hass_with_covers: MagicMock) -> None:
+        """Step 4 should keep using the labels that were rendered even if HA names change before submit."""
+
+        mock_entry = _create_mock_entry()
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+
+        _rename_cover_state(mock_hass_with_covers, MOCK_COVER_ENTITY_ID, "Test Cover", tilt_capable={MOCK_COVER_ENTITY_ID})
+        await flow.async_step_4(None)
+
+        _rename_cover_state(mock_hass_with_covers, MOCK_COVER_ENTITY_ID, "Renamed Cover", tilt_capable={MOCK_COVER_ENTITY_ID})
+
+        result = await flow.async_step_4(
+            {
+                const.STEP_4_SECTION_TILT_DAY: {
+                    "Test Cover": const.TiltMode.CLOSED.value,
+                },
+            }
+        )
+
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "5"
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_DAY}"] == const.TiltMode.CLOSED.value
+
+    async def test_step_5_uses_rendered_label_map_when_cover_name_changes(self, mock_hass_with_covers: MagicMock) -> None:
+        """Step 5 should keep using the labels that were rendered even if HA names change before submit."""
+
+        mock_entry = _create_mock_entry()
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+        }
+
+        await flow.async_step_5(None)
+
+        _rename_cover_state(mock_hass_with_covers, MOCK_COVER_ENTITY_ID, "Renamed Cover")
+
+        result = await flow.async_step_5(
+            {
+                const.STEP_5_SECTION_WINDOW_SENSORS: {
+                    "Test Cover": ["binary_sensor.window_1"],
+                },
+            }
+        )
+
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "6"
+        assert flow._config_data[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}"] == ["binary_sensor.window_1"]
 
     def test_validate_step_2_input_ignores_cleared_per_cover_sun_azimuth_tolerance(self) -> None:
         """Cleared per-cover tolerance input should be treated as empty, not invalid."""
@@ -1101,6 +1205,62 @@ class TestOptionsFlowHelperMethods:
 
         # Cleared value should be stored as None (changed from "open")
         assert result[f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_NIGHT}"] is None
+
+    def test_build_section_cover_settings_returns_empty_for_invalid_non_mapping_section(self) -> None:
+        """A non-mapping section payload should be ignored safely."""
+
+        user_input = {
+            const.STEP_4_SECTION_TILT_NIGHT: 123,
+        }
+
+        result = OptionsFlowHandler._build_section_cover_settings(
+            user_input,
+            const.STEP_4_SECTION_TILT_NIGHT,
+            const.COVER_SFX_TILT_MODE_NIGHT,
+            [MOCK_COVER_ENTITY_ID],
+            {f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_NIGHT}": "open"},
+        )
+
+        assert result == {}
+
+    def test_build_section_cover_settings_ignores_unchanged_window_sensors(self) -> None:
+        """Unchanged window sensor lists should not be written back."""
+
+        current_value = ["binary_sensor.window_1"]
+        user_input = {
+            const.STEP_5_SECTION_WINDOW_SENSORS: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}": list(current_value),
+            },
+        }
+
+        result = OptionsFlowHandler._build_section_cover_settings(
+            user_input,
+            const.STEP_5_SECTION_WINDOW_SENSORS,
+            const.COVER_SFX_WINDOW_SENSORS,
+            [MOCK_COVER_ENTITY_ID],
+            {f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}": current_value},
+        )
+
+        assert result == {}
+
+    def test_build_section_cover_settings_ignores_unchanged_numeric_value(self) -> None:
+        """Unchanged numeric per-cover values should not be written back."""
+
+        user_input = {
+            const.STEP_3_SECTION_MIN_CLOSURE: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}": "40",
+            },
+        }
+
+        result = OptionsFlowHandler._build_section_cover_settings(
+            user_input,
+            const.STEP_3_SECTION_MIN_CLOSURE,
+            const.COVER_SFX_MIN_CLOSURE,
+            [MOCK_COVER_ENTITY_ID],
+            {f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}": 40},
+        )
+
+        assert result == {}
 
     #
     # test_cleanup_external_tilt_value_keys

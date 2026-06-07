@@ -398,6 +398,32 @@ class TestFlowHelperSchemaBuilding:
         assert f"Living Room Cover ({MOCK_COVER_ENTITY_ID}) ({extra_cover})" in field_names
         assert len(field_names) == 3
 
+    def test_build_schema_step_2_appends_numeric_suffix_for_repeated_collision(self) -> None:
+        """A repeated collision on a disambiguated label should receive a numeric suffix."""
+
+        extra_cover = "cover.aaa"
+        hass = MagicMock()
+
+        def mock_get_state(entity_id: str) -> MagicMock:
+            state = MagicMock()
+            if entity_id == extra_cover:
+                state.attributes = {"friendly_name": f"Living Room Cover ({MOCK_COVER_ENTITY_ID})"}
+            elif entity_id in {MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2}:
+                state.attributes = {"friendly_name": "Living Room Cover"}
+            else:
+                state.attributes = {"friendly_name": "Unused"}
+            return state
+
+        hass.states.get.side_effect = mock_get_state
+
+        schema = FlowHelper.build_schema_step_2([extra_cover, MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2], {}, hass)
+        section_schema = _get_section_schema(schema, const.STEP_2_SECTION_AZIMUTH)
+
+        field_names = {getattr(key, "schema", None) for key in section_schema}
+
+        assert f"Living Room Cover ({MOCK_COVER_ENTITY_ID})" in field_names
+        assert f"Living Room Cover ({MOCK_COVER_ENTITY_ID}) [2]" in field_names
+
     def test_build_schema_step_3_with_no_per_cover_defaults(self) -> None:
         """Test step 3 schema when covers have no per-cover min/max closure defaults.
 
@@ -599,6 +625,18 @@ class TestFlowHelperFlattenSection:
         # Both sections should be marked as present
         assert "section_min_closure" in sections_present
         assert "section_max_closure" in sections_present
+
+    def test_flatten_section_input_with_undefined_section(self) -> None:
+        """Undefined section values should be treated as empty sections."""
+
+        user_input = {
+            "section_min_closure": vol.UNDEFINED,
+        }
+
+        result, sections_present = FlowHelper.extract_from_section_input(user_input, {"section_min_closure"})
+
+        assert result == {}
+        assert sections_present == {"section_min_closure"}
 
 
 class TestFlowHelperStep4TiltSchema:
