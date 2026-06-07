@@ -499,7 +499,7 @@ class TestOptionsFlow:
         field_key = next(
             key for key in section_schema if getattr(key, "schema", None) == f"{TEST_COVER_1}_{COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
         )
-        assert field_key.description == {"suggested_value": "75x"}
+        assert field_key.description == {"name": "Flow Test Cover 1", "suggested_value": "75x"}
 
     async def test_options_flow_step_2_assigns_default_azimuth_to_new_cover_when_section_is_omitted(
         self,

@@ -9,6 +9,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+import voluptuous as vol
 from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.components.weather.const import WeatherEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
@@ -18,6 +19,19 @@ from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.config_flow import FlowHelper
 
 from ..conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2, MOCK_WEATHER_ENTITY_ID
+
+
+def _get_section_schema(schema: vol.Schema, section_name: str) -> dict[vol.Marker, object]:
+    """Return the nested schema for a section."""
+
+    section_key = next(key for key in schema.schema if getattr(key, "schema", None) == section_name)
+    return schema.schema[section_key].schema.schema
+
+
+def _get_field_marker(schema: dict[vol.Marker, object], field_name: str) -> vol.Marker:
+    """Return a field marker from a schema by its raw field name."""
+
+    return next(key for key in schema if getattr(key, "schema", None) == field_name)
 
 
 class TestFlowHelperValidation:
@@ -278,16 +292,24 @@ class TestFlowHelperSchemaBuilding:
         """Test step 2 schema uses cover friendly name when available."""
         # Mock cover with friendly name
         cover_state = MagicMock()
-        cover_state.name = "Living Room Cover"
-        mock_hass_with_covers.states.get.return_value = cover_state
+        cover_state.attributes = {"friendly_name": "Living Room Cover"}
+
+        def mock_get_state(entity_id: str) -> MagicMock | None:
+            if entity_id == MOCK_COVER_ENTITY_ID:
+                return cover_state
+            return None
+
+        mock_hass_with_covers.states.get.side_effect = mock_get_state
 
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {}
 
-        schema = FlowHelper.build_schema_step_2(covers, defaults)
+        schema = FlowHelper.build_schema_step_2(covers, defaults, mock_hass_with_covers)
 
-        # Schema should be created (friendly name used internally)
-        assert schema is not None
+        section_schema = _get_section_schema(schema, const.STEP_2_SECTION_AZIMUTH)
+        field_marker = _get_field_marker(section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}")
+
+        assert field_marker.description == {"name": "Living Room Cover"}
 
     def test_build_schema_step_2_without_hass(self) -> None:
         """Test step 2 schema works without hass (uses entity ID as name)."""
@@ -298,6 +320,18 @@ class TestFlowHelperSchemaBuilding:
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
         assert const.STEP_2_SECTION_AZIMUTH in schema_keys
+
+        section_schema = _get_section_schema(schema, const.STEP_2_SECTION_AZIMUTH)
+        field_marker = _get_field_marker(section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}")
+
+        assert field_marker.description == {"name": "Test Cover"}
+
+    def test_build_schema_step_2_with_no_covers_returns_empty_schema(self) -> None:
+        """Step 2 should omit both optional sections when no covers are selected."""
+
+        schema = FlowHelper.build_schema_step_2([], {})
+
+        assert schema.schema == {}
 
     def test_build_schema_step_2_uses_existing_sun_azimuth_tolerance_override(self) -> None:
         """Test step 2 schema exposes the per-cover tolerance override section."""
@@ -311,6 +345,32 @@ class TestFlowHelperSchemaBuilding:
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
 
         assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE in schema_keys
+
+        section_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE)
+        field_marker = _get_field_marker(
+            section_schema,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}",
+        )
+
+        assert field_marker.description == {"name": "Test Cover", "suggested_value": "25"}
+
+    def test_build_schema_step_2_disambiguates_duplicate_cover_labels(self) -> None:
+        """Duplicate friendly names should include the entity ID for clarity."""
+
+        hass = MagicMock()
+
+        def mock_get_state(entity_id: str) -> MagicMock:
+            state = MagicMock()
+            state.attributes = {"friendly_name": "Living Room Cover"}
+            return state
+
+        hass.states.get.side_effect = mock_get_state
+
+        schema = FlowHelper.build_schema_step_2([MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2], {}, hass)
+        section_schema = _get_section_schema(schema, const.STEP_2_SECTION_AZIMUTH)
+        field_marker = _get_field_marker(section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}")
+
+        assert field_marker.description == {"name": f"Living Room Cover ({MOCK_COVER_ENTITY_ID})"}
 
     def test_build_schema_step_3_with_no_per_cover_defaults(self) -> None:
         """Test step 3 schema when covers have no per-cover min/max closure defaults.
@@ -379,11 +439,15 @@ class TestFlowHelperSchemaBuilding:
         assert ConfKeys.COVERS_MIN_CLOSURE.value in sections
         assert ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value in sections
 
+        min_section_schema = _get_section_schema(schema, const.STEP_3_SECTION_MIN_CLOSURE)
+        min_field = _get_field_marker(min_section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}")
+        assert min_field.description == {"name": "Test Cover", "suggested_value": "20"}
+
     def test_build_schema_step_3_omits_sections_when_cover_position_helper_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Step 3 should keep globals but omit optional sections when no per-cover fields exist."""
         from custom_components.smart_cover_automation.config import resolve
 
-        monkeypatch.setattr(FlowHelper, "_build_schema_cover_positions", lambda covers, suffix, defaults: {})
+        monkeypatch.setattr(FlowHelper, "_build_schema_cover_positions", lambda covers, suffix, defaults, labels: {})
 
         covers = [MOCK_COVER_ENTITY_ID]
         defaults: dict[str, Any] = {}
@@ -622,6 +686,10 @@ class TestFlowHelperStep4TiltSchema:
         assert const.STEP_4_SECTION_TILT_DAY in schema_keys
         assert const.STEP_4_SECTION_TILT_NIGHT in schema_keys
 
+        day_section_schema = _get_section_schema(schema, const.STEP_4_SECTION_TILT_DAY)
+        day_field = _get_field_marker(day_section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_DAY}")
+        assert day_field.description == {"name": "Test Cover", "suggested_value": "closed"}
+
     def test_step_4_works_without_hass_and_omits_per_cover_sections(self) -> None:
         """Test that step 4 still builds global settings when no hass instance is available."""
 
@@ -687,7 +755,7 @@ class TestFlowHelperStep4TiltSchema:
 
         from custom_components.smart_cover_automation.config import resolve
 
-        monkeypatch.setattr(FlowHelper, "_build_schema_cover_tilt_mode", lambda covers, suffix, defaults, selector: {})
+        monkeypatch.setattr(FlowHelper, "_build_schema_cover_tilt_mode", lambda covers, suffix, defaults, selector, labels: {})
 
         covers = [MOCK_COVER_ENTITY_ID]
         hass = self._make_tilt_hass(covers, {MOCK_COVER_ENTITY_ID})
@@ -714,7 +782,7 @@ class TestFlowHelperStep4TiltSchema:
     ) -> None:
         """Step 5 should still expose additional settings even without window sensor fields."""
 
-        monkeypatch.setattr(FlowHelper, "_build_schema_cover_entities", lambda covers, suffix, defaults: {})
+        monkeypatch.setattr(FlowHelper, "_build_schema_cover_entities", lambda covers, suffix, defaults, labels: {})
 
         covers = [MOCK_COVER_ENTITY_ID]
         defaults: dict[str, Any] = {}
@@ -724,3 +792,18 @@ class TestFlowHelperStep4TiltSchema:
 
         assert const.STEP_5_SECTION_ADDITIONAL_SETTINGS in schema_keys
         assert const.STEP_5_SECTION_WINDOW_SENSORS not in schema_keys
+
+    def test_build_schema_step_5_labels_window_sensor_fields_with_cover_name(
+        self,
+        mock_hass_with_covers: MagicMock,
+    ) -> None:
+        """Per-cover window sensor fields should expose friendly cover labels."""
+
+        covers = [MOCK_COVER_ENTITY_ID]
+        defaults = {f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}": ["binary_sensor.window"]}
+
+        schema = FlowHelper.build_schema_step_5(covers, defaults, mock_hass_with_covers)
+        section_schema = _get_section_schema(schema, const.STEP_5_SECTION_WINDOW_SENSORS)
+        field_marker = _get_field_marker(section_schema, f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}")
+
+        assert field_marker.description == {"name": "Test Cover"}

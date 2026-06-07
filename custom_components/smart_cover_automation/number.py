@@ -34,7 +34,7 @@ from .const import (
     TiltMode,
 )
 from .entity import IntegrationEntity
-from .util import cover_supports_tilt, to_int_or_none
+from .util import cover_supports_tilt, format_cover_name, to_int_or_none
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant  # pyright: ignore[reportMissingImports]
@@ -92,22 +92,6 @@ async def async_setup_entry(
             entities.append(CoverExternalTiltNightNumber(coordinator, cover_entity_id))
 
     async_add_entities(entities)
-
-
-#
-# _format_cover_name
-#
-def _format_cover_name(coordinator: DataUpdateCoordinator, cover_entity_id: str) -> str:
-    """Return a human-friendly name for a cover entity."""
-
-    state = coordinator.hass.states.get(cover_entity_id)
-    if state is not None:
-        friendly_name = state.attributes.get("friendly_name")
-        if isinstance(friendly_name, str) and friendly_name.strip():
-            return friendly_name.strip()
-
-    object_id = cover_entity_id.split(".", 1)[-1]
-    return object_id.replace("_", " ").strip().title()
 
 
 #
@@ -410,7 +394,7 @@ class CoverExternalTiltDayNumber(ExternalTiltNumber):
     def __init__(self, coordinator: DataUpdateCoordinator, cover_entity_id: str) -> None:
         """Initialize the per-cover daytime external tilt number."""
 
-        cover_name = _format_cover_name(coordinator, cover_entity_id)
+        cover_name = format_cover_name(coordinator.hass, cover_entity_id)
         config_key = f"{cover_entity_id}_{COVER_SFX_TILT_EXTERNAL_VALUE_DAY}"
         entity_description = NumberEntityDescription(
             key=config_key,
@@ -435,7 +419,7 @@ class CoverExternalTiltNightNumber(ExternalTiltNumber):
     def __init__(self, coordinator: DataUpdateCoordinator, cover_entity_id: str) -> None:
         """Initialize the per-cover nighttime external tilt number."""
 
-        cover_name = _format_cover_name(coordinator, cover_entity_id)
+        cover_name = format_cover_name(coordinator.hass, cover_entity_id)
         config_key = f"{cover_entity_id}_{COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}"
         entity_description = NumberEntityDescription(
             key=config_key,

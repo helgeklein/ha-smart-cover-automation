@@ -312,7 +312,18 @@ class TestOptionsFlowStep2:
             for key in section_schema
             if getattr(key, "schema", None) == f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}"
         )
-        assert field_key.description == {"suggested_value": "75x"}
+        assert field_key.description == {"name": "Test Cover", "suggested_value": "75x"}
+
+    def test_validate_step_2_input_ignores_cleared_per_cover_sun_azimuth_tolerance(self) -> None:
+        """Cleared per-cover tolerance input should be treated as empty, not invalid."""
+
+        user_input = {
+            const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE: {
+                f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}": "",
+            },
+        }
+
+        assert OptionsFlowHandler._validate_step_2_input(user_input) == {}
 
     def test_build_section_cover_settings_with_sun_azimuth_tolerance(self) -> None:
         """Test _build_section_cover_settings handles per-cover sun azimuth tolerance."""
@@ -1073,6 +1084,28 @@ class TestOptionsFlowHelperMethods:
         assert const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT in merged
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}" not in merged
         assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}" in merged
+
+    def test_cleanup_external_tilt_value_keys_removes_orphaned_per_cover_values(self) -> None:
+        """Per-cover external tilt values for removed covers should be deleted."""
+
+        merged = {
+            ConfKeys.TILT_MODE_DAY.value: const.TiltMode.EXTERNAL,
+            ConfKeys.TILT_MODE_NIGHT.value: const.TiltMode.EXTERNAL,
+            const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY: 40,
+            const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT: 15,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_DAY}": const.TiltMode.EXTERNAL,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}": 70,
+            f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}": 80,
+            f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}": 20,
+        }
+
+        OptionsFlowHandler._cleanup_external_tilt_value_keys(merged, [MOCK_COVER_ENTITY_ID])
+
+        assert const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY in merged
+        assert const.NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT in merged
+        assert f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}" in merged
+        assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}" not in merged
+        assert f"{MOCK_COVER_ENTITY_ID_2}_{const.COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}" not in merged
 
     def test_cleanup_external_morning_opening_keys_keeps_value_in_external_mode(self) -> None:
         """External morning opening time should be preserved while external mode is active."""

@@ -10,7 +10,7 @@ from homeassistant.const import ATTR_SUPPORTED_FEATURES
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
-__all__ = ["cover_supports_tilt", "to_float_or_none", "to_int_or_none"]
+__all__ = ["cover_supports_tilt", "format_cover_name", "to_float_or_none", "to_int_or_none"]
 
 
 #
@@ -41,6 +41,24 @@ def cover_supports_tilt(hass: HomeAssistant, cover_entity_id: str) -> bool | Non
         return bool(int(features) & CoverEntityFeature.SET_TILT_POSITION)
     except TypeError, ValueError:
         return None
+
+
+def format_cover_name(hass: HomeAssistant | None, cover_entity_id: str) -> str:
+    """Return a human-friendly name for a cover entity.
+
+    Uses the current state friendly name when available. Falls back to a title-
+    cased object ID so names remain readable during startup or in unit tests.
+    """
+
+    if hass is not None:
+        state = hass.states.get(cover_entity_id)
+        if state is not None:
+            friendly_name = state.attributes.get("friendly_name")
+            if isinstance(friendly_name, str) and friendly_name.strip():
+                return friendly_name.strip()
+
+    object_id = cover_entity_id.split(".", 1)[-1]
+    return object_id.replace("_", " ").strip().title()
 
 
 def to_float_or_none(raw: Any) -> float | None:
