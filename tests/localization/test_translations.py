@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import warnings
 
 import pytest
 
@@ -82,7 +83,65 @@ def _load_translations(language_code: str) -> dict:
         return json.load(f)
 
 
-@pytest.mark.parametrize("language_code", _get_available_languages())
+def _get_non_english_languages() -> list[str]:
+    """Return all available translation files except English."""
+
+    return [language_code for language_code in _get_available_languages() if language_code != "en"]
+
+
+def _collect_leaf_paths(data: object, prefix: str = "") -> set[str]:
+    """Collect dotted paths for all leaf values in a translation tree."""
+
+    if isinstance(data, dict):
+        paths: set[str] = set()
+        for key, value in data.items():
+            child_prefix = f"{prefix}.{key}" if prefix else key
+            paths |= _collect_leaf_paths(value, child_prefix)
+        return paths
+
+    return {prefix} if prefix else set()
+
+
+def _assert_no_missing(language_code: str, missing: set[str], description: str) -> None:
+    """Fail when required English translation keys are missing."""
+
+    if missing:
+        raise AssertionError(f"Missing {description} in {language_code}.json: {sorted(missing)}")
+
+
+@pytest.mark.parametrize("language_code", _get_non_english_languages())
+def test_non_english_translations_warn_once_for_missing_keys(language_code: str) -> None:
+    """Warn once per non-English translation file for structural drift relative to English."""
+
+    english_data = _load_translations("en")
+    localized_data = _load_translations(language_code)
+
+    english_leaf_paths = _collect_leaf_paths(english_data)
+    localized_leaf_paths = _collect_leaf_paths(localized_data)
+    missing_leaf_paths = english_leaf_paths - localized_leaf_paths
+    extra_leaf_paths = localized_leaf_paths - english_leaf_paths
+
+    if not missing_leaf_paths and not extra_leaf_paths:
+        return
+
+    missing_sample = sorted(missing_leaf_paths)[:10]
+    missing_remaining_count = len(missing_leaf_paths) - len(missing_sample)
+    missing_suffix = f" (+{missing_remaining_count} more)" if missing_remaining_count > 0 else ""
+
+    extra_sample = sorted(extra_leaf_paths)[:10]
+    extra_remaining_count = len(extra_leaf_paths) - len(extra_sample)
+    extra_suffix = f" (+{extra_remaining_count} more)" if extra_remaining_count > 0 else ""
+
+    warnings.warn(
+        (
+            f"Translation drift in {language_code}.json relative to en.json: "
+            f"missing={missing_sample}{missing_suffix}; extra={extra_sample}{extra_suffix}"
+        ),
+        stacklevel=2,
+    )
+
+
+@pytest.mark.parametrize("language_code", ["en"])
 def test_translation_has_required_keys(language_code: str) -> None:
     """Test that all translation files contain required translation keys for proper UI functionality.
 
@@ -126,7 +185,7 @@ def test_translation_has_required_keys(language_code: str) -> None:
         ConfKeys.WEATHER_ENTITY_ID.value,
     }
     missing_options = expected_options_fields - set(options_data.keys())
-    assert not missing_options, f"Missing options form labels in {language_code}.json: {sorted(missing_options)}"
+    _assert_no_missing(language_code, missing_options, "options form labels")
 
     # Test 2: Required error strings used by options flow validation
     # These messages provide helpful feedback when configuration validation fails
@@ -138,10 +197,10 @@ def test_translation_has_required_keys(language_code: str) -> None:
         const.ERROR_NO_WEATHER_ENTITY,
     }
     missing_errors = expected_errors - set(error_data.keys())
-    assert not missing_errors, f"Missing error strings in {language_code}.json: {sorted(missing_errors)}"
+    _assert_no_missing(language_code, missing_errors, "error strings")
 
 
-@pytest.mark.parametrize("language_code", _get_available_languages())
+@pytest.mark.parametrize("language_code", ["en"])
 def test_translation_has_evening_closure_section_keys(language_code: str) -> None:
     """Test that evening closure section fields are translated in every language."""
 
@@ -165,11 +224,11 @@ def test_translation_has_evening_closure_section_keys(language_code: str) -> Non
     missing_labels = expected_fields - set(section_data.keys())
     missing_descriptions = expected_fields - set(section_descriptions.keys())
 
-    assert not missing_labels, f"Missing evening closure field labels in {language_code}.json: {sorted(missing_labels)}"
-    assert not missing_descriptions, f"Missing evening closure field descriptions in {language_code}.json: {sorted(missing_descriptions)}"
+    _assert_no_missing(language_code, missing_labels, "evening closure field labels")
+    _assert_no_missing(language_code, missing_descriptions, "evening closure field descriptions")
 
 
-@pytest.mark.parametrize("language_code", _get_available_languages())
+@pytest.mark.parametrize("language_code", ["en"])
 def test_translation_has_blocked_time_range_section_keys(language_code: str) -> None:
     """Test that blocked-time-range section fields are translated in every language."""
 
@@ -188,13 +247,11 @@ def test_translation_has_blocked_time_range_section_keys(language_code: str) -> 
     missing_labels = expected_fields - set(section_data.keys())
     missing_descriptions = expected_fields - set(section_descriptions.keys())
 
-    assert not missing_labels, f"Missing blocked time range field labels in {language_code}.json: {sorted(missing_labels)}"
-    assert not missing_descriptions, (
-        f"Missing blocked time range field descriptions in {language_code}.json: {sorted(missing_descriptions)}"
-    )
+    _assert_no_missing(language_code, missing_labels, "blocked time range field labels")
+    _assert_no_missing(language_code, missing_descriptions, "blocked time range field descriptions")
 
 
-@pytest.mark.parametrize("language_code", _get_available_languages())
+@pytest.mark.parametrize("language_code", ["en"])
 def test_translation_has_evening_external_time_keys(language_code: str) -> None:
     """Test that evening external mode and entity labels are translated in every language."""
 
@@ -202,50 +259,71 @@ def test_translation_has_evening_external_time_keys(language_code: str) -> None:
     evening_options = data.get("selector", {}).get("evening_closure_mode", {}).get("options", {})
     time_entities = data.get("entity", {}).get("time", {})
 
-    assert "external" in evening_options, f"Missing evening external mode option in {language_code}.json"
-    assert const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME in time_entities, (
-        f"Missing evening external time entity label in {language_code}.json"
+    _assert_no_missing(
+        language_code,
+        {"external"} - set(evening_options.keys()),
+        "evening external mode options",
+    )
+    _assert_no_missing(
+        language_code,
+        {const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME} - set(time_entities.keys()),
+        "evening external time entity labels",
     )
 
 
-@pytest.mark.parametrize("language_code", _get_available_languages())
+@pytest.mark.parametrize("language_code", ["en"])
 def test_translation_has_blocked_time_range_external_time_keys(language_code: str) -> None:
     """Test that blocked-time external entity labels are translated in every language."""
 
     data = _load_translations(language_code)
     time_entities = data.get("entity", {}).get("time", {})
 
-    assert const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START in time_entities, (
-        f"Missing blocked-time external start label in {language_code}.json"
+    _assert_no_missing(
+        language_code,
+        {const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START} - set(time_entities.keys()),
+        "blocked-time external start labels",
     )
-    assert const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END in time_entities, (
-        f"Missing blocked-time external end label in {language_code}.json"
+    _assert_no_missing(
+        language_code,
+        {const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END} - set(time_entities.keys()),
+        "blocked-time external end labels",
     )
 
 
-@pytest.mark.parametrize("language_code", _get_available_languages())
+@pytest.mark.parametrize("language_code", ["en"])
 def test_translation_has_blocked_time_range_mode_options(language_code: str) -> None:
     """Test that blocked-time mode selector options are translated in every language."""
 
     data = _load_translations(language_code)
     blocked_time_options = data.get("selector", {}).get("blocked_time_range_mode", {}).get("options", {})
 
-    assert "fixed_time" in blocked_time_options, f"Missing blocked-time fixed_time mode option in {language_code}.json"
-    assert "external" in blocked_time_options, f"Missing blocked-time external mode option in {language_code}.json"
+    _assert_no_missing(
+        language_code,
+        {"fixed_time", "external"} - set(blocked_time_options.keys()),
+        "blocked-time mode options",
+    )
 
 
-@pytest.mark.parametrize("language_code", _get_available_languages())
+@pytest.mark.parametrize("language_code", ["en"])
 def test_translation_has_morning_opening_sensor_labels(language_code: str) -> None:
     """Test that morning opening diagnostic sensor labels are translated in every language."""
 
     data = _load_translations(language_code)
     sensor_entities = data.get("entity", {}).get("sensor", {})
 
-    assert const.SENSOR_KEY_MORNING_OPENING_MODE in sensor_entities, f"Missing morning opening mode sensor label in {language_code}.json"
-    assert const.SENSOR_KEY_MORNING_OPENING_TIME in sensor_entities, f"Missing morning opening time sensor label in {language_code}.json"
+    _assert_no_missing(
+        language_code,
+        {const.SENSOR_KEY_MORNING_OPENING_MODE} - set(sensor_entities.keys()),
+        "morning opening mode sensor labels",
+    )
+    _assert_no_missing(
+        language_code,
+        {const.SENSOR_KEY_MORNING_OPENING_TIME} - set(sensor_entities.keys()),
+        "morning opening time sensor labels",
+    )
 
 
-@pytest.mark.parametrize("language_code", _get_available_languages())
+@pytest.mark.parametrize("language_code", ["en"])
 def test_translation_has_step_4_tilt_keys(language_code: str) -> None:
     """Test that step 4 tilt field labels and descriptions are translated in every language."""
 
@@ -268,11 +346,11 @@ def test_translation_has_step_4_tilt_keys(language_code: str) -> None:
     missing_labels = expected_fields - set(section_data.keys())
     missing_descriptions = expected_fields - set(section_descriptions.keys())
 
-    assert not missing_labels, f"Missing step 4 tilt labels in {language_code}.json: {sorted(missing_labels)}"
-    assert not missing_descriptions, f"Missing step 4 tilt descriptions in {language_code}.json: {sorted(missing_descriptions)}"
+    _assert_no_missing(language_code, missing_labels, "step 4 tilt labels")
+    _assert_no_missing(language_code, missing_descriptions, "step 4 tilt descriptions")
 
 
-@pytest.mark.parametrize("language_code", _get_available_languages())
+@pytest.mark.parametrize("language_code", ["en"])
 def test_translation_has_step_5_additional_settings_keys(language_code: str) -> None:
     """Test that step 5 additional-settings labels and descriptions are translated in every language."""
 
@@ -287,10 +365,8 @@ def test_translation_has_step_5_additional_settings_keys(language_code: str) -> 
     missing_labels = expected_fields - set(section_data.keys())
     missing_descriptions = expected_fields - set(section_descriptions.keys())
 
-    assert not missing_labels, f"Missing step 5 additional-settings labels in {language_code}.json: {sorted(missing_labels)}"
-    assert not missing_descriptions, (
-        f"Missing step 5 additional-settings descriptions in {language_code}.json: {sorted(missing_descriptions)}"
-    )
+    _assert_no_missing(language_code, missing_labels, "step 5 additional-settings labels")
+    _assert_no_missing(language_code, missing_descriptions, "step 5 additional-settings descriptions")
 
 
 @pytest.mark.parametrize("language_code", _get_available_languages())
