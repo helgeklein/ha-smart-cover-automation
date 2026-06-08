@@ -138,8 +138,8 @@
                         "data_description": {
                             "automation_disabled_time_range": "启用后，自动化将在指定的时间范围内停用。",
                             "automation_disabled_time_range_mode": "选择阻止时间范围是使用已配置的绝对时间，还是由外部实体提供。",
-                            "automation_disabled_time_range_start": "自动化应被禁用时段的开始时间。",
-                            "automation_disabled_time_range_end": "自动化应被禁用时段的结束时间。",
+                            "automation_disabled_time_range_start": "自动化应被禁用时段的开始时间。在外部模式下会被忽略。",
+                            "automation_disabled_time_range_end": "自动化应被禁用时段的结束时间。在外部模式下会被忽略。",
                             "automation_disabled_time_range_pre_close_enabled": "启用后，如果预测次日早晨炎热且晴朗，则会在阻止时间段开始时提前关闭遮阳。"
                         }
                     },

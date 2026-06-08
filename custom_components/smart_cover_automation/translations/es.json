@@ -138,8 +138,8 @@
                         "data_description": {
                             "automation_disabled_time_range": "Cuando está activada, la automatización no se ejecutará durante el intervalo especificado.",
                             "automation_disabled_time_range_mode": "Elija si el intervalo bloqueado usa horas absolutas configuradas o lo proporcionan entidades externas.",
-                            "automation_disabled_time_range_start": "Hora de inicio del período en el que la automatización debe estar desactivada.",
-                            "automation_disabled_time_range_end": "Hora de fin del período en el que la automatización debe estar desactivada.",
+                            "automation_disabled_time_range_start": "Hora de inicio del período en el que la automatización debe estar desactivada. Se ignora en modo externo.",
+                            "automation_disabled_time_range_end": "Hora de fin del período en el que la automatización debe estar desactivada. Se ignora en modo externo.",
                             "automation_disabled_time_range_pre_close_enabled": "Cuando está activada, las cubiertas se pre-cierran al inicio del intervalo bloqueado si se prevé que la próxima mañana sea calurosa y soleada."
                         }
                     },

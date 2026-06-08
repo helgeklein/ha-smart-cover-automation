@@ -138,8 +138,8 @@
                         "data_description": {
                             "automation_disabled_time_range": "Wenn aktiviert, läuft die Automatisierung im angegebenen Zeitraum nicht.",
                             "automation_disabled_time_range_mode": "Wählen Sie, ob der blockierte Zeitraum feste absolute Uhrzeiten verwendet oder von externen Entitäten geliefert wird.",
-                            "automation_disabled_time_range_start": "Startzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll.",
-                            "automation_disabled_time_range_end": "Endzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll.",
+                            "automation_disabled_time_range_start": "Startzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll. Wird im externen Modus ignoriert.",
+                            "automation_disabled_time_range_end": "Endzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll. Wird im externen Modus ignoriert.",
                             "automation_disabled_time_range_pre_close_enabled": "Wenn aktiviert, werden Rollläden zu Beginn des blockierten Zeitraums vorab geschlossen, wenn der nächste Morgen heiß und sonnig vorhergesagt ist."
                         }
                     },

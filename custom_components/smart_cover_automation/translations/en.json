@@ -138,8 +138,8 @@
                         "data_description": {
                             "automation_disabled_time_range": "When enabled, the automation will not run during the specified time range.",
                             "automation_disabled_time_range_mode": "Choose whether the blocked time range uses absolute configured times or is supplied by external entities.",
-                            "automation_disabled_time_range_start": "Start time of the period when the automation should be disabled.",
-                            "automation_disabled_time_range_end": "End time of the period when the automation should be disabled.",
+                            "automation_disabled_time_range_start": "Start time of the period when the automation should be disabled. Ignored in external mode.",
+                            "automation_disabled_time_range_end": "End time of the period when the automation should be disabled. Ignored in external mode.",
                             "automation_disabled_time_range_pre_close_enabled": "When enabled, covers are pre-closed at the beginning of the blocked time range if the next morning is forecast to be hot and sunny."
                         }
                     },

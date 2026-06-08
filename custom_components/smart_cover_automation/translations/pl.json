@@ -138,8 +138,8 @@
                         "data_description": {
                             "automation_disabled_time_range": "Po włączeniu automatyzacja nie będzie działać w podanym przedziale czasowym.",
                             "automation_disabled_time_range_mode": "Wybierz, czy zablokowany przedział czasu używa skonfigurowanych godzin absolutnych, czy jest dostarczany przez zewnętrzne encje.",
-                            "automation_disabled_time_range_start": "Czas rozpoczęcia okresu, w którym automatyzacja ma być wyłączona.",
-                            "automation_disabled_time_range_end": "Czas zakończenia okresu, w którym automatyzacja ma być wyłączona.",
+                            "automation_disabled_time_range_start": "Czas rozpoczęcia okresu, w którym automatyzacja ma być wyłączona. Ignorowane w trybie zewnętrznym.",
+                            "automation_disabled_time_range_end": "Czas zakończenia okresu, w którym automatyzacja ma być wyłączona. Ignorowane w trybie zewnętrznym.",
                             "automation_disabled_time_range_pre_close_enabled": "Po włączeniu osłony są wstępnie zamykane na początku zablokowanego przedziału czasu, jeśli następny poranek ma być gorący i słoneczny."
                         }
                     },

@@ -138,8 +138,8 @@
                         "data_description": {
                             "automation_disabled_time_range": "När det är aktiverat körs inte automationen under det angivna tidsintervallet.",
                             "automation_disabled_time_range_mode": "Välj om det blockerade tidsintervallet använder konfigurerade absoluta tider eller levereras av externa entiteter.",
-                            "automation_disabled_time_range_start": "Starttid för perioden då automationen ska vara inaktiverad.",
-                            "automation_disabled_time_range_end": "Sluttid för perioden då automationen ska vara inaktiverad.",
+                            "automation_disabled_time_range_start": "Starttid för perioden då automationen ska vara inaktiverad. Ignoreras i externt läge.",
+                            "automation_disabled_time_range_end": "Sluttid för perioden då automationen ska vara inaktiverad. Ignoreras i externt läge.",
                             "automation_disabled_time_range_pre_close_enabled": "När den är aktiverad för-stängs skydden i början av det blockerade tidsintervallet om nästa morgon väntas bli varm och solig."
                         }
                     },

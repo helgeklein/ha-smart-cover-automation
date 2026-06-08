@@ -138,8 +138,8 @@
                         "data_description": {
                             "automation_disabled_time_range": "Lorsque cette option est activée, l'automatisation ne fonctionne pas pendant la plage horaire indiquée.",
                             "automation_disabled_time_range_mode": "Choisissez si la plage bloquée utilise des heures absolues configurées ou est fournie par des entités externes.",
-                            "automation_disabled_time_range_start": "Heure de début de la période pendant laquelle l'automatisation doit être désactivée.",
-                            "automation_disabled_time_range_end": "Heure de fin de la période pendant laquelle l'automatisation doit être désactivée.",
+                            "automation_disabled_time_range_start": "Heure de début de la période pendant laquelle l'automatisation doit être désactivée. Ignorée en mode externe.",
+                            "automation_disabled_time_range_end": "Heure de fin de la période pendant laquelle l'automatisation doit être désactivée. Ignorée en mode externe.",
                             "automation_disabled_time_range_pre_close_enabled": "Lorsque cette option est activée, les protections sont pré-fermées au début de la plage bloquée si le lendemain matin doit être chaud et ensoleillé."
                         }
                     },
