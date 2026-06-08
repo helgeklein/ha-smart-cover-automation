@@ -825,6 +825,31 @@ class TestAsyncMigrateTemperatureThresholdKeys:
         assert updated_options[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value] == 24.0
         assert updated_options[ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value] == 13.0
 
+    async def test_migrates_legacy_option_key_without_overwriting_existing_daily_max_threshold(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Legacy threshold migration should preserve an explicitly configured daily max threshold."""
+
+        mock_entry.options = {
+            const.LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD: 24.0,
+            ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 27.0,
+            ConfKeys.COVERS.value: ["cover.test"],
+        }
+
+        with (
+            patch("custom_components.smart_cover_automation.er.async_get", return_value=mock_registry),
+            patch("custom_components.smart_cover_automation.er.async_entries_for_config_entry", return_value=[]),
+        ):
+            await _async_migrate_temperature_threshold_keys(mock_hass, mock_entry)
+
+        updated_options = mock_hass.config_entries.async_update_entry.call_args.kwargs["options"]
+        assert updated_options[ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value] == 27.0
+        assert updated_options[ConfKeys.DAILY_MIN_TEMPERATURE_THRESHOLD.value] == 13.0
+        assert const.LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD not in updated_options
+
     async def test_migrates_legacy_threshold_entity_unique_id(
         self,
         mock_hass: MagicMock,

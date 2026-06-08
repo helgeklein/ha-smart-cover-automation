@@ -307,6 +307,40 @@ class TestIntegrationSetup:
         mock_coordinator_class.assert_called_once_with(mock_hass_with_spec, mock_config_entry_basic)
         mock_coordinator.async_remove_runtime_state.assert_called_once_with()
 
+    async def test_remove_entry_logs_expected_errors(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
+        """Expected persisted-state removal errors should be logged and swallowed."""
+
+        with (
+            patch("custom_components.smart_cover_automation.Log") as mock_log_class,
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_logger = MagicMock()
+            mock_log_class.return_value = mock_logger
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_remove_runtime_state = AsyncMock(side_effect=OSError("cannot remove"))
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_remove_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        mock_logger.error.assert_called_once()
+
+    async def test_remove_entry_logs_unexpected_errors(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
+        """Unexpected persisted-state removal errors should be logged with exception details."""
+
+        with (
+            patch("custom_components.smart_cover_automation.Log") as mock_log_class,
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_logger = MagicMock()
+            mock_log_class.return_value = mock_logger
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_remove_runtime_state = AsyncMock(side_effect=RuntimeError("boom"))
+            mock_coordinator_class.return_value = mock_coordinator
+
+            await async_remove_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        mock_logger.exception.assert_called_once()
+
     async def test_runtime_data_setup(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test that runtime data is properly configured during setup.
 
