@@ -130,14 +130,16 @@
                         "name": "Blockerat tidsintervall",
                         "data": {
                             "automation_disabled_time_range": "Inaktivera automation i tidsintervall:",
+                            "automation_disabled_time_range_mode": "Blockerat tidsintervall: läge:",
                             "automation_disabled_time_range_start": "Inaktivera från:",
                             "automation_disabled_time_range_end": "Inaktivera till:",
                             "automation_disabled_time_range_pre_close_enabled": "Förstäng för morgondagens värmeskydd:"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "När det är aktiverat körs inte automationen under det angivna tidsintervallet.",
-                            "automation_disabled_time_range_start": "Starttid för perioden då automationen ska vara inaktiverad.",
-                            "automation_disabled_time_range_end": "Sluttid för perioden då automationen ska vara inaktiverad.",
+                            "automation_disabled_time_range_mode": "Välj om det blockerade tidsintervallet använder konfigurerade absoluta tider eller levereras av externa entiteter.",
+                            "automation_disabled_time_range_start": "Starttid för perioden då automationen ska vara inaktiverad. Ignoreras i externt läge.",
+                            "automation_disabled_time_range_end": "Sluttid för perioden då automationen ska vara inaktiverad. Ignoreras i externt läge.",
                             "automation_disabled_time_range_pre_close_enabled": "När den är aktiverad för-stängs skydden i början av det blockerade tidsintervallet om nästa morgon väntas bli varm och solig."
                         }
                     },
@@ -223,7 +225,8 @@
             "automation_disabled_time_range": {
                 "name": "Tidsintervall: inaktiverat",
                 "state": {
-                    "off": "Av"
+                    "off": "Av",
+                    "external": "Extern"
                 }
             },
             "close_covers_after_sunset_delay": {
@@ -252,6 +255,12 @@
             }
         },
         "time": {
+            "automation_disabled_time_range_external_start": {
+                "name": "Blockerat tidsintervall: extern starttid"
+            },
+            "automation_disabled_time_range_external_end": {
+                "name": "Blockerat tidsintervall: extern sluttid"
+            },
             "evening_closure_external_time": {
                 "name": "Kvällsstängning: extern tid"
             },
@@ -425,6 +434,12 @@
                 "relative_to_sunrise": "Relativt soluppgången",
                 "fixed_time": "Fast tidpunkt",
                 "external": "Extern (tid anges av en entitet)"
+            }
+        },
+        "blocked_time_range_mode": {
+            "options": {
+                "fixed_time": "Absolut tid",
+                "external": "Extern (tider anges av entiteter)"
             }
         }
     }

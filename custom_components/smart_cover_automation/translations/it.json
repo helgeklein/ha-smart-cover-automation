@@ -130,14 +130,16 @@
                         "name": "Intervallo orario bloccato",
                         "data": {
                             "automation_disabled_time_range": "Disattiva l'automazione in un intervallo orario:",
+                            "automation_disabled_time_range_mode": "Intervallo bloccato: modalità:",
                             "automation_disabled_time_range_start": "Disattiva da:",
                             "automation_disabled_time_range_end": "Disattiva fino a:",
                             "automation_disabled_time_range_pre_close_enabled": "Pre-chiusura per protezione dal caldo del mattino successivo:"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "Quando è attivata, l'automazione non viene eseguita durante l'intervallo specificato.",
-                            "automation_disabled_time_range_start": "Ora di inizio del periodo in cui l'automazione deve essere disattivata.",
-                            "automation_disabled_time_range_end": "Ora di fine del periodo in cui l'automazione deve essere disattivata.",
+                            "automation_disabled_time_range_mode": "Scegli se l'intervallo bloccato usa orari assoluti configurati o è fornito da entità esterne.",
+                            "automation_disabled_time_range_start": "Ora di inizio del periodo in cui l'automazione deve essere disattivata. Ignorata in modalità esterna.",
+                            "automation_disabled_time_range_end": "Ora di fine del periodo in cui l'automazione deve essere disattivata. Ignorata in modalità esterna.",
                             "automation_disabled_time_range_pre_close_enabled": "Quando è attivata, le coperture vengono pre-chiuse all'inizio dell'intervallo bloccato se il mattino successivo è previsto caldo e soleggiato."
                         }
                     },
@@ -223,7 +225,8 @@
             "automation_disabled_time_range": {
                 "name": "Intervallo orario: disattivato",
                 "state": {
-                    "off": "Disattivato"
+                    "off": "Disattivato",
+                    "external": "Esterno"
                 }
             },
             "close_covers_after_sunset_delay": {
@@ -252,6 +255,12 @@
             }
         },
         "time": {
+            "automation_disabled_time_range_external_start": {
+                "name": "Intervallo bloccato: ora esterna di inizio"
+            },
+            "automation_disabled_time_range_external_end": {
+                "name": "Intervallo bloccato: ora esterna di fine"
+            },
             "evening_closure_external_time": {
                 "name": "Chiusura serale: ora esterna"
             },
@@ -425,6 +434,12 @@
                 "relative_to_sunrise": "Relativa all'alba",
                 "fixed_time": "Orario fisso",
                 "external": "Esterno (orario fornito da un'entità)"
+            }
+        },
+        "blocked_time_range_mode": {
+            "options": {
+                "fixed_time": "Ora assoluta",
+                "external": "Esterno (orari forniti da entità)"
             }
         }
     }

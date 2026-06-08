@@ -31,6 +31,7 @@ from __future__ import annotations
 from dataclasses import fields
 from datetime import time
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 
@@ -38,11 +39,14 @@ from custom_components.smart_cover_automation.config import (
     CONF_SPECS,
     ConfKeys,
     ResolvedConfig,
+    _ConfSpec,
+    _Converters,
     _field_name,
     resolve,
+    resolve_effective_blocked_time_range_bounds,
     resolve_entry,
 )
-from custom_components.smart_cover_automation.const import ReopeningMode
+from custom_components.smart_cover_automation.const import BlockedTimeRangeMode, ReopeningMode
 
 # =============================================================================
 # Configuration Registry and Contract Validation Tests
@@ -133,6 +137,12 @@ class TestConfigurationRegistry:
 
         # Assert that no configuration options have None defaults
         assert not none_defaults, f"None defaults found in CONF_SPECS: {none_defaults}"
+
+    def test_conf_spec_rejects_none_default(self):
+        """Configuration specs should reject None defaults at construction time."""
+
+        with pytest.raises(ValueError, match="must not be None"):
+            _ConfSpec(default=None, converter=str)
 
     def test_spec_defaults_are_valid_types(self):
         """Test that all CONF_SPECS default values can be processed by their converters.
@@ -364,6 +374,48 @@ class TestConfigurationResolution:
         )
 
         assert rs.evening_closure_max_closure == CONF_SPECS[ConfKeys.EVENING_CLOSURE_MAX_CLOSURE].default
+
+    def test_resolve_raises_when_resolved_config_fields_are_missing(self):
+        """Configuration resolution should fail clearly when the dataclass contract is broken."""
+
+        actual_fields = fields(ResolvedConfig)
+        fake_fields = actual_fields + (SimpleNamespace(name="missing_field"),)
+
+        with patch("custom_components.smart_cover_automation.config.fields", return_value=fake_fields):
+            with pytest.raises(RuntimeError, match="missing_field"):
+                resolve({})
+
+    def test_resolve_effective_blocked_time_range_bounds_handles_invalid_external_values(self):
+        """Invalid external blocked-time values should degrade to missing bounds."""
+
+        resolved = resolve({ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: BlockedTimeRangeMode.EXTERNAL.value})
+
+        start_time, end_time = resolve_effective_blocked_time_range_bounds(
+            resolved,
+            {
+                "automation_disabled_time_range_external_start": "not-a-time",
+                "automation_disabled_time_range_external_end": "06:15:00",
+            },
+        )
+
+        assert start_time is None
+        assert end_time == time(6, 15)
+
+    def test_resolve_effective_blocked_time_range_bounds_handles_invalid_external_end_value(self):
+        """Invalid external blocked-time end values should not break bound resolution."""
+
+        resolved = resolve({ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: BlockedTimeRangeMode.EXTERNAL.value})
+
+        start_time, end_time = resolve_effective_blocked_time_range_bounds(
+            resolved,
+            {
+                "automation_disabled_time_range_external_start": "22:30:00",
+                "automation_disabled_time_range_external_end": object(),
+            },
+        )
+
+        assert start_time == time(22, 30)
+        assert end_time is None
 
 
 # =============================================================================
@@ -699,3 +751,8 @@ class TestDurationConverter:
         assert spec.converter({"minutes": 45}) == 2700
         assert spec.converter(3600) == 3600
         assert spec.converter({"hours": 1, "minutes": 15}) == 4500
+
+    def test_duration_converter_returns_none_for_unsupported_input_type(self):
+        """Unsupported duration input types currently resolve to None."""
+
+        assert _Converters.to_duration_seconds("not-a-duration") is None

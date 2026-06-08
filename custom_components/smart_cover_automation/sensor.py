@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorEntityDescription
 from homeassistant.const import EntityCategory, UnitOfTemperature
 
+from .config import resolve_effective_blocked_time_range_bounds
 from .const import (
     SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
     SENSOR_KEY_EVENING_CLOSURE_MODE,
@@ -188,10 +189,14 @@ class AutomationDisabledTimeRangeSensor(IntegrationSensor):
             # Return translation key that will be translated to "Off" in UI
             return "off"
 
-        # Format times as HH:MM
-        start_time = resolved.automation_disabled_time_range_start
-        end_time = resolved.automation_disabled_time_range_end
+        start_time, end_time = resolve_effective_blocked_time_range_bounds(
+            resolved,
+            dict(self.coordinator.config_entry.options or {}),
+        )
+        if start_time is None or end_time is None:
+            return "external"
 
+        # Format times as HH:MM
         start_str = f"{start_time.hour:02d}:{start_time.minute:02d}"
         end_str = f"{end_time.hour:02d}:{end_time.minute:02d}"
 

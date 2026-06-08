@@ -130,14 +130,16 @@
                         "name": "Blockierter Zeitraum",
                         "data": {
                             "automation_disabled_time_range": "Automatisierung im Zeitraum deaktivieren:",
+                            "automation_disabled_time_range_mode": "Blockierter Zeitraum: Modus:",
                             "automation_disabled_time_range_start": "Deaktivieren ab:",
                             "automation_disabled_time_range_end": "Deaktivieren bis:",
                             "automation_disabled_time_range_pre_close_enabled": "Vorab schließen für Hitzeschutz am nächsten Morgen:"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "Wenn aktiviert, läuft die Automatisierung im angegebenen Zeitraum nicht.",
-                            "automation_disabled_time_range_start": "Startzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll.",
-                            "automation_disabled_time_range_end": "Endzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll.",
+                            "automation_disabled_time_range_mode": "Wählen Sie, ob der blockierte Zeitraum feste absolute Uhrzeiten verwendet oder von externen Entitäten geliefert wird.",
+                            "automation_disabled_time_range_start": "Startzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll. Wird im externen Modus ignoriert.",
+                            "automation_disabled_time_range_end": "Endzeit des Zeitraums, in dem die Automatisierung deaktiviert sein soll. Wird im externen Modus ignoriert.",
                             "automation_disabled_time_range_pre_close_enabled": "Wenn aktiviert, werden Rollläden zu Beginn des blockierten Zeitraums vorab geschlossen, wenn der nächste Morgen heiß und sonnig vorhergesagt ist."
                         }
                     },
@@ -223,7 +225,8 @@
             "automation_disabled_time_range": {
                 "name": "Zeitraum: deaktiviert",
                 "state": {
-                    "off": "Aus"
+                    "off": "Aus",
+                    "external": "Extern"
                 }
             },
             "close_covers_after_sunset_delay": {
@@ -252,6 +255,12 @@
             }
         },
         "time": {
+            "automation_disabled_time_range_external_start": {
+                "name": "Blockierter Zeitraum: externe Startzeit"
+            },
+            "automation_disabled_time_range_external_end": {
+                "name": "Blockierter Zeitraum: externe Endzeit"
+            },
             "evening_closure_external_time": {
                 "name": "Abendschließen: externe Zeit"
             },
@@ -425,6 +434,12 @@
                 "relative_to_sunrise": "Relativ zum Sonnenaufgang",
                 "fixed_time": "Feste Uhrzeit",
                 "external": "Extern (Zeit wird von einer Entität geliefert)"
+            }
+        },
+        "blocked_time_range_mode": {
+            "options": {
+                "fixed_time": "Absolute Uhrzeit",
+                "external": "Extern (Zeiten werden von Entitäten geliefert)"
             }
         }
     }

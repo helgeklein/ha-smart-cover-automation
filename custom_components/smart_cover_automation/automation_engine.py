@@ -14,7 +14,7 @@ from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.util import dt as dt_util
 
 from . import const
-from .config import ResolvedConfig
+from .config import ResolvedConfig, resolve_effective_blocked_time_range_bounds
 from .cover_automation import CoverAutomation, CoverExecutionPlan, SensorData
 from .cover_position_history import CoverPositionHistoryManager
 from .data import CoordinatorData
@@ -104,6 +104,23 @@ class AutomationEngine:
         self._pending_cover_executions: dict[str, ScheduledCoverExecution] = {}
         self._schedule_sequence = 0
         self._run_generation = 0
+
+    def _get_effective_blocked_time_range_bounds(self) -> tuple[dt_time | None, dt_time | None]:
+        """Return the effective blocked-time boundaries for the active mode."""
+
+        return resolve_effective_blocked_time_range_bounds(self.resolved, self.config)
+
+    def _get_required_blocked_time_range_bounds(self) -> tuple[dt_time, dt_time] | None:
+        """Return effective blocked-time boundaries, or None when unavailable."""
+
+        start_time, end_time = self._get_effective_blocked_time_range_bounds()
+        if start_time is None or end_time is None:
+            self._logger.debug(
+                "Blocked time range external mode active but start/end time is missing or invalid; treating the range as inactive"
+            )
+            return None
+
+        return (start_time, end_time)
 
     def export_closed_by_automation_markers(self) -> dict[str, str]:
         """Return automation-closed markers for persistence."""
@@ -243,6 +260,7 @@ class AutomationEngine:
         self._logger.info(f"Sensor states: {str(sensor_states)}")
 
         # Log global settings
+        blocked_time_range_start, blocked_time_range_end = self._get_effective_blocked_time_range_bounds()
         global_settings = {
             "lock_mode": lock_mode,
             "covers_min_position_delta": self.resolved.covers_min_position_delta,
@@ -252,8 +270,13 @@ class AutomationEngine:
             "daily_min_temperature_threshold": self.resolved.daily_min_temperature_threshold,
             "manual_override_duration": self.resolved.manual_override_duration,
             "automation_disabled_time_range": self.resolved.automation_disabled_time_range,
-            "automation_disabled_time_range_start": self.resolved.automation_disabled_time_range_start.strftime("%H:%M:%S"),
-            "automation_disabled_time_range_end": self.resolved.automation_disabled_time_range_end.strftime("%H:%M:%S"),
+            "automation_disabled_time_range_mode": self.resolved.automation_disabled_time_range_mode,
+            "automation_disabled_time_range_start": (
+                blocked_time_range_start.strftime("%H:%M:%S") if blocked_time_range_start is not None else None
+            ),
+            "automation_disabled_time_range_end": (
+                blocked_time_range_end.strftime("%H:%M:%S") if blocked_time_range_end is not None else None
+            ),
             "automation_disabled_time_range_pre_close_enabled": self.resolved.automation_disabled_time_range_pre_close_enabled,
             "evening_closure_enabled": self.resolved.evening_closure_enabled,
             "evening_closure_mode": self.resolved.evening_closure_mode,
@@ -457,21 +480,31 @@ class AutomationEngine:
     def _get_blocked_time_range_end_datetime(self, reference_datetime: datetime) -> datetime:
         """Return the datetime when the current blocked interval ends."""
 
+        bounds = self._get_required_blocked_time_range_bounds()
+        if bounds is None:
+            raise ValueError("Blocked time range boundaries are unavailable")
+
+        period_start, period_end = bounds
         end_date = reference_datetime.date()
-        if self.resolved.automation_disabled_time_range_start >= self.resolved.automation_disabled_time_range_end:
+        if period_start >= period_end:
             end_date += timedelta(days=1)
 
-        return self._get_local_datetime_for_date(end_date, self.resolved.automation_disabled_time_range_end)
+        return self._get_local_datetime_for_date(end_date, period_end)
 
     def _get_blocked_time_range_start_datetime(self, reference_datetime: datetime) -> datetime:
         """Return the datetime when the current blocked interval started."""
 
+        bounds = self._get_required_blocked_time_range_bounds()
+        if bounds is None:
+            raise ValueError("Blocked time range boundaries are unavailable")
+
+        period_start, period_end = bounds
         start_date = reference_datetime.date()
-        if self.resolved.automation_disabled_time_range_start >= self.resolved.automation_disabled_time_range_end:
-            if reference_datetime.time() < self.resolved.automation_disabled_time_range_end:
+        if period_start >= period_end:
+            if reference_datetime.time() < period_end:
                 start_date -= timedelta(days=1)
 
-        return self._get_local_datetime_for_date(start_date, self.resolved.automation_disabled_time_range_start)
+        return self._get_local_datetime_for_date(start_date, period_start)
 
     def _is_in_blocked_time_range_pre_close_window(self) -> bool:
         """Return whether startup is still close enough to blocked-range start to run pre-close."""
@@ -1000,7 +1033,11 @@ class AutomationEngine:
 
         # Get the start and end times
         period_start = self.resolved.automation_disabled_time_range_start
-        period_end = self.resolved.automation_disabled_time_range_end
+        bounds = self._get_required_blocked_time_range_bounds()
+        if bounds is None:
+            return (False, "")
+
+        period_start, period_end = bounds
 
         # Are we in a disabled period?
         in_disabled_period = False

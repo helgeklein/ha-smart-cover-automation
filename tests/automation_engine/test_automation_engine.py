@@ -91,6 +91,39 @@ class TestAutomationEngineInitialization:
         assert len(engine.resolved.covers) == 2
         assert "cover.living_room" in engine.resolved.covers
 
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"date": 123, "temp_max": 25.0},
+            {"date": "2026-05-24", "temp_max": "warm"},
+            {"date": "2026-05-24", "temp_max": 25.0, "temp_min": "cool"},
+            {"date": "not-a-date", "temp_max": 25.0},
+        ],
+    )
+    def test_restore_current_day_temperature_extrema_invalid_payload_clears_state(
+        self,
+        mock_ha_interface,
+        mock_logger,
+        payload,
+    ):
+        """Invalid persisted extrema payloads should clear the cached state."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+        }
+        engine = AutomationEngine(
+            resolved=resolve(config),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        engine._current_day_temperature_extrema = object()
+
+        engine.restore_current_day_temperature_extrema(payload)
+
+        assert engine._current_day_temperature_extrema is None
+
 
 class TestGatherSensorData:
     """Test _gather_sensor_data method."""
@@ -672,6 +705,20 @@ class TestGatherSensorData:
 
         assert result == datetime(2026, 5, 23, 22, 0, tzinfo=timezone.utc)
 
+    def test_get_blocked_time_range_start_datetime_raises_when_external_bounds_missing(self, mock_ha_interface, mock_logger):
+        """Blocked-time start lookup should fail clearly when external bounds are unavailable."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.EXTERNAL,
+        }
+        engine = AutomationEngine(resolved=resolve(config), config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+
+        with pytest.raises(ValueError, match="unavailable"):
+            engine._get_blocked_time_range_start_datetime(datetime(2026, 5, 24, 5, 0, tzinfo=timezone.utc))
+
     async def test_run_blocked_time_range_pre_close_skips_when_forecast_does_not_match(self, mock_ha_interface, mock_logger):
         """Blocked-time pre-close should skip cover processing when the next morning is not both hot and sunny."""
 
@@ -747,6 +794,20 @@ class TestGatherSensorData:
         result = engine._get_blocked_time_range_end_datetime(reference_time)
 
         assert result == expected_date
+
+    def test_get_blocked_time_range_end_datetime_raises_when_external_bounds_missing(self, mock_ha_interface, mock_logger):
+        """Blocked-time end lookup should fail clearly when external bounds are unavailable."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.EXTERNAL,
+        }
+        engine = AutomationEngine(resolved=resolve(config), config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+
+        with pytest.raises(ValueError, match="unavailable"):
+            engine._get_blocked_time_range_end_datetime(datetime(2026, 5, 24, 22, 0, tzinfo=timezone.utc))
 
     async def test_run_blocked_time_range_pre_close_processes_covers_when_forecast_matches(self, mock_ha_interface, mock_logger):
         """Blocked-time pre-close should process covers when the forecast snapshot requires heat protection."""
@@ -1123,6 +1184,49 @@ class TestTimeCalculationHelpers:
         )
 
         assert engine._get_morning_opening_time_for_date(date(2025, 11, 5)) is None
+
+    def test_in_time_period_automation_disabled_uses_external_bounds(self, mock_ha_interface, mock_logger, freezer):
+        """Blocked-time checks should honor external start and end times when configured."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.EXTERNAL,
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START: "22:00:00",
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END: "06:00:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        freezer.move_to("2025-11-05 23:15:00")
+        assert engine._in_time_period_automation_disabled() == (True, "22:00:00 - 06:00:00")
+
+    def test_in_time_period_automation_disabled_returns_inactive_when_external_bounds_invalid(self, mock_ha_interface, mock_logger):
+        """Invalid external blocked-time boundaries should disable blocked-time evaluation safely."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.EXTERNAL,
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START: "not-a-time",
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END: "06:00:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        assert engine._in_time_period_automation_disabled() == (False, "")
 
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
     def test_get_morning_opening_time_for_date_relative_returns_none_when_sunrise_unavailable(

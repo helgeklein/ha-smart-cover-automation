@@ -222,3 +222,33 @@ class TestUnloadServiceCleanup:
         assert mock_hass_with_spec.data[DOMAIN]["other_data"] == "should_be_preserved"
         # But coordinators should be removed
         assert DATA_COORDINATORS not in mock_hass_with_spec.data[DOMAIN]
+
+    async def test_unload_returns_false_on_type_error(self, mock_hass_with_spec) -> None:
+        """Expected unload errors should be logged and reported as failure."""
+
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+        mock_hass_with_spec.config_entries.async_unload_platforms = AsyncMock(side_effect=TypeError("bad unload"))
+
+        with patch("custom_components.smart_cover_automation.Log") as mock_log_class:
+            mock_logger = MagicMock()
+            mock_log_class.return_value = mock_logger
+
+            result = await async_unload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+        assert result is False
+        mock_logger.error.assert_called_once()
+
+    async def test_unload_returns_false_on_unexpected_exception(self, mock_hass_with_spec) -> None:
+        """Unexpected unload errors should be logged with exception details and reported as failure."""
+
+        mock_config_entry = MockConfigEntry(create_temperature_config())
+        mock_hass_with_spec.config_entries.async_unload_platforms = AsyncMock(side_effect=RuntimeError("boom"))
+
+        with patch("custom_components.smart_cover_automation.Log") as mock_log_class:
+            mock_logger = MagicMock()
+            mock_log_class.return_value = mock_logger
+
+            result = await async_unload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry))
+
+        assert result is False
+        mock_logger.exception.assert_called_once()

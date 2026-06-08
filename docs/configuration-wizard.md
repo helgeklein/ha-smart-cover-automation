@@ -163,6 +163,15 @@ Blocked time range settings:
 - **Disable from:** Start time of the time period in which the automation should be inactive.
 - **Disable until:** End time of the time period in which the automation should be inactive.
 
+*New in 4.6:*
+
+- **Blocked time range: mode:** Specifies the blocked time range:
+  - **Absolute time:** A fixed time of day.
+  - **External:** Set the blocked time range from your own automation.
+    - The integration creates two additional entities that receive the start and end of the blocked time range.
+    - These entities are fully managed, i.e., they're deleted again if the mode is changed away from `external`.
+    - If either of these entities has no valid time, no time range is blocked.
+
 *New in 4.3:*
 
 - **Pre-close for next-morning heat protection:** In the evening before a hot sunny day, pre-close covers the sun will shine on the next morning.

@@ -130,14 +130,16 @@
                         "name": "已阻止的时间范围",
                         "data": {
                             "automation_disabled_time_range": "在时间范围内禁用自动化：",
+                            "automation_disabled_time_range_mode": "阻止时间范围：模式：",
                             "automation_disabled_time_range_start": "禁用开始时间：",
                             "automation_disabled_time_range_end": "禁用结束时间：",
                             "automation_disabled_time_range_pre_close_enabled": "为次日早晨隔热提前关闭："
                         },
                         "data_description": {
                             "automation_disabled_time_range": "启用后，自动化将在指定的时间范围内停用。",
-                            "automation_disabled_time_range_start": "自动化应被禁用时段的开始时间。",
-                            "automation_disabled_time_range_end": "自动化应被禁用时段的结束时间。",
+                            "automation_disabled_time_range_mode": "选择阻止时间范围是使用已配置的绝对时间，还是由外部实体提供。",
+                            "automation_disabled_time_range_start": "自动化应被禁用时段的开始时间。在外部模式下会被忽略。",
+                            "automation_disabled_time_range_end": "自动化应被禁用时段的结束时间。在外部模式下会被忽略。",
                             "automation_disabled_time_range_pre_close_enabled": "启用后，如果预测次日早晨炎热且晴朗，则会在阻止时间段开始时提前关闭遮阳。"
                         }
                     },
@@ -223,7 +225,8 @@
             "automation_disabled_time_range": {
                 "name": "时间范围：已禁用",
                 "state": {
-                    "off": "关闭"
+                    "off": "关闭",
+                    "external": "外部"
                 }
             },
             "close_covers_after_sunset_delay": {
@@ -252,6 +255,12 @@
             }
         },
         "time": {
+            "automation_disabled_time_range_external_start": {
+                "name": "阻止时间范围：外部开始时间"
+            },
+            "automation_disabled_time_range_external_end": {
+                "name": "阻止时间范围：外部结束时间"
+            },
             "evening_closure_external_time": {
                 "name": "晚间关闭：外部时间"
             },
@@ -424,6 +433,12 @@
             "options": {
                 "relative_to_sunrise": "相对于日出",
                 "fixed_time": "固定时刻",
+                "external": "外部（时间由实体提供）"
+            }
+        },
+        "blocked_time_range_mode": {
+            "options": {
+                "fixed_time": "绝对时间",
                 "external": "外部（时间由实体提供）"
             }
         }

@@ -130,14 +130,16 @@
                         "name": "Geblokkeerd tijdvenster",
                         "data": {
                             "automation_disabled_time_range": "Automatisering uitschakelen binnen tijdvenster:",
+                            "automation_disabled_time_range_mode": "Geblokkeerd tijdvenster: modus:",
                             "automation_disabled_time_range_start": "Uitschakelen vanaf:",
                             "automation_disabled_time_range_end": "Uitschakelen tot:",
                             "automation_disabled_time_range_pre_close_enabled": "Vooraf sluiten voor hittebescherming morgenochtend:"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "Wanneer ingeschakeld, draait de automatisering niet tijdens het opgegeven tijdvenster.",
-                            "automation_disabled_time_range_start": "Starttijd van de periode waarin de automatisering moet zijn uitgeschakeld.",
-                            "automation_disabled_time_range_end": "Eindtijd van de periode waarin de automatisering moet zijn uitgeschakeld.",
+                            "automation_disabled_time_range_mode": "Kies of het geblokkeerde tijdvenster geconfigureerde absolute tijden gebruikt of door externe entiteiten wordt geleverd.",
+                            "automation_disabled_time_range_start": "Starttijd van de periode waarin de automatisering moet zijn uitgeschakeld. Wordt genegeerd in externe modus.",
+                            "automation_disabled_time_range_end": "Eindtijd van de periode waarin de automatisering moet zijn uitgeschakeld. Wordt genegeerd in externe modus.",
                             "automation_disabled_time_range_pre_close_enabled": "Wanneer ingeschakeld, worden afdekkingen aan het begin van het geblokkeerde tijdvenster vooraf gesloten als de volgende ochtend heet en zonnig wordt voorspeld."
                         }
                     },
@@ -223,7 +225,8 @@
             "automation_disabled_time_range": {
                 "name": "Tijdvenster: uitgeschakeld",
                 "state": {
-                    "off": "Uit"
+                    "off": "Uit",
+                    "external": "Extern"
                 }
             },
             "close_covers_after_sunset_delay": {
@@ -252,6 +255,12 @@
             }
         },
         "time": {
+            "automation_disabled_time_range_external_start": {
+                "name": "Geblokkeerd tijdvenster: externe starttijd"
+            },
+            "automation_disabled_time_range_external_end": {
+                "name": "Geblokkeerd tijdvenster: externe eindtijd"
+            },
             "evening_closure_external_time": {
                 "name": "Avondsluiting: externe tijd"
             },
@@ -425,6 +434,12 @@
                 "relative_to_sunrise": "Relatief ten opzichte van zonsopgang",
                 "fixed_time": "Vast tijdstip",
                 "external": "Extern (tijd aangeleverd door een entiteit)"
+            }
+        },
+        "blocked_time_range_mode": {
+            "options": {
+                "fixed_time": "Absolute tijd",
+                "external": "Extern (tijden aangeleverd door entiteiten)"
             }
         }
     }

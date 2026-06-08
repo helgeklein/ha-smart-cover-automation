@@ -1453,6 +1453,34 @@ class TestOptionsFlowHelperMethods:
 
         assert const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME not in merged
 
+    def test_cleanup_external_blocked_time_range_keys_keep_values_in_external_mode(self) -> None:
+        """External blocked-time boundaries should be preserved while external mode is active."""
+
+        merged = {
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.EXTERNAL,
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START: "22:15:00",
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END: "06:30:00",
+        }
+
+        OptionsFlowHandler._cleanup_external_blocked_time_range_keys(merged)
+
+        assert const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START in merged
+        assert const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END in merged
+
+    def test_cleanup_external_blocked_time_range_keys_remove_values_when_mode_changes(self) -> None:
+        """External blocked-time boundaries should be removed once mode is no longer external."""
+
+        merged = {
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.FIXED_TIME,
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START: "22:15:00",
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END: "06:30:00",
+        }
+
+        OptionsFlowHandler._cleanup_external_blocked_time_range_keys(merged)
+
+        assert const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START not in merged
+        assert const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END not in merged
+
     async def test_finalize_and_save_removes_stale_evening_external_time_when_mode_changes(
         self,
         mock_hass_with_covers: MagicMock,
@@ -1746,6 +1774,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
         section_schema = schema.schema[section_key].schema.schema
         section_defaults = {key.schema: key.default() for key in section_schema if hasattr(key, "schema") and hasattr(key, "default")}
 
+        assert section_defaults[ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value] == const.BlockedTimeRangeMode.FIXED_TIME
         assert section_defaults[ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value] is True
 
     async def test_step_6_saves_blocked_time_range_pre_close_toggle(self, mock_hass_with_covers: MagicMock) -> None:
@@ -1775,6 +1804,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
             {
                 const.STEP_6_SECTION_TIME_RANGE: {
                     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+                    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.FIXED_TIME,
                     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value: "22:00:00",
                     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value: "06:00:00",
                     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value: False,
@@ -1783,8 +1813,37 @@ class TestOptionsFlowStep6CloseAfterSunset:
         )
         result_dict = _as_dict(result)
 
-        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        assert result_dict["data"][ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value] == const.BlockedTimeRangeMode.FIXED_TIME
         assert result_dict["data"][ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value] is False
+
+    async def test_finalize_and_save_removes_stale_blocked_time_external_values_when_mode_changes(
+        self,
+        mock_hass_with_covers: MagicMock,
+    ) -> None:
+        """Finalizing the flow should drop stale external blocked-time values after mode changes."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.EXTERNAL,
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START: "22:15:00",
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END: "06:30:00",
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+        flow._config_data = {
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.FIXED_TIME,
+        }
+
+        result = flow._finalize_and_save()
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        assert result_dict["data"][ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value] == const.BlockedTimeRangeMode.FIXED_TIME
+        assert const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START not in result_dict["data"]
+        assert const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END not in result_dict["data"]
 
     #
     # test_step_6_saves_close_after_sunset_settings

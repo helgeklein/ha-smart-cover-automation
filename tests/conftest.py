@@ -14,6 +14,8 @@ Key components:
 
 from __future__ import annotations
 
+import os
+import warnings
 from datetime import date, datetime, time, timezone
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -43,6 +45,14 @@ from custom_components.smart_cover_automation.const import (
 # Enable pytest-homeassistant-custom-component plugin
 # This allows tests to use the real Home Assistant instance fixture
 pytest_plugins = "pytest_homeassistant_custom_component"
+
+
+def pytest_configure() -> None:
+    """Apply CI-specific pytest behavior."""
+
+    if os.getenv("CI"):
+        warnings.simplefilter("error")
+
 
 # Test data constants - these provide consistent entity IDs across all tests
 # Used for temperature-based and sun-based automation testing

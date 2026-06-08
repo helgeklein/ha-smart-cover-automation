@@ -130,14 +130,16 @@
                         "name": "Intervalo de tempo bloqueado",
                         "data": {
                             "automation_disabled_time_range": "Desativar a automação num intervalo de tempo:",
+                            "automation_disabled_time_range_mode": "Intervalo bloqueado: modo:",
                             "automation_disabled_time_range_start": "Desativar de:",
                             "automation_disabled_time_range_end": "Desativar até:",
                             "automation_disabled_time_range_pre_close_enabled": "Pré-fecho para proteção térmica na manhã seguinte:"
                         },
                         "data_description": {
                             "automation_disabled_time_range": "Quando ativada, a automação não será executada durante o intervalo de tempo especificado.",
-                            "automation_disabled_time_range_start": "Hora de início do período em que a automação deve ser desativada.",
-                            "automation_disabled_time_range_end": "Hora de fim do período em que a automação deve ser desativada.",
+                            "automation_disabled_time_range_mode": "Escolha se o intervalo bloqueado usa horas absolutas configuradas ou é fornecido por entidades externas.",
+                            "automation_disabled_time_range_start": "Hora de início do período em que a automação deve ser desativada. Ignorada no modo externo.",
+                            "automation_disabled_time_range_end": "Hora de fim do período em que a automação deve ser desativada. Ignorada no modo externo.",
                             "automation_disabled_time_range_pre_close_enabled": "Quando ativada, as coberturas são pré-fechadas no início do intervalo bloqueado se a manhã seguinte estiver prevista como quente e ensolarada."
                         }
                     },
@@ -223,7 +225,8 @@
             "automation_disabled_time_range": {
                 "name": "Intervalo de tempo: desativado",
                 "state": {
-                    "off": "Desativado"
+                    "off": "Desativado",
+                    "external": "Externo"
                 }
             },
             "close_covers_after_sunset_delay": {
@@ -252,6 +255,12 @@
             }
         },
         "time": {
+            "automation_disabled_time_range_external_start": {
+                "name": "Intervalo bloqueado: hora externa de início"
+            },
+            "automation_disabled_time_range_external_end": {
+                "name": "Intervalo bloqueado: hora externa de fim"
+            },
             "evening_closure_external_time": {
                 "name": "Fecho ao entardecer: hora externa"
             },
@@ -425,6 +434,12 @@
                 "relative_to_sunrise": "Relativa ao nascer do sol",
                 "fixed_time": "Hora fixa do dia",
                 "external": "Externo (hora fornecida por uma entidade)"
+            }
+        },
+        "blocked_time_range_mode": {
+            "options": {
+                "fixed_time": "Hora absoluta",
+                "external": "Externo (horários fornecidos por entidades)"
             }
         }
     }

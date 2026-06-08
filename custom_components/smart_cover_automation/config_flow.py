@@ -860,6 +860,22 @@ class FlowHelper:
             )
         ] = selector.BooleanSelector()
 
+        blocked_time_range_mode_options = [
+            selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.BlockedTimeRangeMode
+        ]
+        time_range_schema_dict[
+            vol.Required(
+                ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value,
+                default=resolved_settings.automation_disabled_time_range_mode,
+            )
+        ] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=blocked_time_range_mode_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="blocked_time_range_mode",
+            )
+        )
+
         # Start time for disabling the automation
         time_range_schema_dict[
             vol.Required(
@@ -1359,6 +1375,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             merged.pop(const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME, None)
 
     #
+    # _cleanup_external_blocked_time_range_keys
+    #
+    @staticmethod
+    def _cleanup_external_blocked_time_range_keys(merged: dict[str, Any]) -> None:
+        """Remove external blocked-time boundaries when the mode is no longer external."""
+
+        if merged.get(ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value) != const.BlockedTimeRangeMode.EXTERNAL:
+            merged.pop(const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START, None)
+            merged.pop(const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END, None)
+
+    #
     # _get_covers
     #
     def _get_covers(self) -> list[str]:
@@ -1459,6 +1486,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._cleanup_external_tilt_value_keys(merged, covers_in_input)
         self._cleanup_external_morning_opening_keys(merged)
         self._cleanup_external_evening_closure_keys(merged)
+        self._cleanup_external_blocked_time_range_keys(merged)
 
         self._logger.debug(f"Options flow completed. Final configuration being saved: {merged}")
 
