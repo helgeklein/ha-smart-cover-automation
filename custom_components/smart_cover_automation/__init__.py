@@ -38,6 +38,8 @@ from .const import (
     SERVICE_FIELD_LOCK_MODE,
     SERVICE_LOGBOOK_ENTRY,
     SERVICE_SET_LOCK,
+    TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END,
+    TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START,
     TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
     TRANSL_LOGBOOK_REASON_HEAT_PROTECTION,
@@ -149,6 +151,22 @@ def _get_valid_external_evening_closure_keys(entry: IntegrationConfigEntry) -> s
 
 
 #
+# _get_valid_external_blocked_time_range_keys
+#
+def _get_valid_external_blocked_time_range_keys(entry: IntegrationConfigEntry) -> set[str]:
+    """Return the external blocked time range keys that should exist for this entry."""
+
+    options = _get_entry_options_dict(entry)
+    if options.get(ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value) == const.BlockedTimeRangeMode.EXTERNAL:
+        return {
+            TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START,
+            TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END,
+        }
+
+    return set()
+
+
+#
 # _is_external_morning_opening_key
 #
 def _is_external_morning_opening_key(key: str) -> bool:
@@ -164,6 +182,18 @@ def _is_external_evening_closure_key(key: str) -> bool:
     """Return whether the key stores an external evening closure time."""
 
     return key == TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME
+
+
+#
+# _is_external_blocked_time_range_key
+#
+def _is_external_blocked_time_range_key(key: str) -> bool:
+    """Return whether the key stores an external blocked-time boundary."""
+
+    return key in (
+        TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START,
+        TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END,
+    )
 
 
 #
@@ -347,7 +377,13 @@ async def _async_remove_stale_registry_entities(hass: HomeAssistant, entry: Inte
     valid_external_tilt_value_keys = _get_valid_external_tilt_value_keys(hass, entry)
     valid_external_morning_opening_keys = _get_valid_external_morning_opening_keys(entry)
     valid_external_evening_closure_keys = _get_valid_external_evening_closure_keys(entry)
-    valid_auto_managed_keys = valid_external_tilt_value_keys | valid_external_morning_opening_keys | valid_external_evening_closure_keys
+    valid_external_blocked_time_range_keys = _get_valid_external_blocked_time_range_keys(entry)
+    valid_auto_managed_keys = (
+        valid_external_tilt_value_keys
+        | valid_external_morning_opening_keys
+        | valid_external_evening_closure_keys
+        | valid_external_blocked_time_range_keys
+    )
     valid_auto_managed_unique_ids = {f"{entry.entry_id}_{key}" for key in valid_auto_managed_keys}
     stale_entries.extend(
         entity
@@ -357,6 +393,7 @@ async def _async_remove_stale_registry_entities(hass: HomeAssistant, entry: Inte
             _is_external_tilt_value_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
             or _is_external_morning_opening_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
             or _is_external_evening_closure_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
+            or _is_external_blocked_time_range_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
         )
         and entity.unique_id not in valid_auto_managed_unique_ids
     )
@@ -365,7 +402,10 @@ async def _async_remove_stale_registry_entities(hass: HomeAssistant, entry: Inte
     stale_auto_managed_option_keys = {
         key
         for key in current_options
-        if _is_external_tilt_value_key(key) or _is_external_morning_opening_key(key) or _is_external_evening_closure_key(key)
+        if _is_external_tilt_value_key(key)
+        or _is_external_morning_opening_key(key)
+        or _is_external_evening_closure_key(key)
+        or _is_external_blocked_time_range_key(key)
     } - valid_auto_managed_keys
     if stale_auto_managed_option_keys:
         updated_options = dict(current_options)

@@ -179,6 +179,7 @@ def test_translation_has_blocked_time_range_section_keys(language_code: str) -> 
     section_descriptions = section.get("data_description", {})
     expected_fields = {
         ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value,
+        ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value,
         ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value,
         ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END.value,
         ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED.value,
@@ -205,6 +206,32 @@ def test_translation_has_evening_external_time_keys(language_code: str) -> None:
     assert const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME in time_entities, (
         f"Missing evening external time entity label in {language_code}.json"
     )
+
+
+@pytest.mark.parametrize("language_code", _get_available_languages())
+def test_translation_has_blocked_time_range_external_time_keys(language_code: str) -> None:
+    """Test that blocked-time external entity labels are translated in every language."""
+
+    data = _load_translations(language_code)
+    time_entities = data.get("entity", {}).get("time", {})
+
+    assert const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START in time_entities, (
+        f"Missing blocked-time external start label in {language_code}.json"
+    )
+    assert const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END in time_entities, (
+        f"Missing blocked-time external end label in {language_code}.json"
+    )
+
+
+@pytest.mark.parametrize("language_code", _get_available_languages())
+def test_translation_has_blocked_time_range_mode_options(language_code: str) -> None:
+    """Test that blocked-time mode selector options are translated in every language."""
+
+    data = _load_translations(language_code)
+    blocked_time_options = data.get("selector", {}).get("blocked_time_range_mode", {}).get("options", {})
+
+    assert "fixed_time" in blocked_time_options, f"Missing blocked-time fixed_time mode option in {language_code}.json"
+    assert "external" in blocked_time_options, f"Missing blocked-time external mode option in {language_code}.json"
 
 
 @pytest.mark.parametrize("language_code", _get_available_languages())

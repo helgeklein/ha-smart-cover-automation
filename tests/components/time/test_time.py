@@ -10,13 +10,18 @@ from unittest.mock import MagicMock, Mock
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.const import (
+    TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END,
+    TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START,
     TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
+    BlockedTimeRangeMode,
     EveningClosureMode,
     MorningOpeningMode,
 )
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.time import (
+    AutomationDisabledTimeRangeExternalEnd,
+    AutomationDisabledTimeRangeExternalStart,
     EveningClosureExternalTime,
     MorningOpeningExternalTime,
 )
@@ -52,6 +57,7 @@ async def test_async_setup_entry_adds_external_time_entity(mock_coordinator_basi
     entry.runtime_data.coordinator = mock_coordinator_basic
     mock_coordinator_basic._resolved_settings = Mock(
         return_value=SimpleNamespace(
+            automation_disabled_time_range_mode=BlockedTimeRangeMode.FIXED_TIME,
             evening_closure_mode=EveningClosureMode.FIXED_TIME,
             morning_opening_mode=MorningOpeningMode.EXTERNAL,
         )
@@ -80,6 +86,7 @@ async def test_async_setup_entry_skips_time_entity_when_not_external(mock_coordi
     entry.runtime_data.coordinator = mock_coordinator_basic
     mock_coordinator_basic._resolved_settings = Mock(
         return_value=SimpleNamespace(
+            automation_disabled_time_range_mode=BlockedTimeRangeMode.FIXED_TIME,
             evening_closure_mode=EveningClosureMode.FIXED_TIME,
             morning_opening_mode=MorningOpeningMode.FIXED_TIME,
         )
@@ -106,6 +113,7 @@ async def test_async_setup_entry_adds_evening_external_time_entity(mock_coordina
     entry.runtime_data.coordinator = mock_coordinator_basic
     mock_coordinator_basic._resolved_settings = Mock(
         return_value=SimpleNamespace(
+            automation_disabled_time_range_mode=BlockedTimeRangeMode.FIXED_TIME,
             evening_closure_mode=EveningClosureMode.EXTERNAL,
             morning_opening_mode=MorningOpeningMode.FIXED_TIME,
         )
@@ -131,6 +139,7 @@ async def test_async_setup_entry_adds_both_external_time_entities(mock_coordinat
     entry.runtime_data.coordinator = mock_coordinator_basic
     mock_coordinator_basic._resolved_settings = Mock(
         return_value=SimpleNamespace(
+            automation_disabled_time_range_mode=BlockedTimeRangeMode.FIXED_TIME,
             evening_closure_mode=EveningClosureMode.EXTERNAL,
             morning_opening_mode=MorningOpeningMode.EXTERNAL,
         )
@@ -146,6 +155,32 @@ async def test_async_setup_entry_adds_both_external_time_entities(mock_coordinat
     assert len(captured) == 2
     assert any(isinstance(entity, MorningOpeningExternalTime) for entity in captured)
     assert any(isinstance(entity, EveningClosureExternalTime) for entity in captured)
+
+
+async def test_async_setup_entry_adds_blocked_time_range_external_entities(mock_coordinator_basic) -> None:
+    """External blocked-time mode should create start and end time entities."""
+
+    entry = mock_coordinator_basic.config_entry
+    entry.runtime_data = MagicMock()
+    entry.runtime_data.coordinator = mock_coordinator_basic
+    mock_coordinator_basic._resolved_settings = Mock(
+        return_value=SimpleNamespace(
+            automation_disabled_time_range_mode=BlockedTimeRangeMode.EXTERNAL,
+            evening_closure_mode=EveningClosureMode.FIXED_TIME,
+            morning_opening_mode=MorningOpeningMode.FIXED_TIME,
+        )
+    )
+    captured, add_entities = _capture_added_entities()
+
+    await async_setup_entry_time(
+        mock_coordinator_basic.hass,
+        cast(IntegrationConfigEntry, entry),
+        add_entities,
+    )
+
+    assert len(captured) == 2
+    assert any(isinstance(entity, AutomationDisabledTimeRangeExternalStart) for entity in captured)
+    assert any(isinstance(entity, AutomationDisabledTimeRangeExternalEnd) for entity in captured)
 
 
 #
@@ -230,3 +265,32 @@ async def test_evening_closure_external_time_async_set_value_persists_isoformat(
     call_kwargs = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
     options = call_kwargs[1]["options"] if "options" in call_kwargs[1] else call_kwargs[0][1]
     assert options[TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME] == "18:30:00"
+
+
+def test_blocked_time_range_external_start_metadata_and_native_value(mock_coordinator_basic) -> None:
+    """Blocked-time external start entity should expose metadata and parse stored values."""
+
+    entry = mock_coordinator_basic.config_entry
+    entity = AutomationDisabledTimeRangeExternalStart(mock_coordinator_basic)
+
+    assert entity.entity_description.key == TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START
+    assert entity.entity_description.translation_key == TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START
+    assert entity.entity_description.icon == "mdi:clock-start"
+    assert entity.native_value is None
+
+    entry.options[TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START] = "22:15:00"
+    assert entity.native_value == time(22, 15)
+
+
+async def test_blocked_time_range_external_end_async_set_value_persists_isoformat(mock_coordinator_basic) -> None:
+    """Setting a blocked-time external end should persist it to config entry options."""
+
+    entity = AutomationDisabledTimeRangeExternalEnd(mock_coordinator_basic)
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()
+
+    await entity.async_set_value(time(6, 10))
+
+    mock_coordinator_basic.hass.config_entries.async_update_entry.assert_called_once()
+    call_kwargs = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args
+    options = call_kwargs[1]["options"] if "options" in call_kwargs[1] else call_kwargs[0][1]
+    assert options[TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END] == "06:10:00"

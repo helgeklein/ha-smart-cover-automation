@@ -139,6 +139,16 @@ class MorningOpeningMode(StrEnum):
 
 
 #
+# BlockedTimeRangeMode
+#
+class BlockedTimeRangeMode(StrEnum):
+    """Blocked time range timing mode."""
+
+    FIXED_TIME = "fixed_time"  # Use the configured start/end times from options
+    EXTERNAL = "external"  # Use runtime start/end times supplied via entities
+
+
+#
 # ReopeningMode
 #
 class ReopeningMode(StrEnum):
@@ -206,6 +216,12 @@ TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: Final[str] = (
 )
 TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: Final[str] = (
     "evening_closure_external_time"  # Key for the global external evening closure time entity
+)
+TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START: Final[str] = (
+    "automation_disabled_time_range_external_start"  # Key for the global external blocked-time start entity
+)
+TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END: Final[str] = (
+    "automation_disabled_time_range_external_end"  # Key for the global external blocked-time end entity
 )
 SENSOR_KEY_SUN_AZIMUTH: Final[str] = "sun_azimuth"  # Key for the sun azimuth sensor entity
 SENSOR_KEY_SUN_ELEVATION: Final[str] = "sun_elevation"  # Key for the sun sun_elevation sensor entity

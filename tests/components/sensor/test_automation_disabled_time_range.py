@@ -12,6 +12,9 @@ from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.const import (
     SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE,
+    TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END,
+    TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START,
+    BlockedTimeRangeMode,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
@@ -185,3 +188,68 @@ async def test_automation_disabled_time_range_sensor_enabled_edge_times(mock_has
 
     # Verify sensor properly zero-pads single digit hours and minutes
     assert time_range_sensor.native_value == "00:05-09:09"
+
+
+async def test_automation_disabled_time_range_sensor_uses_external_bounds(mock_hass_with_spec, mock_config_entry_basic) -> None:
+    """The blocked-time sensor should surface external bounds when external mode is active."""
+
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    coordinator.last_update_success = True
+
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+    mock_config_entry_basic.options["automation_disabled_time_range"] = True
+    mock_config_entry_basic.options["automation_disabled_time_range_mode"] = BlockedTimeRangeMode.EXTERNAL
+    mock_config_entry_basic.options[TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START] = "22:10:00"
+    mock_config_entry_basic.options[TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END] = "06:40:00"
+
+    captured: list[Entity] = []
+
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:
+        captured.extend(list(new_entities))
+
+    await async_setup_entry_sensor(
+        mock_hass_with_spec,
+        cast(IntegrationConfigEntry, mock_config_entry_basic),
+        add_entities,
+    )
+
+    time_range_sensor = next(
+        (entity for entity in captured if entity.entity_description.key == SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE),
+        None,
+    )
+    assert time_range_sensor is not None
+    assert isinstance(time_range_sensor, AutomationDisabledTimeRangeSensor)
+    assert time_range_sensor.native_value == "22:10-06:40"
+
+
+async def test_automation_disabled_time_range_sensor_returns_external_state_when_bounds_missing(
+    mock_hass_with_spec, mock_config_entry_basic
+) -> None:
+    """Missing external blocked-time bounds should surface the external placeholder state."""
+
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    coordinator.last_update_success = True
+
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+    mock_config_entry_basic.options["automation_disabled_time_range"] = True
+    mock_config_entry_basic.options["automation_disabled_time_range_mode"] = BlockedTimeRangeMode.EXTERNAL
+    mock_config_entry_basic.options[TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START] = "22:10:00"
+
+    captured: list[Entity] = []
+
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:
+        captured.extend(list(new_entities))
+
+    await async_setup_entry_sensor(
+        mock_hass_with_spec,
+        cast(IntegrationConfigEntry, mock_config_entry_basic),
+        add_entities,
+    )
+
+    time_range_sensor = next(
+        (entity for entity in captured if entity.entity_description.key == SENSOR_KEY_AUTOMATION_DISABLED_TIME_RANGE),
+        None,
+    )
+    assert time_range_sensor is not None
+    assert isinstance(time_range_sensor, AutomationDisabledTimeRangeSensor)
+    assert time_range_sensor.native_value == "external"

@@ -25,9 +25,11 @@ from custom_components.smart_cover_automation import (
     _async_migrate_unique_ids,
     _async_remove_stale_registry_entities,
     _get_entry_options_dict,
+    _get_valid_external_blocked_time_range_keys,
     _get_valid_external_evening_closure_keys,
     _get_valid_external_morning_opening_keys,
     _get_valid_external_tilt_value_keys,
+    _is_external_blocked_time_range_key,
     _is_external_evening_closure_key,
     _is_external_morning_opening_key,
     const,
@@ -1302,6 +1304,17 @@ class TestInitHelperFunctions:
 
         assert _get_valid_external_evening_closure_keys(entry) == {const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME}
 
+    def test_get_valid_external_blocked_time_range_keys_for_external_mode(self) -> None:
+        """External blocked-time mode should keep both runtime boundary keys."""
+
+        entry = MagicMock()
+        entry.options = {ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.EXTERNAL}
+
+        assert _get_valid_external_blocked_time_range_keys(entry) == {
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START,
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END,
+        }
+
     def test_is_external_morning_opening_key(self) -> None:
         """The morning opening entity key helper should identify only the dedicated time key."""
 
@@ -1313,6 +1326,13 @@ class TestInitHelperFunctions:
 
         assert _is_external_evening_closure_key(const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME) is True
         assert _is_external_evening_closure_key("something_else") is False
+
+    def test_is_external_blocked_time_range_key(self) -> None:
+        """The blocked-time helper should identify only the dedicated boundary keys."""
+
+        assert _is_external_blocked_time_range_key(const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START) is True
+        assert _is_external_blocked_time_range_key(const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END) is True
+        assert _is_external_blocked_time_range_key("something_else") is False
 
     def test_get_valid_external_tilt_value_keys_includes_global_and_supported_per_cover(self) -> None:
         """Valid external tilt keys should include global and tilt-capable per-cover keys only."""

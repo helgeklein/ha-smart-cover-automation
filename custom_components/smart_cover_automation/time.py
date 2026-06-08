@@ -13,8 +13,11 @@ from homeassistant.components.time import TimeEntity, TimeEntityDescription
 from homeassistant.const import EntityCategory
 
 from .const import (
+    TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END,
+    TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START,
     TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
+    BlockedTimeRangeMode,
     EveningClosureMode,
     MorningOpeningMode,
 )
@@ -42,6 +45,9 @@ async def async_setup_entry(
     resolved = coordinator._resolved_settings()
 
     entities: list[IntegrationTime] = []
+    if resolved.automation_disabled_time_range_mode == BlockedTimeRangeMode.EXTERNAL:
+        entities.append(AutomationDisabledTimeRangeExternalStart(coordinator))
+        entities.append(AutomationDisabledTimeRangeExternalEnd(coordinator))
     if resolved.evening_closure_mode == EveningClosureMode.EXTERNAL:
         entities.append(EveningClosureExternalTime(coordinator))
     if resolved.morning_opening_mode == MorningOpeningMode.EXTERNAL:
@@ -137,3 +143,33 @@ class EveningClosureExternalTime(IntegrationTime):
             icon="mdi:weather-sunset-down",
         )
         super().__init__(coordinator, entity_description, TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME)
+
+
+class AutomationDisabledTimeRangeExternalStart(IntegrationTime):
+    """Global external blocked-time start."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the external blocked-time start entity."""
+
+        entity_description = TimeEntityDescription(
+            key=TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START,
+            translation_key=TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:clock-start",
+        )
+        super().__init__(coordinator, entity_description, TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START)
+
+
+class AutomationDisabledTimeRangeExternalEnd(IntegrationTime):
+    """Global external blocked-time end."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the external blocked-time end entity."""
+
+        entity_description = TimeEntityDescription(
+            key=TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END,
+            translation_key=TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:clock-end",
+        )
+        super().__init__(coordinator, entity_description, TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END)

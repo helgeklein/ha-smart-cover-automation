@@ -1124,6 +1124,49 @@ class TestTimeCalculationHelpers:
 
         assert engine._get_morning_opening_time_for_date(date(2025, 11, 5)) is None
 
+    def test_in_time_period_automation_disabled_uses_external_bounds(self, mock_ha_interface, mock_logger, freezer):
+        """Blocked-time checks should honor external start and end times when configured."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.EXTERNAL,
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START: "22:00:00",
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END: "06:00:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        freezer.move_to("2025-11-05 23:15:00")
+        assert engine._in_time_period_automation_disabled() == (True, "22:00:00 - 06:00:00")
+
+    def test_in_time_period_automation_disabled_returns_inactive_when_external_bounds_invalid(self, mock_ha_interface, mock_logger):
+        """Invalid external blocked-time boundaries should disable blocked-time evaluation safely."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
+            ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.EXTERNAL,
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START: "not-a-time",
+            const.TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END: "06:00:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        assert engine._in_time_period_automation_disabled() == (False, "")
+
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
     def test_get_morning_opening_time_for_date_relative_returns_none_when_sunrise_unavailable(
         self, mock_get_astral, mock_ha_interface, mock_logger

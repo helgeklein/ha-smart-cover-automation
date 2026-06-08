@@ -24,8 +24,11 @@ from custom_components.smart_cover_automation.const import (
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
     SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL,
     SWITCH_KEY_WEATHER_SUNNY_EXTERNAL_CONTROL,
+    TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END,
+    TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START,
     TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
+    BlockedTimeRangeMode,
     EveningClosureMode,
     LockMode,
     MorningOpeningMode,
@@ -65,6 +68,7 @@ class ConfKeys(StrEnum):
     """
 
     AUTOMATION_DISABLED_TIME_RANGE = "automation_disabled_time_range"  # Disable the automation in a time range.
+    AUTOMATION_DISABLED_TIME_RANGE_MODE = "automation_disabled_time_range_mode"  # Disable-time range timing mode.
     AUTOMATION_DISABLED_TIME_RANGE_START = "automation_disabled_time_range_start"  # Start time for disabling the automation.
     AUTOMATION_DISABLED_TIME_RANGE_END = "automation_disabled_time_range_end"  # End time for disabling the automation.
     AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED = "automation_disabled_time_range_pre_close_enabled"  # Pre-close at blocked-time start when the next morning will require heat protection.
@@ -223,6 +227,10 @@ if TYPE_CHECKING:  # pragma: no cover - type checking only
 # This is the single source of truth for all settings keys and their types.
 CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE: _ConfSpec(
+        default=BlockedTimeRangeMode.FIXED_TIME,
+        converter=BlockedTimeRangeMode,
+    ),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(8, 0, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
@@ -276,6 +284,7 @@ __all__ = [
     "ResolvedConfig",
     "get_runtime_configurable_keys",
     "is_runtime_configurable_key",
+    "resolve_effective_blocked_time_range_bounds",
     "resolve",
     "resolve_entry",
 ]
@@ -309,6 +318,8 @@ def get_runtime_configurable_keys() -> set[str]:
     keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT)
     keys.add(NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD)
     keys.add(NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD)
+    keys.add(TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START)
+    keys.add(TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END)
     keys.add(TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME)
     keys.add(TIME_KEY_MORNING_OPENING_EXTERNAL_TIME)
     return keys
@@ -370,6 +381,7 @@ def _field_name(key: ConfKeys) -> str:
 @dataclass(frozen=True, slots=True)
 class ResolvedConfig:
     automation_disabled_time_range: bool
+    automation_disabled_time_range_mode: BlockedTimeRangeMode
     automation_disabled_time_range_start: time
     automation_disabled_time_range_end: time
     automation_disabled_time_range_pre_close_enabled: bool
@@ -415,6 +427,32 @@ class ResolvedConfig:
     def as_enum_dict(self) -> dict[ConfKeys, Any]:
         # Build dict without hard-coded names
         return {k: getattr(self, _field_name(k)) for k in ConfKeys}
+
+
+def resolve_effective_blocked_time_range_bounds(
+    resolved: ResolvedConfig,
+    options: Mapping[str, Any] | None,
+) -> tuple[time | None, time | None]:
+    """Return the effective blocked-time boundaries for the active mode."""
+
+    if resolved.automation_disabled_time_range_mode != BlockedTimeRangeMode.EXTERNAL:
+        return (resolved.automation_disabled_time_range_start, resolved.automation_disabled_time_range_end)
+
+    options = options or {}
+    raw_start = options.get(TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START)
+    raw_end = options.get(TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_END)
+
+    try:
+        start = _Converters.to_time(raw_start) if raw_start not in (None, "") else None
+    except AttributeError, TypeError, ValueError:
+        start = None
+
+    try:
+        end = _Converters.to_time(raw_end) if raw_end not in (None, "") else None
+    except AttributeError, TypeError, ValueError:
+        end = None
+
+    return (start, end)
 
 
 def resolve(options: Mapping[str, Any] | None) -> ResolvedConfig:
