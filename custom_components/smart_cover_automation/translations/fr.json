@@ -36,16 +36,16 @@
                         "name": "Azimut du volet (obligatoire)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Début de la tolérance de l'azimut solaire (facultatif)"
+                        "name": "Soleil: Début de la tolérance de l'azimut (facultatif)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Fin de la tolérance de l'azimut solaire (facultatif)"
+                        "name": "Soleil: Fin de la tolérance de l'azimut (facultatif)"
                     },
                     "section_sun_elevation_min": {
-                        "name": "Élévation solaire minimale (facultatif)"
+                        "name": "Soleil: Élévation minimale (facultatif)"
                     },
                     "section_sun_elevation_max": {
-                        "name": "Élévation solaire maximale (facultatif)"
+                        "name": "Soleil: Élévation maximale (facultatif)"
                     }
                 }
             },

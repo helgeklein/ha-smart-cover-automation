@@ -36,16 +36,16 @@
                         "name": "Cover azimuth (required)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Sun azimuth tolerance start (optional)"
+                        "name": "Sun: Azimuth tolerance start (optional)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Sun azimuth tolerance end (optional)"
+                        "name": "Sun: Azimuth tolerance end (optional)"
                     },
                     "section_sun_elevation_min": {
-                        "name": "Minimum sun elevation (optional)"
+                        "name": "Sun: Minimum elevation (optional)"
                     },
                     "section_sun_elevation_max": {
-                        "name": "Maximum sun elevation (optional)"
+                        "name": "Sun: Maximum elevation (optional)"
                     }
                 }
             },

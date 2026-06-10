@@ -36,16 +36,16 @@
                         "name": "Azimut della tapparella (obbligatorio)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Inizio tolleranza dell'azimut solare (opzionale)"
+                        "name": "Sole: Inizio tolleranza dell'azimut (opzionale)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Fine tolleranza dell'azimut solare (opzionale)"
+                        "name": "Sole: Fine tolleranza dell'azimut (opzionale)"
                     },
                     "section_sun_elevation_min": {
-                        "name": "Elevazione solare minima (opzionale)"
+                        "name": "Sole: Elevazione minima (opzionale)"
                     },
                     "section_sun_elevation_max": {
-                        "name": "Elevazione solare massima (opzionale)"
+                        "name": "Sole: Elevazione massima (opzionale)"
                     }
                 }
             },

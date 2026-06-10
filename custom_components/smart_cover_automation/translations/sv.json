@@ -36,16 +36,16 @@
                         "name": "Persiennens azimut (obligatoriskt)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Start för tolerans för solens azimut (valfritt)"
+                        "name": "Sol: Start för azimuttolerans (valfritt)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Slut för tolerans för solens azimut (valfritt)"
+                        "name": "Sol: Slut för azimuttolerans (valfritt)"
                     },
                     "section_sun_elevation_min": {
-                        "name": "Minsta solhöjd (valfritt)"
+                        "name": "Sol: Minsta höjd (valfritt)"
                     },
                     "section_sun_elevation_max": {
-                        "name": "Högsta solhöjd (valfritt)"
+                        "name": "Sol: Högsta höjd (valfritt)"
                     }
                 }
             },

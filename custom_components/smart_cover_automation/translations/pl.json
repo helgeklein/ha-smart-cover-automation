@@ -36,16 +36,16 @@
                         "name": "Azymut rolety (wymagane)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Początek tolerancji azymutu słońca (opcjonalne)"
+                        "name": "Słońce: Początek tolerancji azymutu (opcjonalne)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Koniec tolerancji azymutu słońca (opcjonalne)"
+                        "name": "Słońce: Koniec tolerancji azymutu (opcjonalne)"
                     },
                     "section_sun_elevation_min": {
-                        "name": "Minimalna wysokość słońca (opcjonalne)"
+                        "name": "Słońce: Minimalna wysokość (opcjonalne)"
                     },
                     "section_sun_elevation_max": {
-                        "name": "Maksymalna wysokość słońca (opcjonalne)"
+                        "name": "Słońce: Maksymalna wysokość (opcjonalne)"
                     }
                 }
             },

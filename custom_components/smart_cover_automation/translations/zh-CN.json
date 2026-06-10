@@ -36,16 +36,16 @@
                         "name": "遮阳设备方位角（必需）"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "太阳方位角容差起始值（可选）"
+                        "name": "太阳：方位角容差起始值（可选）"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "太阳方位角容差结束值（可选）"
+                        "name": "太阳：方位角容差结束值（可选）"
                     },
                     "section_sun_elevation_min": {
-                        "name": "最小太阳仰角（可选）"
+                        "name": "太阳：最小仰角（可选）"
                     },
                     "section_sun_elevation_max": {
-                        "name": "最大太阳仰角（可选）"
+                        "name": "太阳：最大仰角（可选）"
                     }
                 }
             },

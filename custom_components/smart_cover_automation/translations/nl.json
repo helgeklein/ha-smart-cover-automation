@@ -36,16 +36,16 @@
                         "name": "Rolluikazimut (verplicht)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Start van tolerantie voor zonazimut (optioneel)"
+                        "name": "Zon: Start van azimuttolerantie (optioneel)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Einde van tolerantie voor zonazimut (optioneel)"
+                        "name": "Zon: Einde van azimuttolerantie (optioneel)"
                     },
                     "section_sun_elevation_min": {
-                        "name": "Minimale zonshoogte (optioneel)"
+                        "name": "Zon: Minimale hoogte (optioneel)"
                     },
                     "section_sun_elevation_max": {
-                        "name": "Maximale zonshoogte (optioneel)"
+                        "name": "Zon: Maximale hoogte (optioneel)"
                     }
                 }
             },

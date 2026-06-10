@@ -36,16 +36,16 @@
                         "name": "Rollladen-Azimut (erforderlich)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Sonnen-Azimut-Toleranz Start (optional)"
+                        "name": "Sonne: Azimut-Toleranz Start (optional)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Sonnen-Azimut-Toleranz Ende (optional)"
+                        "name": "Sonne: Azimut-Toleranz Ende (optional)"
                     },
                     "section_sun_elevation_min": {
-                        "name": "Minimale Sonnenhöhe (optional)"
+                        "name": "Sonne: Minimale Höhe (optional)"
                     },
                     "section_sun_elevation_max": {
-                        "name": "Maximale Sonnenhöhe (optional)"
+                        "name": "Sonne: Maximale Höhe (optional)"
                     }
                 }
             },

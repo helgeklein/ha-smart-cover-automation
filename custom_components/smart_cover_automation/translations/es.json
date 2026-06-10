@@ -36,16 +36,16 @@
                         "name": "Azimut de la persiana (obligatorio)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Inicio de tolerancia de azimut solar (opcional)"
+                        "name": "Sol: Inicio de tolerancia de azimut (opcional)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Fin de tolerancia de azimut solar (opcional)"
+                        "name": "Sol: Fin de tolerancia de azimut (opcional)"
                     },
                     "section_sun_elevation_min": {
-                        "name": "Elevación solar mínima (opcional)"
+                        "name": "Sol: Elevación mínima (opcional)"
                     },
                     "section_sun_elevation_max": {
-                        "name": "Elevación solar máxima (opcional)"
+                        "name": "Sol: Elevación máxima (opcional)"
                     }
                 }
             },
