@@ -87,6 +87,8 @@ COVER_SFX_SUN_AZIMUTH_TOLERANCE_START: Final[str] = (
 COVER_SFX_SUN_AZIMUTH_TOLERANCE_END: Final[str] = (
     "cover_sun_azimuth_tolerance_end"  # Per-cover override for when sun stops hitting the cover (° after cover azimuth).
 )
+COVER_SFX_SUN_ELEVATION_MIN: Final[str] = "cover_sun_elevation_min"  # Per-cover override for minimum sun elevation (°).
+COVER_SFX_SUN_ELEVATION_MAX: Final[str] = "cover_sun_elevation_max"  # Per-cover override for maximum sun elevation (°).
 COVER_SFX_MAX_CLOSURE: Final[str] = "cover_max_closure"  # Cover maximum closure position (%)
 COVER_SFX_MIN_CLOSURE: Final[str] = "cover_min_closure"  # Cover minimum closure position (%)
 COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE: Final[str] = (
@@ -238,6 +240,7 @@ NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD: Final[str] = (
     "daily_min_temperature_threshold"  # Key for the daily min temperature threshold number entity
 )
 NUMBER_KEY_SUN_ELEVATION_THRESHOLD: Final[str] = "sun_elevation_threshold"  # Key for the sun elevation threshold number entity
+NUMBER_KEY_SUN_ELEVATION_MAX: Final[str] = "sun_elevation_max"  # Key for the maximum sun elevation number entity
 
 # Options flow translation keys
 ERROR_INVALID_COVER: Final[str] = "invalid_cover"
@@ -248,6 +251,8 @@ ERROR_NO_WEATHER_ENTITY: Final[str] = "no_weather_entity"
 STEP_2_SECTION_AZIMUTH: Final[str] = "section_azimuth"
 STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START: Final[str] = "section_sun_azimuth_tolerance_start"
 STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END: Final[str] = "section_sun_azimuth_tolerance_end"
+STEP_2_SECTION_SUN_ELEVATION_MIN: Final[str] = "section_sun_elevation_min"
+STEP_2_SECTION_SUN_ELEVATION_MAX: Final[str] = "section_sun_elevation_max"
 STEP_3_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
 STEP_3_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
 STEP_3_SECTION_EVENING_MAX_CLOSURE: Final[str] = "section_evening_max_closure"

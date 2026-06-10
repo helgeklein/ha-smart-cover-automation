@@ -265,6 +265,8 @@ class TestFlowHelperSchemaBuilding:
         assert const.STEP_2_SECTION_AZIMUTH in schema_keys
         assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START in schema_keys
         assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END in schema_keys
+        assert const.STEP_2_SECTION_SUN_ELEVATION_MIN in schema_keys
+        assert const.STEP_2_SECTION_SUN_ELEVATION_MAX in schema_keys
 
     def test_build_schema_step_2_uses_default_azimuth(self, mock_hass_with_covers: MagicMock) -> None:
         """Test step 2 schema uses default azimuth when not in defaults."""
@@ -341,6 +343,8 @@ class TestFlowHelperSchemaBuilding:
         defaults = {
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}": 25,
             f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}": 40,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_ELEVATION_MIN}": 15,
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_SUN_ELEVATION_MAX}": 55,
         }
 
         schema = FlowHelper.build_schema_step_2(covers, defaults)
@@ -348,14 +352,22 @@ class TestFlowHelperSchemaBuilding:
 
         assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START in schema_keys
         assert const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END in schema_keys
+        assert const.STEP_2_SECTION_SUN_ELEVATION_MIN in schema_keys
+        assert const.STEP_2_SECTION_SUN_ELEVATION_MAX in schema_keys
 
         start_section_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START)
         end_section_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END)
+        min_section_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_ELEVATION_MIN)
+        max_section_schema = _get_section_schema(schema, const.STEP_2_SECTION_SUN_ELEVATION_MAX)
         start_field_marker = _get_field_marker(start_section_schema, "Test Cover")
         end_field_marker = _get_field_marker(end_section_schema, "Test Cover")
+        min_field_marker = _get_field_marker(min_section_schema, "Test Cover")
+        max_field_marker = _get_field_marker(max_section_schema, "Test Cover")
 
         assert start_field_marker.description == {"name": "Test Cover", "suggested_value": "25"}
         assert end_field_marker.description == {"name": "Test Cover", "suggested_value": "40"}
+        assert min_field_marker.description == {"name": "Test Cover", "suggested_value": "15"}
+        assert max_field_marker.description == {"name": "Test Cover", "suggested_value": "55"}
 
     def test_build_schema_step_2_disambiguates_duplicate_cover_labels(self) -> None:
         """Duplicate friendly names should include the entity ID for clarity."""

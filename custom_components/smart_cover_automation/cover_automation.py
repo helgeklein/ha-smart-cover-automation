@@ -341,6 +341,19 @@ class CoverAutomation:
             fallback_tolerance if cover_tolerance_end is None else cover_tolerance_end,
         )
 
+    def _get_cover_sun_elevation_range(self) -> tuple[float, float]:
+        cover_elevation_min_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_ELEVATION_MIN}")
+        cover_elevation_max_raw = self.config.get(f"{self.entity_id}_{const.COVER_SFX_SUN_ELEVATION_MAX}")
+        cover_elevation_min = to_float_or_none(cover_elevation_min_raw)
+        cover_elevation_max = to_float_or_none(cover_elevation_max_raw)
+        fallback_elevation_min = to_float_or_none(self.resolved.sun_elevation_threshold)
+        fallback_elevation_max = to_float_or_none(self.resolved.sun_elevation_max)
+
+        return (
+            0.0 if fallback_elevation_min is None else (fallback_elevation_min if cover_elevation_min is None else cover_elevation_min),
+            90.0 if fallback_elevation_max is None else (fallback_elevation_max if cover_elevation_max is None else cover_elevation_max),
+        )
+
     #
     # _validate_cover_state
     #
@@ -699,7 +712,8 @@ class CoverAutomation:
         sun_azimuth_difference = self._calculate_angle_difference(sun_azimuth, cover_azimuth)
         signed_sun_azimuth_difference = self._calculate_signed_angle_difference(sun_azimuth, cover_azimuth)
         sun_azimuth_tolerance_start, sun_azimuth_tolerance_end = self._get_cover_sun_azimuth_tolerance_range()
-        if sun_elevation >= self.resolved.sun_elevation_threshold:
+        sun_elevation_min, sun_elevation_max = self._get_cover_sun_elevation_range()
+        if sun_elevation_min <= sun_elevation_max and sun_elevation_min <= sun_elevation <= sun_elevation_max:
             sun_hitting = -sun_azimuth_tolerance_start < signed_sun_azimuth_difference < sun_azimuth_tolerance_end
         else:
             sun_hitting = False

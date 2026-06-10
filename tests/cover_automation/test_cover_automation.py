@@ -1171,6 +1171,53 @@ class TestCalculateSunHitting:
         assert sun_hitting is False
         assert diff == 0.0
 
+    def test_calculate_sun_hitting_above_global_max_elevation(self, cover_automation, mock_resolved_config):
+        """Test when sun elevation is above the configured global maximum."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_elevation_max = 40.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+
+        sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=180.0, sun_elevation=45.0, cover_azimuth=180.0)
+        assert sun_hitting is False
+        assert diff == 0.0
+
+    def test_calculate_sun_hitting_uses_per_cover_min_elevation_override(self, cover_automation, mock_resolved_config):
+        """Test that the per-cover minimum elevation overrides the global minimum."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_elevation_max = 90.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_ELEVATION_MIN}"] = 50
+
+        sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=180.0, sun_elevation=45.0, cover_azimuth=180.0)
+        assert sun_hitting is False
+        assert diff == 0.0
+
+    def test_calculate_sun_hitting_uses_per_cover_max_elevation_override(self, cover_automation, mock_resolved_config):
+        """Test that the per-cover maximum elevation overrides the global maximum."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_elevation_max = 90.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_ELEVATION_MAX}"] = 40
+
+        sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=180.0, sun_elevation=45.0, cover_azimuth=180.0)
+        assert sun_hitting is False
+        assert diff == 0.0
+
+    def test_calculate_sun_hitting_falls_back_when_per_cover_max_elevation_invalid(self, cover_automation, mock_resolved_config):
+        """Test that invalid per-cover maximum elevation falls back to the global maximum."""
+
+        mock_resolved_config.sun_elevation_threshold = 10.0
+        mock_resolved_config.sun_elevation_max = 90.0
+        mock_resolved_config.sun_azimuth_tolerance = 30.0
+        cover_automation.config[f"{cover_automation.entity_id}_{const.COVER_SFX_SUN_ELEVATION_MAX}"] = "invalid"
+
+        sun_hitting, diff = cover_automation._calculate_sun_hitting(sun_azimuth=180.0, sun_elevation=45.0, cover_azimuth=180.0)
+        assert sun_hitting is True
+        assert diff == 0.0
+
     def test_calculate_effective_sun_hitting_uses_pre_close_samples(self, cover_automation, mock_resolved_config):
         """Pre-close sun-path samples should count a future morning hit before the blocked range ends."""
 

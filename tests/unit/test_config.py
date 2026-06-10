@@ -333,6 +333,7 @@ class TestConfigurationResolution:
         assert rs_default.morning_opening_time == time(8, 0, 0)
         assert rs_default.sun_azimuth_tolerance == 60
         assert rs_default.sun_elevation_threshold == 0.0
+        assert rs_default.sun_elevation_max == 90.0
 
         rs_fixed = resolve(
             {

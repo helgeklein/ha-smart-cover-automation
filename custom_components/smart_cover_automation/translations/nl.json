@@ -30,7 +30,7 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Stap 2 van 6",
-                "description": "Configureer de **azimut** (richting) voor elk rolluik. U kunt ook optionele begin- en eindwaarden voor **tolerantie voor zonazimut** per rolluik toevoegen die de globale instelling voor tolerantie voor zonazimut overschrijven, configureerbaar op de apparaats-pagina van deze integratie-instantie.\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)",
+                "description": "Configureer de **azimut** (richting) voor elk rolluik.\n\nU kunt ook de hoeken beperken waarbij de automatisering ervan uitgaat dat de zon op een rolluik schijnt, in alle vier richtingen (links, rechts, boven en onder), om rekening te houden met dakoverstekken, andere gebouwen of nabijgelegen bomen. De hier geconfigureerde waarden per rolluik overschrijven de globale zonhoekinstellingen op de apparaats-pagina van de integratie-instantie.\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Rolluikazimut (verplicht)"
@@ -40,6 +40,12 @@
                     },
                     "section_sun_azimuth_tolerance_end": {
                         "name": "Einde van tolerantie voor zonazimut (optioneel)"
+                    },
+                    "section_sun_elevation_min": {
+                        "name": "Minimale zonshoogte (optioneel)"
+                    },
+                    "section_sun_elevation_max": {
+                        "name": "Maximale zonshoogte (optioneel)"
                     }
                 }
             },
@@ -283,6 +289,9 @@
             },
             "sun_elevation_threshold": {
                 "name": "Minimale zonshoogte"
+            },
+            "sun_elevation_max": {
+                "name": "Maximale zonshoogte"
             },
             "tilt_external_value_day": {
                 "name": "Kantelhoek: externe besturing (dag)"
