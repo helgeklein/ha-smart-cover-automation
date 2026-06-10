@@ -1496,6 +1496,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             f"_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE}",
             f"_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_START}",
             f"_{const.COVER_SFX_SUN_AZIMUTH_TOLERANCE_END}",
+            f"_{const.COVER_SFX_SUN_ELEVATION_MIN}",
+            f"_{const.COVER_SFX_SUN_ELEVATION_MAX}",
             f"_{const.COVER_SFX_MAX_CLOSURE}",
             f"_{const.COVER_SFX_MIN_CLOSURE}",
             f"_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}",
