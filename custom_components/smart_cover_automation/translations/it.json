@@ -30,16 +30,22 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Passo 2 di 6",
-                "description": "Configura l'**azimut** (direzione) per ciascuna tapparella. Puoi anche aggiungere valori iniziali e finali opzionali di **tolleranza dell'azimut solare** per singola tapparella che sovrascrivono l'impostazione globale della tolleranza dell'azimut configurabile nella pagina del dispositivo di questa istanza dell'integrazione.\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)",
+                "description": "Configura l'**azimut** (direzione) per ciascuna tapparella.\n\nPuoi anche limitare gli angoli ai quali l'automazione considera che il sole colpisca una tapparella in tutte e quattro le direzioni (sinistra, destra, alto e basso), per tenere conto di sporgenze del tetto, altri edifici o alberi vicini. I valori per singola tapparella configurati qui sovrascrivono le impostazioni globali dell'angolo solare disponibili nella pagina del dispositivo dell'istanza di integrazione.\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ovest)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Azimut della tapparella (obbligatorio)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Inizio tolleranza dell'azimut solare (opzionale)"
+                        "name": "Sole: Inizio tolleranza dell'azimut (opzionale)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Fine tolleranza dell'azimut solare (opzionale)"
+                        "name": "Sole: Fine tolleranza dell'azimut (opzionale)"
+                    },
+                    "section_sun_elevation_min": {
+                        "name": "Sole: Elevazione minima (opzionale)"
+                    },
+                    "section_sun_elevation_max": {
+                        "name": "Sole: Elevazione massima (opzionale)"
                     }
                 }
             },
@@ -283,6 +289,9 @@
             },
             "sun_elevation_threshold": {
                 "name": "Elevazione minima del sole"
+            },
+            "sun_elevation_max": {
+                "name": "Elevazione massima del sole"
             },
             "tilt_external_value_day": {
                 "name": "Angolo di inclinazione: controllo esterno (giorno)"

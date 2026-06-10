@@ -30,16 +30,22 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Steg 2 av 6",
-                "description": "Konfigurera **azimut** (riktning) för varje persienn. Du kan också lägga till valfria start- och slutvärden för **tolerans för solens azimut** per persienn som åsidosätter den globala inställningen för tolerans för solens azimut, som kan konfigureras på enhetssidan för denna integrationsinstans.\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)",
+                "description": "Konfigurera **azimut** (riktning) för varje persienn.\n\nDu kan också begränsa de vinklar där automatiseringen anser att solen lyser på en persienn i alla fyra riktningarna (vänster, höger, upp och ned), för att ta hänsyn till takutsprång, andra byggnader eller närliggande träd. De per-persienn-värden som konfigureras här åsidosätter de globala solvinkelinställningarna som finns på integrationsinstansens enhetssida.\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Persiennens azimut (obligatoriskt)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Start för tolerans för solens azimut (valfritt)"
+                        "name": "Sol: Start för azimuttolerans (valfritt)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Slut för tolerans för solens azimut (valfritt)"
+                        "name": "Sol: Slut för azimuttolerans (valfritt)"
+                    },
+                    "section_sun_elevation_min": {
+                        "name": "Sol: Minsta höjd (valfritt)"
+                    },
+                    "section_sun_elevation_max": {
+                        "name": "Sol: Högsta höjd (valfritt)"
                     }
                 }
             },
@@ -283,6 +289,9 @@
             },
             "sun_elevation_threshold": {
                 "name": "Minsta solhöjd"
+            },
+            "sun_elevation_max": {
+                "name": "Högsta solhöjd"
             },
             "tilt_external_value_day": {
                 "name": "Lamellvinkel: extern styrning (dag)"

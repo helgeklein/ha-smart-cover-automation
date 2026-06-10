@@ -30,16 +30,22 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Step 2 of 6",
-                "description": "Configure the **azimuth** (direction) for each cover. You can also add optional per-cover **sun azimuth tolerance** start and end values that override the global azimuth tolerance setting configurable on the device page of the integration instance.\n\n(0°=North, 90°=East, 180°=South, 270°=West)",
+                "description": "Configure the **azimuth** (direction) for each cover.\n\nYou can also restrict the angles at which the automation considers the sun to be shining on a cover in all four directions (left, right, up, and down) to account for roof overhangs, other buildings, or nearby trees. The per-cover values configured here override the global sun-angle settings available on the integration instance's device page.\n\n(0°=North, 90°=East, 180°=South, 270°=West)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Cover azimuth (required)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Sun azimuth tolerance start (optional)"
+                        "name": "Sun: Azimuth tolerance start (optional)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Sun azimuth tolerance end (optional)"
+                        "name": "Sun: Azimuth tolerance end (optional)"
+                    },
+                    "section_sun_elevation_min": {
+                        "name": "Sun: Minimum elevation (optional)"
+                    },
+                    "section_sun_elevation_max": {
+                        "name": "Sun: Maximum elevation (optional)"
                     }
                 }
             },
@@ -283,6 +289,9 @@
             },
             "sun_elevation_threshold": {
                 "name": "Minimum sun elevation"
+            },
+            "sun_elevation_max": {
+                "name": "Maximum sun elevation"
             },
             "tilt_external_value_day": {
                 "name": "Tilt angle: external control (day)"

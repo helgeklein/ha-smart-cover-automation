@@ -30,16 +30,22 @@
             },
             "2": {
                 "title": "Smart Cover Automation - Krok 2 z 6",
-                "description": "Skonfiguruj **azymut** (kierunek) dla każdej rolety. Możesz także dodać opcjonalne wartości początkowe i końcowe **tolerancji azymutu słońca** dla poszczególnych rolet, które nadpisują globalne ustawienie tolerancji azymutu konfigurowalne na stronie urządzenia tej instancji integracji.\n\n(0°=Północ, 90°=Wschód, 180°=Południe, 270°=Zachód)",
+                "description": "Skonfiguruj **azymut** (kierunek) dla każdej rolety.\n\nMożesz także ograniczyć kąty, przy których automatyzacja uznaje, że słońce świeci na roletę we wszystkich czterech kierunkach (w lewo, w prawo, w górę i w dół), aby uwzględnić okapy dachowe, inne budynki lub pobliskie drzewa. Skonfigurowane tutaj wartości dla poszczególnych rolet nadpisują globalne ustawienia kąta słońca dostępne na stronie urządzenia instancji integracji.\n\n(0°=Północ, 90°=Wschód, 180°=Południe, 270°=Zachód)",
                 "sections": {
                     "section_azimuth": {
                         "name": "Azymut rolety (wymagane)"
                     },
                     "section_sun_azimuth_tolerance_start": {
-                        "name": "Początek tolerancji azymutu słońca (opcjonalne)"
+                        "name": "Słońce: Początek tolerancji azymutu (opcjonalne)"
                     },
                     "section_sun_azimuth_tolerance_end": {
-                        "name": "Koniec tolerancji azymutu słońca (opcjonalne)"
+                        "name": "Słońce: Koniec tolerancji azymutu (opcjonalne)"
+                    },
+                    "section_sun_elevation_min": {
+                        "name": "Słońce: Minimalna wysokość (opcjonalne)"
+                    },
+                    "section_sun_elevation_max": {
+                        "name": "Słońce: Maksymalna wysokość (opcjonalne)"
                     }
                 }
             },
@@ -283,6 +289,9 @@
             },
             "sun_elevation_threshold": {
                 "name": "Minimalna wysokość słońca"
+            },
+            "sun_elevation_max": {
+                "name": "Maksymalna wysokość słońca"
             },
             "tilt_external_value_day": {
                 "name": "Kąt nachylenia lamel: sterowanie zewnętrzne (dzień)"

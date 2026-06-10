@@ -79,15 +79,17 @@ Per-cover external tilt values take precedence over the matching global external
 
 ## Sun & Temperature Settings
 
-The entities in this section control at which temperatures and sun positions the integration automates cover movements.
+The entities in this section control at which temperatures and sun positions the integration enables heat protection.
 
 ### Sun Azimuth
 
-**Sun azimuth tolerance:** The maximum horizontal angle at which the sun is considered to be shining on the window (degrees). This global value can be overridden per cover in the configuration wizard.
+**Sun azimuth tolerance:** The maximum left/right angle at which the automation considers the sun to be shining on a cover. This global sun-angle setting can be overridden per cover in step 2 of the configuration wizard.
 
 ### Sun Elevation
 
-**Minimal sun elevation:** The automation starts operating when the sun's elevation is above this threshold (degrees above the horizon).
+**Minimum sun elevation:** The minimum angle above the horizon at which the automation considers the sun to be shining on a cover. This global sun-angle setting can be overridden per cover in step 2 of the configuration wizard.
+
+**Maximum sun elevation:** The maximum angle above the horizon at which the automation considers the sun to be shining on a cover. This global sun-angle setting can be overridden per cover in step 2 of the configuration wizard.
 
 ### Heat Protection Temperature Thresholds
 

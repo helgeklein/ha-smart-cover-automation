@@ -62,16 +62,22 @@ Specify each cover's azimuth (direction). This is necessary so that the integrat
 
 There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). You can find instructions for both on [this website](https://doc.forecast.solar/find_your_azimuth). Your phone's compass app might also be accurate enough.
 
-*New in 4.5:*
+*New in 4.7:*
 
-### Sun Azimuth Tolerance
+### Sun Azimuth Tolerance & Min/Max Elevation
 
-The sun azimuth tolerance specifies at which angle between sun and cover the sun is considered to be shining on the window. The values you can optionally specify here override the global azimuth tolerance setting configurable on the device page of the integration instance.
+The sun azimuth tolerance specifies the left/right angle between the sun and the cover at which the sun is considered to be shining on the window. The minimum and maximum elevation does the same for the bottom/top angles.
+
+The optional values you specify here override the global settings configurable on the device page of the integration instance.
 
 The following settings are available for each cover:
 
-- **Start:** Azimuth tolerance when the sun starts hitting the window (looking out, the angle to the left).
-- **End:** Azimuth tolerance when the sun stops hitting the window (looking out, the angle to the right).
+- **Azimuth tolerance start:** Azimuth at which the sun is considered to start hitting the window (looking out, the angle to the left).
+- **Azimuth tolerance end:** Azimuth at which the sun is considered to stop hitting the window (looking out, the angle to the right).
+- **Minimum elevation:** Elevation at which the sun is considered to start hitting the window (bottom angle).
+- **Maximum elevation:** Elevation at which the sun is considered to stop hitting the window (top angle).
+
+### Minimum/Maximum Sun Angle
 
 ## Step 3: Max/Min Positions (Optional)
 

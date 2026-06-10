@@ -28,6 +28,7 @@ from .const import (
     NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
     NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
+    NUMBER_KEY_SUN_ELEVATION_MAX,
     NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
@@ -70,6 +71,7 @@ async def async_setup_entry(
         ManualOverrideDurationNumber(coordinator),
         SunAzimuthToleranceNumber(coordinator),
         SunElevationThresholdNumber(coordinator),
+        SunElevationMaxNumber(coordinator),
         DailyMaxTemperatureThresholdNumber(coordinator),
         DailyMinTemperatureThresholdNumber(coordinator),
     ]
@@ -487,3 +489,30 @@ class SunElevationThresholdNumber(IntegrationNumber):
             native_unit_of_measurement="°",
         )
         super().__init__(coordinator, entity_description, ConfKeys.SUN_ELEVATION_THRESHOLD.value)
+
+
+#
+# SunElevationMaxNumber
+#
+class SunElevationMaxNumber(IntegrationNumber):
+    """Number entity for controlling the maximum sun elevation."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the maximum sun elevation number entity.
+
+        Args:
+            coordinator: The DataUpdateCoordinator that manages automation logic
+                        and provides state management for this number entity
+        """
+        entity_description = NumberEntityDescription(
+            key=NUMBER_KEY_SUN_ELEVATION_MAX,
+            translation_key=NUMBER_KEY_SUN_ELEVATION_MAX,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:sun-angle-outline",
+            native_min_value=0,
+            native_max_value=90,
+            native_step=1,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement="°",
+        )
+        super().__init__(coordinator, entity_description, ConfKeys.SUN_ELEVATION_MAX.value)
