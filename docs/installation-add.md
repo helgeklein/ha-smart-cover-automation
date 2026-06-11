@@ -6,7 +6,7 @@ description: "Installation guide part 2 for Smart Cover Automation for Home Assi
 permalink: /installation-add/
 ---
 
-# Installation Guide 2: Add Integration
+# Installation: Add Integration to HA
 
 ### Add the Integration
 

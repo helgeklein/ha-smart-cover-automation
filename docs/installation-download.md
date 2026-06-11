@@ -6,9 +6,11 @@ description: "Installation guide part 1 for Smart Cover Automation for Home Assi
 permalink: /installation-download/
 ---
 
-# Installation Guide 1: Download Integration
+# Installation: Download Integration
 
 ## Method 1: Via HACS (Recommended)
+
+HACS is the easiest way to download the latest stable release of the integration and keep it up to date in Home Assistant.
 
 ### Prerequisites
 
@@ -22,9 +24,11 @@ permalink: /installation-download/
 
 ## Method 2: Manual Installation
 
+Use the manual installation method if you want to test pre-release versions of the integration that have not yet been published as GitHub releases.
+
 ### Download and Extract
 
-1. Download the latest release from [GitHub Releases](https://github.com/helgeklein/ha-smart-cover-automation/releases).
+1. Download the latest code from the `main` branch of the GitHub repository as a [ZIP file](https://github.com/helgeklein/ha-smart-cover-automation/archive/refs/heads/main.zip).
 2. Extract the archive.
 3. Copy the `smart_cover_automation` folder to your Home Assistant `custom_components` directory.
 
