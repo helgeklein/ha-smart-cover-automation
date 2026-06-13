@@ -62,9 +62,9 @@ Specify each cover's azimuth (direction). This is necessary so that the integrat
 
 There are several online tools available to measure azimuth. [OpenStreetMap Compass](https://osmcompass.com/) works well, as does [SunCalc](https://www.suncalc.org/). You can find instructions for both on [this website](https://doc.forecast.solar/find_your_azimuth). Your phone's compass app might also be accurate enough.
 
-*New in 4.7:*
-
 ### Sun Azimuth Tolerance & Min/Max Elevation
+
+These settings let you configure the exact angles at which the sun hits a cover (left, right, top, bottom). They are available per cover, making it possible to model your building's geometry precisely while accounting for nearby trees or other buildings that provide shade. As a result, the integration's heat protection can close covers accurately when they are exposed to direct sunlight and open them otherwise.
 
 The sun azimuth tolerance specifies the left/right angle between the sun and the cover at which the sun is considered to be shining on the window. The minimum and maximum elevation does the same for the bottom/top angles.
 
@@ -161,25 +161,19 @@ In this step of the configuration wizard, the following settings can be configur
 
 Blocked time range allows you to disable the automation in a certain time range, e.g., when you sleep. It delays the cover opening in the morning until the end of the configured time range. So, if you configure the blocked time range as 22:00 to 7:00, the covers will not open before 7 am.
 
-You can also have the automation pre-close covers in the evening before a hot sunny day. This ensures silence (no cover movements) during the blocked time range while still providing heat protection through closed covers in the morning. Pre-closure runs at the beginning of the blocked time range and closes all covers the sun will shine on between sunrise and the end of the blocked time range.
+You can also have the automation **pre-close covers in the evening before a hot sunny day**. This ensures silence (no cover movements) during the blocked time range while still providing heat protection through closed covers in the morning. Pre-closure runs at the beginning of the blocked time range and closes all covers the sun will shine on between sunrise and the end of the blocked time range.
 
 Blocked time range settings:
 
 - **Disable automation in time range:** Enable or disable the blocked time range function.
-- **Disable from:** Start time of the time period in which the automation should be inactive.
-- **Disable until:** End time of the time period in which the automation should be inactive.
-
-*New in 4.6:*
-
 - **Blocked time range: mode:** Specifies the blocked time range:
   - **Absolute time:** A fixed time of day.
   - **External:** Set the blocked time range from your own automation.
     - The integration creates two additional entities that receive the start and end of the blocked time range.
     - These entities are fully managed, i.e., they're deleted again if the mode is changed away from `external`.
     - If either of these entities has no valid time, no time range is blocked.
-
-*New in 4.3:*
-
+- **Disable from:** Start time of the time period in which the automation should be inactive.
+- **Disable until:** End time of the time period in which the automation should be inactive.
 - **Pre-close for next-morning heat protection:** In the evening before a hot sunny day, pre-close covers the sun will shine on the next morning.
 
 ### Evening Closure & Morning Opening
