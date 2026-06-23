@@ -666,6 +666,10 @@ class CoverAutomation:
         cover and hand control back by returning it to that same position.
         """
 
+        automation_owned_position = self._cover_pos_history_mgr.get_automation_owned_position(self.entity_id)
+        if isinstance(automation_owned_position, int):
+            return current_pos == automation_owned_position
+
         last_history_entry = self._cover_pos_history_mgr.get_latest_entry(self.entity_id)
         if last_history_entry is None:
             return True
@@ -1117,6 +1121,7 @@ class CoverAutomation:
                     self.entity_id,
                     self._get_closing_logbook_reason_key(movement_reason),
                 )
+                self._cover_pos_history_mgr.set_automation_owned_position(self.entity_id, actual_pos)
             else:
                 self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
 
