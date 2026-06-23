@@ -120,6 +120,10 @@ class ConfKeys(StrEnum):
 class _Converters:
     """Coercion helpers used by _ConfSpec."""
 
+    _LEGACY_MORNING_OPENING_MODE_MAP = {
+        "relative_to_sunrise": MorningOpeningMode.AFTER_SUNRISE,
+    }
+
     @staticmethod
     def to_bool(v: Any) -> bool:
         """Convert various boolean representations to bool.
@@ -153,6 +157,18 @@ class _Converters:
     @staticmethod
     def to_str(v: Any) -> str:
         return str(v)
+
+    @classmethod
+    def to_morning_opening_mode(cls, v: Any) -> MorningOpeningMode:
+        """Convert stored values to the supported morning opening mode enum."""
+
+        if isinstance(v, MorningOpeningMode):
+            return v
+
+        if isinstance(v, str):
+            v = cls._LEGACY_MORNING_OPENING_MODE_MAP.get(v, v)
+
+        return MorningOpeningMode(v)
 
     @staticmethod
     def to_covers_tuple(v: Any) -> tuple[str, ...]:
@@ -244,7 +260,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.EVENING_CLOSURE_KEEP_CLOSED: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.MORNING_OPENING_MODE: _ConfSpec(
         default=MorningOpeningMode.FIXED_TIME,
-        converter=MorningOpeningMode,
+        converter=_Converters.to_morning_opening_mode,
     ),
     ConfKeys.MORNING_OPENING_TIME: _ConfSpec(default=time(8, 0, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATIC_REOPENING_MODE: _ConfSpec(

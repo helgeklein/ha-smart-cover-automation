@@ -124,6 +124,7 @@ class LockMode(StrEnum):
 class EveningClosureMode(StrEnum):
     """Evening closure timing mode."""
 
+    BEFORE_SUNSET = "before_sunset"  # Close a configurable duration before sunset
     AFTER_SUNSET = "after_sunset"  # Close a configurable duration after sunset
     FIXED_TIME = "fixed_time"  # Close at a fixed time of day
     EXTERNAL = "external"  # Close at a time supplied via entity
@@ -135,7 +136,9 @@ class EveningClosureMode(StrEnum):
 class MorningOpeningMode(StrEnum):
     """Morning opening timing mode."""
 
-    RELATIVE_TO_SUNRISE = "relative_to_sunrise"  # Open relative to sunrise
+    BEFORE_SUNRISE = "before_sunrise"  # Open a configurable duration before sunrise
+    AFTER_SUNRISE = "after_sunrise"  # Open a configurable duration after sunrise
+    RELATIVE_TO_SUNRISE = AFTER_SUNRISE
     FIXED_TIME = "fixed_time"  # Open at a fixed time of day
     EXTERNAL = "external"  # Open at a time supplied via entity
 

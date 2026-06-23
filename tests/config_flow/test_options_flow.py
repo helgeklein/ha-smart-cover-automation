@@ -2055,6 +2055,50 @@ class TestOptionsFlowStep6CloseAfterSunset:
         assert saved_data[ConfKeys.MORNING_OPENING_MODE.value] == "fixed_time"
         assert saved_data[ConfKeys.MORNING_OPENING_TIME.value] == "08:30:00"
 
+    async def test_step_6_saves_explicit_before_sun_modes(self, mock_hass_with_covers: MagicMock) -> None:
+        """Test that explicit before-sunset and before-sunrise modes are saved correctly."""
+
+        existing_data = {
+            ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+            ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0,
+        }
+        mock_entry = _create_mock_entry(data=existing_data)
+        flow = OptionsFlowHandler(mock_entry)
+        flow.hass = mock_hass_with_covers
+
+        await flow.async_step_init(
+            {
+                ConfKeys.WEATHER_ENTITY_ID.value: MOCK_WEATHER_ENTITY_ID,
+                ConfKeys.COVERS.value: [MOCK_COVER_ENTITY_ID],
+            }
+        )
+        await flow.async_step_2({f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_AZIMUTH}": 180.0})
+        await flow.async_step_3({})
+        await flow.async_step_4({})
+        await flow.async_step_5({})
+
+        user_input = {
+            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.BEFORE_SUNSET.value,
+                ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
+                ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
+                ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True,
+                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True,
+                ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.BEFORE_SUNRISE.value,
+                ConfKeys.MORNING_OPENING_TIME.value: "00:20:00",
+            }
+        }
+
+        result = await flow.async_step_6(user_input)
+        result_dict = _as_dict(result)
+
+        assert result_dict["type"] == FlowResultType.CREATE_ENTRY
+        saved_data = result_dict["data"]
+        assert saved_data[ConfKeys.EVENING_CLOSURE_MODE.value] == const.EveningClosureMode.BEFORE_SUNSET.value
+        assert saved_data[ConfKeys.MORNING_OPENING_MODE.value] == const.MorningOpeningMode.BEFORE_SUNRISE.value
+
     #
     # test_step_6_close_after_sunset_disabled
     #
