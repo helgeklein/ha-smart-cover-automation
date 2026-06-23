@@ -847,7 +847,7 @@ class AutomationEngine:
 
             return self._get_local_datetime_for_date(target_date, resolved_time)
 
-        # After sunset mode: sunset + configured delay
+        # Relative sunset modes: sunset +/- configured delay
         sunset_time = get_astral_event_date(self._ha_interface.hass, SUN_EVENT_SUNSET, target_date)
         if sunset_time is None:
             self._logger.debug("Could not determine sunset time for %s", target_date.isoformat())
@@ -855,7 +855,11 @@ class AutomationEngine:
 
         delay_time = self.resolved.evening_closure_time
         delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
-        return sunset_time + timedelta(seconds=delay_seconds)
+        delay = timedelta(seconds=delay_seconds)
+        if mode == const.EveningClosureMode.BEFORE_SUNSET:
+            return sunset_time - delay
+
+        return sunset_time + delay
 
     #
     # _get_evening_closure_time
@@ -890,7 +894,11 @@ class AutomationEngine:
 
         delay_time = self.resolved.morning_opening_time
         delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
-        return sunrise_time + timedelta(seconds=delay_seconds)
+        delay = timedelta(seconds=delay_seconds)
+        if mode == const.MorningOpeningMode.BEFORE_SUNRISE:
+            return sunrise_time - delay
+
+        return sunrise_time + delay
 
     #
     # _check_evening_closure

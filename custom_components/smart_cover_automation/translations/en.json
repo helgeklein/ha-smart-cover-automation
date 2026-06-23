@@ -164,14 +164,14 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "When enabled, covers will be closed automatically in the evening.",
-                            "close_covers_after_sunset_mode": "Choose whether evening closure is relative to sunset, uses an absolute time, or is supplied by an entity.",
-                            "close_covers_after_sunset_delay": "Depending on the selected mode: delay after sunset or fixed time of day. Ignored in external mode.",
+                            "close_covers_after_sunset_mode": "Choose whether evening closure happens before sunset, after sunset, uses an absolute time, or is supplied by an entity.",
+                            "close_covers_after_sunset_delay": "Depending on the selected mode: relative delay from sunset or fixed time of day. Ignored in external mode.",
                             "close_covers_after_sunset_cover_list": "Select the covers that should be closed in the evening.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active.",
                             "close_covers_after_sunset_keep_closed": "When enabled, selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.",
                             "automatic_reopening_mode": "Choose how automation should reopen covers when closing conditions no longer apply. Active always reopens covers, Passive only reopens covers that were previously closed by automation, and Off disables automatic reopening.",
-                            "morning_opening_mode": "Choose whether morning opening is relative to sunrise, uses an absolute time, or is supplied by an entity.",
-                            "morning_opening_time": "Depending on the selected mode: delay after sunrise or fixed time of day. Ignored in external mode."
+                            "morning_opening_mode": "Choose whether morning opening happens before sunrise, after sunrise, uses an absolute time, or is supplied by an entity.",
+                            "morning_opening_time": "Depending on the selected mode: relative delay from sunrise or fixed time of day. Ignored in external mode."
                         }
                     }
                 }
@@ -433,6 +433,7 @@
         },
         "evening_closure_mode": {
             "options": {
+                "before_sunset": "Before sunset (relative delay)",
                 "after_sunset": "After sunset (relative delay)",
                 "fixed_time": "Fixed time of day",
                 "external": "External (time supplied via entity)"
@@ -440,7 +441,8 @@
         },
         "morning_opening_mode": {
             "options": {
-                "relative_to_sunrise": "Relative to sunrise",
+                "before_sunrise": "Before sunrise (relative delay)",
+                "after_sunrise": "After sunrise (relative delay)",
                 "fixed_time": "Absolute time",
                 "external": "External (time supplied via entity)"
             }

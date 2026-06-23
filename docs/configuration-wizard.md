@@ -178,9 +178,9 @@ Blocked time range settings:
 
 ### Evening Closure & Morning Opening
 
-Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening, either at a fixed time, with a certain delay after sunset or at an externally controlled time.
+Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening, either at a fixed time, with a certain delta before/after sunset or at an externally controlled time.
 
-The same covers become eligible to reopen in the morning if normal automation permits, either at a fixed time, with a certain delay after sunrise or at an externally controlled time.
+The same covers become eligible to reopen in the morning if normal automation permits, either at a fixed time, with a certain delta before/after sunrise or at an externally controlled time.
 
 **Notes:**
 
@@ -194,23 +194,33 @@ The same covers become eligible to reopen in the morning if normal automation pe
 
 - **Evening closure: mode:** Specifies the closing time:
   - **Absolute time:** A fixed time of day.
-  - **Relative to sunset:** A specified delay after sunset.
+  - **After sunset:** A specified delay after sunset.
   - **External:** Set the closing time from your own automation.
     - The integration creates an additional entity that receives the closing time.
     - This entity is fully managed, i.e., it's deleted again if the mode is changed away from `external`.
     - If this entity has no valid time, the integration cannot determine when to close the covers, so they stay open.
 - **Evening closure: time:** Depending on the selected mode: delay after sunset, or fixed time of day. This setting is ignored if `Evening closure: mode` is `external`.
 
+*New in 5.1:*
+
+- **Evening closure: mode:**
+  - **Before sunset:** A specified time delta before sunset.
+
 **Morning opening settings:**
 
 - **Morning opening: mode:** Specifies the earliest reopening time for the previously closed covers. Actual reopening only happens if normal automation permits (e.g., heat protection).
   - **Absolute time:** A fixed time of day.
-  - **Relative to sunrise:** A specified delay after sunrise.
+  - **After sunrise:** A specified delay after sunrise.
   - **External:** Set the earliest reopening time from your own automation.
     - The integration creates an additional entity that receives the opening time.
     - This entity is fully managed, i.e., it's deleted again if the mode is changed away from `external`.
     - If this entity has no valid time, the integration cannot determine when to reopen the covers, so they stay closed.
 - **Morning opening: time:** Depending on the selected mode: delay after sunrise, or fixed time of day. This setting is ignored if `Morning opening: mode` is `external`.
+
+*New in 5.1:*
+
+- **Morning opening: mode:**
+  - **Before sunrise:** A specified time delta before sunrise.
 
 **Evening closing & morning opening settings:**
 

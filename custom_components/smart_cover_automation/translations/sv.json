@@ -164,14 +164,14 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "När den är aktiverad stängs persiennerna automatiskt på kvällen.",
-                            "close_covers_after_sunset_mode": "Välj om kvällsstängningen ska vara relativ till solnedgången, använda en absolut tid eller levereras av en entitet.",
-                            "close_covers_after_sunset_delay": "Beroende på valt läge: fördröjning efter solnedgången eller fast tidpunkt. Ignoreras i externt läge.",
+                            "close_covers_after_sunset_mode": "Välj om kvällsstängningen ska ske före solnedgången, efter solnedgången, vid en fast tidpunkt eller levereras av en entitet.",
+                            "close_covers_after_sunset_delay": "Beroende på valt läge: relativ fördröjning i förhållande till solnedgången eller fast tidpunkt. Ignoreras i externt läge.",
                             "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas på kvällen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "När den är aktiverad får kvällsstängningen flytta valda persienner även om en paus från manuell överstyrning fortfarande är aktiv.",
                             "close_covers_after_sunset_keep_closed": "När funktionen är aktiverad stängs valda persienner igen under den nattliga kvällsstängningsperioden om de öppnas på nytt. Tiden för manuell överstyrning respekteras. Låsläget har företräde, så persiennerna stängs bara igen efter att låsläget har inaktiverats.",
                             "automatic_reopening_mode": "Välj hur automationen ska öppna persienner igen när stängningsvillkoren inte längre gäller. Aktiv öppnar alltid persienner igen, Passiv öppnar bara persienner igen som tidigare har stängts av automationen och Av inaktiverar automatisk återöppning.",
-                            "morning_opening_mode": "Välj om morgonöppningen ska vara relativ till soluppgången, använda en absolut tid eller levereras av en entitet.",
-                            "morning_opening_time": "Beroende på valt läge: fördröjning efter soluppgången eller fast tidpunkt. Ignoreras i externt läge."
+                            "morning_opening_mode": "Välj om morgonöppningen ska ske före soluppgången, efter soluppgången, vid en fast tidpunkt eller levereras av en entitet.",
+                            "morning_opening_time": "Beroende på valt läge: relativ fördröjning i förhållande till soluppgången eller fast tidpunkt. Ignoreras i externt läge."
                         }
                     }
                 }
@@ -433,6 +433,7 @@
         },
         "evening_closure_mode": {
             "options": {
+                "before_sunset": "Före solnedgången (relativ fördröjning)",
                 "after_sunset": "Efter solnedgången (relativ fördröjning)",
                 "fixed_time": "Fast tidpunkt",
                 "external": "Externt (tid som levereras av en entitet)"
@@ -440,7 +441,8 @@
         },
         "morning_opening_mode": {
             "options": {
-                "relative_to_sunrise": "Relativt soluppgången",
+                "before_sunrise": "Före soluppgången (relativ fördröjning)",
+                "after_sunrise": "Efter soluppgången (relativ fördröjning)",
                 "fixed_time": "Fast tidpunkt",
                 "external": "Extern (tid anges av en entitet)"
             }

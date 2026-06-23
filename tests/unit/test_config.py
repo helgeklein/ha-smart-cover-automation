@@ -46,7 +46,7 @@ from custom_components.smart_cover_automation.config import (
     resolve_effective_blocked_time_range_bounds,
     resolve_entry,
 )
-from custom_components.smart_cover_automation.const import BlockedTimeRangeMode, ReopeningMode
+from custom_components.smart_cover_automation.const import BlockedTimeRangeMode, MorningOpeningMode, ReopeningMode
 
 # =============================================================================
 # Configuration Registry and Contract Validation Tests
@@ -343,6 +343,19 @@ class TestConfigurationResolution:
         )
         assert rs_fixed.morning_opening_mode.value == "fixed_time"
         assert rs_fixed.morning_opening_time == time(8, 15, 0)
+
+    def test_resolve_morning_opening_legacy_relative_mode_alias(self):
+        """Test that legacy relative-to-sunrise values resolve to the renamed after-sunrise mode."""
+
+        rs = resolve(
+            {
+                ConfKeys.MORNING_OPENING_MODE.value: "relative_to_sunrise",
+                ConfKeys.MORNING_OPENING_TIME.value: "00:10:00",
+            }
+        )
+
+        assert rs.morning_opening_mode == MorningOpeningMode.AFTER_SUNRISE
+        assert rs.morning_opening_time == time(0, 10, 0)
 
     def test_resolve_automatic_reopening_mode(self):
         """Test automatic reopening mode defaults and explicit resolution."""

@@ -164,14 +164,14 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Cuando está activada, las persianas se cerrarán automáticamente por la noche.",
-                            "close_covers_after_sunset_mode": "Elija si el cierre al anochecer es relativo a la puesta de sol, usa una hora absoluta o lo proporciona una entidad.",
-                            "close_covers_after_sunset_delay": "Según el modo seleccionado: retraso tras la puesta de sol u hora fija del día. Se ignora en el modo externo.",
+                            "close_covers_after_sunset_mode": "Elija si el cierre al anochecer ocurre antes de la puesta de sol, después de la puesta de sol, usa una hora fija o lo proporciona una entidad.",
+                            "close_covers_after_sunset_delay": "Según el modo seleccionado: retraso relativo respecto a la puesta de sol u hora fija del día. Se ignora en el modo externo.",
                             "close_covers_after_sunset_cover_list": "Seleccione las persianas que deben cerrarse por la noche.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Cuando está activada, el cierre nocturno puede mover las persianas seleccionadas aunque siga activa una pausa por anulación manual.",
                             "close_covers_after_sunset_keep_closed": "Cuando está activada, las persianas seleccionadas se vuelven a cerrar durante el periodo nocturno de cierre al anochecer si se vuelven a abrir. Se respeta la duración de la anulación manual. El modo de bloqueo tiene prioridad, por lo que las persianas solo se vuelven a cerrar después de desactivar el modo de bloqueo.",
                             "automatic_reopening_mode": "Elija cómo debe la automatización volver a abrir las persianas cuando dejen de cumplirse las condiciones de cierre. Activo siempre vuelve a abrir las persianas, Pasivo solo vuelve a abrir las persianas que la automatización había cerrado antes y Desactivado desactiva la reapertura automática.",
-                            "morning_opening_mode": "Elija si la apertura matutina es relativa al amanecer, usa una hora absoluta o la proporciona una entidad.",
-                            "morning_opening_time": "Según el modo seleccionado: retraso tras el amanecer o una hora fija del día. Se ignora en el modo externo."
+                            "morning_opening_mode": "Elija si la apertura matutina ocurre antes del amanecer, después del amanecer, usa una hora fija o la proporciona una entidad.",
+                            "morning_opening_time": "Según el modo seleccionado: retraso relativo respecto al amanecer o una hora fija del día. Se ignora en el modo externo."
                         }
                     }
                 }
@@ -433,6 +433,7 @@
         },
         "evening_closure_mode": {
             "options": {
+                "before_sunset": "Antes de la puesta de sol (retraso relativo)",
                 "after_sunset": "Tras la puesta de sol (retraso relativo)",
                 "fixed_time": "Hora fija del día",
                 "external": "Externo (hora proporcionada por una entidad)"
@@ -440,7 +441,8 @@
         },
         "morning_opening_mode": {
             "options": {
-                "relative_to_sunrise": "Relativa al amanecer",
+                "before_sunrise": "Antes del amanecer (retraso relativo)",
+                "after_sunrise": "Después del amanecer (retraso relativo)",
                 "fixed_time": "Hora fija del día",
                 "external": "Externo (hora proporcionada por una entidad)"
             }
