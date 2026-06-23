@@ -93,6 +93,7 @@ class CoverPositionHistoryManager:
 
     __slots__ = (
         "_automation_closed_markers",
+        "_automation_owned_positions",
         "_cover_position_history",
         "_delayed_reopen_actions",
         "_manual_override_blocked",
@@ -103,6 +104,7 @@ class CoverPositionHistoryManager:
     def __init__(self, on_closed_by_automation_changed: Callable[[dict[str, str]], None] | None = None) -> None:
         """Initialize the position history manager."""
         self._automation_closed_markers: dict[str, str] = {}
+        self._automation_owned_positions: dict[str, int] = {}
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
         self._delayed_reopen_actions: dict[str, DelayedReopenAction] = {}
         self._manual_override_blocked: set[str] = set()
@@ -238,8 +240,20 @@ class CoverPositionHistoryManager:
         self._automation_closed_markers[entity_id] = reason_key
         self._notify_closed_by_automation_changed()
 
+    def set_automation_owned_position(self, entity_id: str, position: int) -> None:
+        """Store the closed position automation currently owns for passive reopening."""
+
+        self._automation_owned_positions[entity_id] = position
+
+    def get_automation_owned_position(self, entity_id: str) -> int | None:
+        """Return the closed position automation currently owns for a cover."""
+
+        return self._automation_owned_positions.get(entity_id)
+
     def clear_closed_by_automation(self, entity_id: str) -> None:
         """Clear the automation-closed marker for a cover."""
+
+        self._automation_owned_positions.pop(entity_id, None)
 
         if entity_id not in self._automation_closed_markers:
             return

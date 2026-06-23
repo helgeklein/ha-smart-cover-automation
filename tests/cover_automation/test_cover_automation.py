@@ -90,6 +90,8 @@ def mock_cover_pos_history_mgr():
     mgr.set_recent_automation_action = MagicMock()
     mgr.clear_recent_automation_action = MagicMock()
     mgr.mark_closed_by_automation = MagicMock()
+    mgr.set_automation_owned_position = MagicMock()
+    mgr.get_automation_owned_position = MagicMock(return_value=None)
     mgr.clear_closed_by_automation = MagicMock()
     mgr.set_delayed_reopen_action = MagicMock()
     mgr.get_delayed_reopen_action = MagicMock(return_value=None)
@@ -1444,6 +1446,37 @@ class TestCalculateDesiredPosition:
         )
 
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
+        assert lockout_active is False
+
+    def test_calculate_desired_position_passive_reopens_after_automation_closure_with_stale_latest_history(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
+    ):
+        """Passive reopening should rely on automation ownership, not the mutable latest history entry."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+        mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 0
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = PositionEntry(
+            position=50,
+            timestamp=datetime.now(timezone.utc) - timedelta(minutes=5),
+            cover_moved=True,
+        )
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=0)
+
         assert position == 100
         assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
         assert lockout_active is False
