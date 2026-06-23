@@ -23,9 +23,11 @@ Filter the logbook for entries from this integration's instances by selecting `S
 The integration comes with the following sensors that help you understand the integration's inner workings:
 
 - **Evening closure: enabled?** When enabled, covers will be closed at a fixed time or a certain time after sunset.
-- **Evening closure: mode** Either `After sunset (relative delay)` or `Fixed time of day`.
-- **Evening closure: time** Depending on evening closure mode, an absolute time or the delay after sunset at which to close covers in the evening.
+- **Evening closure: mode** Shows how the evening closure time is calculated (absolute, relative to sunset, externally controlled).
+- **Evening closure: time** Depending on evening closure mode, an absolute time or the delay before/after sunset at which to close covers in the evening.
 - **Lock status**: Whether lock mode is enabled or disabled.
+- **Morning opening: mode** Shows how the morning opening time is calculated (absolute, relative to sunrise, externally controlled).
+- **Morning opening: time** Depending on morning opening mode, an absolute time or the delay before/after sunrise at which to open covers in the morning.
 - **Status:** whether the integration currently reports a problem.
 - **Sun azimuth:** Current sun azimuth (angle from north).
 - **Sun elevation:** Current sun elevation (angle above the horizon).
