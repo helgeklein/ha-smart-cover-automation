@@ -164,14 +164,14 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "启用后，遮阳设备将在晚间自动关闭。",
-                            "close_covers_after_sunset_mode": "选择晚间关闭是相对于日落、使用绝对时间，还是由某个实体提供。",
-                            "close_covers_after_sunset_delay": "根据所选模式：日落后延迟时间或固定时刻。在外部模式下将被忽略。",
+                            "close_covers_after_sunset_mode": "选择晚间关闭是在日落前、日落后、固定时刻，还是由某个实体提供。",
+                            "close_covers_after_sunset_delay": "根据所选模式：相对于日落的延迟时间或固定时刻。在外部模式下将被忽略。",
                             "close_covers_after_sunset_cover_list": "选择需要在晚间关闭的遮阳设备。",
                             "close_covers_after_sunset_ignore_manual_override_duration": "启用后，即使手动覆盖暂停仍然有效，晚间关闭仍可移动所选遮阳设备。",
                             "close_covers_after_sunset_keep_closed": "启用后，所选遮阳设备如果在夜间晚间关闭时段内被重新打开，将会再次关闭。系统会遵守手动覆盖持续时间。锁定模式优先生效，因此只有在锁定模式被禁用后，遮阳设备才会再次关闭。",
                             "automatic_reopening_mode": "选择当关闭条件不再适用时，自动化应如何重新开启遮阳设备。主动模式始终会重新开启遮阳设备，被动模式只会重新开启之前由自动化关闭的遮阳设备，关闭则禁用自动重新开启。",
-                            "morning_opening_mode": "选择晨间开启是相对于日出、使用绝对时间，还是由某个实体提供。",
-                            "morning_opening_time": "根据所选模式：日出后延迟时间或固定时刻。在外部模式下将被忽略。"
+                            "morning_opening_mode": "选择晨间开启是在日出前、日出后、固定时刻，还是由某个实体提供。",
+                            "morning_opening_time": "根据所选模式：相对于日出的延迟时间或固定时刻。在外部模式下将被忽略。"
                         }
                     }
                 }
@@ -433,6 +433,7 @@
         },
         "evening_closure_mode": {
             "options": {
+                "before_sunset": "日落前（相对延迟）",
                 "after_sunset": "日落后（相对延迟）",
                 "fixed_time": "固定时刻",
                 "external": "外部（时间由实体提供）"
@@ -440,7 +441,8 @@
         },
         "morning_opening_mode": {
             "options": {
-                "relative_to_sunrise": "相对于日出",
+                "before_sunrise": "日出前（相对延迟）",
+                "after_sunrise": "日出后（相对延迟）",
                 "fixed_time": "固定时刻",
                 "external": "外部（时间由实体提供）"
             }

@@ -164,14 +164,14 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Po włączeniu rolety zostaną automatycznie zamknięte wieczorem.",
-                            "close_covers_after_sunset_mode": "Wybierz, czy zamykanie wieczorne ma być względem zachodu słońca, korzystać ze stałej godziny czy być dostarczane przez encję.",
-                            "close_covers_after_sunset_delay": "W zależności od wybranego trybu: opóźnienie po zachodzie słońca lub stała godzina. Ignorowane w trybie zewnętrznym.",
+                            "close_covers_after_sunset_mode": "Wybierz, czy zamykanie wieczorne ma następować przed zachodem słońca, po zachodzie słońca, o stałej godzinie czy być dostarczane przez encję.",
+                            "close_covers_after_sunset_delay": "W zależności od wybranego trybu: względne opóźnienie względem zachodu słońca lub stała godzina. Ignorowane w trybie zewnętrznym.",
                             "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Po włączeniu zamykanie wieczorne może poruszyć wybrane rolety, nawet jeśli nadal trwa pauza po ręcznym nadpisaniu.",
                             "close_covers_after_sunset_keep_closed": "Po włączeniu wybrane rolety zostaną ponownie zamknięte podczas nocnego okresu wieczornego zamykania, jeśli zostaną ponownie otwarte. Czas ręcznego nadpisania jest respektowany. Tryb blokady ma pierwszeństwo, więc rolety zostaną ponownie zamknięte dopiero po wyłączeniu trybu blokady.",
                             "automatic_reopening_mode": "Wybierz, jak automatyzacja ma ponownie otwierać rolety, gdy warunki zamknięcia przestaną obowiązywać. Aktywny zawsze ponownie otwiera rolety, Pasywny ponownie otwiera tylko rolety wcześniej zamknięte przez automatyzację, a Wyłączony wyłącza automatyczne ponowne otwieranie.",
-                            "morning_opening_mode": "Wybierz, czy poranne otwieranie ma być względem wschodu słońca, korzystać ze stałej godziny czy być dostarczane przez encję.",
-                            "morning_opening_time": "W zależności od wybranego trybu: opóźnienie po wschodzie słońca lub stała godzina dnia. Ignorowane w trybie zewnętrznym."
+                            "morning_opening_mode": "Wybierz, czy poranne otwieranie ma następować przed wschodem słońca, po wschodzie słońca, o stałej godzinie czy być dostarczane przez encję.",
+                            "morning_opening_time": "W zależności od wybranego trybu: względne opóźnienie względem wschodu słońca lub stała godzina dnia. Ignorowane w trybie zewnętrznym."
                         }
                     }
                 }
@@ -433,6 +433,7 @@
         },
         "evening_closure_mode": {
             "options": {
+                "before_sunset": "Przed zachodem słońca (opóźnienie względne)",
                 "after_sunset": "Po zachodzie słońca (opóźnienie względne)",
                 "fixed_time": "Stała godzina",
                 "external": "Zewnętrzny (czas dostarczany przez encję)"
@@ -440,7 +441,8 @@
         },
         "morning_opening_mode": {
             "options": {
-                "relative_to_sunrise": "Względem wschodu słońca",
+                "before_sunrise": "Przed wschodem słońca (opóźnienie względne)",
+                "after_sunrise": "Po wschodzie słońca (opóźnienie względne)",
                 "fixed_time": "Stała godzina",
                 "external": "Zewnętrzne (czas dostarczany przez encję)"
             }

@@ -164,14 +164,14 @@
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Wanneer ingeschakeld worden de rolluiken 's avonds automatisch gesloten.",
-                            "close_covers_after_sunset_mode": "Kies of de avondsluiting relatief ten opzichte van zonsondergang is, een vast tijdstip gebruikt of door een entiteit wordt geleverd.",
-                            "close_covers_after_sunset_delay": "Afhankelijk van de gekozen modus: vertraging na zonsondergang of vast tijdstip. Wordt genegeerd in de externe modus.",
+                            "close_covers_after_sunset_mode": "Kies of de avondsluiting vóór zonsondergang, na zonsondergang, op een vast tijdstip of via een entiteit plaatsvindt.",
+                            "close_covers_after_sunset_delay": "Afhankelijk van de gekozen modus: relatieve vertraging ten opzichte van zonsondergang of vast tijdstip. Wordt genegeerd in de externe modus.",
                             "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die 's avonds moeten worden gesloten.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wanneer ingeschakeld mag de avondsluiting geselecteerde rolluiken bewegen, ook als een pauze door handmatige override nog actief is.",
                             "close_covers_after_sunset_keep_closed": "Wanneer ingeschakeld worden geselecteerde rolluiken tijdens de nachtelijke avondsluitingsperiode opnieuw gesloten als ze weer worden geopend. De duur van handmatige override wordt gerespecteerd. Vergrendelingsmodus heeft voorrang, dus rolluiken worden pas opnieuw gesloten nadat de vergrendelingsmodus is uitgeschakeld.",
                             "automatic_reopening_mode": "Kies hoe de automatisering rolluiken opnieuw moet openen wanneer de sluitvoorwaarden niet langer van toepassing zijn. Actief opent rolluiken altijd opnieuw, Passief opent alleen rolluiken opnieuw die eerder door de automatisering zijn gesloten en Uit schakelt automatisch heropenen uit.",
-                            "morning_opening_mode": "Kies of de ochtendopening relatief is ten opzichte van zonsopgang, een vaste tijd gebruikt of door een entiteit wordt geleverd.",
-                            "morning_opening_time": "Afhankelijk van de gekozen modus: vertraging na zonsopgang of vast tijdstip. Wordt genegeerd in de externe modus."
+                            "morning_opening_mode": "Kies of de ochtendopening vóór zonsopgang, na zonsopgang, op een vast tijdstip of via een entiteit plaatsvindt.",
+                            "morning_opening_time": "Afhankelijk van de gekozen modus: relatieve vertraging ten opzichte van zonsopgang of vast tijdstip. Wordt genegeerd in de externe modus."
                         }
                     }
                 }
@@ -433,6 +433,7 @@
         },
         "evening_closure_mode": {
             "options": {
+                "before_sunset": "Voor zonsondergang (relatieve vertraging)",
                 "after_sunset": "Na zonsondergang (relatieve vertraging)",
                 "fixed_time": "Vast tijdstip",
                 "external": "Extern (tijd aangeleverd door een entiteit)"
@@ -440,7 +441,8 @@
         },
         "morning_opening_mode": {
             "options": {
-                "relative_to_sunrise": "Relatief ten opzichte van zonsopgang",
+                "before_sunrise": "Voor zonsopgang (relatieve vertraging)",
+                "after_sunrise": "Na zonsopgang (relatieve vertraging)",
                 "fixed_time": "Vast tijdstip",
                 "external": "Extern (tijd aangeleverd door een entiteit)"
             }
