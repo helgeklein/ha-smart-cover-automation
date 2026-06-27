@@ -978,6 +978,28 @@ class TestMovementReasonHelpers:
         mock_cover_pos_history_mgr.add.assert_called_once()
         mock_cover_pos_history_mgr.clear_recent_automation_action.assert_not_called()
 
+    def test_get_manual_override_remaining_updates_owned_position_for_expected_recent_automation_drift(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Expected settle drift should keep the automation-owned position aligned with the live cover state."""
+
+        mock_resolved_config.manual_override_duration = 3600
+        mock_resolved_config.covers_min_position_delta = 5
+        entry = PositionEntry(position=20, timestamp=datetime.now(timezone.utc) - timedelta(seconds=30), cover_moved=True)
+        recent_automation_action = RecentAutomationAction(
+            expected_position=20,
+            allowed_position_drift=mock_resolved_config.covers_min_position_delta,
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=60),
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_cover_pos_history_mgr.get_recent_automation_action.return_value = recent_automation_action
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+
+        remaining = cover_automation._get_manual_override_remaining(22)
+
+        assert remaining is None
+        mock_cover_pos_history_mgr.set_automation_owned_position.assert_called_once_with("cover.test", 22)
+
     def test_get_manual_override_remaining_keeps_manual_override_for_large_recent_automation_drift(
         self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
     ):
