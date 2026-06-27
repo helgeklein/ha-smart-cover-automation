@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.components.cover import ATTR_CURRENT_POSITION, ATTR_CURRENT_TILT_POSITION, CoverEntityFeature
-from homeassistant.const import ATTR_SUPPORTED_FEATURES, STATE_CLOSED, STATE_CLOSING
+from homeassistant.const import ATTR_SUPPORTED_FEATURES, STATE_CLOSED, STATE_CLOSING, STATE_OPEN
 from homeassistant.helpers import entity_registry as ha_entity_registry
 
 from custom_components.smart_cover_automation import const
@@ -292,6 +292,68 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         fourth_cover_result = fourth_result.covers[MOCK_COVER_ENTITY_ID]
         assert fourth_cover_result.pos_target_final == 100
+        assert coordinator._ha_interface.set_cover_position.await_count == 2
+
+    async def test_passive_reopening_resumes_after_heat_protection_settle_drift(
+        self,
+        mock_hass: MagicMock,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Passive reopening should survive a heat-protection close that settles slightly off the commanded position."""
+
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
+        config_data = create_sun_config()
+        config_data[ConfKeys.MANUAL_OVERRIDE_DURATION.value] = 1800
+        config_data[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = const.ReopeningMode.PASSIVE.value
+        config_data[ConfKeys.COVERS_MAX_CLOSURE.value] = 20
+        config_entry = MockConfigEntry(config_data)
+
+        coordinator = DataUpdateCoordinator(mock_hass, cast(IntegrationConfigEntry, config_entry))
+        coordinator._ha_interface.set_cover_position = AsyncMock(side_effect=[20, 100])
+        coordinator._ha_interface.add_logbook_entry = AsyncMock()
+
+        set_weather_forecast_temp(float(TEST_HOT_TEMP))
+
+        state_mapping = create_combined_state_mock(
+            sun_azimuth=180.0,
+            cover_states={
+                MOCK_COVER_ENTITY_ID: {
+                    ATTR_CURRENT_POSITION: 100,
+                    ATTR_SUPPORTED_FEATURES: int(CoverEntityFeature.SET_POSITION),
+                }
+            },
+        )
+        mock_hass.states.get.side_effect = lambda entity_id: state_mapping.get(entity_id)
+
+        first_result = await coordinator._async_update_data()
+
+        first_cover_result = first_result.covers[MOCK_COVER_ENTITY_ID]
+        assert first_cover_result.pos_target_final == 20
+        assert coordinator._ha_interface.set_cover_position.await_count == 1
+
+        state_mapping[MOCK_COVER_ENTITY_ID].state = STATE_OPEN
+        state_mapping[MOCK_COVER_ENTITY_ID].attributes = {
+            ATTR_CURRENT_POSITION: 22,
+            ATTR_SUPPORTED_FEATURES: int(CoverEntityFeature.SET_POSITION),
+        }
+
+        second_result = await coordinator._async_update_data()
+
+        second_cover_result = second_result.covers[MOCK_COVER_ENTITY_ID]
+        assert second_cover_result.pos_current == 22
+        assert second_cover_result.pos_target_desired == 20
+        assert second_cover_result.pos_target_final is None
+        assert coordinator._ha_interface.set_cover_position.await_count == 1
+
+        set_weather_forecast_temp(20.0)
+        state_mapping[MOCK_SUN_ENTITY_ID].attributes = {"elevation": 45.0, "azimuth": 90.0}
+
+        third_result = await coordinator._async_update_data()
+
+        third_cover_result = third_result.covers[MOCK_COVER_ENTITY_ID]
+        assert third_cover_result.pos_current == 22
+        assert third_cover_result.pos_target_final == 100
         assert coordinator._ha_interface.set_cover_position.await_count == 2
 
     async def test_no_manual_override_same_position(self, mock_hass: MagicMock) -> None:

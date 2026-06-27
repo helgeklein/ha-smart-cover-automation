@@ -631,6 +631,8 @@ class CoverAutomation:
             return False
 
         self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=True, timestamp=time_now)
+        if self._cover_pos_history_mgr.get_closed_by_automation_reason(self.entity_id) is not None:
+            self._cover_pos_history_mgr.set_automation_owned_position(self.entity_id, current_pos)
         self._log_cover_msg(
             (f"Ignoring expected recent automation position drift ({last_history_entry.position}% -> {current_pos}%)"),
             const.LogSeverity.DEBUG,
