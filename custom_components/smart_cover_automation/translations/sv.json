@@ -9,15 +9,6 @@
     },
     "options": {
         "error": {
-            "heat_protection_mode": {
-                "name": "Värmeskydd",
-                "state": {
-                    "off": "Av",
-                    "auto": "Automatisk",
-                    "forced_sunny_windows": "Tvingat (soliga fönster)",
-                    "forced_all_windows": "Tvingat (alla fönster)"
-                }
-            },
             "invalid_cover": "En eller flera valda persienner är ogiltiga eller otillgängliga.",
             "invalid_integer": "Ange ett heltal.",
             "invalid_weather_entity": "Den valda väderentiteten stöder inte dagliga prognoser.",
@@ -224,6 +215,15 @@
                     "active": "Aktiv",
                     "passive": "Passiv",
                     "off": "Av"
+                }
+            },
+            "heat_protection_mode": {
+                "name": "Värmeskydd",
+                "state": {
+                    "off": "Av",
+                    "auto": "Automatisk",
+                    "forced_sunny_windows": "Tvingat (soliga fönster)",
+                    "forced_all_windows": "Tvingat (alla fönster)"
                 }
             },
             "lock_mode": {
