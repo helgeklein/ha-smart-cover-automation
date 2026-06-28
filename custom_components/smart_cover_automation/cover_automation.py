@@ -192,9 +192,7 @@ class CoverAutomation:
 
         cover_state, plan, ownership_debug_snapshot = await self.evaluate(state, sensor_data)
         if plan is None:
-            self._logger.debug(
-                f"[{self.entity_id}] Cover result: {COVER_RESULT_NO_MOVEMENT}. Cover state: {cover_state}. {ownership_debug_snapshot}"
-            )
+            self._logger.debug(self._format_cover_result_debug_message(COVER_RESULT_NO_MOVEMENT, cover_state, ownership_debug_snapshot))
             return cover_state
 
         return await self.execute_plan(plan)
@@ -340,8 +338,20 @@ class CoverAutomation:
             cover_moved,
         )
 
-        self._logger.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}. {plan.ownership_debug_snapshot}")
+        self._logger.debug(self._format_cover_result_debug_message(message, cover_state, plan.ownership_debug_snapshot))
         return cover_state
+
+    def _format_cover_result_debug_message(
+        self, message: str, cover_state: CoverState, ownership_debug_snapshot: OwnershipDebugSnapshot
+    ) -> str:
+        """Format the per-cover result debug log, omitting ownership for fully open covers."""
+
+        effective_pos = cover_state.pos_target_final if cover_state.pos_target_final is not None else cover_state.pos_current
+        ownership_suffix = ""
+        if effective_pos != const.COVER_POS_FULLY_OPEN:
+            ownership_suffix = f". {ownership_debug_snapshot}"
+
+        return f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}{ownership_suffix}"
 
     def _is_cover_move_required(self, current_pos: int, desired_pos: int) -> bool:
         """Return whether a cover-position command is expected for this evaluation."""

@@ -3327,7 +3327,7 @@ class TestLogCoverMsg:
     async def test_execute_plan_appends_ownership_debug_summary(
         self, cover_automation, mock_logger, mock_cover_pos_history_mgr, mock_resolved_config
     ):
-        """Per-cover debug logging should append ownership details captured before movement."""
+        """Per-cover debug logging should omit ownership details when the result is fully open."""
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
@@ -3359,12 +3359,36 @@ class TestLogCoverMsg:
 
         mock_logger.debug.assert_called_once()
         debug_message = mock_logger.debug.call_args[0][0]
-        assert "Ownership:" in debug_message
-        assert "closed_by_automation_reason='reason_close_after_sunset'" in debug_message
-        assert "automation_owned_position=20" in debug_message
-        assert "owned_delta=1" in debug_message
-        assert "passive_reopening_eligible=True" in debug_message
-        assert "passive_reopening_eligibility_source='owned_position'" in debug_message
+        assert "Ownership:" not in debug_message
+
+    @pytest.mark.asyncio
+    async def test_process_omits_ownership_debug_summary_when_no_plan_and_fully_open(
+        self, cover_automation, mock_logger, mock_cover_pos_history_mgr, mock_resolved_config, mock_state
+    ):
+        """The per-cover debug log should omit ownership details when a no-movement result is fully open."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+        mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 20
+        mock_state.attributes[ATTR_CURRENT_POSITION] = 100
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        await cover_automation.process(mock_state, sensor_data)
+
+        mock_logger.debug.assert_called_once()
+        debug_message = mock_logger.debug.call_args[0][0]
+        assert "Cover result: no movement" in debug_message
+        assert "Ownership:" not in debug_message
 
     def test_capture_ownership_debug_snapshot_returns_structured_snapshot(
         self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
