@@ -217,6 +217,15 @@
                     "off": "Désactivé"
                 }
             },
+            "heat_protection_mode": {
+                "name": "Protection contre la chaleur",
+                "state": {
+                    "off": "Désactivé",
+                    "auto": "Auto",
+                    "forced_sunny_windows": "Forcé (fenêtres ensoleillées)",
+                    "forced_all_windows": "Forcé (toutes les fenêtres)"
+                }
+            },
             "lock_mode": {
                 "name": "Mode de verrouillage",
                 "state": {

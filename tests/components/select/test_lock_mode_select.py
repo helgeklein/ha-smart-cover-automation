@@ -9,14 +9,16 @@ Coverage target: select.py lines 88-122 (LockModeSelect class)
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, cast
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from homeassistant.helpers.entity import Entity
 
 from custom_components.smart_cover_automation.const import (
     SELECT_KEY_AUTOMATIC_REOPENING_MODE,
+    SELECT_KEY_HEAT_PROTECTION_MODE,
     SELECT_KEY_LOCK_MODE,
+    HeatProtectionMode,
     LockMode,
     ReopeningMode,
 )
@@ -24,6 +26,7 @@ from custom_components.smart_cover_automation.coordinator import DataUpdateCoord
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.select import (
     AutomaticReopeningModeSelect,
+    HeatProtectionModeSelect,
     LockModeSelect,
     async_setup_entry,
 )
@@ -350,6 +353,95 @@ async def test_automatic_reopening_mode_select_async_select_option_invalid(mock_
         assert "Invalid automatic reopening mode value" in error_message
         assert invalid_option in error_message
         coordinator.async_set_automatic_reopening_mode.assert_not_called()
+
+
+async def test_heat_protection_mode_select_entity_properties(mock_hass_with_spec, mock_config_entry_basic) -> None:
+    """Test HeatProtectionModeSelect entity properties."""
+
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    coordinator.last_update_success = True
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+
+    captured: list[Entity] = []
+
+    def add_entities(new_entities: Iterable[Entity], update_before_add: bool = False) -> None:  # noqa: ARG001
+        captured.extend(list(new_entities))
+
+    await async_setup_entry(
+        mock_hass_with_spec,
+        cast(IntegrationConfigEntry, mock_config_entry_basic),
+        add_entities,
+    )
+
+    heat_protection_mode_select = next(entity for entity in captured if isinstance(entity, HeatProtectionModeSelect))
+    assert heat_protection_mode_select.entity_description.key == SELECT_KEY_HEAT_PROTECTION_MODE
+    assert heat_protection_mode_select.entity_description.translation_key == SELECT_KEY_HEAT_PROTECTION_MODE
+    assert heat_protection_mode_select.unique_id == f"{mock_config_entry_basic.entry_id}_{SELECT_KEY_HEAT_PROTECTION_MODE}"
+    assert heat_protection_mode_select.options == [mode.value for mode in HeatProtectionMode]
+
+
+async def test_heat_protection_mode_select_current_option_returns_coordinator_mode(mock_hass_with_spec, mock_config_entry_basic) -> None:
+    """Test that current_option returns the coordinator heat protection mode."""
+
+    from custom_components.smart_cover_automation.config import ConfKeys
+
+    mock_config_entry_basic.options[ConfKeys.HEAT_PROTECTION_MODE.value] = HeatProtectionMode.FORCED_SUNNY_WINDOWS.value
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+
+    heat_protection_mode_select = HeatProtectionModeSelect(coordinator)
+
+    assert heat_protection_mode_select.current_option == HeatProtectionMode.FORCED_SUNNY_WINDOWS.value
+
+
+async def test_lock_mode_select_current_option_returns_none_when_coordinator_value_missing(
+    mock_hass_with_spec, mock_config_entry_basic
+) -> None:
+    """Test that current_option returns None when the coordinator has no current enum value."""
+
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+    lock_mode_select = LockModeSelect(coordinator)
+
+    with patch.object(DataUpdateCoordinator, "lock_mode", new_callable=PropertyMock, return_value=None):
+        assert lock_mode_select.current_option is None
+
+
+async def test_heat_protection_mode_select_async_select_option_valid(mock_hass_with_spec, mock_config_entry_basic) -> None:
+    """Test async_select_option with valid heat protection mode string."""
+
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    coordinator.async_set_heat_protection_mode = AsyncMock()
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+
+    heat_protection_mode_select = HeatProtectionModeSelect(coordinator)
+
+    await heat_protection_mode_select.async_select_option(HeatProtectionMode.FORCED_ALL_WINDOWS.value)
+
+    coordinator.async_set_heat_protection_mode.assert_called_once_with(HeatProtectionMode.FORCED_ALL_WINDOWS)
+
+
+async def test_heat_protection_mode_select_async_select_option_invalid(mock_hass_with_spec, mock_config_entry_basic) -> None:
+    """Test async_select_option with invalid heat protection mode string."""
+
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    coordinator.async_set_heat_protection_mode = AsyncMock()
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+
+    with patch("custom_components.smart_cover_automation.select.Log") as mock_log_class:
+        mock_logger = MagicMock()
+        mock_log_class.return_value = mock_logger
+
+        heat_protection_mode_select = HeatProtectionModeSelect(coordinator)
+
+        invalid_option = "invalid_heat_protection_mode"
+        await heat_protection_mode_select.async_select_option(invalid_option)
+
+        mock_logger.error.assert_called_once()
+        error_message = mock_logger.error.call_args[0][0]
+        assert "Invalid heat protection mode value" in error_message
+        assert invalid_option in error_message
+        coordinator.async_set_heat_protection_mode.assert_not_called()
 
 
 async def test_lock_mode_select_availability(mock_hass_with_spec, mock_config_entry_basic) -> None:

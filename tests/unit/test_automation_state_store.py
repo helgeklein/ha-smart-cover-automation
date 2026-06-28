@@ -208,6 +208,60 @@ class TestAutomationStateStore:
             }
         )
 
+    @pytest.mark.asyncio
+    async def test_loaded_closed_markers_are_preserved_when_saving_extrema(self, mock_hass: MagicMock) -> None:
+        """Saving extrema after a load should retain the previously loaded closed markers."""
+
+        self._prepare_hass(mock_hass)
+
+        mock_store = MagicMock()
+        mock_store.async_load = AsyncMock(return_value={STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"}})
+        mock_store.async_save = AsyncMock()
+
+        with patch("custom_components.smart_cover_automation.automation_state_store.Store", return_value=mock_store):
+            store = AutomationStateStore(mock_hass, "entry_123")
+
+        assert await store.async_load_closed_markers() == {"cover.kitchen": "evening_close"}
+
+        await store.async_save_current_day_temperature_extrema({"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0})
+
+        mock_store.async_save.assert_awaited_with(
+            {
+                STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"},
+                STORAGE_KEY_CURRENT_DAY_TEMPERATURE_EXTREMA: {"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0},
+            }
+        )
+
+    @pytest.mark.asyncio
+    async def test_loaded_extrema_are_preserved_when_saving_closed_markers(self, mock_hass: MagicMock) -> None:
+        """Saving closed markers after a load should retain the previously loaded extrema snapshot."""
+
+        self._prepare_hass(mock_hass)
+
+        mock_store = MagicMock()
+        mock_store.async_load = AsyncMock(
+            return_value={STORAGE_KEY_CURRENT_DAY_TEMPERATURE_EXTREMA: {"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0}}
+        )
+        mock_store.async_save = AsyncMock()
+
+        with patch("custom_components.smart_cover_automation.automation_state_store.Store", return_value=mock_store):
+            store = AutomationStateStore(mock_hass, "entry_123")
+
+        assert await store.async_load_current_day_temperature_extrema() == {
+            "date": "2026-05-26",
+            "temp_max": 29.0,
+            "temp_min": 18.0,
+        }
+
+        await store.async_save_closed_markers({"cover.kitchen": "evening_close"})
+
+        mock_store.async_save.assert_awaited_with(
+            {
+                STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"},
+                STORAGE_KEY_CURRENT_DAY_TEMPERATURE_EXTREMA: {"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0},
+            }
+        )
+
     def test_schedule_save_current_day_extrema_clears_only_extrema_in_fallback_mode(self) -> None:
         """Clearing extrema should preserve other fallback state for the same entry."""
 

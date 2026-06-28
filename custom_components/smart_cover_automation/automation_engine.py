@@ -263,6 +263,7 @@ class AutomationEngine:
         blocked_time_range_start, blocked_time_range_end = self._get_effective_blocked_time_range_bounds()
         global_settings = {
             "lock_mode": lock_mode,
+            "heat_protection_mode": self.resolved.heat_protection_mode,
             "automatic_reopening_mode": self.resolved.automatic_reopening_mode,
             "covers_min_position_delta": self.resolved.covers_min_position_delta,
             "sun_azimuth_tolerance": self.resolved.sun_azimuth_tolerance,
@@ -390,13 +391,31 @@ class AutomationEngine:
         if pre_close_sensor_data is None:
             return message
 
-        if pre_close_sensor_data.temp_hot is not True or pre_close_sensor_data.weather_sunny is not True:
+        if not self._is_pre_close_heat_protection_active(pre_close_sensor_data):
+            if self.resolved.heat_protection_mode == const.HeatProtectionMode.OFF:
+                self._logger.debug("Pre-closure skipped because heat protection mode is off...")
+                return "Blocked time range started; skipping pre-close because heat protection mode is off"
+
             self._logger.debug("Pre-closure weather conditions not met, skipping...")
             return "Blocked time range started; skipping pre-close because the next morning is not forecast to be both hot and sunny"
 
         self._logger.debug("Pre-closure weather conditions met, activating...")
         await self._process_covers(tuple(self.resolved.covers), cover_states, pre_close_sensor_data, result)
         return "Blocked time range started; ran forecast-based pre-close evaluation for next-morning heat protection"
+
+    def _is_pre_close_heat_protection_active(self, sensor_data: SensorData) -> bool:
+        """Return whether pre-close should evaluate covers for the selected heat mode."""
+
+        if self.resolved.heat_protection_mode == const.HeatProtectionMode.OFF:
+            return False
+
+        if self.resolved.heat_protection_mode in (
+            const.HeatProtectionMode.FORCED_SUNNY_WINDOWS,
+            const.HeatProtectionMode.FORCED_ALL_WINDOWS,
+        ):
+            return True
+
+        return sensor_data.temp_hot is True and sensor_data.weather_sunny is True
 
     async def _build_blocked_time_range_pre_close_sensor_data(self) -> tuple[SensorData | None, str]:
         """Build the forecast-only sensor snapshot used for blocked-time pre-close."""

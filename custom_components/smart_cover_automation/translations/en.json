@@ -217,6 +217,15 @@
                     "off": "Off"
                 }
             },
+            "heat_protection_mode": {
+                "name": "Heat protection",
+                "state": {
+                    "off": "Off",
+                    "auto": "Auto",
+                    "forced_sunny_windows": "Forced (sunny windows)",
+                    "forced_all_windows": "Forced (all windows)"
+                }
+            },
             "lock_mode": {
                 "name": "Lock mode",
                 "state": {

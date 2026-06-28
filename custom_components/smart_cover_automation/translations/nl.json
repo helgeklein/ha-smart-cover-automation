@@ -217,6 +217,15 @@
                     "off": "Uit"
                 }
             },
+            "heat_protection_mode": {
+                "name": "Hittebescherming",
+                "state": {
+                    "off": "Uit",
+                    "auto": "Automatisch",
+                    "forced_sunny_windows": "Geforceerd (zonnige ramen)",
+                    "forced_all_windows": "Geforceerd (alle ramen)"
+                }
+            },
             "lock_mode": {
                 "name": "Vergrendelmodus",
                 "state": {

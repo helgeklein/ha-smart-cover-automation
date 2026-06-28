@@ -217,6 +217,15 @@
                     "off": "关闭"
                 }
             },
+            "heat_protection_mode": {
+                "name": "隔热保护",
+                "state": {
+                    "off": "关闭",
+                    "auto": "自动",
+                    "forced_sunny_windows": "强制（向阳窗户）",
+                    "forced_all_windows": "强制（所有窗户）"
+                }
+            },
             "lock_mode": {
                 "name": "锁定模式",
                 "state": {

@@ -6,13 +6,14 @@ option/select settings of the Smart Cover Automation integration.
 
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.const import EntityCategory
 
 from . import const
-from .const import SELECT_KEY_AUTOMATIC_REOPENING_MODE, SELECT_KEY_LOCK_MODE
+from .const import SELECT_KEY_AUTOMATIC_REOPENING_MODE, SELECT_KEY_HEAT_PROTECTION_MODE, SELECT_KEY_LOCK_MODE
 from .entity import IntegrationEntity
 from .log import Log
 
@@ -48,6 +49,7 @@ async def async_setup_entry(
     entities = [
         LockModeSelect(coordinator),
         AutomaticReopeningModeSelect(coordinator),
+        HeatProtectionModeSelect(coordinator),
     ]
 
     async_add_entities(entities)
@@ -99,84 +101,97 @@ class IntegrationSelect(IntegrationEntity, SelectEntity):  # pyright: ignore[rep
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{entity_description.key}"
 
 
-#
-# LockModeSelect
-#
-class LockModeSelect(IntegrationSelect):
-    """Select entity for choosing lock mode."""
+class EnumConfigSelect(IntegrationSelect):
+    """Base select entity backed by a coordinator enum setting."""
 
-    #
-    # __init__
-    #
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        *,
+        key: str,
+        icon: str,
+        enum_type: type[StrEnum],
+        coordinator_property: str,
+        coordinator_setter: str,
+        invalid_value_label: str,
+    ) -> None:
         super().__init__(
             coordinator,
             SelectEntityDescription(
-                key=SELECT_KEY_LOCK_MODE,
-                translation_key=SELECT_KEY_LOCK_MODE,
-                icon="mdi:lock",
+                key=key,
+                translation_key=key,
+                icon=icon,
                 entity_category=EntityCategory.CONFIG,
             ),
         )
 
-        self._attr_options = [mode.value for mode in const.LockMode]
+        self._attr_options = [mode.value for mode in enum_type]
+        self._enum_type = enum_type
+        self._coordinator_property = coordinator_property
+        self._coordinator_setter = coordinator_setter
+        self._invalid_value_label = invalid_value_label
         self._logger = Log(entry_id=coordinator.config_entry.entry_id)
 
-    #
-    # current_option
-    #
     @property
     def current_option(self) -> str | None:  # pyright: ignore
-        """Return current lock mode."""
+        """Return the current selected option."""
 
-        return self.coordinator.lock_mode
+        value = getattr(self.coordinator, self._coordinator_property)
+        return str(value) if value is not None else None
 
-    #
-    # async_select_option
-    #
     async def async_select_option(self, option: str) -> None:
-        """Change the lock mode."""
+        """Persist a new option through the coordinator."""
 
-        # Convert string to LockMode enum
         try:
-            lock_mode = const.LockMode(option)
+            enum_value = self._enum_type(option)
         except ValueError:
-            self._logger.error(f"Invalid lock mode value: {option}")
+            self._logger.error(f"Invalid {self._invalid_value_label} value: {option}")
             return
 
-        await self.coordinator.async_set_lock_mode(lock_mode)
+        coordinator_setter = getattr(self.coordinator, self._coordinator_setter)
+        await coordinator_setter(enum_value)
 
 
-class AutomaticReopeningModeSelect(IntegrationSelect):
+class LockModeSelect(EnumConfigSelect):
+    """Select entity for choosing lock mode."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(
+            coordinator,
+            key=SELECT_KEY_LOCK_MODE,
+            icon="mdi:lock",
+            enum_type=const.LockMode,
+            coordinator_property="lock_mode",
+            coordinator_setter="async_set_lock_mode",
+            invalid_value_label="lock mode",
+        )
+
+
+class AutomaticReopeningModeSelect(EnumConfigSelect):
     """Select entity for choosing the automatic reopening mode."""
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
         super().__init__(
             coordinator,
-            SelectEntityDescription(
-                key=SELECT_KEY_AUTOMATIC_REOPENING_MODE,
-                translation_key=SELECT_KEY_AUTOMATIC_REOPENING_MODE,
-                icon="mdi:blinds-open",
-                entity_category=EntityCategory.CONFIG,
-            ),
+            key=SELECT_KEY_AUTOMATIC_REOPENING_MODE,
+            icon="mdi:blinds-open",
+            enum_type=const.ReopeningMode,
+            coordinator_property="automatic_reopening_mode",
+            coordinator_setter="async_set_automatic_reopening_mode",
+            invalid_value_label="automatic reopening mode",
         )
 
-        self._attr_options = [mode.value for mode in const.ReopeningMode]
-        self._logger = Log(entry_id=coordinator.config_entry.entry_id)
 
-    @property
-    def current_option(self) -> str | None:  # pyright: ignore
-        """Return current automatic reopening mode."""
+class HeatProtectionModeSelect(EnumConfigSelect):
+    """Select entity for choosing the heat protection mode."""
 
-        return self.coordinator.automatic_reopening_mode
-
-    async def async_select_option(self, option: str) -> None:
-        """Change the automatic reopening mode."""
-
-        try:
-            automatic_reopening_mode = const.ReopeningMode(option)
-        except ValueError:
-            self._logger.error(f"Invalid automatic reopening mode value: {option}")
-            return
-
-        await self.coordinator.async_set_automatic_reopening_mode(automatic_reopening_mode)
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(
+            coordinator,
+            key=SELECT_KEY_HEAT_PROTECTION_MODE,
+            icon="mdi:white-balance-sunny",
+            enum_type=const.HeatProtectionMode,
+            coordinator_property="heat_protection_mode",
+            coordinator_setter="async_set_heat_protection_mode",
+            invalid_value_label="heat protection mode",
+        )

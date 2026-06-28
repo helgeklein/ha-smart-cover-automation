@@ -217,6 +217,15 @@
                     "off": "Wyłączony"
                 }
             },
+            "heat_protection_mode": {
+                "name": "Ochrona przed ciepłem",
+                "state": {
+                    "off": "Wyłączona",
+                    "auto": "Automatyczna",
+                    "forced_sunny_windows": "Wymuszona (nasłonecznione okna)",
+                    "forced_all_windows": "Wymuszona (wszystkie okna)"
+                }
+            },
             "lock_mode": {
                 "name": "Tryb blokady",
                 "state": {

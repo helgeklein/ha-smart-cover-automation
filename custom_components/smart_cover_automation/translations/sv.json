@@ -217,6 +217,15 @@
                     "off": "Av"
                 }
             },
+            "heat_protection_mode": {
+                "name": "Värmeskydd",
+                "state": {
+                    "off": "Av",
+                    "auto": "Automatisk",
+                    "forced_sunny_windows": "Tvingat (soliga fönster)",
+                    "forced_all_windows": "Tvingat (alla fönster)"
+                }
+            },
             "lock_mode": {
                 "name": "Låsläge",
                 "state": {

@@ -30,6 +30,7 @@ from custom_components.smart_cover_automation.const import (
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
     BlockedTimeRangeMode,
     EveningClosureMode,
+    HeatProtectionMode,
     LockMode,
     MorningOpeningMode,
     ReopeningMode,
@@ -84,6 +85,7 @@ class ConfKeys(StrEnum):
     MORNING_OPENING_MODE = "morning_opening_mode"  # Morning opening: timing mode.
     MORNING_OPENING_TIME = "morning_opening_time"  # Morning opening: time value.
     AUTOMATIC_REOPENING_MODE = "automatic_reopening_mode"  # Automatic reopening behavior after automation-driven closures.
+    HEAT_PROTECTION_MODE = "heat_protection_mode"  # How heat protection interprets weather and sun exposure.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
     COVERS_MIN_CLOSURE = "covers_min_closure"  # Minimum closure position (0 = fully closed, 100 = fully open)
@@ -268,6 +270,11 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
         converter=ReopeningMode,
         runtime_configurable=True,
     ),
+    ConfKeys.HEAT_PROTECTION_MODE: _ConfSpec(
+        default=HeatProtectionMode.AUTO,
+        converter=HeatProtectionMode,
+        runtime_configurable=True,
+    ),
     ConfKeys.COVERS: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.COVERS_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.COVERS_MIN_CLOSURE: _ConfSpec(default=100, converter=_Converters.to_int, runtime_configurable=True),
@@ -413,6 +420,7 @@ class ResolvedConfig:
     morning_opening_mode: MorningOpeningMode
     morning_opening_time: time
     automatic_reopening_mode: ReopeningMode
+    heat_protection_mode: HeatProtectionMode
     covers: tuple[str, ...]
     covers_max_closure: int
     covers_min_closure: int
