@@ -81,6 +81,28 @@ Per-cover external tilt values take precedence over the matching global external
 
 The entities in this section control how heat protection operates, and at which temperatures and sun positions the integration enables heat protection.
 
+### Heat Protection Mode
+
+*New in 5.2:*
+
+The integration's heat protection functionality can operate in the following modes:
+
+- **Off:** Heat protection is disabled
+- **Auto:** Heat protection automatically closes covers if the following conditions are met:
+    - The weather is hot.
+    - The sun is shining.
+    - The sun's azimuth is within a cover's azimuth tolerance (see below),
+    - The sun's elevation is within the configured elevation range (see below).
+- **Forced (sunny windows):** Heat protection closes all covers where the sun's azimuth is within a cover's azimuth tolerance. Essentially, this is auto mode but without the hot weather and sun shining requirements.
+- **Forced (all windows):** Heat protection closes all covers independent of sun azimuth, hot weather, and sun shining. Sun elevation is taken into account, so covers close in the morning and open again in the evening.
+
+### Heat Protection Temperature Thresholds
+
+The integration uses both the daily minimum and maximum temperatures to determine whether the weather is hot enough to require heat protection. Configure minimum and maximum temperature thresholds via the following entities:
+
+- **Heat protection: min. daily high temperature**
+- **Heat protection: min. daily low temperature**
+
 ### Sun Azimuth
 
 **Sun azimuth tolerance:** The maximum left/right angle at which the automation considers the sun to be shining on a cover. This global sun-angle setting can be overridden per cover in step 2 of the configuration wizard.
@@ -90,13 +112,6 @@ The entities in this section control how heat protection operates, and at which 
 **Minimum sun elevation:** The minimum angle above the horizon at which the automation considers the sun to be shining on a cover. This global sun-angle setting can be overridden per cover in step 2 of the configuration wizard.
 
 **Maximum sun elevation:** The maximum angle above the horizon at which the automation considers the sun to be shining on a cover. This global sun-angle setting can be overridden per cover in step 2 of the configuration wizard.
-
-### Heat Protection Temperature Thresholds
-
-The integration uses both the daily minimum and maximum temperatures to determine whether the weather is hot enough to require heat protection. Configure minimum and maximum temperature thresholds via the following entities:
-
-- **Heat protection: min. daily high temperature**
-- **Heat protection: min. daily low temperature**
 
 ### Weather: Hot? (External Control)
 
