@@ -24,6 +24,7 @@ from custom_components.smart_cover_automation.cover_automation import (
     CoverExecutionPlan,
     CoverMovementReason,
     CoverState,
+    OwnershipDebugSnapshot,
     SensorData,
 )
 
@@ -1412,6 +1413,18 @@ class TestInTimePeriodAutomationDisabled:
 class TestRunMethod:
     """Test the main run method."""
 
+    @staticmethod
+    def _ownership_snapshot() -> OwnershipDebugSnapshot:
+        """Create a minimal ownership snapshot for tests."""
+
+        return OwnershipDebugSnapshot(
+            closed_by_automation_reason=None,
+            automation_owned_position=None,
+            owned_delta=None,
+            passive_reopening_eligible=None,
+            passive_reopening_eligibility_source=None,
+        )
+
     async def test_run_with_disabled_automation(self, mock_ha_interface, mock_logger):
         """Disabled automation should return early before gathering sensor data."""
 
@@ -1687,6 +1700,7 @@ class TestRunMethod:
             desired_pos=20,
             movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
             planned_tilt_target=None,
+            ownership_debug_snapshot=self._ownership_snapshot(),
         )
         plan_2 = CoverExecutionPlan(
             cover_state=CoverState(pos_current=30, pos_target_desired=40),
@@ -1696,10 +1710,11 @@ class TestRunMethod:
             desired_pos=40,
             movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
             planned_tilt_target=None,
+            ownership_debug_snapshot=self._ownership_snapshot(),
         )
         mock_evaluate.side_effect = [
-            (plan_1.cover_state, plan_1),
-            (plan_2.cover_state, plan_2),
+            (plan_1.cover_state, plan_1, self._ownership_snapshot()),
+            (plan_2.cover_state, plan_2, self._ownership_snapshot()),
         ]
 
         with patch.object(engine, "_schedule_pending_cover_execution") as mock_schedule:
@@ -1736,7 +1751,7 @@ class TestRunMethod:
             logger=mock_logger,
         )
         cover_state = CoverState(pos_current=10, pos_target_desired=10)
-        mock_evaluate.return_value = (cover_state, None)
+        mock_evaluate.return_value = (cover_state, None, self._ownership_snapshot())
 
         with patch.object(engine, "_cancel_pending_cover_execution") as mock_cancel:
             result = await engine.run({"cover.test": MagicMock()})
@@ -1747,6 +1762,18 @@ class TestRunMethod:
 
 class TestPendingCoverExecutionQueue:
     """Test delayed cover execution queue helpers."""
+
+    @staticmethod
+    def _ownership_snapshot() -> OwnershipDebugSnapshot:
+        """Create a minimal ownership snapshot for queued-plan tests."""
+
+        return OwnershipDebugSnapshot(
+            closed_by_automation_reason=None,
+            automation_owned_position=None,
+            owned_delta=None,
+            passive_reopening_eligible=None,
+            passive_reopening_eligibility_source=None,
+        )
 
     @staticmethod
     def _make_plan(desired_pos: int = 20) -> CoverExecutionPlan:
@@ -1761,6 +1788,7 @@ class TestPendingCoverExecutionQueue:
             desired_pos=desired_pos,
             movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
             planned_tilt_target=None,
+            ownership_debug_snapshot=TestPendingCoverExecutionQueue._ownership_snapshot(),
         )
 
     def test_schedule_pending_cover_execution_ignores_equivalent_later_plan(self, mock_ha_interface, mock_logger):

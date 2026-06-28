@@ -263,6 +263,7 @@ class AutomationEngine:
         blocked_time_range_start, blocked_time_range_end = self._get_effective_blocked_time_range_bounds()
         global_settings = {
             "lock_mode": lock_mode,
+            "automatic_reopening_mode": self.resolved.automatic_reopening_mode,
             "covers_min_position_delta": self.resolved.covers_min_position_delta,
             "sun_azimuth_tolerance": self.resolved.sun_azimuth_tolerance,
             "sun_elevation_threshold": self.resolved.sun_elevation_threshold,
@@ -360,7 +361,7 @@ class AutomationEngine:
                 result.covers[entity_id] = await cover_automation.process(state, sensor_data)
                 continue
 
-            cover_attrs, plan = await cover_automation.evaluate(state, sensor_data)
+            cover_attrs, plan, _ownership_debug_snapshot = await cover_automation.evaluate(state, sensor_data)
             result.covers[entity_id] = cover_attrs
 
             if plan is None:

@@ -98,6 +98,29 @@ class CoverState:
 
 
 @dataclass(slots=True, frozen=True)
+class OwnershipDebugSnapshot:
+    """Immutable snapshot of ownership-related debug state for one evaluation."""
+
+    closed_by_automation_reason: str | None
+    automation_owned_position: int | None
+    owned_delta: int | None
+    passive_reopening_eligible: bool | None
+    passive_reopening_eligibility_source: str | None
+
+    def __str__(self) -> str:
+        """Return the compact debug representation used in per-cover logs."""
+
+        return (
+            "Ownership: "
+            f"closed_by_automation_reason={self.closed_by_automation_reason!r}, "
+            f"automation_owned_position={self.automation_owned_position}, "
+            f"owned_delta={self.owned_delta}, "
+            f"passive_reopening_eligible={self.passive_reopening_eligible}, "
+            f"passive_reopening_eligibility_source={self.passive_reopening_eligibility_source!r}"
+        )
+
+
+@dataclass(slots=True, frozen=True)
 class CoverExecutionPlan:
     """Encapsulates a deferred per-cover execution."""
 
@@ -108,6 +131,7 @@ class CoverExecutionPlan:
     desired_pos: int
     movement_reason: CoverMovementReason
     planned_tilt_target: int | None
+    ownership_debug_snapshot: OwnershipDebugSnapshot
 
     @property
     def signature(self) -> tuple[int, CoverMovementReason, int | None]:
@@ -166,31 +190,40 @@ class CoverAutomation:
             CoverState object with automation results
         """
 
-        cover_state, plan = await self.evaluate(state, sensor_data)
+        cover_state, plan, ownership_debug_snapshot = await self.evaluate(state, sensor_data)
         if plan is None:
-            self._logger.debug(f"[{self.entity_id}] Cover result: {COVER_RESULT_NO_MOVEMENT}. Cover state: {cover_state}")
+            self._logger.debug(self._format_cover_result_debug_message(COVER_RESULT_NO_MOVEMENT, cover_state, ownership_debug_snapshot))
             return cover_state
 
         return await self.execute_plan(plan)
 
-    async def evaluate(self, state: State | None, sensor_data: SensorData) -> tuple[CoverState, CoverExecutionPlan | None]:
+    async def evaluate(
+        self, state: State | None, sensor_data: SensorData
+    ) -> tuple[CoverState, CoverExecutionPlan | None, OwnershipDebugSnapshot]:
         """Evaluate automation for this cover and optionally return a deferred execution plan."""
 
         cover_state = CoverState()
+        empty_ownership_snapshot = OwnershipDebugSnapshot(
+            closed_by_automation_reason=None,
+            automation_owned_position=None,
+            owned_delta=None,
+            passive_reopening_eligible=None,
+            passive_reopening_eligibility_source=None,
+        )
 
         cover_azimuth = self._get_cover_azimuth()
         if cover_azimuth is None:
-            return cover_state, None
+            return cover_state, None, empty_ownership_snapshot
         cover_state.cover_azimuth = cover_azimuth
 
         if not self._validate_cover_state(state):
-            return cover_state, None
+            return cover_state, None, empty_ownership_snapshot
 
         assert state is not None
         cover_state.state = state.state
 
         if self._is_cover_moving(state):
-            return cover_state, None
+            return cover_state, None, empty_ownership_snapshot
 
         features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
         cover_state.supported_features = features
@@ -203,12 +236,12 @@ class CoverAutomation:
 
         success, current_pos = self._get_cover_position(state, features)
         if not success:
-            return cover_state, None
+            return cover_state, None, empty_ownership_snapshot
         cover_state.pos_current = current_pos
 
         locked = await self._process_lock_mode(cover_state, current_pos, features)
         if locked:
-            return cover_state, None
+            return cover_state, None, empty_ownership_snapshot
 
         manual_override_just_expired = False
         was_manual_override_blocking = self._cover_pos_history_mgr.was_manual_override_blocking(self.entity_id)
@@ -228,7 +261,7 @@ class CoverAutomation:
                     f"skipping this cover for another {manual_override_remaining:.0f} s",
                     const.LogSeverity.INFO,
                 )
-                return cover_state, None
+                return cover_state, None, self._capture_ownership_debug_snapshot(current_pos)
         elif was_manual_override_blocking:
             manual_override_just_expired = True
             self._cover_pos_history_mgr.clear_manual_override_blocked(self.entity_id)
@@ -257,10 +290,11 @@ class CoverAutomation:
         )
         cover_state.pos_target_desired = desired_pos
         cover_state.lockout_protection = lockout_protection
+        ownership_debug_snapshot = self._capture_ownership_debug_snapshot(current_pos)
 
         if movement_reason is None:
             self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
-            return cover_state, None
+            return cover_state, None, ownership_debug_snapshot
 
         cover_moved = self._is_cover_move_required(current_pos, desired_pos)
         planned_tilt_target = self._determine_target_tilt(cover_state, sensor_data, movement_reason, cover_moved)
@@ -276,7 +310,9 @@ class CoverAutomation:
                 desired_pos=desired_pos,
                 movement_reason=movement_reason,
                 planned_tilt_target=planned_tilt_target,
+                ownership_debug_snapshot=ownership_debug_snapshot,
             ),
+            ownership_debug_snapshot,
         )
 
     async def execute_plan(self, plan: CoverExecutionPlan) -> CoverState:
@@ -302,8 +338,20 @@ class CoverAutomation:
             cover_moved,
         )
 
-        self._logger.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}")
+        self._logger.debug(self._format_cover_result_debug_message(message, cover_state, plan.ownership_debug_snapshot))
         return cover_state
+
+    def _format_cover_result_debug_message(
+        self, message: str, cover_state: CoverState, ownership_debug_snapshot: OwnershipDebugSnapshot
+    ) -> str:
+        """Format the per-cover result debug log, omitting ownership for fully open covers."""
+
+        effective_pos = cover_state.pos_target_final if cover_state.pos_target_final is not None else cover_state.pos_current
+        ownership_suffix = ""
+        if effective_pos != const.COVER_POS_FULLY_OPEN:
+            ownership_suffix = f". {ownership_debug_snapshot}"
+
+        return f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}{ownership_suffix}"
 
     def _is_cover_move_required(self, current_pos: int, desired_pos: int) -> bool:
         """Return whether a cover-position command is expected for this evaluation."""
@@ -670,13 +718,54 @@ class CoverAutomation:
 
         automation_owned_position = self._cover_pos_history_mgr.get_automation_owned_position(self.entity_id)
         if isinstance(automation_owned_position, int):
-            return current_pos == automation_owned_position
+            return self._positions_match_within_delta(current_pos, automation_owned_position)
 
         last_history_entry = self._cover_pos_history_mgr.get_latest_entry(self.entity_id)
         if last_history_entry is None:
             return True
 
-        return current_pos == last_history_entry.position
+        return self._positions_match_within_delta(current_pos, last_history_entry.position)
+
+    def _positions_match_within_delta(self, current_pos: int, reference_pos: int) -> bool:
+        """Return whether two positions differ by less than the configured movement delta."""
+
+        if self.resolved.covers_min_position_delta <= 0:
+            return current_pos == reference_pos
+
+        return abs(current_pos - reference_pos) < self.resolved.covers_min_position_delta
+
+    def _capture_ownership_debug_snapshot(self, current_pos: int | None) -> OwnershipDebugSnapshot:
+        """Capture ownership-related debug state for this evaluation."""
+
+        closed_by_automation_reason = self._cover_pos_history_mgr.get_closed_by_automation_reason(self.entity_id)
+        automation_owned_position = self._cover_pos_history_mgr.get_automation_owned_position(self.entity_id)
+        owned_delta = None
+
+        if current_pos is not None and isinstance(automation_owned_position, int):
+            owned_delta = abs(current_pos - automation_owned_position)
+
+        passive_reopening_eligible = None
+        passive_reopening_eligibility_source = None
+        if (
+            current_pos is not None
+            and self.resolved.automatic_reopening_mode == const.ReopeningMode.PASSIVE
+            and closed_by_automation_reason is not None
+        ):
+            passive_reopening_eligible = self._is_passive_reopening_eligible(current_pos)
+            if isinstance(automation_owned_position, int):
+                passive_reopening_eligibility_source = "owned_position"
+            elif self._cover_pos_history_mgr.get_latest_entry(self.entity_id) is not None:
+                passive_reopening_eligibility_source = "history_fallback"
+            else:
+                passive_reopening_eligibility_source = "missing"
+
+        return OwnershipDebugSnapshot(
+            closed_by_automation_reason=closed_by_automation_reason,
+            automation_owned_position=automation_owned_position,
+            owned_delta=owned_delta,
+            passive_reopening_eligible=passive_reopening_eligible,
+            passive_reopening_eligibility_source=passive_reopening_eligibility_source,
+        )
 
     #
     # _should_ignore_manual_override
