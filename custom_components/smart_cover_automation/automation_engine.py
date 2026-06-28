@@ -361,7 +361,7 @@ class AutomationEngine:
                 result.covers[entity_id] = await cover_automation.process(state, sensor_data)
                 continue
 
-            cover_attrs, plan = await cover_automation.evaluate(state, sensor_data)
+            cover_attrs, plan, _ownership_debug_snapshot = await cover_automation.evaluate(state, sensor_data)
             result.covers[entity_id] = cover_attrs
 
             if plan is None:

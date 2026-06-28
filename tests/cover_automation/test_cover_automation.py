@@ -37,6 +37,7 @@ from custom_components.smart_cover_automation.cover_automation import (
     CoverExecutionPlan,
     CoverMovementReason,
     CoverState,
+    OwnershipDebugSnapshot,
 )
 from custom_components.smart_cover_automation.cover_automation import (
     SensorData as CoverSensorData,
@@ -3351,7 +3352,7 @@ class TestLogCoverMsg:
             desired_pos=100,
             movement_reason=CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE,
             planned_tilt_target=None,
-            ownership_debug_summary=cover_automation._build_ownership_debug_summary(21),
+            ownership_debug_snapshot=cover_automation._capture_ownership_debug_snapshot(21),
         )
 
         await cover_automation.execute_plan(plan)
@@ -3363,6 +3364,24 @@ class TestLogCoverMsg:
         assert "automation_owned_position=20" in debug_message
         assert "owned_delta=1" in debug_message
         assert "passive_reopening_eligible=True" in debug_message
+
+    def test_capture_ownership_debug_snapshot_returns_structured_snapshot(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Ownership debug capture should return structured data before formatting."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+        mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 20
+
+        snapshot = cover_automation._capture_ownership_debug_snapshot(21)
+
+        assert snapshot == OwnershipDebugSnapshot(
+            closed_by_automation_reason=const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
+            automation_owned_position=20,
+            owned_delta=1,
+            passive_reopening_eligible=True,
+        )
 
     @pytest.mark.asyncio
     async def test_process_logs_ownership_debug_summary_when_no_plan(
