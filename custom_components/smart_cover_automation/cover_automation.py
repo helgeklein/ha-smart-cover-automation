@@ -108,6 +108,7 @@ class CoverExecutionPlan:
     desired_pos: int
     movement_reason: CoverMovementReason
     planned_tilt_target: int | None
+    ownership_debug_summary: str
 
     @property
     def signature(self) -> tuple[int, CoverMovementReason, int | None]:
@@ -168,7 +169,10 @@ class CoverAutomation:
 
         cover_state, plan = await self.evaluate(state, sensor_data)
         if plan is None:
-            self._logger.debug(f"[{self.entity_id}] Cover result: {COVER_RESULT_NO_MOVEMENT}. Cover state: {cover_state}")
+            ownership_debug = self._build_ownership_debug_summary(cover_state.pos_current)
+            self._logger.debug(
+                f"[{self.entity_id}] Cover result: {COVER_RESULT_NO_MOVEMENT}. Cover state: {cover_state}. {ownership_debug}"
+            )
             return cover_state
 
         return await self.execute_plan(plan)
@@ -257,6 +261,7 @@ class CoverAutomation:
         )
         cover_state.pos_target_desired = desired_pos
         cover_state.lockout_protection = lockout_protection
+        ownership_debug_summary = self._build_ownership_debug_summary(current_pos)
 
         if movement_reason is None:
             self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
@@ -276,6 +281,7 @@ class CoverAutomation:
                 desired_pos=desired_pos,
                 movement_reason=movement_reason,
                 planned_tilt_target=planned_tilt_target,
+                ownership_debug_summary=ownership_debug_summary,
             ),
         )
 
@@ -302,9 +308,7 @@ class CoverAutomation:
             cover_moved,
         )
 
-        effective_pos = actual_pos if actual_pos is not None else plan.current_pos
-        ownership_debug = self._build_ownership_debug_summary(effective_pos)
-        self._logger.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}. {ownership_debug}")
+        self._logger.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}. {plan.ownership_debug_summary}")
         return cover_state
 
     def _is_cover_move_required(self, current_pos: int, desired_pos: int) -> bool:
@@ -688,18 +692,22 @@ class CoverAutomation:
 
         return abs(current_pos - reference_pos) < self.resolved.covers_min_position_delta
 
-    def _build_ownership_debug_summary(self, current_pos: int) -> str:
+    def _build_ownership_debug_summary(self, current_pos: int | None) -> str:
         """Return a compact debug summary of automation ownership state."""
 
         closed_by_automation_reason = self._cover_pos_history_mgr.get_closed_by_automation_reason(self.entity_id)
         automation_owned_position = self._cover_pos_history_mgr.get_automation_owned_position(self.entity_id)
         owned_delta = None
 
-        if isinstance(automation_owned_position, int):
+        if current_pos is not None and isinstance(automation_owned_position, int):
             owned_delta = abs(current_pos - automation_owned_position)
 
         passive_reopening_eligible = None
-        if self.resolved.automatic_reopening_mode == const.ReopeningMode.PASSIVE and closed_by_automation_reason is not None:
+        if (
+            current_pos is not None
+            and self.resolved.automatic_reopening_mode == const.ReopeningMode.PASSIVE
+            and closed_by_automation_reason is not None
+        ):
             passive_reopening_eligible = self._is_passive_reopening_eligible(current_pos)
 
         return (

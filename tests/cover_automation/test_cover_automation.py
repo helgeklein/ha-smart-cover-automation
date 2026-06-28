@@ -3326,12 +3326,12 @@ class TestLogCoverMsg:
     async def test_execute_plan_appends_ownership_debug_summary(
         self, cover_automation, mock_logger, mock_cover_pos_history_mgr, mock_resolved_config
     ):
-        """Per-cover debug logging should append ownership details."""
+        """Per-cover debug logging should append ownership details captured before movement."""
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
         mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 20
-        cover_automation._move_cover_if_needed = AsyncMock(return_value=(False, None, "No movement needed"))
+        cover_automation._move_cover_if_needed = AsyncMock(return_value=(True, 100, "Moved cover"))
         cover_automation._apply_tilt = AsyncMock()
 
         plan = CoverExecutionPlan(
@@ -3348,9 +3348,10 @@ class TestLogCoverMsg:
             ),
             features=CoverEntityFeature.SET_POSITION,
             current_pos=21,
-            desired_pos=21,
+            desired_pos=100,
             movement_reason=CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE,
             planned_tilt_target=None,
+            ownership_debug_summary=cover_automation._build_ownership_debug_summary(21),
         )
 
         await cover_automation.execute_plan(plan)
@@ -3362,6 +3363,39 @@ class TestLogCoverMsg:
         assert "automation_owned_position=20" in debug_message
         assert "owned_delta=1" in debug_message
         assert "passive_reopening_eligible=True" in debug_message
+
+    @pytest.mark.asyncio
+    async def test_process_logs_ownership_debug_summary_when_no_plan(
+        self, cover_automation, mock_logger, mock_cover_pos_history_mgr, mock_resolved_config, mock_state
+    ):
+        """The per-cover debug log should include ownership details even when no plan is executed."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+        mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 20
+        mock_state.attributes[ATTR_CURRENT_POSITION] = 30
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        await cover_automation.process(mock_state, sensor_data)
+
+        mock_logger.debug.assert_called_once()
+        debug_message = mock_logger.debug.call_args[0][0]
+        assert "Cover result: no movement" in debug_message
+        assert "Ownership:" in debug_message
+        assert "closed_by_automation_reason='reason_close_after_sunset'" in debug_message
+        assert "automation_owned_position=20" in debug_message
+        assert "owned_delta=10" in debug_message
+        assert "passive_reopening_eligible=False" in debug_message
 
     def test_log_cover_msg_debug(self, cover_automation, mock_logger):
         """Test logging debug message."""
