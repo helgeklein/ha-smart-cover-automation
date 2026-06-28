@@ -385,6 +385,56 @@ class TestIntegrationSetup:
             # Verify runtime_data was attached to config entry
             assert mock_config_entry_basic.runtime_data is mock_data_class.return_value
 
+    async def test_setup_entry_restores_runtime_state_before_first_refresh(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
+        """Runtime state should be restored before the initial coordinator refresh runs."""
+
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_forward_entry_setups = AsyncMock(return_value=True)
+
+        call_order: list[str] = []
+
+        async def restore_runtime_state() -> None:
+            call_order.append("restore")
+
+        async def first_refresh() -> None:
+            call_order.append("refresh")
+
+        with (
+            patch("custom_components.smart_cover_automation.async_get_loaded_integration"),
+            patch("custom_components.smart_cover_automation.DataUpdateCoordinator") as mock_coordinator_class,
+        ):
+            mock_coordinator = MagicMock()
+            mock_coordinator.async_restore_runtime_state = AsyncMock(side_effect=restore_runtime_state)
+            mock_coordinator.async_config_entry_first_refresh = AsyncMock(side_effect=first_refresh)
+            mock_coordinator_class.return_value = mock_coordinator
+
+            result = await async_setup_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        assert result is True
+        assert call_order == ["restore", "refresh"]
+
+    async def test_unload_entry_cancels_pending_work_and_persists_runtime_state(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
+        """Unload should cancel queued work before persisting runtime state."""
+
+        mock_hass_with_spec.config_entries = MagicMock()
+        mock_hass_with_spec.config_entries.async_unload_platforms = AsyncMock(return_value=True)
+
+        call_order: list[str] = []
+        mock_coordinator = MagicMock()
+        mock_coordinator.cancel_pending_cover_executions.side_effect = lambda: call_order.append("cancel")
+
+        async def persist_runtime_state() -> None:
+            call_order.append("persist")
+
+        mock_coordinator.async_persist_runtime_state = AsyncMock(side_effect=persist_runtime_state)
+        mock_config_entry_basic.runtime_data = MagicMock(coordinator=mock_coordinator)
+
+        result = await async_unload_entry(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+
+        assert result is True
+        assert call_order == ["cancel", "persist"]
+        mock_hass_with_spec.config_entries.async_unload_platforms.assert_awaited_once()
+
     async def test_update_listener_setup(self, mock_hass_with_spec, mock_config_entry_basic) -> None:
         """Test that update listener is properly configured for dynamic reconfiguration.
 

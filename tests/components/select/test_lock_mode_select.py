@@ -9,7 +9,7 @@ Coverage target: select.py lines 88-122 (LockModeSelect class)
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, cast
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from homeassistant.helpers.entity import Entity
@@ -392,6 +392,19 @@ async def test_heat_protection_mode_select_current_option_returns_coordinator_mo
     heat_protection_mode_select = HeatProtectionModeSelect(coordinator)
 
     assert heat_protection_mode_select.current_option == HeatProtectionMode.FORCED_SUNNY_WINDOWS.value
+
+
+async def test_lock_mode_select_current_option_returns_none_when_coordinator_value_missing(
+    mock_hass_with_spec, mock_config_entry_basic
+) -> None:
+    """Test that current_option returns None when the coordinator has no current enum value."""
+
+    coordinator = DataUpdateCoordinator(mock_hass_with_spec, cast(IntegrationConfigEntry, mock_config_entry_basic))
+    mock_config_entry_basic.runtime_data.coordinator = coordinator
+    lock_mode_select = LockModeSelect(coordinator)
+
+    with patch.object(DataUpdateCoordinator, "lock_mode", new_callable=PropertyMock, return_value=None):
+        assert lock_mode_select.current_option is None
 
 
 async def test_heat_protection_mode_select_async_select_option_valid(mock_hass_with_spec, mock_config_entry_basic) -> None:
