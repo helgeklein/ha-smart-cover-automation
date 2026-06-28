@@ -217,6 +217,15 @@
                     "off": "Aus"
                 }
             },
+            "heat_protection_mode": {
+                "name": "Hitzeschutz",
+                "state": {
+                    "off": "Aus",
+                    "auto": "Automatisch",
+                    "forced_sunny_windows": "Erzwungen (sonnige Fenster)",
+                    "forced_all_windows": "Erzwungen (alle Fenster)"
+                }
+            },
             "lock_mode": {
                 "name": "Sperrmodus",
                 "state": {

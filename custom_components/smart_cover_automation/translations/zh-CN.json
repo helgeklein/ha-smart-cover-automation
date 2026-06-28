@@ -9,6 +9,15 @@
     },
     "options": {
         "error": {
+            "heat_protection_mode": {
+                "name": "隔热保护",
+                "state": {
+                    "off": "关闭",
+                    "auto": "自动",
+                    "forced_sunny_windows": "强制（向阳窗户）",
+                    "forced_all_windows": "强制（所有窗户）"
+                }
+            },
             "invalid_cover": "一个或多个选定的遮阳设备无效或不可用。",
             "invalid_integer": "请输入整数。",
             "invalid_weather_entity": "所选天气实体不支持每日预报。",

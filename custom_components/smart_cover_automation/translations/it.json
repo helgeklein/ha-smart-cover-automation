@@ -9,6 +9,15 @@
     },
     "options": {
         "error": {
+            "heat_protection_mode": {
+                "name": "Protezione dal calore",
+                "state": {
+                    "off": "Disattivata",
+                    "auto": "Automatica",
+                    "forced_sunny_windows": "Forzata (finestre soleggiate)",
+                    "forced_all_windows": "Forzata (tutte le finestre)"
+                }
+            },
             "invalid_cover": "Una o più tapparelle selezionate non sono valide o non disponibili.",
             "invalid_integer": "Inserisci un numero intero.",
             "invalid_weather_entity": "L'entità meteo selezionata non supporta le previsioni giornaliere.",
