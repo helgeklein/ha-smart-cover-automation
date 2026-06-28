@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator as BaseCoordinator
@@ -12,7 +13,7 @@ from . import const
 from .automation_engine import AutomationEngine
 from .automation_state_store import AutomationStateStore
 from .config import ConfKeys, ResolvedConfig, resolve_entry
-from .const import LockMode, ReopeningMode
+from .const import HeatProtectionMode, LockMode, ReopeningMode
 from .data import CoordinatorData
 from .ha_interface import HomeAssistantInterface, WeatherEntityNotFoundError
 from .log import Log
@@ -183,6 +184,13 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         resolved = self._resolved_settings()
         return resolved.automatic_reopening_mode
 
+    @property
+    def heat_protection_mode(self) -> HeatProtectionMode:
+        """Get current heat protection mode."""
+
+        resolved = self._resolved_settings()
+        return resolved.heat_protection_mode
+
     #
     # is_locked
     #
@@ -208,30 +216,45 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         4. Logs the change
         """
 
-        # Validate lock mode
-        valid_modes = [mode.value for mode in const.LockMode]
-        if lock_mode not in valid_modes:
-            self._logger.error(f"Invalid lock mode: {lock_mode}. Valid modes: {valid_modes}")
-            raise ValueError(f"Invalid lock mode: {lock_mode}")
-
-        # Update config entry options
-        new_options = dict(self.config_entry.options)
-        new_options[ConfKeys.LOCK_MODE.value] = lock_mode
-
-        # This will trigger the update listener (async_reload_entry) in __init__.py
-        # which will compare configs and decide on refresh vs. reload
-        self.hass.config_entries.async_update_entry(self.config_entry, options=new_options)
+        await self._async_set_runtime_enum_option(ConfKeys.LOCK_MODE, lock_mode, const.LockMode, "lock mode")
 
     async def async_set_automatic_reopening_mode(self, automatic_reopening_mode: const.ReopeningMode) -> None:
         """Set the automatic reopening mode and persist to config."""
 
-        valid_modes = [mode.value for mode in const.ReopeningMode]
-        if automatic_reopening_mode not in valid_modes:
-            self._logger.error(f"Invalid automatic reopening mode: {automatic_reopening_mode}. Valid modes: {valid_modes}")
-            raise ValueError(f"Invalid automatic reopening mode: {automatic_reopening_mode}")
+        await self._async_set_runtime_enum_option(
+            ConfKeys.AUTOMATIC_REOPENING_MODE,
+            automatic_reopening_mode,
+            const.ReopeningMode,
+            "automatic reopening mode",
+        )
+
+    async def async_set_heat_protection_mode(self, heat_protection_mode: const.HeatProtectionMode) -> None:
+        """Set the heat protection mode and persist to config."""
+
+        await self._async_set_runtime_enum_option(
+            ConfKeys.HEAT_PROTECTION_MODE,
+            heat_protection_mode,
+            const.HeatProtectionMode,
+            "heat protection mode",
+        )
+
+    async def _async_set_runtime_enum_option(
+        self,
+        config_key: ConfKeys,
+        value: StrEnum,
+        enum_type: type[StrEnum],
+        value_label: str,
+    ) -> None:
+        """Persist a runtime-selectable enum option after validating it."""
+
+        valid_modes = [mode.value for mode in enum_type]
+        if value not in valid_modes:
+            self._logger.error(f"Invalid {value_label}: {value}. Valid modes: {valid_modes}")
+            raise ValueError(f"Invalid {value_label}: {value}")
 
         new_options = dict(self.config_entry.options)
-        new_options[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = automatic_reopening_mode
+        new_options[config_key.value] = value
+
         self.hass.config_entries.async_update_entry(self.config_entry, options=new_options)
 
     #

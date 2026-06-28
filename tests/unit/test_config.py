@@ -46,7 +46,7 @@ from custom_components.smart_cover_automation.config import (
     resolve_effective_blocked_time_range_bounds,
     resolve_entry,
 )
-from custom_components.smart_cover_automation.const import BlockedTimeRangeMode, MorningOpeningMode, ReopeningMode
+from custom_components.smart_cover_automation.const import BlockedTimeRangeMode, HeatProtectionMode, MorningOpeningMode, ReopeningMode
 
 # =============================================================================
 # Configuration Registry and Contract Validation Tests
@@ -365,6 +365,15 @@ class TestConfigurationResolution:
 
         assert rs_default.automatic_reopening_mode == ReopeningMode.PASSIVE
         assert rs_passive.automatic_reopening_mode == ReopeningMode.PASSIVE
+
+    def test_resolve_heat_protection_mode(self):
+        """Test heat protection mode defaults and explicit resolution."""
+
+        rs_default = resolve({})
+        rs_forced = resolve({ConfKeys.HEAT_PROTECTION_MODE.value: HeatProtectionMode.FORCED_ALL_WINDOWS.value})
+
+        assert rs_default.heat_protection_mode == HeatProtectionMode.AUTO
+        assert rs_forced.heat_protection_mode == HeatProtectionMode.FORCED_ALL_WINDOWS
 
     def test_resolve_evening_max_uses_default_when_unset(self):
         """Test evening closure max uses its own default when unset."""

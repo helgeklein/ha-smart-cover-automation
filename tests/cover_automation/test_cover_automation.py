@@ -31,7 +31,7 @@ from homeassistant.const import (
 )
 
 from custom_components.smart_cover_automation import const
-from custom_components.smart_cover_automation.const import LockMode, ReopeningMode, TiltMode
+from custom_components.smart_cover_automation.const import HeatProtectionMode, LockMode, ReopeningMode, TiltMode
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverExecutionPlan,
@@ -65,6 +65,7 @@ def mock_resolved_config():
     resolved.evening_closure_keep_closed = False
     resolved.evening_closure_cover_list = ()
     resolved.automatic_reopening_mode = ReopeningMode.ACTIVE
+    resolved.heat_protection_mode = HeatProtectionMode.AUTO
     resolved.covers_min_position_delta = 5
     resolved.tilt_mode_day = TiltMode.AUTO
     resolved.tilt_open_to_cover_open_delay = 0
@@ -1352,6 +1353,80 @@ class TestCalculateDesiredPosition:
         mock_logger.info.assert_any_call(
             "[cover.test] Current position: 0%, desired position: 0%, keeping current position because it is already more closed than the heat protection position"
         )
+
+    def test_calculate_desired_position_heat_protection_off_disables_closing(self, cover_automation, mock_resolved_config):
+        """Heat protection off should suppress closing even when weather and sun would normally match."""
+
+        mock_resolved_config.heat_protection_mode = HeatProtectionMode.OFF
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
+
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+        assert lockout_active is False
+
+    def test_calculate_desired_position_heat_protection_forced_sunny_windows_keeps_azimuth_gate(
+        self, cover_automation, mock_resolved_config
+    ):
+        """Forced sunny windows should ignore forecast booleans but still respect sun-hitting."""
+
+        mock_resolved_config.heat_protection_mode = HeatProtectionMode.FORCED_SUNNY_WINDOWS
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=18.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
+
+        assert position == 0
+        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
+        assert lockout_active is False
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+
+        assert position == 100
+        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+        assert lockout_active is False
+
+    def test_calculate_desired_position_heat_protection_forced_all_windows_ignores_azimuth(self, cover_automation, mock_resolved_config):
+        """Forced all windows should ignore azimuth but still require elevation within range."""
+
+        mock_resolved_config.heat_protection_mode = HeatProtectionMode.FORCED_ALL_WINDOWS
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=90.0,
+            sun_elevation=45.0,
+            temp_max=18.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+
+        assert position == 0
+        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
+        assert lockout_active is False
 
     def test_calculate_desired_position_let_light_in(self, cover_automation, mock_resolved_config):
         """Test desired position for letting light in (opening)."""

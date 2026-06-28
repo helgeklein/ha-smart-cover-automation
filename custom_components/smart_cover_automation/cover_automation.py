@@ -835,6 +835,17 @@ class CoverAutomation:
 
         return False, best_overall_difference if best_overall_difference is not None else 180.0
 
+    def _calculate_effective_sun_elevation_only(self, sensor_data: SensorData) -> bool:
+        """Return whether the sun is within the configured elevation range for this cover."""
+
+        sun_elevation_min, sun_elevation_max = self._get_cover_sun_elevation_range()
+        if sensor_data.sun_samples:
+            return any(
+                sun_elevation_min <= sample_elevation <= sun_elevation_max for _sample_azimuth, sample_elevation in sensor_data.sun_samples
+            )
+
+        return sun_elevation_min <= sensor_data.sun_elevation <= sun_elevation_max
+
     #
     # _calculate_angle_difference
     #
@@ -874,7 +885,13 @@ class CoverAutomation:
 
         lockout_protection_active = False
         effective_temp_hot = self._get_effective_temp_hot(sensor_data)
-        heat_protection_state = self._get_heat_protection_state(effective_temp_hot, sensor_data.weather_sunny, sun_hitting)
+        effective_temp_hot, effective_weather_sunny, effective_sun_hitting = self._get_effective_heat_protection_inputs(
+            sensor_data,
+            effective_temp_hot,
+            sensor_data.weather_sunny,
+            sun_hitting,
+        )
+        heat_protection_state = self._get_heat_protection_state(effective_temp_hot, effective_weather_sunny, effective_sun_hitting)
         evening_closure_reason = self._get_evening_closure_movement_reason(sensor_data)
         last_automation_closing_reason = self._cover_pos_history_mgr.get_closed_by_automation_reason(self.entity_id)
         delayed_reopen_action = self._cover_pos_history_mgr.get_delayed_reopen_action(self.entity_id)
@@ -1105,6 +1122,28 @@ class CoverAutomation:
             return effective_temp_hot
 
         return sensor_data.temp_hot
+
+    def _get_effective_heat_protection_inputs(
+        self,
+        sensor_data: SensorData,
+        effective_temp_hot: bool | None,
+        weather_sunny: bool | None,
+        sun_hitting: bool,
+    ) -> tuple[bool | None, bool | None, bool]:
+        """Resolve effective hot, sunny, and sun-hitting inputs for the selected heat mode."""
+
+        heat_protection_mode = self.resolved.heat_protection_mode
+
+        if heat_protection_mode == const.HeatProtectionMode.OFF:
+            return False, False, False
+
+        if heat_protection_mode == const.HeatProtectionMode.FORCED_ALL_WINDOWS:
+            return True, True, self._calculate_effective_sun_elevation_only(sensor_data)
+
+        if heat_protection_mode == const.HeatProtectionMode.FORCED_SUNNY_WINDOWS:
+            return True, True, sun_hitting
+
+        return effective_temp_hot, weather_sunny, sun_hitting
 
     @staticmethod
     def _get_heat_protection_state(

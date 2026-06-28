@@ -37,6 +37,7 @@ from custom_components.smart_cover_automation.const import (
     NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
     NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
     SELECT_KEY_AUTOMATIC_REOPENING_MODE,
+    SELECT_KEY_HEAT_PROTECTION_MODE,
     SELECT_KEY_LOCK_MODE,
     SENSOR_KEY_EVENING_CLOSURE_MODE,
     SENSOR_KEY_EVENING_CLOSURE_TIME,
@@ -48,6 +49,7 @@ from custom_components.smart_cover_automation.const import (
     SENSOR_KEY_TEMP_CURRENT_MIN,
     TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
+    HeatProtectionMode,
     LockMode,
     ReopeningMode,
 )
@@ -751,6 +753,46 @@ class TestSelectEntityDataFlow:
         assert coordinator.automatic_reopening_mode == ReopeningMode.PASSIVE
         assert entry.options.get(ConfKeys.AUTOMATIC_REOPENING_MODE.value) == ReopeningMode.PASSIVE
 
+    async def test_select_reads_default_heat_protection_mode(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Heat protection select shows AUTO by default."""
+
+        entry = _create_config_entry(hass)
+        await _setup_integration(hass, entry)
+
+        entity_id = _entity_id_for_key(hass, entry, SELECT_KEY_HEAT_PROTECTION_MODE)
+        assert entity_id is not None, "heat_protection_mode select entity not registered"
+
+        state = hass.states.get(entity_id)
+        assert state is not None
+        assert state.state == HeatProtectionMode.AUTO
+
+    async def test_select_changes_heat_protection_mode(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Changing heat protection mode via select entity updates config options."""
+
+        entry = _create_config_entry(hass)
+        await _setup_integration(hass, entry)
+
+        entity_id = _entity_id_for_key(hass, entry, SELECT_KEY_HEAT_PROTECTION_MODE)
+        assert entity_id is not None
+
+        await hass.services.async_call(
+            "select",
+            "select_option",
+            {"entity_id": entity_id, "option": HeatProtectionMode.FORCED_ALL_WINDOWS},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        coordinator = _get_coordinator(hass, entry)
+        assert coordinator.heat_protection_mode == HeatProtectionMode.FORCED_ALL_WINDOWS
+        assert entry.options.get(ConfKeys.HEAT_PROTECTION_MODE.value) == HeatProtectionMode.FORCED_ALL_WINDOWS
+
 
 class TestSwitchEntityDataFlow:
     """Verify switch entities toggle config and reflect state."""
@@ -1131,6 +1173,7 @@ class TestEntityRegistration:
         # Select
         assert SELECT_KEY_LOCK_MODE in registered_keys, "Lock mode select not registered"
         assert SELECT_KEY_AUTOMATIC_REOPENING_MODE in registered_keys, "Automatic reopening mode select not registered"
+        assert SELECT_KEY_HEAT_PROTECTION_MODE in registered_keys, "Heat protection mode select not registered"
 
         # Switches
         for key in (

@@ -77,9 +77,9 @@ If `External` is configured as a per-cover tilt angle control mode override, the
 
 Per-cover external tilt values take precedence over the matching global external tilt values.
 
-## Sun & Temperature Settings
+## Heat Protection Settings
 
-The entities in this section control at which temperatures and sun positions the integration enables heat protection.
+The entities in this section control how heat protection operates, and at which temperatures and sun positions the integration enables heat protection.
 
 ### Sun Azimuth
 

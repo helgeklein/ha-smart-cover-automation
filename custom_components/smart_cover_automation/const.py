@@ -165,6 +165,18 @@ class ReopeningMode(StrEnum):
 
 
 #
+# HeatProtectionMode
+#
+class HeatProtectionMode(StrEnum):
+    """How heat protection should interpret weather and sun exposure."""
+
+    OFF = "off"
+    AUTO = "auto"
+    FORCED_SUNNY_WINDOWS = "forced_sunny_windows"
+    FORCED_ALL_WINDOWS = "forced_all_windows"
+
+
+#
 # TiltMode
 #
 class TiltMode(StrEnum):
@@ -235,6 +247,7 @@ SENSOR_KEY_TEMP_CURRENT_MIN: Final[str] = "temp_current_min"  # Key for the curr
 SENSOR_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode sensor entity
 SELECT_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode select entity
 SELECT_KEY_AUTOMATIC_REOPENING_MODE: Final[str] = "automatic_reopening_mode"  # Key for the automatic reopening mode select entity
+SELECT_KEY_HEAT_PROTECTION_MODE: Final[str] = "heat_protection_mode"  # Key for the heat protection mode select entity
 LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD: Final[str] = "temp_threshold"  # Legacy key for the old heat-protection max threshold option
 NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD: Final[str] = (
     "daily_max_temperature_threshold"  # Key for the daily max temperature threshold number entity

@@ -738,6 +738,36 @@ class TestGatherSensorData:
         mock_process_covers.assert_not_awaited()
         assert message == "Blocked time range started; skipping pre-close because the next morning is not forecast to be both hot and sunny"
 
+    async def test_run_blocked_time_range_pre_close_obeys_heat_protection_mode_overrides(self, mock_ha_interface, mock_logger):
+        """Blocked-time pre-close should respect off and forced heat protection modes."""
+
+        config = {ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"}
+        sensor_data = SensorData(180.0, 45.0, 18.0, 12.0, False, "cloudy", False, False, False, ignore_weather_external_controls=True)
+
+        engine_off = AutomationEngine(
+            resolved=resolve({**config, ConfKeys.HEAT_PROTECTION_MODE.value: const.HeatProtectionMode.OFF.value}),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        with patch.object(engine_off, "_build_blocked_time_range_pre_close_sensor_data", AsyncMock(return_value=(sensor_data, ""))):
+            with patch.object(engine_off, "_process_covers", AsyncMock()) as mock_process_covers:
+                message = await engine_off._run_blocked_time_range_pre_close({"cover.test": MagicMock()}, MagicMock())
+        mock_process_covers.assert_not_awaited()
+        assert message == "Blocked time range started; skipping pre-close because the next morning is not forecast to be both hot and sunny"
+
+        engine_forced = AutomationEngine(
+            resolved=resolve({**config, ConfKeys.HEAT_PROTECTION_MODE.value: const.HeatProtectionMode.FORCED_ALL_WINDOWS.value}),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        with patch.object(engine_forced, "_build_blocked_time_range_pre_close_sensor_data", AsyncMock(return_value=(sensor_data, ""))):
+            with patch.object(engine_forced, "_process_covers", AsyncMock()) as mock_process_covers:
+                message = await engine_forced._run_blocked_time_range_pre_close({"cover.test": MagicMock()}, MagicMock())
+        mock_process_covers.assert_awaited_once()
+        assert "ran forecast-based pre-close evaluation" in message
+
     def test_time_period_disabled_outside_same_day_range(self, mock_ha_interface, mock_logger):
         """Same-day disabled periods should remain inactive before the configured start time."""
 
