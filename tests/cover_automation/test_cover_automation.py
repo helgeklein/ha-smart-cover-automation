@@ -3364,6 +3364,7 @@ class TestLogCoverMsg:
         assert "automation_owned_position=20" in debug_message
         assert "owned_delta=1" in debug_message
         assert "passive_reopening_eligible=True" in debug_message
+        assert "passive_reopening_eligibility_source='owned_position'" in debug_message
 
     def test_capture_ownership_debug_snapshot_returns_structured_snapshot(
         self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
@@ -3381,6 +3382,7 @@ class TestLogCoverMsg:
             automation_owned_position=20,
             owned_delta=1,
             passive_reopening_eligible=True,
+            passive_reopening_eligibility_source="owned_position",
         )
 
     @pytest.mark.asyncio
@@ -3415,6 +3417,7 @@ class TestLogCoverMsg:
         assert "automation_owned_position=20" in debug_message
         assert "owned_delta=10" in debug_message
         assert "passive_reopening_eligible=False" in debug_message
+        assert "passive_reopening_eligibility_source='owned_position'" in debug_message
 
     def test_log_cover_msg_debug(self, cover_automation, mock_logger):
         """Test logging debug message."""

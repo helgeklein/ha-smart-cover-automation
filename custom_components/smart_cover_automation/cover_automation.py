@@ -105,6 +105,7 @@ class OwnershipDebugSnapshot:
     automation_owned_position: int | None
     owned_delta: int | None
     passive_reopening_eligible: bool | None
+    passive_reopening_eligibility_source: str | None
 
     def __str__(self) -> str:
         """Return the compact debug representation used in per-cover logs."""
@@ -114,7 +115,8 @@ class OwnershipDebugSnapshot:
             f"closed_by_automation_reason={self.closed_by_automation_reason!r}, "
             f"automation_owned_position={self.automation_owned_position}, "
             f"owned_delta={self.owned_delta}, "
-            f"passive_reopening_eligible={self.passive_reopening_eligible}"
+            f"passive_reopening_eligible={self.passive_reopening_eligible}, "
+            f"passive_reopening_eligibility_source={self.passive_reopening_eligibility_source!r}"
         )
 
 
@@ -208,6 +210,7 @@ class CoverAutomation:
             automation_owned_position=None,
             owned_delta=None,
             passive_reopening_eligible=None,
+            passive_reopening_eligibility_source=None,
         )
 
         cover_azimuth = self._get_cover_azimuth()
@@ -732,18 +735,26 @@ class CoverAutomation:
             owned_delta = abs(current_pos - automation_owned_position)
 
         passive_reopening_eligible = None
+        passive_reopening_eligibility_source = None
         if (
             current_pos is not None
             and self.resolved.automatic_reopening_mode == const.ReopeningMode.PASSIVE
             and closed_by_automation_reason is not None
         ):
             passive_reopening_eligible = self._is_passive_reopening_eligible(current_pos)
+            if isinstance(automation_owned_position, int):
+                passive_reopening_eligibility_source = "owned_position"
+            elif self._cover_pos_history_mgr.get_latest_entry(self.entity_id) is not None:
+                passive_reopening_eligibility_source = "history_fallback"
+            else:
+                passive_reopening_eligibility_source = "missing"
 
         return OwnershipDebugSnapshot(
             closed_by_automation_reason=closed_by_automation_reason,
             automation_owned_position=automation_owned_position,
             owned_delta=owned_delta,
             passive_reopening_eligible=passive_reopening_eligible,
+            passive_reopening_eligibility_source=passive_reopening_eligibility_source,
         )
 
     #

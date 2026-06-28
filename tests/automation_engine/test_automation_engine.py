@@ -1422,6 +1422,7 @@ class TestRunMethod:
             automation_owned_position=None,
             owned_delta=None,
             passive_reopening_eligible=None,
+            passive_reopening_eligibility_source=None,
         )
 
     async def test_run_with_disabled_automation(self, mock_ha_interface, mock_logger):
@@ -1771,6 +1772,7 @@ class TestPendingCoverExecutionQueue:
             automation_owned_position=None,
             owned_delta=None,
             passive_reopening_eligible=None,
+            passive_reopening_eligibility_source=None,
         )
 
     @staticmethod
