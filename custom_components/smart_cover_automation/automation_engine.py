@@ -263,6 +263,7 @@ class AutomationEngine:
         blocked_time_range_start, blocked_time_range_end = self._get_effective_blocked_time_range_bounds()
         global_settings = {
             "lock_mode": lock_mode,
+            "heat_protection_mode": self.resolved.heat_protection_mode,
             "automatic_reopening_mode": self.resolved.automatic_reopening_mode,
             "covers_min_position_delta": self.resolved.covers_min_position_delta,
             "sun_azimuth_tolerance": self.resolved.sun_azimuth_tolerance,
@@ -391,6 +392,10 @@ class AutomationEngine:
             return message
 
         if not self._is_pre_close_heat_protection_active(pre_close_sensor_data):
+            if self.resolved.heat_protection_mode == const.HeatProtectionMode.OFF:
+                self._logger.debug("Pre-closure skipped because heat protection mode is off...")
+                return "Blocked time range started; skipping pre-close because heat protection mode is off"
+
             self._logger.debug("Pre-closure weather conditions not met, skipping...")
             return "Blocked time range started; skipping pre-close because the next morning is not forecast to be both hot and sunny"
 

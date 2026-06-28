@@ -18,7 +18,11 @@ import pytest
 from homeassistant.util import dt as dt_util
 
 from custom_components.smart_cover_automation import const
-from custom_components.smart_cover_automation.automation_engine import AutomationEngine, ScheduledCoverExecution
+from custom_components.smart_cover_automation.automation_engine import (
+    AutomationEngine,
+    CurrentDayTemperatureExtrema,
+    ScheduledCoverExecution,
+)
 from custom_components.smart_cover_automation.config import ConfKeys, resolve
 from custom_components.smart_cover_automation.cover_automation import (
     CoverExecutionPlan,
@@ -119,7 +123,11 @@ class TestAutomationEngineInitialization:
             ha_interface=mock_ha_interface,
             logger=mock_logger,
         )
-        engine._current_day_temperature_extrema = object()
+        engine._current_day_temperature_extrema = CurrentDayTemperatureExtrema(
+            forecast_date=date(2026, 5, 24),
+            temp_max=25.0,
+            temp_min=15.0,
+        )
 
         engine.restore_current_day_temperature_extrema(payload)
 
@@ -387,6 +395,7 @@ class TestGatherSensorData:
 
         assert "cover.test" in result.covers
         assert mock_process.await_count == 1
+        assert mock_process.await_args is not None
         pre_close_sensor_data = mock_process.await_args.args[1]
         assert pre_close_sensor_data.temp_hot is True
         assert pre_close_sensor_data.weather_sunny is True
@@ -754,7 +763,8 @@ class TestGatherSensorData:
             with patch.object(engine_off, "_process_covers", AsyncMock()) as mock_process_covers:
                 message = await engine_off._run_blocked_time_range_pre_close({"cover.test": MagicMock()}, MagicMock())
         mock_process_covers.assert_not_awaited()
-        assert message == "Blocked time range started; skipping pre-close because the next morning is not forecast to be both hot and sunny"
+        mock_logger.debug.assert_any_call("Pre-closure skipped because heat protection mode is off...")
+        assert message == "Blocked time range started; skipping pre-close because heat protection mode is off"
 
         engine_forced = AutomationEngine(
             resolved=resolve({**config, ConfKeys.HEAT_PROTECTION_MODE.value: const.HeatProtectionMode.FORCED_ALL_WINDOWS.value}),
@@ -767,6 +777,32 @@ class TestGatherSensorData:
                 message = await engine_forced._run_blocked_time_range_pre_close({"cover.test": MagicMock()}, MagicMock())
         mock_process_covers.assert_awaited_once()
         assert "ran forecast-based pre-close evaluation" in message
+
+    async def test_run_logs_heat_protection_mode_in_global_settings(self, mock_ha_interface, mock_logger):
+        """Each coordinator run should include heat protection mode in the global settings log."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.HEAT_PROTECTION_MODE.value: const.HeatProtectionMode.FORCED_ALL_WINDOWS.value,
+        }
+        engine = AutomationEngine(
+            resolved=resolve(config),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        with patch.object(engine, "_check_global_conditions", return_value=(False, "blocked", const.LogSeverity.DEBUG)):
+            await engine.run({"cover.test": MagicMock()})
+
+        info_messages = [
+            call.args[0]
+            for call in mock_logger.info.call_args_list
+            if call.args and isinstance(call.args[0], str) and call.args[0].startswith("Global settings: ")
+        ]
+
+        assert any("heat_protection_mode" in message and "forced_all_windows" in message for message in info_messages)
 
     def test_time_period_disabled_outside_same_day_range(self, mock_ha_interface, mock_logger):
         """Same-day disabled periods should remain inactive before the configured start time."""
