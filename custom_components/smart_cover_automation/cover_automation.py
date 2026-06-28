@@ -670,13 +670,21 @@ class CoverAutomation:
 
         automation_owned_position = self._cover_pos_history_mgr.get_automation_owned_position(self.entity_id)
         if isinstance(automation_owned_position, int):
-            return current_pos == automation_owned_position
+            return self._positions_match_within_delta(current_pos, automation_owned_position)
 
         last_history_entry = self._cover_pos_history_mgr.get_latest_entry(self.entity_id)
         if last_history_entry is None:
             return True
 
-        return current_pos == last_history_entry.position
+        return self._positions_match_within_delta(current_pos, last_history_entry.position)
+
+    def _positions_match_within_delta(self, current_pos: int, reference_pos: int) -> bool:
+        """Return whether two positions differ by less than the configured movement delta."""
+
+        if self.resolved.covers_min_position_delta <= 0:
+            return current_pos == reference_pos
+
+        return abs(current_pos - reference_pos) < self.resolved.covers_min_position_delta
 
     #
     # _should_ignore_manual_override
