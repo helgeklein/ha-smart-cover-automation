@@ -263,6 +263,7 @@ class AutomationEngine:
         blocked_time_range_start, blocked_time_range_end = self._get_effective_blocked_time_range_bounds()
         global_settings = {
             "lock_mode": lock_mode,
+            "automatic_reopening_mode": self.resolved.automatic_reopening_mode,
             "covers_min_position_delta": self.resolved.covers_min_position_delta,
             "sun_azimuth_tolerance": self.resolved.sun_azimuth_tolerance,
             "sun_elevation_threshold": self.resolved.sun_elevation_threshold,

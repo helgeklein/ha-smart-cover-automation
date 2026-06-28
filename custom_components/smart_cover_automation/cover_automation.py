@@ -302,7 +302,9 @@ class CoverAutomation:
             cover_moved,
         )
 
-        self._logger.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}")
+        effective_pos = actual_pos if actual_pos is not None else plan.current_pos
+        ownership_debug = self._build_ownership_debug_summary(effective_pos)
+        self._logger.debug(f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}. {ownership_debug}")
         return cover_state
 
     def _is_cover_move_required(self, current_pos: int, desired_pos: int) -> bool:
@@ -685,6 +687,28 @@ class CoverAutomation:
             return current_pos == reference_pos
 
         return abs(current_pos - reference_pos) < self.resolved.covers_min_position_delta
+
+    def _build_ownership_debug_summary(self, current_pos: int) -> str:
+        """Return a compact debug summary of automation ownership state."""
+
+        closed_by_automation_reason = self._cover_pos_history_mgr.get_closed_by_automation_reason(self.entity_id)
+        automation_owned_position = self._cover_pos_history_mgr.get_automation_owned_position(self.entity_id)
+        owned_delta = None
+
+        if isinstance(automation_owned_position, int):
+            owned_delta = abs(current_pos - automation_owned_position)
+
+        passive_reopening_eligible = None
+        if self.resolved.automatic_reopening_mode == const.ReopeningMode.PASSIVE and closed_by_automation_reason is not None:
+            passive_reopening_eligible = self._is_passive_reopening_eligible(current_pos)
+
+        return (
+            "Ownership: "
+            f"closed_by_automation_reason={closed_by_automation_reason!r}, "
+            f"automation_owned_position={automation_owned_position}, "
+            f"owned_delta={owned_delta}, "
+            f"passive_reopening_eligible={passive_reopening_eligible}"
+        )
 
     #
     # _should_ignore_manual_override
