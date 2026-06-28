@@ -136,7 +136,8 @@ class EnumConfigSelect(IntegrationSelect):
     def current_option(self) -> str | None:  # pyright: ignore
         """Return the current selected option."""
 
-        return getattr(self.coordinator, self._coordinator_property)
+        value = getattr(self.coordinator, self._coordinator_property)
+        return str(value) if value is not None else None
 
     async def async_select_option(self, option: str) -> None:
         """Persist a new option through the coordinator."""
