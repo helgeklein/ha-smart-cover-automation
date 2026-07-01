@@ -61,6 +61,7 @@ def mock_resolved_config():
     resolved.tilt_set_value_day = 50
     resolved.tilt_set_value_night = 0
     resolved.tilt_min_change_delta = 5
+    resolved.tilt_drift_tolerance = 5
     resolved.tilt_open_to_cover_open_delay = 0
     resolved.tilt_vertical_position = 0
     resolved.tilt_horizontal_position = 100
@@ -390,6 +391,81 @@ class TestGetEffectiveTiltMode:
 
 class TestApplyTilt:
     """Tests for _apply_tilt method."""
+
+    @pytest.mark.asyncio
+    async def test_apply_tilt_records_recent_action_and_history_without_position_move(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Tilt-only updates should persist a coherent position/tilt snapshot."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.OPEN
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=100)
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=25, tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+
+        recent_call = mock_cover_pos_history_mgr.set_recent_automation_action.call_args
+        assert recent_call is not None
+        assert recent_call.args == ("cover.test",)
+        assert recent_call.kwargs["expected_position"] == 25
+        assert recent_call.kwargs["allowed_position_drift"] == mock_resolved_config.covers_min_position_delta
+        assert recent_call.kwargs["expected_tilt_position"] == 100
+        assert recent_call.kwargs["allowed_tilt_drift"] == mock_resolved_config.tilt_drift_tolerance
+        assert isinstance(recent_call.kwargs["expires_at"], datetime)
+        mock_cover_pos_history_mgr.add.assert_called_once_with(
+            "cover.test",
+            25,
+            cover_moved=True,
+            tilt_position=100,
+        )
+
+    @pytest.mark.asyncio
+    async def test_apply_tilt_records_recent_action_and_history_after_position_move(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Post-move tilt updates should persist the final moved position with the new tilt."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.OPEN
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=100)
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_target_final=80, tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+
+        recent_call = mock_cover_pos_history_mgr.set_recent_automation_action.call_args
+        assert recent_call is not None
+        assert recent_call.args == ("cover.test",)
+        assert recent_call.kwargs["expected_position"] == 80
+        assert recent_call.kwargs["allowed_position_drift"] == mock_resolved_config.covers_min_position_delta
+        assert recent_call.kwargs["expected_tilt_position"] == 100
+        assert recent_call.kwargs["allowed_tilt_drift"] == mock_resolved_config.tilt_drift_tolerance
+        assert isinstance(recent_call.kwargs["expires_at"], datetime)
+        mock_cover_pos_history_mgr.add.assert_called_once_with(
+            "cover.test",
+            80,
+            cover_moved=True,
+            tilt_position=100,
+        )
+
+    @pytest.mark.asyncio
+    async def test_apply_tilt_does_not_record_state_when_tilt_command_fails(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features, sensor_data
+    ) -> None:
+        """Failed tilt service calls should not overwrite the automation-owned baseline."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.OPEN
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(side_effect=RuntimeError("tilt boom"))
+        auto = _make_automation(mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger)
+        auto._cover_supports_tilt = True
+
+        cover_state = CoverState(pos_current=25, tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+
+        mock_cover_pos_history_mgr.set_recent_automation_action.assert_not_called()
+        mock_cover_pos_history_mgr.add.assert_not_called()
 
     #
     # test_external_mode_skips_when_no_value_exists

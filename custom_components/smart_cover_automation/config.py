@@ -105,6 +105,7 @@ class ConfKeys(StrEnum):
     SUN_ELEVATION_THRESHOLD = "sun_elevation_threshold"  # Min sun elevation to act (degrees).
     SUN_ELEVATION_MAX = "sun_elevation_max"  # Max sun elevation to act (degrees).
     TILT_MIN_CHANGE_DELTA = "tilt_min_change_delta"  # Minimum tilt change (%) to actually send a service call.
+    TILT_DRIFT_TOLERANCE = "tilt_drift_tolerance"  # Ignore smaller recent tilt settle drift (%).
     TILT_OPEN_TO_COVER_OPEN_DELAY = (
         "tilt_open_to_cover_open_delay"  # Delay stored in minutes between opening tilt and reopening the cover in day auto mode.
     )
@@ -290,6 +291,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.SUN_ELEVATION_THRESHOLD: _ConfSpec(default=0.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.SUN_ELEVATION_MAX: _ConfSpec(default=90.0, converter=_Converters.to_float, runtime_configurable=True),
     ConfKeys.TILT_MIN_CHANGE_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
+    ConfKeys.TILT_DRIFT_TOLERANCE: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.TILT_VERTICAL_POSITION: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.TILT_HORIZONTAL_POSITION: _ConfSpec(default=100, converter=_Converters.to_int),
@@ -436,6 +438,7 @@ class ResolvedConfig:
     sun_elevation_threshold: float
     sun_elevation_max: float
     tilt_min_change_delta: int
+    tilt_drift_tolerance: int
     tilt_open_to_cover_open_delay: int
     tilt_vertical_position: int
     tilt_horizontal_position: int

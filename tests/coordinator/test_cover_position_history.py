@@ -49,6 +49,18 @@ class TestPositionHistory:
         assert list(coordinator._automation_engine._cover_pos_history_mgr._cover_position_history["cover.test"]) == [50]
 
     @pytest.mark.asyncio
+    async def test_position_history_single_update_preserves_tilt_snapshot(self, coordinator: DataUpdateCoordinator):
+        """Tilt snapshots should be stored alongside the position history entry."""
+
+        coordinator._automation_engine._cover_pos_history_mgr.add("cover.test", 50, cover_moved=True, tilt_position=30)
+
+        latest = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry("cover.test")
+
+        assert latest is not None
+        assert latest.position == 50
+        assert latest.tilt_position == 30
+
+    @pytest.mark.asyncio
     async def test_position_history_two_updates(self, coordinator: DataUpdateCoordinator):
         """Test position history with two position updates."""
         # Update position twice
@@ -532,6 +544,30 @@ class TestAutomationClosedMarkers:
             expected_position=0,
             allowed_position_drift=5,
             expires_at=expires_at,
+        )
+
+    def test_position_history_manager_recent_automation_action_round_trip_with_tilt(self):
+        """Test storing and retrieving recent automation action tilt metadata."""
+
+        manager = CoverPositionHistoryManager()
+        expires_at = datetime(2025, 10, 5, 12, 0, 0, tzinfo=timezone.utc)
+
+        manager.set_recent_automation_action(
+            "cover.test",
+            expected_position=0,
+            allowed_position_drift=5,
+            expires_at=expires_at,
+            expected_tilt_position=75,
+            allowed_tilt_drift=3,
+        )
+
+        recent_automation_action = manager.get_recent_automation_action("cover.test")
+        assert recent_automation_action == RecentAutomationAction(
+            expected_position=0,
+            allowed_position_drift=5,
+            expires_at=expires_at,
+            expected_tilt_position=75,
+            allowed_tilt_drift=3,
         )
 
     def test_position_history_manager_clear_recent_automation_action(self):

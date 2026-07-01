@@ -1112,6 +1112,42 @@ class TestAsyncRemoveStaleRegistryEntities:
         updated_options = mock_hass.config_entries.async_update_entry.call_args.kwargs["options"]
         assert f"cover.test_cover_{const.COVER_SFX_TILT_EXTERNAL_VALUE_DAY}" not in updated_options
 
+    async def test_no_tilt_installation_is_unchanged_when_no_stale_tilt_state_exists(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Startup cleanup should not rewrite options for installations whose covers do not support tilt."""
+
+        active_entity = MagicMock()
+        active_entity.unique_id = f"{mock_entry.entry_id}_status"
+        active_entity.entity_id = "binary_sensor.smart_cover_automation_status"
+        mock_entry.options = {
+            "covers": ["cover.test_cover"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+        }
+        mock_hass.config_entries = MagicMock()
+        mock_hass.states = MagicMock()
+        mock_hass.states.get.return_value = MagicMock(attributes={"supported_features": CoverEntityFeature.SET_POSITION})
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[active_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        mock_registry.async_remove.assert_not_called()
+        mock_hass.config_entries.async_update_entry.assert_not_called()
+
     async def test_stale_external_morning_opening_entity_and_value_are_deleted(
         self,
         mock_hass: MagicMock,

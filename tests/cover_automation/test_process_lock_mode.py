@@ -120,7 +120,7 @@ class TestProcessLockModeHoldPosition:
         assert locked is True
         assert cover_state.pos_target_desired == 42
         assert cover_state.pos_target_final == 42
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=42, cover_moved=False)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 42, cover_moved=False, tilt_position=None)
         mock_ha_interface.set_cover_position.assert_not_called()
 
     @pytest.mark.asyncio
@@ -138,7 +138,7 @@ class TestProcessLockModeHoldPosition:
         assert locked is True
         assert cover_state.pos_target_desired == 0
         assert cover_state.pos_target_final == 0
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=False)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 0, cover_moved=False, tilt_position=None)
 
     @pytest.mark.asyncio
     async def test_hold_position_at_hundred(
@@ -155,7 +155,7 @@ class TestProcessLockModeHoldPosition:
         assert locked is True
         assert cover_state.pos_target_desired == 100
         assert cover_state.pos_target_final == 100
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=False)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 100, cover_moved=False, tilt_position=None)
 
 
 class TestProcessLockModeForceOpen:
@@ -176,7 +176,7 @@ class TestProcessLockModeForceOpen:
         assert locked is True
         assert cover_state.pos_target_desired == 100
         assert cover_state.pos_target_final == 100
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=False)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 100, cover_moved=False, tilt_position=None)
         mock_ha_interface.set_cover_position.assert_not_called()
 
     @pytest.mark.asyncio
@@ -196,7 +196,7 @@ class TestProcessLockModeForceOpen:
         assert cover_state.pos_target_desired == 100
         assert cover_state.pos_target_final == 100
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 100, 0)
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=True)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 100, cover_moved=True, tilt_position=None)
 
     @pytest.mark.asyncio
     async def test_force_open_needs_movement_from_partial(
@@ -215,7 +215,7 @@ class TestProcessLockModeForceOpen:
         assert cover_state.pos_target_desired == 100
         assert cover_state.pos_target_final == 100
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 100, 0)
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=True)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 100, cover_moved=True, tilt_position=None)
 
     @pytest.mark.asyncio
     async def test_force_open_with_features(
@@ -253,7 +253,7 @@ class TestProcessLockModeForceClose:
         assert locked is True
         assert cover_state.pos_target_desired == 0
         assert cover_state.pos_target_final == 0
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=False)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 0, cover_moved=False, tilt_position=None)
         mock_ha_interface.set_cover_position.assert_not_called()
 
     @pytest.mark.asyncio
@@ -273,7 +273,7 @@ class TestProcessLockModeForceClose:
         assert cover_state.pos_target_desired == 0
         assert cover_state.pos_target_final == 0
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 0, 0)
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=True)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 0, cover_moved=True, tilt_position=None)
 
     @pytest.mark.asyncio
     async def test_force_close_needs_movement_from_partial(
@@ -292,7 +292,7 @@ class TestProcessLockModeForceClose:
         assert cover_state.pos_target_desired == 0
         assert cover_state.pos_target_final == 0
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 0, 0)
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=True)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 0, cover_moved=True, tilt_position=None)
 
     @pytest.mark.asyncio
     async def test_force_close_with_features(
@@ -332,7 +332,7 @@ class TestProcessLockModeEdgeCases:
         assert locked is True
         assert cover_state.pos_target_desired == 95
         assert cover_state.pos_target_final == 95
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=95, cover_moved=True)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 95, cover_moved=True, tilt_position=None)
 
     @pytest.mark.asyncio
     async def test_force_close_actual_position_differs(
@@ -351,7 +351,7 @@ class TestProcessLockModeEdgeCases:
         assert locked is True
         assert cover_state.pos_target_desired == 5
         assert cover_state.pos_target_final == 5
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=5, cover_moved=True)
+        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 5, cover_moved=True, tilt_position=None)
 
     @pytest.mark.asyncio
     async def test_empty_cover_attrs_dict(

@@ -67,6 +67,7 @@ def mock_resolved_config():
     resolved.automatic_reopening_mode = ReopeningMode.ACTIVE
     resolved.heat_protection_mode = HeatProtectionMode.AUTO
     resolved.covers_min_position_delta = 5
+    resolved.tilt_drift_tolerance = 5
     resolved.tilt_mode_day = TiltMode.AUTO
     resolved.tilt_open_to_cover_open_delay = 0
     resolved.tilt_vertical_position = 0
@@ -555,6 +556,21 @@ class TestCheckManualOverride:
         result = cover_automation._check_manual_override(50)
         assert result is False
 
+    def test_check_manual_override_tilt_unchanged(self, cover_automation, mock_cover_pos_history_mgr):
+        """Tilt-capable covers should not trigger override when tilt is unchanged."""
+
+        entry = PositionEntry(
+            position=50,
+            timestamp=datetime.now(timezone.utc) - timedelta(seconds=100),
+            cover_moved=True,
+            tilt_position=25,
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+
+        result = cover_automation._check_manual_override(50, 25)
+
+        assert result is False
+
     def test_check_manual_override_active(self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config):
         """Test when manual override is active."""
         mock_resolved_config.manual_override_duration = 3600
@@ -562,6 +578,49 @@ class TestCheckManualOverride:
         mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
         result = cover_automation._check_manual_override(75)  # Position changed
         assert result is True
+
+    def test_check_manual_override_active_on_tilt_change(self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config):
+        """A tilt-only external change should trigger manual override."""
+
+        mock_resolved_config.manual_override_duration = 3600
+        entry = PositionEntry(
+            position=50,
+            timestamp=datetime.now(timezone.utc) - timedelta(seconds=100),
+            cover_moved=True,
+            tilt_position=30,
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+
+        result = cover_automation._check_manual_override(50, 70)
+
+        assert result is True
+
+    def test_check_manual_override_logs_exact_change_dimension(
+        self,
+        cover_automation,
+        mock_cover_pos_history_mgr,
+        mock_resolved_config,
+    ):
+        """Manual-override logs should describe whether tilt or both dimensions changed."""
+
+        mock_resolved_config.manual_override_duration = 3600
+        entry = PositionEntry(
+            position=50,
+            timestamp=datetime.now(timezone.utc) - timedelta(seconds=100),
+            cover_moved=True,
+            tilt_position=20,
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        cover_automation._log_cover_msg = MagicMock()
+
+        cover_automation._check_manual_override(50, 40)
+        tilt_message = cover_automation._log_cover_msg.call_args.args[0]
+        assert "tilt changed externally" in tilt_message
+
+        cover_automation._log_cover_msg.reset_mock()
+        cover_automation._check_manual_override(65, 40)
+        both_message = cover_automation._log_cover_msg.call_args.args[0]
+        assert "position and tilt changed externally" in both_message
 
 
 class TestProcessLockMode:
@@ -586,7 +645,12 @@ class TestProcessLockMode:
         assert cover_state.pos_target_final == 55
         mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
         mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=55, cover_moved=False)
+        mock_cover_pos_history_mgr.add.assert_called_once_with(
+            "cover.test",
+            55,
+            cover_moved=False,
+            tilt_position=None,
+        )
         mock_ha_interface.set_cover_position.assert_not_called()
         mock_ha_interface.set_cover_tilt_position.assert_not_called()
 
@@ -621,7 +685,20 @@ class TestProcessLockMode:
             100,
             CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION,
         )
-        assert mock_cover_pos_history_mgr.add.call_count == 1
+        mock_cover_pos_history_mgr.add.assert_called_once_with(
+            "cover.test",
+            100,
+            cover_moved=True,
+            tilt_position=100,
+        )
+        recent_call = mock_cover_pos_history_mgr.set_recent_automation_action.call_args
+        assert recent_call is not None
+        assert recent_call.args == ("cover.test",)
+        assert recent_call.kwargs["expected_position"] == 100
+        assert recent_call.kwargs["allowed_position_drift"] == mock_resolved_config.covers_min_position_delta
+        assert recent_call.kwargs["expected_tilt_position"] == 100
+        assert recent_call.kwargs["allowed_tilt_drift"] == mock_resolved_config.tilt_drift_tolerance
+        assert isinstance(recent_call.kwargs["expires_at"], datetime)
 
     async def test_process_lock_mode_force_open_logs_tilt_errors(
         self, cover_automation, mock_resolved_config, mock_ha_interface, mock_logger
@@ -643,6 +720,32 @@ class TestProcessLockMode:
         assert cover_state.pos_target_desired == 100
         assert cover_state.pos_target_final == 100
         assert cover_state.tilt_target is None
+        mock_logger.error.assert_called_once_with("[cover.test] Failed to set lock tilt: lock open tilt boom")
+
+    async def test_process_lock_mode_force_open_falls_back_to_current_tilt_when_tilt_command_fails(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
+        """Force-open lock should preserve the live tilt snapshot if the tilt command fails."""
+
+        mock_resolved_config.lock_mode = LockMode.FORCE_OPEN
+        cover_automation._cover_supports_tilt = True
+        mock_ha_interface.set_cover_position.return_value = 100
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(side_effect=RuntimeError("lock open tilt boom"))
+        cover_state = CoverState(tilt_current=35)
+
+        locked = await cover_automation._process_lock_mode(
+            cover_state,
+            current_pos=25,
+            features=CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION,
+        )
+
+        assert locked is True
+        mock_cover_pos_history_mgr.add.assert_called_once_with(
+            "cover.test",
+            100,
+            cover_moved=True,
+            tilt_position=35,
+        )
         mock_logger.error.assert_called_once_with("[cover.test] Failed to set lock tilt: lock open tilt boom")
 
     async def test_process_lock_mode_force_close_logs_tilt_errors(
@@ -667,6 +770,31 @@ class TestProcessLockMode:
         assert cover_state.tilt_target is None
         mock_logger.error.assert_called_once_with("[cover.test] Failed to set lock tilt: lock tilt boom")
 
+    async def test_process_lock_mode_force_close_falls_back_to_current_tilt_when_tilt_command_fails(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
+        """Force-close lock should preserve the live tilt snapshot if the tilt command fails."""
+
+        mock_resolved_config.lock_mode = LockMode.FORCE_CLOSE
+        cover_automation._cover_supports_tilt = True
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(side_effect=RuntimeError("lock tilt boom"))
+        cover_state = CoverState(tilt_current=70)
+
+        locked = await cover_automation._process_lock_mode(
+            cover_state,
+            current_pos=0,
+            features=CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION,
+        )
+
+        assert locked is True
+        mock_cover_pos_history_mgr.add.assert_called_once_with(
+            "cover.test",
+            0,
+            cover_moved=False,
+            tilt_position=70,
+        )
+        mock_logger.error.assert_called_once_with("[cover.test] Failed to set lock tilt: lock tilt boom")
+
 
 class TestEnforceLockedPosition:
     """Test direct locked-position enforcement branches."""
@@ -689,7 +817,8 @@ class TestEnforceLockedPosition:
         assert cover_state.pos_target_desired == 0
         assert cover_state.pos_target_final == 0
         mock_ha_interface.set_cover_position.assert_not_called()
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=0, cover_moved=False)
+        mock_cover_pos_history_mgr.add.assert_not_called()
+        mock_cover_pos_history_mgr.set_recent_automation_action.assert_not_called()
         mock_logger.info.assert_any_call("[cover.test] Lock active (force_close), already at target position (0%)")
 
     async def test_enforce_locked_position_moves_cover_and_records_recent_action(
@@ -711,8 +840,8 @@ class TestEnforceLockedPosition:
         assert cover_state.pos_target_desired == 100
         assert cover_state.pos_target_final == 100
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 100, CoverEntityFeature.SET_POSITION)
-        mock_cover_pos_history_mgr.set_recent_automation_action.assert_called_once()
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", new_position=100, cover_moved=True)
+        mock_cover_pos_history_mgr.set_recent_automation_action.assert_not_called()
+        mock_cover_pos_history_mgr.add.assert_not_called()
         mock_logger.info.assert_any_call("[cover.test] Lock active (force_open), moving to target position (100%)")
 
     async def test_enforce_locked_position_logs_and_recovers_from_service_error(
@@ -981,6 +1110,35 @@ class TestMovementReasonHelpers:
         mock_cover_pos_history_mgr.add.assert_called_once()
         mock_cover_pos_history_mgr.clear_recent_automation_action.assert_not_called()
 
+    def test_get_manual_override_remaining_ignores_expected_recent_tilt_drift(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Expected recent tilt drift should not activate manual override."""
+
+        mock_resolved_config.manual_override_duration = 3600
+        mock_resolved_config.tilt_drift_tolerance = 5
+        entry = PositionEntry(
+            position=40,
+            timestamp=datetime.now(timezone.utc) - timedelta(seconds=30),
+            cover_moved=True,
+            tilt_position=50,
+        )
+        recent_automation_action = RecentAutomationAction(
+            expected_position=40,
+            allowed_position_drift=mock_resolved_config.covers_min_position_delta,
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=60),
+            expected_tilt_position=50,
+            allowed_tilt_drift=mock_resolved_config.tilt_drift_tolerance,
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_cover_pos_history_mgr.get_recent_automation_action.return_value = recent_automation_action
+
+        remaining = cover_automation._get_manual_override_remaining(40, 53)
+
+        assert remaining is None
+        mock_cover_pos_history_mgr.add.assert_called_once()
+        mock_cover_pos_history_mgr.clear_recent_automation_action.assert_not_called()
+
     def test_get_manual_override_remaining_updates_owned_position_for_expected_recent_automation_drift(
         self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
     ):
@@ -1023,6 +1181,110 @@ class TestMovementReasonHelpers:
 
         assert remaining is not None
         mock_cover_pos_history_mgr.clear_recent_automation_action.assert_called_once_with("cover.test")
+
+    def test_get_manual_override_remaining_keeps_manual_override_for_large_recent_tilt_drift(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Large recent tilt drift should still count as manual override."""
+
+        mock_resolved_config.manual_override_duration = 3600
+        mock_resolved_config.tilt_drift_tolerance = 5
+        entry = PositionEntry(
+            position=40,
+            timestamp=datetime.now(timezone.utc) - timedelta(seconds=30),
+            cover_moved=True,
+            tilt_position=50,
+        )
+        recent_automation_action = RecentAutomationAction(
+            expected_position=40,
+            allowed_position_drift=mock_resolved_config.covers_min_position_delta,
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=60),
+            expected_tilt_position=50,
+            allowed_tilt_drift=mock_resolved_config.tilt_drift_tolerance,
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_cover_pos_history_mgr.get_recent_automation_action.return_value = recent_automation_action
+
+        remaining = cover_automation._get_manual_override_remaining(40, 70)
+
+        assert remaining is not None
+        mock_cover_pos_history_mgr.clear_recent_automation_action.assert_called_once_with("cover.test")
+
+    def test_get_manual_override_remaining_keeps_manual_override_when_tilt_outside_tolerance_only(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Tolerated position drift must not hide an excessive tilt change."""
+
+        mock_resolved_config.manual_override_duration = 3600
+        mock_resolved_config.covers_min_position_delta = 5
+        mock_resolved_config.tilt_drift_tolerance = 5
+        entry = PositionEntry(
+            position=40,
+            timestamp=datetime.now(timezone.utc) - timedelta(seconds=30),
+            cover_moved=True,
+            tilt_position=50,
+        )
+        recent_automation_action = RecentAutomationAction(
+            expected_position=40,
+            allowed_position_drift=5,
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=60),
+            expected_tilt_position=50,
+            allowed_tilt_drift=5,
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_cover_pos_history_mgr.get_recent_automation_action.return_value = recent_automation_action
+
+        remaining = cover_automation._get_manual_override_remaining(42, 70)
+
+        assert remaining is not None
+        mock_cover_pos_history_mgr.clear_recent_automation_action.assert_called_once_with("cover.test")
+
+    def test_get_manual_override_remaining_keeps_manual_override_when_position_outside_tolerance_only(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Tolerated tilt drift must not hide an excessive position change."""
+
+        mock_resolved_config.manual_override_duration = 3600
+        mock_resolved_config.covers_min_position_delta = 5
+        mock_resolved_config.tilt_drift_tolerance = 5
+        entry = PositionEntry(
+            position=40,
+            timestamp=datetime.now(timezone.utc) - timedelta(seconds=30),
+            cover_moved=True,
+            tilt_position=50,
+        )
+        recent_automation_action = RecentAutomationAction(
+            expected_position=40,
+            allowed_position_drift=5,
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=60),
+            expected_tilt_position=50,
+            allowed_tilt_drift=5,
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+        mock_cover_pos_history_mgr.get_recent_automation_action.return_value = recent_automation_action
+
+        remaining = cover_automation._get_manual_override_remaining(60, 53)
+
+        assert remaining is not None
+        mock_cover_pos_history_mgr.clear_recent_automation_action.assert_called_once_with("cover.test")
+
+    def test_get_manual_override_remaining_ignores_live_tilt_when_history_has_none(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """A live tilt value alone should not trigger override when history has no tilt baseline."""
+
+        mock_resolved_config.manual_override_duration = 3600
+        entry = PositionEntry(
+            position=40,
+            timestamp=datetime.now(timezone.utc) - timedelta(seconds=30),
+            cover_moved=True,
+            tilt_position=None,
+        )
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
+
+        remaining = cover_automation._get_manual_override_remaining(40, 75)
+
+        assert remaining is None
 
     def test_check_manual_override_expired(self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config):
         """Test when manual override has expired."""
@@ -3040,13 +3302,19 @@ class TestMaoveCoverIfNeeded:
             desired_pos=20,
             features=CoverEntityFeature.SET_POSITION,
             movement_reason=CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            current_tilt=30,
         )
 
         assert movement_needed is True
         assert actual_pos == 20
         assert message == "Moved cover"
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 20, CoverEntityFeature.SET_POSITION)
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 20, cover_moved=True)
+        mock_cover_pos_history_mgr.add.assert_called_once_with(
+            "cover.test",
+            20,
+            cover_moved=True,
+            tilt_position=30,
+        )
         mock_ha_interface.add_logbook_entry.assert_called_once()
 
     async def test_move_cover_if_needed_opening_let_light_in(self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr):
@@ -3234,7 +3502,12 @@ class TestMaoveCoverIfNeeded:
         assert actual_pos == 0
         assert message == "Moved cover"
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 0, CoverEntityFeature.SET_POSITION)
-        mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 0, cover_moved=True)
+        mock_cover_pos_history_mgr.add.assert_called_once_with(
+            "cover.test",
+            0,
+            cover_moved=True,
+            tilt_position=None,
+        )
         # Verify logbook entry was called with correct parameters
         mock_ha_interface.add_logbook_entry.assert_called_once()
         call_kwargs = mock_ha_interface.add_logbook_entry.call_args[1]

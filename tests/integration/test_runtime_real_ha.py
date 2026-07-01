@@ -18,7 +18,7 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from homeassistant.components.cover import CoverEntityFeature
+from homeassistant.components.cover import ATTR_CURRENT_TILT_POSITION, CoverEntityFeature
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -42,6 +42,7 @@ from custom_components.smart_cover_automation.const import (
     UPDATE_INTERVAL,
     LockMode,
     ReopeningMode,
+    TiltMode,
 )
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
@@ -58,6 +59,7 @@ TEST_WEATHER = "weather.runtime_test"
 
 # --- Default feature flags ---
 COVER_FEATURES_SET_POSITION = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.SET_POSITION
+COVER_FEATURES_SET_POSITION_AND_TILT = COVER_FEATURES_SET_POSITION | CoverEntityFeature.SET_TILT_POSITION
 
 # --- Temperature thresholds ---
 HOT_TEMP = 30.0
@@ -143,6 +145,7 @@ def _setup_cover_entity(
     entity_id: str,
     position: int = COVER_POS_FULLY_OPEN,
     features: int = COVER_FEATURES_SET_POSITION,
+    tilt_position: int | None = None,
 ) -> None:
     """Register a cover entity state in the HA state machine.
 
@@ -151,16 +154,21 @@ def _setup_cover_entity(
         entity_id: Cover entity ID.
         position: Current position (0 = closed, 100 = open).
         features: Supported feature bitmask.
+        tilt_position: Current tilt position when the cover supports tilt.
     """
 
     state = "open" if position > 0 else "closed"
+    attributes = {
+        "current_position": position,
+        ATTR_SUPPORTED_FEATURES: features,
+    }
+    if tilt_position is not None:
+        attributes[ATTR_CURRENT_TILT_POSITION] = tilt_position
+
     hass.states.async_set(
         entity_id,
         state,
-        {
-            "current_position": position,
-            ATTR_SUPPORTED_FEATURES: features,
-        },
+        attributes,
     )
 
 
@@ -308,6 +316,13 @@ async def _setup_integration(
             """No-op handler for cover.open_cover."""
 
         hass.services.async_register("cover", "open_cover", _mock_open_cover)
+
+    if not hass.services.has_service("cover", "set_cover_tilt_position"):
+
+        async def _mock_set_cover_tilt_position(call: ServiceCall) -> None:  # noqa: ARG001
+            """No-op handler for cover.set_cover_tilt_position."""
+
+        hass.services.async_register("cover", "set_cover_tilt_position", _mock_set_cover_tilt_position)
 
     # --- Load integration with patched weather forecast ---
     # Patch the forecast retrieval so we don't need a real weather platform entity.
@@ -1096,6 +1111,149 @@ class TestRuntimeBehavior:
         latest_entry = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry(TEST_COVER_1)
         assert latest_entry is not None
         assert latest_entry.position == 98
+
+    async def test_external_tilt_change_triggers_manual_override(self, hass: HomeAssistant) -> None:
+        """A post-automation tilt change should activate manual override on the next refresh."""
+
+        cover_calls: list[ServiceCall] = []
+
+        async def _record_cover_call(call: ServiceCall) -> None:
+            """Record real cover service calls issued by the integration."""
+
+            cover_calls.append(call)
+
+        hass.services.async_register("cover", "set_cover_tilt_position", _record_cover_call)
+
+        entry = _create_config_entry(
+            hass,
+            extra_options={
+                ConfKeys.TILT_MODE_DAY.value: "open",
+                ConfKeys.TILT_MIN_CHANGE_DELTA.value: 1,
+                ConfKeys.TILT_DRIFT_TOLERANCE.value: 1,
+            },
+        )
+        with patch.object(
+            HomeAssistantInterface,
+            "get_sun_data",
+            return_value=(SUN_DIRECT_AZIMUTH, SUN_HIGH_ELEVATION),
+        ):
+            await _setup_integration(
+                hass,
+                entry,
+                temp_max=HOT_TEMP,
+                sun_elevation=SUN_HIGH_ELEVATION,
+                sun_azimuth=SUN_DIRECT_AZIMUTH,
+                cover_positions={TEST_COVER_1: COVER_POS_FULLY_CLOSED},
+            )
+
+            _setup_cover_entity(
+                hass,
+                TEST_COVER_1,
+                position=COVER_POS_FULLY_CLOSED,
+                features=int(COVER_FEATURES_SET_POSITION_AND_TILT),
+                tilt_position=0,
+            )
+
+            coordinator = _get_coordinator(hass, entry)
+            await _trigger_coordinator_update(hass)
+
+            assert len(cover_calls) == 1
+            assert cover_calls[0].service == "set_cover_tilt_position"
+
+            _setup_cover_entity(
+                hass,
+                TEST_COVER_1,
+                position=COVER_POS_FULLY_CLOSED,
+                features=int(COVER_FEATURES_SET_POSITION_AND_TILT),
+                tilt_position=35,
+            )
+
+            with patch.object(
+                HomeAssistantInterface,
+                "get_daily_temperature_extrema",
+                new_callable=AsyncMock,
+                return_value=(HOT_TEMP, 18.0),
+            ):
+                await _trigger_coordinator_update(hass)
+
+            assert len(cover_calls) == 1
+            latest_entry = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry(TEST_COVER_1)
+            assert latest_entry is not None
+            assert latest_entry.tilt_position == 100
+
+    async def test_external_tilt_change_triggers_manual_override_after_position_only_move(self, hass: HomeAssistant) -> None:
+        """A tilt-only manual change should be detected when the automation-owned baseline includes tilt from a position snapshot."""
+
+        cover_calls: list[ServiceCall] = []
+
+        async def _record_cover_call(call: ServiceCall) -> None:
+            """Record real cover service calls issued by the integration."""
+
+            cover_calls.append(call)
+
+        hass.services.async_register("cover", "open_cover", _record_cover_call)
+        hass.services.async_register("cover", "set_cover_position", _record_cover_call)
+        hass.services.async_register("cover", "set_cover_tilt_position", _record_cover_call)
+
+        entry = _create_config_entry(
+            hass,
+            extra_options={
+                ConfKeys.COVERS_MIN_POSITION_DELTA.value: 5,
+                ConfKeys.TILT_MODE_DAY.value: TiltMode.MANUAL.value,
+                ConfKeys.TILT_DRIFT_TOLERANCE.value: 1,
+            },
+        )
+        with patch.object(
+            HomeAssistantInterface,
+            "get_sun_data",
+            return_value=(SUN_INDIRECT_AZIMUTH, SUN_HIGH_ELEVATION),
+        ):
+            await _setup_integration(
+                hass,
+                entry,
+                temp_max=COMFORTABLE_TEMP,
+                sun_elevation=SUN_HIGH_ELEVATION,
+                sun_azimuth=SUN_INDIRECT_AZIMUTH,
+                cover_positions={TEST_COVER_1: COVER_POS_FULLY_OPEN},
+            )
+
+            _setup_cover_entity(
+                hass,
+                TEST_COVER_1,
+                position=COVER_POS_FULLY_OPEN,
+                features=int(COVER_FEATURES_SET_POSITION_AND_TILT),
+                tilt_position=40,
+            )
+
+            coordinator = _get_coordinator(hass, entry)
+            coordinator._automation_engine._cover_pos_history_mgr.add(
+                TEST_COVER_1,
+                COVER_POS_FULLY_OPEN,
+                cover_moved=True,
+                tilt_position=40,
+            )
+
+            _setup_cover_entity(
+                hass,
+                TEST_COVER_1,
+                position=COVER_POS_FULLY_OPEN,
+                features=int(COVER_FEATURES_SET_POSITION_AND_TILT),
+                tilt_position=10,
+            )
+
+            with patch.object(
+                HomeAssistantInterface,
+                "get_daily_temperature_extrema",
+                new_callable=AsyncMock,
+                return_value=(COMFORTABLE_TEMP, 18.0),
+            ):
+                await _trigger_coordinator_update(hass)
+
+            assert len(cover_calls) == 0
+            latest_entry = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry(TEST_COVER_1)
+            assert latest_entry is not None
+            assert latest_entry.position == COVER_POS_FULLY_OPEN
+            assert latest_entry.tilt_position == 40
 
 
 class TestRuntimeEdgeCases:

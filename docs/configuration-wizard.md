@@ -141,6 +141,10 @@ The global tilt modes can be overridden per cover.
 - **Horizontal tilt position:** Home Assistant tilt percentage for fully horizontal slats. Auto mode treats this as the horizontal slat position. Default: 100%.
 - **Vertical tilt position:** Home Assistant tilt percentage for fully vertical slats. Auto mode treats this as the vertical slat position. Default: 0%.
 
+*New in 5.3:*
+
+- **Tilt drift tolerance:** Maximum recent tilt settle drift (%) to ignore during the short settling period after an automation command. Larger tilt changes are treated as manual override.
+
 ## Step 5: Additional Settings and Window Sensors (Optional)
 
 In this step of the configuration wizard, you can configure additional global settings plus optional window sensors for each cover.

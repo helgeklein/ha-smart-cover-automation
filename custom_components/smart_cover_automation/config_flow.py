@@ -609,6 +609,18 @@ class FlowHelper:
             )
         )
 
+        schema_dict[vol.Required(ConfKeys.TILT_DRIFT_TOLERANCE.value, default=resolved_settings.tilt_drift_tolerance)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    unit_of_measurement="%",
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            )
+        )
+
         # Delay between opening tilt and reopening the cover in day auto mode
         schema_dict[
             vol.Required(
@@ -1912,6 +1924,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_data[ConfKeys.TILT_SET_VALUE_DAY.value] = int(user_input.get(ConfKeys.TILT_SET_VALUE_DAY.value, 50))
         self._config_data[ConfKeys.TILT_SET_VALUE_NIGHT.value] = int(user_input.get(ConfKeys.TILT_SET_VALUE_NIGHT.value, 0))
         self._config_data[ConfKeys.TILT_MIN_CHANGE_DELTA.value] = int(user_input.get(ConfKeys.TILT_MIN_CHANGE_DELTA.value, 5))
+        self._config_data[ConfKeys.TILT_DRIFT_TOLERANCE.value] = int(user_input.get(ConfKeys.TILT_DRIFT_TOLERANCE.value, 5))
         self._config_data[ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value] = int(
             user_input.get(ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value, 0)
         )
