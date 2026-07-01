@@ -277,6 +277,13 @@ class TestConfigurationResolution:
 
         assert resolved.cover_movement_stagger_delay == 12
 
+    def test_resolve_tilt_drift_tolerance_defaults_on_invalid_input(self):
+        """Invalid tilt drift tolerance values should safely fall back to the default."""
+
+        resolved = resolve({ConfKeys.TILT_DRIFT_TOLERANCE.value: "not-an-int"})
+
+        assert resolved.tilt_drift_tolerance == 5
+
     def test_resolve_entry_reads_from_attributes(self):
         """Test that resolve_entry() extracts configuration from Home Assistant config entry objects.
 

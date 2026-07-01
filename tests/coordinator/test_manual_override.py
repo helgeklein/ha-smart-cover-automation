@@ -572,10 +572,15 @@ class TestManualOverride(TestDataUpdateCoordinatorBase):
 
         second_cover_result = second_result.covers[MOCK_COVER_ENTITY_ID]
         assert second_cover_result.pos_current == 98
-        assert second_cover_result.pos_target_desired == 100
+        assert second_cover_result.pos_target_desired is None
         assert second_cover_result.pos_target_final is None
         assert coordinator._ha_interface.set_cover_position.await_count == 1
         assert coordinator._ha_interface.set_cover_tilt_position.await_count == 0
+
+        latest_entry = coordinator._automation_engine._cover_pos_history_mgr.get_latest_entry(MOCK_COVER_ENTITY_ID)
+        assert latest_entry is not None
+        assert latest_entry.position == 100
+        assert latest_entry.tilt_position == 0
 
     async def test_manual_override_does_not_ignore_drift_when_position_delta_is_zero(self, mock_hass: MagicMock) -> None:
         """Zero position tolerance should disable settle-drift acceptance."""

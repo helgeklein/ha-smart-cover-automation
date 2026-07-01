@@ -140,6 +140,25 @@ class CoverExecutionPlan:
         return (self.desired_pos, self.movement_reason, self.planned_tilt_target)
 
 
+@dataclass(slots=True, frozen=True)
+class ManualOverrideAssessment:
+    """Details about an active manual override."""
+
+    time_remaining: float
+    position_changed: bool
+    tilt_changed: bool
+
+    @property
+    def change_summary(self) -> str:
+        """Return a human-readable description of which dimensions changed."""
+
+        if self.position_changed and self.tilt_changed:
+            return "position and tilt"
+        if self.position_changed:
+            return "position"
+        return "tilt"
+
+
 class CoverAutomation:
     """Handles automation logic for a single cover."""
 
@@ -245,20 +264,21 @@ class CoverAutomation:
 
         manual_override_just_expired = False
         was_manual_override_blocking = self._cover_pos_history_mgr.was_manual_override_blocking(self.entity_id)
-        manual_override_remaining = self._get_manual_override_remaining(current_pos)
-        if manual_override_remaining is not None:
+        manual_override_assessment = self._assess_manual_override(current_pos, cover_state.tilt_current)
+        if manual_override_assessment is not None:
             self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             if self._should_ignore_manual_override(sensor_data):
                 self._cover_pos_history_mgr.clear_manual_override_blocked(self.entity_id)
                 self._log_cover_msg(
-                    f"Ignoring manual override during evening-closure trigger; {manual_override_remaining:.0f} s would otherwise remain",
+                    "Ignoring manual override during evening-closure trigger; "
+                    f"{manual_override_assessment.time_remaining:.0f} s would otherwise remain",
                     const.LogSeverity.INFO,
                 )
             else:
                 self._cover_pos_history_mgr.mark_manual_override_blocked(self.entity_id)
                 self._log_cover_msg(
-                    "Manual override detected (position changed externally), "
-                    f"skipping this cover for another {manual_override_remaining:.0f} s",
+                    f"Manual override detected ({manual_override_assessment.change_summary} changed externally), "
+                    f"skipping this cover for another {manual_override_assessment.time_remaining:.0f} s",
                     const.LogSeverity.INFO,
                 )
                 return cover_state, None, self._capture_ownership_debug_snapshot(current_pos)
@@ -293,7 +313,12 @@ class CoverAutomation:
         ownership_debug_snapshot = self._capture_ownership_debug_snapshot(current_pos)
 
         if movement_reason is None:
-            self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=False)
+            self._cover_pos_history_mgr.add(
+                self.entity_id,
+                current_pos,
+                cover_moved=False,
+                tilt_position=cover_state.tilt_current,
+            )
             return cover_state, None, ownership_debug_snapshot
 
         cover_moved = self._is_cover_move_required(current_pos, desired_pos)
@@ -324,9 +349,15 @@ class CoverAutomation:
             plan.desired_pos,
             plan.features,
             plan.movement_reason,
+            current_tilt=cover_state.tilt_current,
         )
         if not cover_moved:
-            self._cover_pos_history_mgr.add(self.entity_id, plan.current_pos, cover_moved=False)
+            self._cover_pos_history_mgr.add(
+                self.entity_id,
+                plan.current_pos,
+                cover_moved=False,
+                tilt_position=cover_state.tilt_current,
+            )
         else:
             cover_state.pos_target_final = actual_pos
 
@@ -584,7 +615,7 @@ class CoverAutomation:
     #
     # _check_manual_override
     #
-    def _check_manual_override(self, current_pos: int) -> bool:
+    def _check_manual_override(self, current_pos: int, current_tilt: int | None = None) -> bool:
         """Check if manual override is active for this cover.
 
         Args:
@@ -595,35 +626,56 @@ class CoverAutomation:
             True if override is active (should skip), False otherwise
         """
 
-        time_remaining = self._get_manual_override_remaining(current_pos)
-        if time_remaining is None:
+        assessment = self._assess_manual_override(current_pos, current_tilt)
+        if assessment is None:
             return False
 
-        message = f"Manual override detected (position changed externally), skipping this cover for another {time_remaining:.0f} s"
+        message = (
+            f"Manual override detected ({assessment.change_summary} changed externally), "
+            f"skipping this cover for another {assessment.time_remaining:.0f} s"
+        )
         self._log_cover_msg(message, const.LogSeverity.INFO)
         return True
 
     #
     # _get_manual_override_remaining
     #
-    def _get_manual_override_remaining(self, current_pos: int) -> float | None:
+    def _get_manual_override_remaining(self, current_pos: int, current_tilt: int | None = None) -> float | None:
         """Get remaining manual override time for this cover.
 
         Args:
             current_pos: Current cover position
+            current_tilt: Current tilt position, if known
 
         Returns:
             Remaining override time in seconds, or None if manual override is inactive
         """
 
-        # Check if we're still at the last known position
+        assessment = self._assess_manual_override(current_pos, current_tilt)
+        return assessment.time_remaining if assessment is not None else None
+
+    def _assess_manual_override(self, current_pos: int, current_tilt: int | None = None) -> ManualOverrideAssessment | None:
+        """Return the active manual override details, if any."""
+
         last_history_entry = self._cover_pos_history_mgr.get_latest_entry(self.entity_id)
-        if last_history_entry is None or current_pos == last_history_entry.position:
+        if last_history_entry is None:
+            return None
+
+        position_changed = current_pos != last_history_entry.position
+        tilt_changed = self._did_tilt_change_externally(current_tilt, last_history_entry)
+        if not position_changed and not tilt_changed:
             return None
 
         time_now = datetime.now(timezone.utc)
 
-        if self._is_expected_recent_automation_position_drift(current_pos, last_history_entry, time_now):
+        if self._is_expected_recent_automation_drift(
+            current_pos,
+            current_tilt,
+            last_history_entry,
+            time_now,
+            position_changed,
+            tilt_changed,
+        ):
             return None
 
         # Beware of system time changes
@@ -635,26 +687,44 @@ class CoverAutomation:
         if time_delta >= self.resolved.manual_override_duration:
             return None
 
-        return self.resolved.manual_override_duration - time_delta
+        return ManualOverrideAssessment(
+            time_remaining=self.resolved.manual_override_duration - time_delta,
+            position_changed=position_changed,
+            tilt_changed=tilt_changed,
+        )
+
+    @staticmethod
+    def _did_tilt_change_externally(current_tilt: int | None, last_history_entry: PositionEntry) -> bool:
+        """Return whether tilt changed relative to the last tracked automation state."""
+
+        return (
+            current_tilt is not None and last_history_entry.tilt_position is not None and current_tilt != last_history_entry.tilt_position
+        )
 
     #
-    # _is_expected_recent_automation_position_drift
+    # _is_expected_recent_automation_drift
     #
-    def _is_expected_recent_automation_position_drift(
+    def _is_expected_recent_automation_drift(
         self,
         current_pos: int,
+        current_tilt: int | None,
         last_history_entry: PositionEntry,
         time_now: datetime,
+        position_changed: bool,
+        tilt_changed: bool,
     ) -> bool:
-        """Check whether a small position drift is an expected automation settle effect.
+        """Check whether recent drift is an expected automation settle effect.
 
         Args:
             current_pos: Current live cover position
+            current_tilt: Current live cover tilt, if known
             last_history_entry: Most recent recorded position history entry
             time_now: Current UTC time for expiry checks
+            position_changed: Whether the live cover position differs from history
+            tilt_changed: Whether the live cover tilt differs from history
 
         Returns:
-            True if the position change should be ignored as recent automation settling
+            True if the external change should be ignored as recent automation settling
         """
 
         recent_automation_action = self._cover_pos_history_mgr.get_recent_automation_action(self.entity_id)
@@ -665,24 +735,44 @@ class CoverAutomation:
             self._cover_pos_history_mgr.clear_recent_automation_action(self.entity_id)
             return False
 
-        lower_bound = max(
-            const.COVER_POS_FULLY_CLOSED,
-            recent_automation_action.expected_position - recent_automation_action.allowed_position_drift,
+        position_within_drift = not position_changed or self._value_matches_within_drift(
+            current_pos,
+            recent_automation_action.expected_position,
+            recent_automation_action.allowed_position_drift,
         )
-        upper_bound = min(
-            const.COVER_POS_FULLY_OPEN,
-            recent_automation_action.expected_position + recent_automation_action.allowed_position_drift,
+        tilt_within_drift = not tilt_changed or (
+            current_tilt is not None
+            and recent_automation_action.expected_tilt_position is not None
+            and self._value_matches_within_drift(
+                current_tilt,
+                recent_automation_action.expected_tilt_position,
+                recent_automation_action.allowed_tilt_drift,
+            )
         )
 
-        if not lower_bound <= current_pos <= upper_bound:
+        if not position_within_drift or not tilt_within_drift:
             self._cover_pos_history_mgr.clear_recent_automation_action(self.entity_id)
             return False
 
-        self._cover_pos_history_mgr.add(self.entity_id, current_pos, cover_moved=True, timestamp=time_now)
+        history_tilt = current_tilt if current_tilt is not None else last_history_entry.tilt_position
+        self._cover_pos_history_mgr.add(
+            self.entity_id,
+            current_pos,
+            cover_moved=True,
+            timestamp=time_now,
+            tilt_position=history_tilt,
+        )
         if self._cover_pos_history_mgr.get_closed_by_automation_reason(self.entity_id) is not None:
             self._cover_pos_history_mgr.set_automation_owned_position(self.entity_id, current_pos)
+
+        change_parts: list[str] = []
+        if position_changed:
+            change_parts.append(f"position {last_history_entry.position}% -> {current_pos}%")
+        if tilt_changed and current_tilt is not None and last_history_entry.tilt_position is not None:
+            change_parts.append(f"tilt {last_history_entry.tilt_position}% -> {current_tilt}%")
+
         self._log_cover_msg(
-            (f"Ignoring expected recent automation position drift ({last_history_entry.position}% -> {current_pos}%)"),
+            f"Ignoring expected recent automation {' and '.join(change_parts)} drift",
             const.LogSeverity.DEBUG,
         )
         return True
@@ -690,11 +780,12 @@ class CoverAutomation:
     #
     # _record_recent_automation_action
     #
-    def _record_recent_automation_action(self, expected_position: int | None) -> None:
+    def _record_recent_automation_action(self, expected_position: int | None, expected_tilt_position: int | None = None) -> None:
         """Record a short-lived tolerance window for recent automation settling.
 
         Args:
             expected_position: The position automation intended to leave the cover at
+            expected_tilt_position: The tilt automation intended to leave the cover at
         """
 
         if expected_position is None:
@@ -706,7 +797,31 @@ class CoverAutomation:
             expected_position=expected_position,
             allowed_position_drift=self.resolved.covers_min_position_delta,
             expires_at=expires_at,
+            expected_tilt_position=expected_tilt_position,
+            allowed_tilt_drift=self.resolved.tilt_drift_tolerance,
         )
+
+    def _record_automation_state(self, position: int, tilt_position: int | None, *, cover_moved: bool) -> None:
+        """Persist one coherent automation-owned position/tilt snapshot."""
+
+        self._cover_pos_history_mgr.add(
+            self.entity_id,
+            position,
+            cover_moved=cover_moved,
+            tilt_position=tilt_position,
+        )
+        self._record_recent_automation_action(position, tilt_position)
+
+    @staticmethod
+    def _value_matches_within_drift(current_value: int, expected_value: int, allowed_drift: int) -> bool:
+        """Return whether a live value matches the expected automation value."""
+
+        if allowed_drift <= 0:
+            return current_value == expected_value
+
+        lower_bound = max(const.COVER_POS_FULLY_CLOSED, expected_value - allowed_drift)
+        upper_bound = min(const.COVER_POS_FULLY_OPEN, expected_value + allowed_drift)
+        return lower_bound <= current_value <= upper_bound
 
     def _is_passive_reopening_eligible(self, current_pos: int) -> bool:
         """Return whether passive reopening may resume automation ownership.
@@ -1203,7 +1318,12 @@ class CoverAutomation:
     # _move_cover_if_needed
     #
     async def _move_cover_if_needed(
-        self, current_pos: int, desired_pos: int, features: int, movement_reason: CoverMovementReason
+        self,
+        current_pos: int,
+        desired_pos: int,
+        features: int,
+        movement_reason: CoverMovementReason,
+        current_tilt: int | None = None,
     ) -> tuple[bool, int | None, str]:
         """Move cover if position change is significant enough.
 
@@ -1238,9 +1358,7 @@ class CoverAutomation:
             actual_pos = await self._ha_interface.set_cover_position(self.entity_id, desired_pos, features)
             self._logger.debug(f"[{self.entity_id}] Actual position: {actual_pos}%")
 
-            # Add the new position to the history
-            self._cover_pos_history_mgr.add(self.entity_id, actual_pos, cover_moved=True)
-            self._record_recent_automation_action(actual_pos)
+            self._record_automation_state(actual_pos, current_tilt, cover_moved=True)
 
             if movement_reason in (
                 CoverMovementReason.CLOSING_HEAT_PROTECTION,
@@ -1356,6 +1474,7 @@ class CoverAutomation:
             # Just block all automation (including tilt)
             self._log_cover_msg(f"Lock active ({self.resolved.lock_mode}), skipping automation", const.LogSeverity.INFO)
             self._set_lock_attrs(cover_state, desired_pos=current_pos, target_pos=current_pos, cover_moved=False)
+            self._record_automation_state(current_pos, cover_state.tilt_current, cover_moved=False)
 
         elif self.resolved.lock_mode == const.LockMode.FORCE_OPEN:
             # Ensure cover is fully open (100%) and tilt is fully open (100%)
@@ -1366,9 +1485,12 @@ class CoverAutomation:
                 try:
                     await self._ha_interface.set_cover_tilt_position(self.entity_id, const.COVER_POS_FULLY_OPEN, features)
                     cover_state.tilt_target = const.COVER_POS_FULLY_OPEN
-                    self._record_recent_automation_action(const.COVER_POS_FULLY_OPEN)
                 except Exception as err:
                     self._logger.error(f"[{self.entity_id}] Failed to set lock tilt: {err}")
+
+            final_position = cover_state.pos_target_final if cover_state.pos_target_final is not None else current_pos
+            final_tilt = cover_state.tilt_target if cover_state.tilt_target is not None else cover_state.tilt_current
+            self._record_automation_state(final_position, final_tilt, cover_moved=final_position != current_pos)
 
         elif self.resolved.lock_mode == const.LockMode.FORCE_CLOSE:
             # Ensure cover is fully closed (0%) and tilt is fully closed (0%)
@@ -1379,9 +1501,12 @@ class CoverAutomation:
                 try:
                     await self._ha_interface.set_cover_tilt_position(self.entity_id, const.COVER_POS_FULLY_CLOSED, features)
                     cover_state.tilt_target = const.COVER_POS_FULLY_CLOSED
-                    self._record_recent_automation_action(const.COVER_POS_FULLY_CLOSED)
                 except Exception as err:
                     self._logger.error(f"[{self.entity_id}] Failed to set lock tilt: {err}")
+
+            final_position = cover_state.pos_target_final if cover_state.pos_target_final is not None else current_pos
+            final_tilt = cover_state.tilt_target if cover_state.tilt_target is not None else cover_state.tilt_current
+            self._record_automation_state(final_position, final_tilt, cover_moved=final_position != current_pos)
 
         else:
             # Have the type checker fail if a new lock mode is added but not handled here
@@ -1404,7 +1529,6 @@ class CoverAutomation:
 
         cover_state.pos_target_desired = desired_pos
         cover_state.pos_target_final = target_pos
-        self._cover_pos_history_mgr.add(self.entity_id, new_position=target_pos, cover_moved=cover_moved)
 
     #
     # _enforce_locked_position
@@ -1434,7 +1558,6 @@ class CoverAutomation:
 
             cover_moved = True
             move_msg = "moving to target position"
-            self._record_recent_automation_action(new_pos)
 
         # Log and store position
         self._log_cover_msg(f"Lock active ({self.resolved.lock_mode}), {move_msg} ({target_pos}%)", const.LogSeverity.INFO)
@@ -1668,7 +1791,14 @@ class CoverAutomation:
         try:
             actual_tilt = await self._ha_interface.set_cover_tilt_position(self.entity_id, target_tilt, features)
             cover_state.tilt_target = actual_tilt
-            self._record_recent_automation_action(effective_pos)
+            if effective_pos is not None:
+                self._record_recent_automation_action(effective_pos, actual_tilt)
+                self._cover_pos_history_mgr.add(
+                    self.entity_id,
+                    effective_pos,
+                    cover_moved=True,
+                    tilt_position=actual_tilt,
+                )
             self._log_cover_msg(
                 f"Tilt set to {actual_tilt}% (mode: {tilt_mode})",
                 const.LogSeverity.INFO,
