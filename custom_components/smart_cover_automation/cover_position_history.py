@@ -6,9 +6,10 @@ from collections import deque
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Iterator
+from typing import Any, Iterator
 
 from . import const
+from .movement import AutomationManagedState, AutomationMode
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,32 +103,39 @@ class CoverPositionHistoryManager:
     """Manages position history for all covers in the coordinator."""
 
     __slots__ = (
-        "_automation_closed_markers",
-        "_automation_owned_positions",
+        "_automation_managed_states",
         "_cover_position_history",
         "_delayed_reopen_actions",
         "_manual_override_blocked",
-        "_on_closed_by_automation_changed",
+        "_on_automation_managed_states_changed",
         "_recent_automation_actions",
     )
 
-    def __init__(self, on_closed_by_automation_changed: Callable[[dict[str, str]], None] | None = None) -> None:
+    def __init__(
+        self,
+        on_automation_managed_states_changed: Callable[[dict[str, dict[str, Any]]], None] | None = None,
+        on_closed_by_automation_changed: Callable[[dict[str, str]], None] | None = None,
+    ) -> None:
         """Initialize the position history manager."""
-        self._automation_closed_markers: dict[str, str] = {}
-        self._automation_owned_positions: dict[str, int] = {}
+        if on_automation_managed_states_changed is None and on_closed_by_automation_changed is not None:
+            on_automation_managed_states_changed = lambda _states: on_closed_by_automation_changed(  # noqa: E731
+                self.export_closed_by_automation_markers()
+            )
+
+        self._automation_managed_states: dict[str, AutomationManagedState] = {}
         self._cover_position_history: dict[str, CoverPositionHistory] = {}
         self._delayed_reopen_actions: dict[str, DelayedReopenAction] = {}
         self._manual_override_blocked: set[str] = set()
-        self._on_closed_by_automation_changed = on_closed_by_automation_changed
+        self._on_automation_managed_states_changed = on_automation_managed_states_changed
         self._recent_automation_actions: dict[str, RecentAutomationAction] = {}
 
-    def _notify_closed_by_automation_changed(self) -> None:
-        """Persist automation-closed markers when they change."""
+    def _notify_automation_managed_states_changed(self) -> None:
+        """Persist automation-managed states when they change."""
 
-        if self._on_closed_by_automation_changed is None:
+        if self._on_automation_managed_states_changed is None:
             return
 
-        self._on_closed_by_automation_changed(dict(self._automation_closed_markers))
+        self._on_automation_managed_states_changed(self.export_automation_managed_states())
 
     #
     # add
@@ -255,57 +263,150 @@ class CoverPositionHistoryManager:
 
         self._delayed_reopen_actions.pop(entity_id, None)
 
-    def mark_closed_by_automation(self, entity_id: str, reason_key: str) -> None:
-        """Mark a cover as currently closed by automation and remember why."""
+    def set_automation_managed_state(self, entity_id: str, state: AutomationManagedState) -> None:
+        """Store the current automation-managed state for a cover."""
 
-        if self._automation_closed_markers.get(entity_id) == reason_key:
+        if self._automation_managed_states.get(entity_id) == state:
             return
 
-        self._automation_closed_markers[entity_id] = reason_key
-        self._notify_closed_by_automation_changed()
+        self._automation_managed_states[entity_id] = state
+        self._notify_automation_managed_states_changed()
 
-    def set_automation_owned_position(self, entity_id: str, position: int) -> None:
-        """Store the closed position automation currently owns for passive reopening."""
+    def get_automation_managed_state(self, entity_id: str) -> AutomationManagedState | None:
+        """Return the current automation-managed state for a cover."""
 
-        self._automation_owned_positions[entity_id] = position
+        return self._automation_managed_states.get(entity_id)
 
-    def get_automation_owned_position(self, entity_id: str) -> int | None:
-        """Return the closed position automation currently owns for a cover."""
+    def clear_automation_managed_state(self, entity_id: str) -> None:
+        """Clear the current automation-managed state for a cover."""
 
-        return self._automation_owned_positions.get(entity_id)
-
-    def clear_closed_by_automation(self, entity_id: str) -> None:
-        """Clear the automation-closed marker for a cover."""
-
-        self._automation_owned_positions.pop(entity_id, None)
-
-        if entity_id not in self._automation_closed_markers:
+        if entity_id not in self._automation_managed_states:
             return
 
-        self._automation_closed_markers.pop(entity_id, None)
-        self._notify_closed_by_automation_changed()
+        self._automation_managed_states.pop(entity_id, None)
+        self._notify_automation_managed_states_changed()
 
     def was_closed_by_automation(self, entity_id: str) -> bool:
         """Return whether the cover is currently marked as automation-closed."""
 
-        return entity_id in self._automation_closed_markers
+        return entity_id in self._automation_managed_states
 
     def get_closed_by_automation_reason(self, entity_id: str) -> str | None:
         """Return the stored automation-closing reason key for a cover, if any."""
 
-        return self._automation_closed_markers.get(entity_id)
+        managed_state = self.get_automation_managed_state(entity_id)
+        if managed_state is None:
+            return None
+
+        return _legacy_reason_key_for_automation_mode(managed_state.automation_mode)
+
+    def get_automation_owned_position(self, entity_id: str) -> int | None:
+        """Return the automation-owned position for a cover, if any."""
+
+        managed_state = self.get_automation_managed_state(entity_id)
+        return None if managed_state is None else managed_state.position
+
+    def set_automation_owned_position(self, entity_id: str, position: int) -> None:
+        """Update the owned position while preserving the existing managed cause."""
+
+        managed_state = self.get_automation_managed_state(entity_id)
+        if managed_state is None:
+            return
+
+        self.set_automation_managed_state(
+            entity_id,
+            AutomationManagedState(position=position, automation_mode=managed_state.automation_mode),
+        )
+
+    def mark_closed_by_automation(self, entity_id: str, reason_key: str) -> None:
+        """Legacy compatibility wrapper for tests and migration paths."""
+
+        automation_mode = _movement_cause_for_legacy_reason_key(reason_key)
+        if automation_mode is None:
+            return
+
+        current_state = self.get_automation_managed_state(entity_id)
+        if current_state is None:
+            self.set_automation_managed_state(
+                entity_id,
+                AutomationManagedState(position=const.COVER_POS_FULLY_CLOSED, automation_mode=automation_mode),
+            )
+            return
+
+        self.set_automation_managed_state(
+            entity_id,
+            AutomationManagedState(position=current_state.position, automation_mode=automation_mode),
+        )
+
+    def clear_closed_by_automation(self, entity_id: str) -> None:
+        """Legacy compatibility wrapper for clearing automation-managed state."""
+
+        self.clear_automation_managed_state(entity_id)
 
     def export_closed_by_automation_markers(self) -> dict[str, str]:
-        """Return a copy of the automation-closed markers for persistence."""
+        """Return a legacy marker export derived from automation-managed state."""
 
-        return dict(self._automation_closed_markers)
+        return {
+            entity_id: reason_key
+            for entity_id, state in self._automation_managed_states.items()
+            if (reason_key := _legacy_reason_key_for_automation_mode(state.automation_mode)) is not None
+        }
+
+    def export_automation_managed_states(self) -> dict[str, dict[str, Any]]:
+        """Return automation-managed state as a persistence-friendly payload."""
+
+        return {
+            entity_id: {"position": state.position, "automation_mode": state.automation_mode.value}
+            for entity_id, state in self._automation_managed_states.items()
+        }
 
     def restore_closed_by_automation_markers(self, markers: Mapping[str, str]) -> None:
-        """Restore automation-closed markers from persistent storage."""
+        """Restore only the legacy close markers for compatibility.
 
-        self._automation_closed_markers = {
-            entity_id: reason_key for entity_id, reason_key in markers.items() if isinstance(entity_id, str) and isinstance(reason_key, str)
-        }
+        This intentionally restores reason intent only. Position bootstrap belongs
+        in the higher-level restore flow that can inspect live entity state.
+        """
+
+        restored: dict[str, AutomationManagedState] = {}
+        for entity_id, reason_key in markers.items():
+            automation_mode = _movement_cause_for_legacy_reason_key(reason_key)
+            if not isinstance(entity_id, str) or automation_mode is None:
+                continue
+            restored[entity_id] = AutomationManagedState(position=const.COVER_POS_FULLY_CLOSED, automation_mode=automation_mode)
+
+        self._automation_managed_states = restored
+
+    def restore_automation_managed_states(self, states: Mapping[str, Mapping[str, Any]]) -> set[str]:
+        """Restore automation-managed states from persistent storage.
+
+        Returns the entity IDs whose managed state payload restored successfully.
+        """
+
+        restored: dict[str, AutomationManagedState] = {}
+        for entity_id, payload in states.items():
+            if not isinstance(entity_id, str) or not isinstance(payload, Mapping):
+                continue
+
+            raw_position = payload.get("position")
+            raw_automation_mode = payload.get("automation_mode")
+            if raw_automation_mode is None:
+                raw_automation_mode = payload.get("cause")
+            if not isinstance(raw_position, int) or not isinstance(raw_automation_mode, str):
+                continue
+
+            automation_mode = _automation_mode_for_persisted_value(raw_automation_mode)
+            if automation_mode is None:
+                continue
+
+            restored[entity_id] = AutomationManagedState(position=raw_position, automation_mode=automation_mode)
+
+        self._automation_managed_states = restored
+        return set(restored)
+
+    def has_automation_managed_states(self) -> bool:
+        """Return whether any valid managed state is currently stored."""
+
+        return bool(self._automation_managed_states)
 
     def mark_manual_override_blocked(self, entity_id: str) -> None:
         """Mark that automation is currently blocked by a manual override."""
@@ -321,3 +422,34 @@ class CoverPositionHistoryManager:
         """Return whether the cover was previously blocked by manual override."""
 
         return entity_id in self._manual_override_blocked
+
+
+def _movement_cause_for_legacy_reason_key(reason_key: str) -> AutomationMode | None:
+    """Translate legacy persisted/logbook reason keys into automation modes."""
+
+    if reason_key == const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION:
+        return AutomationMode.HEAT_PROTECTION
+    if reason_key == const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET:
+        return AutomationMode.EVENING_CLOSURE
+    if reason_key == const.TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE:
+        return AutomationMode.EVENING_CLOSURE
+    return None
+
+
+def _legacy_reason_key_for_automation_mode(automation_mode: AutomationMode) -> str | None:
+    """Translate an automation mode into the legacy persisted/logbook reason key."""
+
+    if automation_mode == AutomationMode.HEAT_PROTECTION:
+        return const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+    if automation_mode == AutomationMode.EVENING_CLOSURE:
+        return const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+    return None
+
+
+def _automation_mode_for_persisted_value(raw_value: str) -> AutomationMode | None:
+    """Translate persisted managed-state values into automation modes."""
+
+    try:
+        return AutomationMode(raw_value)
+    except ValueError:
+        return _movement_cause_for_legacy_reason_key(raw_value)

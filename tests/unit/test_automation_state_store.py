@@ -10,6 +10,7 @@ from custom_components.smart_cover_automation.automation_state_store import Auto
 from custom_components.smart_cover_automation.const import (
     DOMAIN,
     STORAGE_KEY_AUTOMATION_CLOSED_MARKERS,
+    STORAGE_KEY_AUTOMATION_MANAGED_STATES,
     STORAGE_KEY_AUTOMATION_STATE,
     STORAGE_KEY_CURRENT_DAY_TEMPERATURE_EXTREMA,
     STORAGE_SAVE_DELAY_SECONDS,
@@ -371,6 +372,96 @@ class TestAutomationStateStore:
             store = AutomationStateStore(mock_hass, "entry_123")
 
         assert await store.async_load_closed_markers() == expected
+
+    @pytest.mark.asyncio
+    async def test_load_automation_managed_states_filters_invalid_payloads(self, mock_hass: MagicMock) -> None:
+        """Managed-state loads should keep only string keys with dict payloads."""
+
+        self._prepare_hass(mock_hass)
+
+        raw_payload = {
+            STORAGE_KEY_AUTOMATION_MANAGED_STATES: {
+                "cover.kitchen": {"position": 20, "automation_mode": "evening_closure"},
+                "cover.office": {"position": 40, "cause": "heat_protection"},
+                "cover.invalid": ["bad"],
+                1: {"position": 10, "automation_mode": "evening_closure"},
+            }
+        }
+        mock_store = MagicMock()
+        mock_store.async_load = AsyncMock(return_value=raw_payload)
+
+        with patch("custom_components.smart_cover_automation.automation_state_store.Store", return_value=mock_store):
+            store = AutomationStateStore(mock_hass, "entry_123")
+
+        loaded = await store.async_load_automation_managed_states()
+        loaded["cover.kitchen"]["position"] = 99
+
+        assert loaded == {
+            "cover.kitchen": {"position": 99, "automation_mode": "evening_closure"},
+            "cover.office": {"position": 40, "cause": "heat_protection"},
+        }
+        assert raw_payload[STORAGE_KEY_AUTOMATION_MANAGED_STATES]["cover.kitchen"] == {
+            "position": 20,
+            "automation_mode": "evening_closure",
+        }
+
+    def test_schedule_save_automation_managed_states_uses_fallback_snapshot(self) -> None:
+        """Fallback mode should store a detached managed-state snapshot."""
+
+        store = AutomationStateStore(object(), "entry_123")
+        states = {"cover.kitchen": {"position": 20, "automation_mode": "evening_closure"}}
+
+        store.schedule_save_automation_managed_states(states)
+        states["cover.kitchen"]["position"] = 99
+
+        assert AutomationStateStore._fallback_storage["entry_123"] == {
+            STORAGE_KEY_AUTOMATION_MANAGED_STATES: {"cover.kitchen": {"position": 20, "automation_mode": "evening_closure"}}
+        }
+
+    @pytest.mark.asyncio
+    async def test_async_save_automation_managed_states_preserves_other_cached_sections(self, mock_hass: MagicMock) -> None:
+        """Immediate managed-state saves should not overwrite other cached runtime-state sections."""
+
+        self._prepare_hass(mock_hass)
+
+        mock_store = MagicMock()
+        mock_store.async_save = AsyncMock()
+
+        with patch("custom_components.smart_cover_automation.automation_state_store.Store", return_value=mock_store):
+            store = AutomationStateStore(mock_hass, "entry_123")
+
+        await store.async_save_closed_markers({"cover.kitchen": "evening_close"})
+        await store.async_save_current_day_temperature_extrema({"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0})
+        await store.async_save_automation_managed_states({"cover.kitchen": {"position": 20, "automation_mode": "evening_closure"}})
+
+        assert mock_store.async_save.await_args_list[-1].args == (
+            {
+                STORAGE_KEY_AUTOMATION_CLOSED_MARKERS: {"cover.kitchen": "evening_close"},
+                STORAGE_KEY_CURRENT_DAY_TEMPERATURE_EXTREMA: {"date": "2026-05-26", "temp_max": 29.0, "temp_min": 18.0},
+                STORAGE_KEY_AUTOMATION_MANAGED_STATES: {"cover.kitchen": {"position": 20, "automation_mode": "evening_closure"}},
+            },
+        )
+
+    @pytest.mark.asyncio
+    async def test_async_save_automation_managed_states_logs_store_failures(self, mock_hass: MagicMock) -> None:
+        """Managed-state save failures should be logged and suppressed."""
+
+        self._prepare_hass(mock_hass)
+
+        mock_store = MagicMock()
+        mock_store.async_save = AsyncMock(side_effect=ValueError("save failed"))
+
+        with (
+            patch("custom_components.smart_cover_automation.automation_state_store.Store", return_value=mock_store),
+            patch("custom_components.smart_cover_automation.automation_state_store.Log") as mock_log_class,
+        ):
+            mock_logger = MagicMock()
+            mock_log_class.return_value = mock_logger
+            store = AutomationStateStore(mock_hass, "entry_123")
+
+            await store.async_save_automation_managed_states({"cover.kitchen": {"position": 20, "automation_mode": "evening_closure"}})
+
+        mock_logger.warning.assert_called_once_with("Failed to persist automation state: %s", mock_store.async_save.side_effect)
 
     @pytest.mark.asyncio
     async def test_async_save_passes_expected_payload_to_store(self, mock_hass: MagicMock) -> None:

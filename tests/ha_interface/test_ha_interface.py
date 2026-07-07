@@ -1057,6 +1057,43 @@ class TestGetDailyTemperatureExtrema:
             "unknown",
         )
 
+    async def test_get_daily_temperature_extrema_selected_min_forecast_without_low(
+        self,
+        ha_interface: HomeAssistantInterface,
+        mock_hass: MagicMock,
+        mock_logger: MagicMock,
+    ) -> None:
+        """Test fallback when a min forecast is selected but does not expose a usable low."""
+
+        mock_weather_state = MagicMock()
+        mock_weather_state.attributes = {}
+        mock_hass.states.get.return_value = mock_weather_state
+        forecast_list = [{"datetime": "2026-04-08T00:00:00+00:00", "native_temperature": 28.5}]
+
+        with (
+            patch.object(
+                ha_interface,
+                "_get_forecast_list",
+                new=AsyncMock(return_value=forecast_list),
+            ),
+            patch.object(
+                ha_interface,
+                "_find_day_forecast",
+                side_effect=[
+                    ("today", {"native_temperature": 28.5}),
+                    ("tonight", {"native_temperature": 21.0}),
+                ],
+            ),
+        ):
+            result = await ha_interface.get_daily_temperature_extrema(MOCK_WEATHER_ENTITY_ID)
+
+        assert result == (28.5, None)
+        mock_logger.warning.assert_any_call(
+            "Could not extract forecast minimum temperature from %s for %s. Continuing with daily max only.",
+            MOCK_WEATHER_ENTITY_ID,
+            "tonight",
+        )
+
 
 class TestGetMinTemperature:
     """Test get_min_temperature method."""

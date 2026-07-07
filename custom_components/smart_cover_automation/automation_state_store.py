@@ -75,6 +75,24 @@ class AutomationStateStore:
             if isinstance(entity_id, str) and isinstance(reason_key, str)
         }
 
+    async def async_load_automation_managed_states(self) -> dict[str, dict[str, Any]]:
+        """Load automation-managed states from persistent storage."""
+
+        data = await self._async_load_state()
+        self._state_cache = dict(data)
+
+        raw_states = data.get(const.STORAGE_KEY_AUTOMATION_MANAGED_STATES)
+        if not isinstance(raw_states, dict):
+            return {}
+
+        loaded: dict[str, dict[str, Any]] = {}
+        for entity_id, payload in raw_states.items():
+            if not isinstance(entity_id, str) or not isinstance(payload, dict):
+                continue
+            loaded[entity_id] = dict(payload)
+
+        return loaded
+
     async def async_load_current_day_temperature_extrema(self) -> dict[str, Any] | None:
         """Load current-day temperature extrema from persistent storage."""
 
@@ -111,6 +129,27 @@ class AutomationStateStore:
             return
 
         self._state_cache[const.STORAGE_KEY_AUTOMATION_CLOSED_MARKERS] = snapshot
+
+        try:
+            self._store.async_delay_save(
+                self._build_save_payload,
+                const.STORAGE_SAVE_DELAY_SECONDS,
+            )
+        except (AttributeError, OSError, TypeError, ValueError) as err:
+            self._logger.warning("Failed to schedule persisted automation state save: %s", err)
+
+    def schedule_save_automation_managed_states(self, states: Mapping[str, Mapping[str, Any]]) -> None:
+        """Schedule persistence for the current automation-managed states."""
+
+        snapshot = {entity_id: dict(payload) for entity_id, payload in states.items()}
+        if self._store is None:
+            payload = dict(self._fallback_storage.get(self._entry_id, {}))
+            payload[const.STORAGE_KEY_AUTOMATION_MANAGED_STATES] = snapshot
+            self._fallback_storage[self._entry_id] = payload
+            self._state_cache = dict(payload)
+            return
+
+        self._state_cache[const.STORAGE_KEY_AUTOMATION_MANAGED_STATES] = snapshot
 
         try:
             self._store.async_delay_save(
@@ -159,6 +198,24 @@ class AutomationStateStore:
             return
 
         self._state_cache[const.STORAGE_KEY_AUTOMATION_CLOSED_MARKERS] = snapshot
+
+        try:
+            await self._store.async_save(self._build_save_payload())
+        except (AttributeError, OSError, TypeError, ValueError) as err:
+            self._logger.warning("Failed to persist automation state: %s", err)
+
+    async def async_save_automation_managed_states(self, states: Mapping[str, Mapping[str, Any]]) -> None:
+        """Immediately persist the current automation-managed states."""
+
+        snapshot = {entity_id: dict(payload) for entity_id, payload in states.items()}
+        if self._store is None:
+            payload = dict(self._fallback_storage.get(self._entry_id, {}))
+            payload[const.STORAGE_KEY_AUTOMATION_MANAGED_STATES] = snapshot
+            self._fallback_storage[self._entry_id] = payload
+            self._state_cache = dict(payload)
+            return
+
+        self._state_cache[const.STORAGE_KEY_AUTOMATION_MANAGED_STATES] = snapshot
 
         try:
             await self._store.async_save(self._build_save_payload())

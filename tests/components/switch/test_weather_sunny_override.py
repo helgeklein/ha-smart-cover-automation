@@ -245,6 +245,20 @@ class TestWeatherHotOverrideSwitchLifecycle:
 
         hot_override_switch._async_persist_override.assert_awaited_once_with(False)
 
+    async def test_added_to_hass_does_not_overwrite_existing_override(self, hot_override_switch) -> None:
+        """Test that enabling the entity preserves an existing hot override value."""
+
+        hot_override_switch.coordinator.config_entry.options[SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL] = True
+        hot_override_switch._async_persist_override = AsyncMock()
+
+        with patch(
+            "homeassistant.helpers.update_coordinator.CoordinatorEntity.async_added_to_hass",
+            new=AsyncMock(),
+        ):
+            await hot_override_switch.async_added_to_hass()
+
+        hot_override_switch._async_persist_override.assert_not_awaited()
+
 
 class TestCoverWeatherHotOverrideSwitchLifecycle:
     """Test CoverWeatherHotExternalControlSwitch lifecycle hooks."""
@@ -261,6 +275,20 @@ class TestCoverWeatherHotOverrideSwitchLifecycle:
             await cover_hot_override_switch.async_added_to_hass()
 
         cover_hot_override_switch._async_persist_override.assert_awaited_once_with(False)
+
+    async def test_added_to_hass_does_not_overwrite_existing_override(self, cover_hot_override_switch) -> None:
+        """Test that enabling the entity preserves an existing per-cover hot override value."""
+
+        cover_hot_override_switch.coordinator.config_entry.options[f"cover.test_cover_{COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"] = True
+        cover_hot_override_switch._async_persist_override = AsyncMock()
+
+        with patch(
+            "homeassistant.helpers.update_coordinator.CoordinatorEntity.async_added_to_hass",
+            new=AsyncMock(),
+        ):
+            await cover_hot_override_switch.async_added_to_hass()
+
+        cover_hot_override_switch._async_persist_override.assert_not_awaited()
 
 
 class TestWeatherSunnyOverrideSwitchToggle:

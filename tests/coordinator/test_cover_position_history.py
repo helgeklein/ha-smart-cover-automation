@@ -9,6 +9,8 @@ import pytest
 from custom_components.smart_cover_automation.const import (
     COVER_POSITION_HISTORY_SIZE,
     TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
+    TRANSL_LOGBOOK_REASON_HEAT_PROTECTION,
+    TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.cover_position_history import (
@@ -17,6 +19,7 @@ from custom_components.smart_cover_automation.cover_position_history import (
     PositionEntry,
     RecentAutomationAction,
 )
+from custom_components.smart_cover_automation.movement import AutomationManagedState, AutomationMode
 
 
 class TestPositionHistory:
@@ -300,6 +303,83 @@ class TestAutomationClosedMarkers:
         manager.clear_closed_by_automation("cover.living_room")
 
         assert callback.call_count == 2
+
+    def test_set_automation_owned_position_ignores_unknown_cover(self) -> None:
+        """Updating an owned position should be a no-op without managed state."""
+
+        manager = CoverPositionHistoryManager()
+
+        manager.set_automation_owned_position("cover.living_room", 25)
+
+        assert manager.get_automation_owned_position("cover.living_room") is None
+
+    def test_mark_closed_by_automation_preserves_owned_position(self) -> None:
+        """Legacy marker updates should keep the current automation-owned position."""
+
+        manager = CoverPositionHistoryManager()
+        manager.set_automation_managed_state(
+            "cover.living_room",
+            AutomationManagedState(position=35, automation_mode=AutomationMode.HEAT_PROTECTION),
+        )
+
+        manager.mark_closed_by_automation("cover.living_room", TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET)
+
+        assert manager.get_automation_managed_state("cover.living_room") == AutomationManagedState(
+            position=35,
+            automation_mode=AutomationMode.EVENING_CLOSURE,
+        )
+
+    def test_mark_closed_by_automation_ignores_unknown_reason(self) -> None:
+        """Unknown legacy reasons should not create managed state."""
+
+        manager = CoverPositionHistoryManager()
+
+        manager.mark_closed_by_automation("cover.living_room", "unsupported_reason")
+
+        assert manager.get_automation_managed_state("cover.living_room") is None
+
+    def test_restore_closed_by_automation_markers_filters_invalid_entries(self) -> None:
+        """Only supported legacy markers should restore automation-managed state."""
+
+        manager = CoverPositionHistoryManager()
+
+        manager.restore_closed_by_automation_markers(
+            {
+                "cover.living_room": TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
+                "cover.bedroom": TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE,
+                "cover.office": TRANSL_LOGBOOK_REASON_HEAT_PROTECTION,
+                "cover.invalid": "unsupported_reason",
+                cast(object, 1): TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
+            }
+        )
+
+        assert manager.export_automation_managed_states() == {
+            "cover.living_room": {"position": 0, "automation_mode": AutomationMode.EVENING_CLOSURE.value},
+            "cover.bedroom": {"position": 0, "automation_mode": AutomationMode.EVENING_CLOSURE.value},
+            "cover.office": {"position": 0, "automation_mode": AutomationMode.HEAT_PROTECTION.value},
+        }
+
+    def test_restore_automation_managed_states_filters_invalid_payloads(self) -> None:
+        """Managed-state restore should accept legacy compatible payloads and reject malformed ones."""
+
+        manager = CoverPositionHistoryManager()
+
+        restored = manager.restore_automation_managed_states(
+            {
+                "cover.valid": {"position": 25, "automation_mode": AutomationMode.EVENING_CLOSURE.value},
+                "cover.legacy": {"position": 10, "cause": TRANSL_LOGBOOK_REASON_HEAT_PROTECTION},
+                "cover.invalid_mode": {"position": 20, "automation_mode": "unsupported"},
+                "cover.invalid_position": {"position": "20", "automation_mode": AutomationMode.HEAT_PROTECTION.value},
+                "cover.invalid_shape": ["bad"],
+                cast(object, 2): {"position": 15, "automation_mode": AutomationMode.HEAT_PROTECTION.value},
+            }
+        )
+
+        assert restored == {"cover.valid", "cover.legacy"}
+        assert manager.export_automation_managed_states() == {
+            "cover.valid": {"position": 25, "automation_mode": AutomationMode.EVENING_CLOSURE.value},
+            "cover.legacy": {"position": 10, "automation_mode": AutomationMode.HEAT_PROTECTION.value},
+        }
 
     @pytest.mark.asyncio
     async def test_coordinator_runtime_state_round_trip(self, hass) -> None:

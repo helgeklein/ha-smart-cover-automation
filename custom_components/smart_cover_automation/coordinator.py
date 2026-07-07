@@ -83,7 +83,7 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             config=config,
             ha_interface=self._ha_interface,
             logger=self._logger,
-            on_closed_by_automation_changed=self._automation_state_store.schedule_save_closed_markers,
+            on_automation_managed_states_changed=self._automation_state_store.schedule_save_automation_managed_states,
             on_current_day_temperature_extrema_changed=self._automation_state_store.schedule_save_current_day_temperature_extrema,
         )
 
@@ -154,14 +154,16 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
     async def async_restore_runtime_state(self) -> None:
         """Restore runtime state that must survive Home Assistant restarts."""
 
+        stored_managed_states = await self._automation_state_store.async_load_automation_managed_states()
         stored_markers = await self._automation_state_store.async_load_closed_markers()
-        self._automation_engine.restore_closed_by_automation_markers(stored_markers)
+        self._automation_engine.restore_automation_managed_states(stored_managed_states, stored_markers)
         stored_extrema = await self._automation_state_store.async_load_current_day_temperature_extrema()
         self._automation_engine.restore_current_day_temperature_extrema(stored_extrema)
 
     async def async_persist_runtime_state(self) -> None:
         """Persist runtime state immediately."""
 
+        await self._automation_state_store.async_save_automation_managed_states(self._automation_engine.export_automation_managed_states())
         await self._automation_state_store.async_save_closed_markers(self._automation_engine.export_closed_by_automation_markers())
         await self._automation_state_store.async_save_current_day_temperature_extrema(
             self._automation_engine.export_current_day_temperature_extrema()
