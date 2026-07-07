@@ -256,40 +256,47 @@ class TestCoordinatorRuntimeStateAndProperties:
     async def test_async_restore_runtime_state_restores_both_persisted_payloads(self, coordinator):
         """Test restoring persisted markers and temperature extrema into the engine."""
 
+        stored_managed_states = {"cover.test": {"position": 20, "automation_mode": "heat_protection"}}
         stored_markers = {"cover.test": "heat_protection"}
         stored_extrema = {"date": "2026-05-24", "temp_max": 25.0, "temp_min": 15.0}
         coordinator._automation_state_store = MagicMock(
+            async_load_automation_managed_states=AsyncMock(return_value=stored_managed_states),
             async_load_closed_markers=AsyncMock(return_value=stored_markers),
             async_load_current_day_temperature_extrema=AsyncMock(return_value=stored_extrema),
         )
         coordinator._automation_engine = MagicMock(
-            restore_closed_by_automation_markers=MagicMock(),
+            restore_automation_managed_states=MagicMock(),
             restore_current_day_temperature_extrema=MagicMock(),
         )
 
         await coordinator.async_restore_runtime_state()
 
+        coordinator._automation_state_store.async_load_automation_managed_states.assert_awaited_once()
         coordinator._automation_state_store.async_load_closed_markers.assert_awaited_once()
         coordinator._automation_state_store.async_load_current_day_temperature_extrema.assert_awaited_once()
-        coordinator._automation_engine.restore_closed_by_automation_markers.assert_called_once_with(stored_markers)
+        coordinator._automation_engine.restore_automation_managed_states.assert_called_once_with(stored_managed_states, stored_markers)
         coordinator._automation_engine.restore_current_day_temperature_extrema.assert_called_once_with(stored_extrema)
 
     async def test_async_persist_runtime_state_saves_both_engine_exports(self, coordinator):
         """Test persisting both runtime-state payloads from the automation engine."""
 
+        exported_managed_states = {"cover.test": {"position": 20, "automation_mode": "heat_protection"}}
         exported_markers = {"cover.test": "manual_override"}
         exported_extrema = {"date": "2026-05-24", "temp_max": 28.0, "temp_min": 17.0}
         coordinator._automation_engine = MagicMock(
+            export_automation_managed_states=MagicMock(return_value=exported_managed_states),
             export_closed_by_automation_markers=MagicMock(return_value=exported_markers),
             export_current_day_temperature_extrema=MagicMock(return_value=exported_extrema),
         )
         coordinator._automation_state_store = MagicMock(
+            async_save_automation_managed_states=AsyncMock(),
             async_save_closed_markers=AsyncMock(),
             async_save_current_day_temperature_extrema=AsyncMock(),
         )
 
         await coordinator.async_persist_runtime_state()
 
+        coordinator._automation_state_store.async_save_automation_managed_states.assert_awaited_once_with(exported_managed_states)
         coordinator._automation_state_store.async_save_closed_markers.assert_awaited_once_with(exported_markers)
         coordinator._automation_state_store.async_save_current_day_temperature_extrema.assert_awaited_once_with(exported_extrema)
 

@@ -133,6 +133,111 @@ class TestAutomationEngineInitialization:
 
         assert engine._current_day_temperature_extrema is None
 
+    def test_restore_automation_managed_states_falls_back_per_entity(
+        self,
+        mock_ha_interface,
+        mock_logger,
+    ):
+        """Legacy marker fallback should still restore entities whose managed-state payload is invalid."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.restored", "cover.fallback"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+        }
+        engine = AutomationEngine(
+            resolved=resolve(config),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        fallback_state = MagicMock()
+        fallback_state.state = "closed"
+        fallback_state.attributes = {"current_position": 35}
+        mock_ha_interface.hass = MagicMock()
+        mock_ha_interface.hass.states.get.side_effect = lambda entity_id: {
+            "cover.fallback": fallback_state,
+            "cover.restored": None,
+        }.get(entity_id)
+
+        engine.restore_automation_managed_states(
+            {
+                "cover.restored": {"position": 40, "automation_mode": "heat_protection"},
+                "cover.fallback": {"position": 20, "cause": "let_light_in"},
+            },
+            {
+                "cover.restored": const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION,
+                "cover.fallback": const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
+            },
+        )
+
+        restored_state = engine._cover_pos_history_mgr.get_automation_managed_state("cover.restored")
+        fallback_restored_state = engine._cover_pos_history_mgr.get_automation_managed_state("cover.fallback")
+
+        assert restored_state is not None
+        assert restored_state.position == 40
+        assert restored_state.automation_mode.value == "heat_protection"
+
+        assert fallback_restored_state is not None
+        assert fallback_restored_state.position == 35
+        assert fallback_restored_state.automation_mode.value == "evening_closure"
+
+    def test_restore_automation_managed_states_uses_live_cover_state_fallbacks(
+        self,
+        mock_ha_interface,
+        mock_logger,
+    ):
+        """Legacy fallback should infer positions from HA state and skip unsupported cases."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.closed", "cover.open", "cover.unknown", "cover.missing"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+        }
+        engine = AutomationEngine(
+            resolved=resolve(config),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        closed_state = MagicMock()
+        closed_state.state = "closed"
+        closed_state.attributes = {}
+
+        open_state = MagicMock()
+        open_state.state = "open"
+        open_state.attributes = {}
+
+        unknown_state = MagicMock()
+        unknown_state.state = "opening"
+        unknown_state.attributes = {}
+
+        mock_ha_interface.hass = MagicMock()
+        mock_ha_interface.hass.states.get.side_effect = lambda entity_id: {
+            "cover.closed": closed_state,
+            "cover.open": open_state,
+            "cover.unknown": unknown_state,
+            "cover.missing": None,
+        }.get(entity_id)
+
+        engine.restore_automation_managed_states(
+            {},
+            {
+                "cover.closed": const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
+                "cover.open": const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION,
+                "cover.unknown": const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
+                "cover.missing": const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET,
+                "cover.invalid_reason": "unsupported_reason",
+            },
+        )
+
+        assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.closed") is not None
+        assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.closed").position == const.COVER_POS_FULLY_CLOSED
+        assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.closed").automation_mode.value == "evening_closure"
+        assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.open") is None
+        assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.unknown") is None
+        assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.missing") is None
+        assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.invalid_reason") is None
+
 
 class TestGatherSensorData:
     """Test _gather_sensor_data method."""

@@ -16,9 +16,10 @@ from homeassistant.util import dt as dt_util
 from . import const
 from .config import ResolvedConfig, resolve_effective_blocked_time_range_bounds
 from .cover_automation import CoverAutomation, CoverExecutionPlan, SensorData
-from .cover_position_history import CoverPositionHistoryManager
+from .cover_position_history import CoverPositionHistoryManager, _movement_cause_for_legacy_reason_key
 from .data import CoordinatorData
 from .log import Log
+from .movement import AutomationManagedState
 
 if TYPE_CHECKING:
     from homeassistant.core import State
@@ -72,7 +73,7 @@ class AutomationEngine:
         config: dict[str, Any],
         ha_interface: Any,
         logger: Log,
-        on_closed_by_automation_changed: Callable[[dict[str, str]], None] | None = None,
+        on_automation_managed_states_changed: Callable[[dict[str, dict[str, Any]]], None] | None = None,
         on_current_day_temperature_extrema_changed: Callable[[dict[str, Any] | None], None] | None = None,
     ) -> None:
         """Initialize the automation engine.
@@ -86,7 +87,7 @@ class AutomationEngine:
 
         self.resolved = resolved
         self.config = config
-        self._cover_pos_history_mgr = CoverPositionHistoryManager(on_closed_by_automation_changed=on_closed_by_automation_changed)
+        self._cover_pos_history_mgr = CoverPositionHistoryManager(on_automation_managed_states_changed=on_automation_managed_states_changed)
         self._ha_interface = ha_interface
         self._logger = logger
         self._on_current_day_temperature_extrema_changed = on_current_day_temperature_extrema_changed
@@ -127,10 +128,58 @@ class AutomationEngine:
 
         return self._cover_pos_history_mgr.export_closed_by_automation_markers()
 
+    def export_automation_managed_states(self) -> dict[str, dict[str, Any]]:
+        """Return automation-managed states for persistence."""
+
+        return self._cover_pos_history_mgr.export_automation_managed_states()
+
     def restore_closed_by_automation_markers(self, markers: Mapping[str, str]) -> None:
         """Restore automation-closed markers from persistent storage."""
 
         self._cover_pos_history_mgr.restore_closed_by_automation_markers(markers)
+
+    def restore_automation_managed_states(
+        self,
+        states: Mapping[str, Mapping[str, Any]],
+        legacy_markers: Mapping[str, str] | None = None,
+    ) -> None:
+        """Restore automation-managed states, with best-effort legacy bootstrap."""
+
+        restored_entity_ids = self._cover_pos_history_mgr.restore_automation_managed_states(states)
+
+        if not legacy_markers:
+            return
+
+        for entity_id, reason_key in legacy_markers.items():
+            if entity_id in restored_entity_ids:
+                continue
+
+            automation_mode = _movement_cause_for_legacy_reason_key(reason_key)
+            if automation_mode is None:
+                continue
+
+            state = self._ha_interface.hass.states.get(entity_id)
+            if state is None:
+                continue
+
+            raw_position = state.attributes.get("current_position")
+            if isinstance(raw_position, int):
+                current_position = raw_position
+            else:
+                if state.state == "open":
+                    current_position = const.COVER_POS_FULLY_OPEN
+                elif state.state == "closed":
+                    current_position = const.COVER_POS_FULLY_CLOSED
+                else:
+                    continue
+
+            if current_position == const.COVER_POS_FULLY_OPEN:
+                continue
+
+            self._cover_pos_history_mgr.set_automation_managed_state(
+                entity_id,
+                AutomationManagedState(position=current_position, automation_mode=automation_mode),
+            )
 
     def export_current_day_temperature_extrema(self) -> dict[str, Any] | None:
         """Return persisted current-day extrema state, if available."""
