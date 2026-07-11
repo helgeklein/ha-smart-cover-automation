@@ -33,6 +33,7 @@ from homeassistant.const import (
 from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.smart_cover_automation import const
+from custom_components.smart_cover_automation import ha_interface as ha_interface_module
 from custom_components.smart_cover_automation.config import ResolvedConfig
 from custom_components.smart_cover_automation.ha_interface import (
     HomeAssistantInterface,
@@ -1230,9 +1231,30 @@ class TestForecastConditionHelpers:
 
         assert result == "sunny"
 
+    @patch("custom_components.smart_cover_automation.ha_interface._get_solar_position_for_datetime")
+    def test_get_sun_data_for_datetime(
+        self,
+        mock_get_solar_position_for_datetime: MagicMock,
+        ha_interface: HomeAssistantInterface,
+    ) -> None:
+        """Future sun-data helper should delegate to the astral compatibility helper."""
+
+        mock_get_solar_position_for_datetime.return_value = (150.0, 33.0)
+        target_datetime = datetime(2026, 5, 24, 6, 0, tzinfo=timezone.utc)
+
+        result = ha_interface.get_sun_data_for_datetime(target_datetime)
+
+        assert result == (150.0, 33.0)
+        mock_get_solar_position_for_datetime.assert_called_once_with(ha_interface.hass, target_datetime)
+
+    @patch.object(ha_interface_module, "get_astral_observer", None)
     @patch("custom_components.smart_cover_automation.ha_interface.get_astral_location")
-    def test_get_sun_data_for_datetime(self, mock_get_astral_location: MagicMock, ha_interface: HomeAssistantInterface) -> None:
-        """Future sun-data helper should delegate to the Astral location object."""
+    def test_get_solar_position_for_datetime_falls_back_to_location_helper(
+        self,
+        mock_get_astral_location: MagicMock,
+        ha_interface: HomeAssistantInterface,
+    ) -> None:
+        """Older Home Assistant versions should keep using the location-based helper."""
 
         mock_location = MagicMock()
         mock_location.solar_azimuth.return_value = 150.0
@@ -1240,9 +1262,32 @@ class TestForecastConditionHelpers:
         mock_get_astral_location.return_value = (mock_location, 120.0)
         target_datetime = datetime(2026, 5, 24, 6, 0, tzinfo=timezone.utc)
 
-        result = ha_interface.get_sun_data_for_datetime(target_datetime)
+        result = ha_interface_module._get_solar_position_for_datetime(ha_interface.hass, target_datetime)
 
         assert result == (150.0, 33.0)
+
+    @patch("custom_components.smart_cover_automation.ha_interface.astral_elevation")
+    @patch("custom_components.smart_cover_automation.ha_interface.astral_azimuth")
+    @patch("custom_components.smart_cover_automation.ha_interface.get_astral_observer")
+    def test_get_solar_position_for_datetime_prefers_observer_helper(
+        self,
+        mock_get_astral_observer: MagicMock,
+        mock_astral_azimuth: MagicMock,
+        mock_astral_elevation: MagicMock,
+        ha_interface: HomeAssistantInterface,
+    ) -> None:
+        """Newer Home Assistant versions should use the observer-based helper."""
+
+        observer = MagicMock()
+        mock_get_astral_observer.return_value = observer
+        mock_astral_azimuth.return_value = 150.0
+        mock_astral_elevation.return_value = 33.0
+        target_datetime = datetime(2026, 5, 24, 6, 0, tzinfo=timezone.utc)
+
+        result = ha_interface_module._get_solar_position_for_datetime(ha_interface.hass, target_datetime)
+
+        assert result == (150.0, 33.0)
+        mock_get_astral_observer.assert_called_once_with(ha_interface.hass)
 
     @patch("custom_components.smart_cover_automation.ha_interface.get_astral_event_date")
     @patch.object(HomeAssistantInterface, "get_sun_data_for_datetime")
