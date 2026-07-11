@@ -83,8 +83,6 @@ The entities in this section control how heat protection operates, and at which 
 
 ### Heat Protection Mode
 
-*New in 5.2:*
-
 The integration's heat protection functionality can operate in the following modes:
 
 - **Off:** Heat protection is disabled

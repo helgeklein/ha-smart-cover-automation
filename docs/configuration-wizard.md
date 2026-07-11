@@ -135,14 +135,9 @@ The global tilt modes can be overridden per cover.
 
 - **Minimum tilt change:** Minimum tilt change (%) required before sending a command. Prevents excessive motor wear from small adjustments.
 - **Slat overlap ratio (d/L):** Ratio of slat spacing to slat width (`0.5` – `1.0`). Lower values mean more overlap between slats. The default of `0.9` works well for most venetian blinds. Only relevant for Auto mode.
-
 - **Tilt open to cover open delay:** Delay between opening the slats fully and reopening the cover. Only applies to covers with tilt support whose effective daytime tilt mode is Auto and that were previously closed for heat protection.
-
 - **Horizontal tilt position:** Home Assistant tilt percentage for fully horizontal slats. Auto mode treats this as the horizontal slat position. Default: 100%.
 - **Vertical tilt position:** Home Assistant tilt percentage for fully vertical slats. Auto mode treats this as the vertical slat position. Default: 0%.
-
-*New in 5.3:*
-
 - **Tilt drift tolerance:** Maximum recent tilt settle drift (%) to ignore during the short settling period after an automation command. Larger tilt changes are treated as manual override.
 
 ## Step 5: Additional Settings and Window Sensors (Optional)
@@ -198,6 +193,7 @@ The same covers become eligible to reopen in the morning if normal automation pe
 
 - **Evening closure: mode:** Specifies the closing time:
   - **Absolute time:** A fixed time of day.
+  - **Before sunset:** A specified time delta before sunset.
   - **After sunset:** A specified delay after sunset.
   - **External:** Set the closing time from your own automation.
     - The integration creates an additional entity that receives the closing time.
@@ -205,26 +201,17 @@ The same covers become eligible to reopen in the morning if normal automation pe
     - If this entity has no valid time, the integration cannot determine when to close the covers, so they stay open.
 - **Evening closure: time:** Depending on the selected mode: delay after sunset, or fixed time of day. This setting is ignored if `Evening closure: mode` is `external`.
 
-*New in 5.1:*
-
-- **Evening closure: mode:**
-  - **Before sunset:** A specified time delta before sunset.
-
 **Morning opening settings:**
 
 - **Morning opening: mode:** Specifies the earliest reopening time for the previously closed covers. Actual reopening only happens if normal automation permits (e.g., heat protection).
   - **Absolute time:** A fixed time of day.
+  - **Before sunrise:** A specified time delta before sunrise.
   - **After sunrise:** A specified delay after sunrise.
   - **External:** Set the earliest reopening time from your own automation.
     - The integration creates an additional entity that receives the opening time.
     - This entity is fully managed, i.e., it's deleted again if the mode is changed away from `external`.
     - If this entity has no valid time, the integration cannot determine when to reopen the covers, so they stay closed.
 - **Morning opening: time:** Depending on the selected mode: delay after sunrise, or fixed time of day. This setting is ignored if `Morning opening: mode` is `external`.
-
-*New in 5.1:*
-
-- **Morning opening: mode:**
-  - **Before sunrise:** A specified time delta before sunrise.
 
 **Evening closing & morning opening settings:**
 
