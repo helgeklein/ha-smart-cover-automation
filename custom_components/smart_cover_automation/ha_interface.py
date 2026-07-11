@@ -9,6 +9,8 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
+from astral.sun import azimuth as astral_azimuth
+from astral.sun import elevation as astral_elevation
 from homeassistant.components.cover import ATTR_POSITION, ATTR_TILT_POSITION, CoverEntityFeature
 from homeassistant.components.logbook import async_log_entry
 from homeassistant.components.weather import SERVICE_GET_FORECASTS
@@ -28,11 +30,21 @@ from homeassistant.const import (
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as ha_entity_registry
 from homeassistant.helpers import translation
-from homeassistant.helpers.sun import get_astral_event_date, get_astral_location
+from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.util import dt as dt_util
 
 from . import const
 from .log import Log
+
+try:
+    from homeassistant.helpers.sun import get_astral_observer
+except ImportError:
+    get_astral_observer = None
+
+try:
+    from homeassistant.helpers.sun import get_astral_location
+except ImportError:
+    get_astral_location = None
 
 PRE_CLOSE_SUN_SAMPLE_INTERVAL = timedelta(minutes=15)
 
@@ -42,6 +54,28 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
     from .config import ResolvedConfig
+
+
+def _get_solar_position_for_datetime(hass: HomeAssistant, target_datetime: datetime) -> tuple[float, float]:
+    """Return sun azimuth and elevation using the best available HA astral helper."""
+
+    local_datetime = dt_util.as_local(target_datetime)
+
+    if get_astral_observer is not None:
+        observer = get_astral_observer(hass)
+        return (
+            astral_azimuth(observer, local_datetime),
+            astral_elevation(observer, local_datetime),
+        )
+
+    if get_astral_location is not None:
+        location, elevation = get_astral_location(hass)
+        return (
+            location.solar_azimuth(local_datetime, observer_elevation=elevation),
+            location.solar_elevation(local_datetime, observer_elevation=elevation),
+        )
+
+    raise RuntimeError("Home Assistant sun helpers are unavailable")
 
 
 #
@@ -333,12 +367,7 @@ class HomeAssistantInterface:
     def get_sun_data_for_datetime(self, target_datetime: datetime) -> tuple[float, float]:
         """Return sun azimuth and elevation for a specific local datetime."""
 
-        location, elevation = get_astral_location(self.hass)
-        local_datetime = dt_util.as_local(target_datetime)
-        return (
-            location.solar_azimuth(local_datetime, observer_elevation=elevation),
-            location.solar_elevation(local_datetime, observer_elevation=elevation),
-        )
+        return _get_solar_position_for_datetime(self.hass, target_datetime)
 
     def get_sun_samples_from_sunrise_until(self, target_datetime: datetime) -> tuple[tuple[float, float], ...]:
         """Return sampled sun positions from local sunrise until a target datetime."""
