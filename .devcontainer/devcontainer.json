@@ -21,9 +21,10 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "charliermarsh.ruff",
                 "ms-python.python",
-                "ms-python.vscode-pylance"
+                "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
+                "mdickin.markdown-shortcuts"
             ],
             "settings": {
                 // Testing configuration (workspace-wide)
