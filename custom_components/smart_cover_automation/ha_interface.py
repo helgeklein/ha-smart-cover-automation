@@ -6,10 +6,11 @@ encapsulating all direct interactions with the HA core system.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from astral.sun import azimuth as astral_azimuth
+from astral.sun import azimuth as astral_azimuth  # type: ignore[import-untyped]
 from astral.sun import elevation as astral_elevation
 from homeassistant.components.cover import ATTR_POSITION, ATTR_TILT_POSITION, CoverEntityFeature
 from homeassistant.components.logbook import async_log_entry
@@ -29,6 +30,7 @@ from homeassistant.const import (
 )
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as ha_entity_registry
+from homeassistant.helpers import sun as ha_sun
 from homeassistant.helpers import translation
 from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.util import dt as dt_util
@@ -36,21 +38,12 @@ from homeassistant.util import dt as dt_util
 from . import const
 from .log import Log
 
-try:
-    from homeassistant.helpers.sun import get_astral_observer
-except ImportError:
-    get_astral_observer = None
-
-try:
-    from homeassistant.helpers.sun import get_astral_location
-except ImportError:
-    get_astral_location = None
+get_astral_observer: Callable[[HomeAssistant], Any] | None = getattr(ha_sun, "get_astral_observer", None)
+get_astral_location: Callable[[HomeAssistant], tuple[Any, Any]] | None = getattr(ha_sun, "get_astral_location", None)
 
 PRE_CLOSE_SUN_SAMPLE_INTERVAL = timedelta(minutes=15)
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from homeassistant.core import HomeAssistant
 
     from .config import ResolvedConfig

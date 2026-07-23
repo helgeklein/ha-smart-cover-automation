@@ -230,9 +230,10 @@ class TestAutomationEngineInitialization:
             },
         )
 
-        assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.closed") is not None
-        assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.closed").position == const.COVER_POS_FULLY_CLOSED
-        assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.closed").automation_mode.value == "evening_closure"
+        closed_managed_state = engine._cover_pos_history_mgr.get_automation_managed_state("cover.closed")
+        assert closed_managed_state is not None
+        assert closed_managed_state.position == const.COVER_POS_FULLY_CLOSED
+        assert closed_managed_state.automation_mode.value == "evening_closure"
         assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.open") is None
         assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.unknown") is None
         assert engine._cover_pos_history_mgr.get_automation_managed_state("cover.missing") is None
@@ -2505,6 +2506,52 @@ class TestComputePostEveningClosure:
 
         freezer.move_to("2025-11-05 10:00:00")
         assert engine._compute_post_evening_closure() is False
+
+    def test_same_day_morning_opening_releases_block_after_cutoff(self, mock_ha_interface, mock_logger, freezer):
+        """Test same-day evening-closure and morning-opening windows release at the morning cutoff."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
+            ConfKeys.EVENING_CLOSURE_TIME.value: "11:17:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+            ConfKeys.MORNING_OPENING_MODE.value: "fixed_time",
+            ConfKeys.MORNING_OPENING_TIME.value: "11:30:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+
+        freezer.move_to("2025-11-05 11:29:59")
+        assert engine._compute_post_evening_closure() is True
+
+        freezer.move_to("2025-11-05 11:30:00")
+        assert engine._compute_post_evening_closure() is False
+
+    def test_equal_external_evening_and_morning_times_log_error(self, mock_ha_interface, mock_logger, freezer):
+        """Test equal external opening and closing times are rejected for the current run."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.EXTERNAL,
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+            const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "11:30:00",
+            ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.EXTERNAL,
+            const.TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: "11:30:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+
+        freezer.move_to("2025-11-05 08:00:00")
+
+        assert engine._compute_post_evening_closure() is True
+        mock_logger.error.assert_called_once_with(
+            "Evening closure time and morning opening time are identical (%s); keeping the morning reopening block active",
+            "11:30:00",
+        )
 
     @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
     def test_relative_morning_opening_matches_sunrise_by_default(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):

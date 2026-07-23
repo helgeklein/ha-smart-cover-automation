@@ -1051,16 +1051,25 @@ class AutomationEngine:
         # Carryover from last night's evening closure until today's morning opening.
         evening_closure_yesterday = self._get_evening_closure_time_for_date(today - timedelta(days=1))
         morning_opening_today = self._get_morning_opening_time_for_date(today)
+        evening_closure_time = self._get_evening_closure_time_for_date(today)
+        if evening_closure_time is not None and morning_opening_today is not None and morning_opening_today == evening_closure_time:
+            self._logger.error(
+                "Evening closure time and morning opening time are identical (%s); keeping the morning reopening block active",
+                dt_util.as_local(evening_closure_time).strftime("%H:%M:%S"),
+            )
+            return True
+
         if evening_closure_yesterday is not None:
             if morning_opening_today is None:
-                evening_closure_today = self._get_evening_closure_time_for_date(today)
-                if evening_closure_today is None or now < evening_closure_today:
+                if evening_closure_time is None or now < evening_closure_time:
                     return True
             elif evening_closure_yesterday <= now < morning_opening_today:
                 return True
 
-        evening_closure_time = self._get_evening_closure_time_for_date(today)
         if evening_closure_time is not None and now >= evening_closure_time:
+            if morning_opening_today is not None and evening_closure_time < morning_opening_today:
+                return now < morning_opening_today
+
             return True
 
         return False

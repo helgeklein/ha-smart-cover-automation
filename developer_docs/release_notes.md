@@ -1,3 +1,10 @@
+# v7.0
+
+## Notable Changes
+
+- Morning opening previously only worked on the next day after evening closure. Now it also opens on the same day (useful for testing).
+- Migration from `get_astral_location` to `get_astral_observer` (mandated by Home Assistant, required as of 2027.7)
+
 # v6.0
 
 ## What's New
