@@ -28,6 +28,8 @@ body:
         required: true
       - label: This issue is not a duplicate issue of any [previous issues](https://github.com/helgeklein/ha-smart-cover-automation/issues?q=is%3Aissue).
         required: true
+      - label: I have read and will follow the [Code of Conduct](https://github.com/helgeklein/ha-smart-cover-automation/blob/main/CODE_OF_CONDUCT.md).
+        required: true
 - type: textarea
   attributes:
     label: Describe the issue
