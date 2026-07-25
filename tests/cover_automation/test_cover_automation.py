@@ -2000,6 +2000,33 @@ class TestCalculateDesiredPosition:
         assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
         assert lockout_active is False
 
+    def test_calculate_desired_position_passive_reopening_never_closes_cover(
+        self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr, basic_config
+    ):
+        """Passive reopening should hold when its configured open target is below the current position."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+        mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 30
+        basic_config[f"cover.test_{const.COVER_SFX_MIN_CLOSURE}"] = 0
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=30)
+
+        assert position == 30
+        assert reason == CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
+        assert lockout_active is False
+
     def test_calculate_desired_position_passive_reopens_after_automation_closure_with_stale_latest_history(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):

@@ -2,7 +2,9 @@
 
 ## Notable Changes
 
-- Morning opening previously only worked on the next day after evening closure. Now it also opens on the same day (useful for testing).
+- Morning opening:
+    - Previously, morning opening only worked on the next day after evening closure. Now it also opens on the same day (useful for testing).
+    - If a cover's minimum position is set to 0 (closed), morning opening might close a cover from its evening closure position. Now, morning opening only moves a cover if its minimum position is more open than the current position.
 - Migration from `get_astral_location` to `get_astral_observer` (mandated by Home Assistant, required as of 2027.7)
 
 # v6.0

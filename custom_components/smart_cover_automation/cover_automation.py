@@ -1372,7 +1372,11 @@ class CoverAutomation:
                 )
             else:
                 reopening_mode = self.resolved.automatic_reopening_mode
-                open_target = min(const.COVER_POS_FULLY_OPEN, self._get_cover_closure_limit(get_max=False))
+                configured_open_target = min(
+                    const.COVER_POS_FULLY_OPEN,
+                    self._get_cover_closure_limit(get_max=False),
+                )
+                open_target = max(current_pos, configured_open_target)
                 passive_reopening_eligible = (
                     reopening_mode == const.ReopeningMode.PASSIVE
                     and last_automation_closing_reason is not None
