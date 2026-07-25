@@ -884,13 +884,16 @@ class TestGatherSensorData:
         mock_process_covers.assert_awaited_once()
         assert "ran forecast-based pre-close evaluation" in message
 
-    async def test_run_logs_heat_protection_mode_in_global_settings(self, mock_ha_interface, mock_logger):
-        """Each coordinator run should include heat protection mode in the global settings log."""
+    async def test_run_logs_global_settings(self, mock_ha_interface, mock_logger):
+        """Each coordinator run should include modes and cover positions in the global settings log."""
 
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.HEAT_PROTECTION_MODE.value: const.HeatProtectionMode.FORCED_ALL_WINDOWS.value,
+            ConfKeys.COVERS_MIN_CLOSURE.value: 90,
+            ConfKeys.COVERS_MAX_CLOSURE.value: 20,
+            ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value: 10,
         }
         engine = AutomationEngine(
             resolved=resolve(config),
@@ -909,6 +912,9 @@ class TestGatherSensorData:
         ]
 
         assert any("heat_protection_mode" in message and "forced_all_windows" in message for message in info_messages)
+        assert any("'covers_min_closure': 90" in message for message in info_messages)
+        assert any("'covers_max_closure': 20" in message for message in info_messages)
+        assert any("'evening_closure_max_closure': 10" in message for message in info_messages)
 
     def test_time_period_disabled_outside_same_day_range(self, mock_ha_interface, mock_logger):
         """Same-day disabled periods should remain inactive before the configured start time."""

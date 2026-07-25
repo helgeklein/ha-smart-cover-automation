@@ -4161,14 +4161,20 @@ class TestLogCoverMsg:
 
     @pytest.mark.asyncio
     async def test_process_omits_ownership_debug_summary_when_no_plan_and_fully_open(
-        self, cover_automation, mock_logger, mock_cover_pos_history_mgr, mock_resolved_config, mock_state
+        self, cover_automation, mock_logger, mock_cover_pos_history_mgr, mock_resolved_config, mock_state, basic_config
     ):
-        """The per-cover debug log should omit ownership details when a no-movement result is fully open."""
+        """The per-cover debug log should include effective positions but omit ownership when fully open."""
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_resolved_config.covers_min_closure = 90
+        mock_resolved_config.covers_max_closure = 20
+        mock_resolved_config.evening_closure_max_closure = 10
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
         mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 20
         mock_state.attributes[ATTR_CURRENT_POSITION] = 100
+        basic_config[f"cover.test_{const.COVER_SFX_MIN_CLOSURE}"] = 95
+        basic_config[f"cover.test_{const.COVER_SFX_MAX_CLOSURE}"] = 25
+        basic_config[f"cover.test_{const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE}"] = 15
 
         sensor_data = make_sensor_data(
             sun_azimuth=180.0,
@@ -4186,6 +4192,9 @@ class TestLogCoverMsg:
         mock_logger.debug.assert_called_once()
         debug_message = mock_logger.debug.call_args[0][0]
         assert "Cover result: no movement" in debug_message
+        assert "'min_closure': 95" in debug_message
+        assert "'max_closure': 25" in debug_message
+        assert "'evening_closure_max_closure': 15" in debug_message
         assert "Ownership:" not in debug_message
 
     def test_capture_ownership_debug_snapshot_returns_structured_snapshot(
