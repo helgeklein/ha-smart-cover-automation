@@ -545,12 +545,17 @@ class CoverAutomation:
     ) -> str:
         """Format the per-cover result debug log, omitting ownership for fully open covers."""
 
+        cover_settings = {
+            "min_closure": self._get_cover_closure_limit(get_max=False),
+            "max_closure": self._get_cover_closure_limit(get_max=True),
+            "evening_closure_max_closure": self._get_cover_closure_limit(get_max=True, evening_closure=True),
+        }
         effective_pos = cover_state.pos_target_final if cover_state.pos_target_final is not None else cover_state.pos_current
         ownership_suffix = ""
         if effective_pos != const.COVER_POS_FULLY_OPEN:
             ownership_suffix = f". {ownership_debug_snapshot}"
 
-        return f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}{ownership_suffix}"
+        return f"[{self.entity_id}] Cover result: {message}. Cover state: {cover_state}. Cover settings: {cover_settings}{ownership_suffix}"
 
     def _is_cover_move_required(self, current_pos: int, desired_pos: int) -> bool:
         """Return whether a cover-position command is expected for this evaluation."""
@@ -1372,7 +1377,11 @@ class CoverAutomation:
                 )
             else:
                 reopening_mode = self.resolved.automatic_reopening_mode
-                open_target = min(const.COVER_POS_FULLY_OPEN, self._get_cover_closure_limit(get_max=False))
+                configured_open_target = min(
+                    const.COVER_POS_FULLY_OPEN,
+                    self._get_cover_closure_limit(get_max=False),
+                )
+                open_target = max(current_pos, configured_open_target)
                 passive_reopening_eligible = (
                     reopening_mode == const.ReopeningMode.PASSIVE
                     and last_automation_closing_reason is not None
