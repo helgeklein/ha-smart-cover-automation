@@ -365,7 +365,7 @@
                 },
                 "template_cover_movement": {
                     "name": "{verb} {entity_id}，以{reason}。新位置：{position}%.",
-                    "description": "用于渲染日志条目的模板字符串；支持 {verb}、{entity_id}、{reason} 和 {position} 占位符。"
+                    "description": "用于渲染日志条目的模板字符串；支持动词、实体 ID、原因和位置占位符。"
                 },
                 "verb_opening": {
                     "name": "开启",
