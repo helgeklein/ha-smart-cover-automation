@@ -365,7 +365,7 @@
                 },
                 "template_cover_movement": {
                     "name": "{verb} {entity_id} pour {reason}. Nouvelle position : {position} %.",
-                    "description": "Chaîne modèle utilisée pour afficher l'entrée du journal ; prend en charge les variables {verb}, {entity_id}, {reason} et {position}."
+                    "description": "Chaîne modèle utilisée pour afficher l'entrée du journal ; prend en charge les variables '{verb}', '{entity_id}', '{reason}' et '{position}'."
                 },
                 "verb_opening": {
                     "name": "Ouverture de",

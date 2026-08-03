@@ -365,7 +365,7 @@
                 },
                 "template_cover_movement": {
                     "name": "{verb} {entity_id} to {reason}. New position: {position}%.",
-                    "description": "Template string used when rendering the logbook entry; supports {verb}, {entity_id}, {reason}, and {position} placeholders."
+                    "description": "Template string used when rendering the logbook entry; supports '{verb}', '{entity_id}', '{reason}', and '{position}' placeholders."
                 },
                 "verb_opening": {
                     "name": "Opening",

@@ -365,7 +365,7 @@
                 },
                 "template_cover_movement": {
                     "name": "{verb} {entity_id} um {reason}. Neue Position: {position} %.",
-                    "description": "Vorlagentext zur Darstellung des Logbucheintrags; unterstützt die Platzhalter {verb}, {entity_id}, {reason} und {position}."
+                    "description": "Vorlagentext zur Darstellung des Logbucheintrags; unterstützt die Platzhalter '{verb}', '{entity_id}', '{reason}' und '{position}'."
                 },
                 "verb_opening": {
                     "name": "Öffne",

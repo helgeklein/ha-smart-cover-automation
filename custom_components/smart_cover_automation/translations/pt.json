@@ -365,7 +365,7 @@
                 },
                 "template_cover_movement": {
                     "name": "{verb} {entity_id} para {reason}. Nova posição: {position} %.",
-                    "description": "Texto de modelo usado ao apresentar a entrada de registo; suporta os marcadores {verb}, {entity_id}, {reason} e {position}."
+                    "description": "Texto de modelo usado ao apresentar a entrada de registo; suporta os marcadores '{verb}', '{entity_id}', '{reason}' e '{position}'."
                 },
                 "verb_opening": {
                     "name": "Abrindo",
