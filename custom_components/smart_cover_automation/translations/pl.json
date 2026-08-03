@@ -365,7 +365,7 @@
                 },
                 "template_cover_movement": {
                     "name": "{verb} {entity_id}, aby {reason}. Nowa pozycja: {position} %.",
-                    "description": "Ciąg szablonu używany do wyświetlania wpisu w dzienniku; obsługuje znaczniki {verb}, {entity_id}, {reason} i {position}."
+                    "description": "Ciąg szablonu używany do wyświetlania wpisu w dzienniku; obsługuje znaczniki czasownika, identyfikatora encji, powodu i pozycji."
                 },
                 "verb_opening": {
                     "name": "Otwieranie",

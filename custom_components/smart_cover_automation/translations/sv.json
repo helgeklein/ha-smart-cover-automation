@@ -365,7 +365,7 @@
                 },
                 "template_cover_movement": {
                     "name": "{verb} {entity_id} för att {reason}. Ny position: {position} %.",
-                    "description": "Mallsträng som används för att visa loggboksinlägget; stöder platshållarna {verb}, {entity_id}, {reason} och {position}."
+                    "description": "Mallsträng som används för att visa loggboksinlägget; stöder platshållare för verb, entitets-ID, orsak och position."
                 },
                 "verb_opening": {
                     "name": "Öppnar",
