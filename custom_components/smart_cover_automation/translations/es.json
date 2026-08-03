@@ -365,7 +365,7 @@
                 },
                 "template_cover_movement": {
                     "name": "{verb} {entity_id} para {reason}. Nueva posición: {position} %.",
-                    "description": "Cadena de plantilla utilizada al mostrar la entrada del registro; admite los marcadores '{verb}', '{entity_id}', '{reason}' y '{position}'."
+                    "description": "Cadena de plantilla utilizada al mostrar la entrada del registro; admite los marcadores de verbo, ID de entidad, motivo y posición."
                 },
                 "verb_opening": {
                     "name": "Abriendo",

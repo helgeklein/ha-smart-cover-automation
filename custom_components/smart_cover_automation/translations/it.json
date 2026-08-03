@@ -365,7 +365,7 @@
                 },
                 "template_cover_movement": {
                     "name": "{verb} {entity_id} per {reason}. Nuova posizione: {position} %.",
-                    "description": "Stringa modello utilizzata per visualizzare la voce di registro; supporta i segnaposto '{verb}', '{entity_id}', '{reason}' e '{position}'."
+                    "description": "Stringa modello utilizzata per visualizzare la voce di registro; supporta verbo, ID entità, motivo e posizione."
                 },
                 "verb_opening": {
                     "name": "Apertura di",

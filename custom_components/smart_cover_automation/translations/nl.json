@@ -365,7 +365,7 @@
                 },
                 "template_cover_movement": {
                     "name": "{verb} {entity_id} om {reason}. Nieuwe positie: {position} %.",
-                    "description": "Sjabloontekst die wordt gebruikt om de logboekvermelding weer te geven; ondersteunt de placeholders '{verb}', '{entity_id}', '{reason}' en '{position}'."
+                    "description": "Sjabloontekst die wordt gebruikt om de logboekvermelding weer te geven; ondersteunt plaatsaanduidingen voor werkwoord, entiteits-ID, reden en positie."
                 },
                 "verb_opening": {
                     "name": "Openen van",
