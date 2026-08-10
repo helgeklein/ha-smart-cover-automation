@@ -146,7 +146,7 @@ In this step of the configuration wizard, you can configure additional global se
 
 ### Additional Settings
 
-- **Delay between covers:** Delays the start of one cover movement relative to the next within the same automation cycle. Use this when you want to avoid multiple covers starting at the exact same time. A value of `0` disables the delay.
+- **Stagger delay between covers:** Delays the start of one cover movement relative to the next within the same automation cycle. Use this when you want to avoid multiple covers starting at the exact same time. A value of `0` disables the delay.
 
 ### Window Sensors for Lockout Protection
 

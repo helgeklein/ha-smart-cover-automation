@@ -68,7 +68,7 @@ This release brings many quality-of-life features and flexibility improvements.
 
 ### Miscellaneous
 
-- **Delay between covers:** Delay the start of each cover movement relative to the next within the same automation cycle.
+- **Stagger delay between covers:** Delay the start of each cover movement relative to the next within the same automation cycle.
 - **Weather forecast:** Store the day's minimum and maximum temperatures instead of using the next day's forecast after the afternoon cutoff time.
 - **Cover opening:** When fully opening a cover, use `open_cover` instead of `set_cover_position` to fix position issues with some types of blinds.
 - **Options flow:** Show friendly names instead of entity IDs in the configuration wizard.
