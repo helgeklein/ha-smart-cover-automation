@@ -10,7 +10,7 @@ gem "jekyll-remote-theme", "~> 0.4.3"
 gem "jekyll-feed", "~> 0.15"
 gem "jekyll-sitemap", "~> 1.4"
 gem "jekyll-seo-tag", "~> 2.8"
-gem "json", ">= 2.19.9"
+gem "json", ">= 2.21.2"
 
 # Security overrides for vulnerable transitive dependencies.
 gem "activesupport", ">= 8.1.2.1"
