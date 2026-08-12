@@ -338,6 +338,7 @@ def test_translation_has_step_4_tilt_keys(language_code: str) -> None:
         ConfKeys.TILT_SET_VALUE_NIGHT.value,
         ConfKeys.TILT_MIN_CHANGE_DELTA.value,
         ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value,
+        ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value,
         ConfKeys.TILT_VERTICAL_POSITION.value,
         ConfKeys.TILT_HORIZONTAL_POSITION.value,
         ConfKeys.TILT_SLAT_OVERLAP_RATIO.value,

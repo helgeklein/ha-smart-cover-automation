@@ -85,6 +85,7 @@
                     "tilt_min_change_delta": "Changement d'inclinaison minimum :",
                     "tilt_drift_tolerance": "Tolérance de dérive d'inclinaison :",
                     "tilt_open_to_cover_open_delay": "Délai entre ouverture des lamelles et du volet :",
+                    "cover_movement_to_tilt_delay": "Délai entre le mouvement du volet et son inclinaison :",
                     "tilt_vertical_position": "Position d'inclinaison verticale :",
                     "tilt_horizontal_position": "Position d'inclinaison horizontale :",
                     "tilt_slat_overlap_ratio": "Ratio de chevauchement des lamelles (d/L) :"
@@ -96,7 +97,8 @@
                     "tilt_set_value_night": "Angle d'inclinaison fixe pour le mode nuit. 0 % = complètement fermé (vertical, bloque la lumière), 100 % = complètement ouvert (horizontal, laisse entrer la lumière). Utilisé uniquement lorsque le mode d'inclinaison nocturne est réglé sur « Valeur fixe ».",
                     "tilt_min_change_delta": "Changement d'inclinaison minimum (%) requis avant d'envoyer une commande. Évite l'usure excessive du moteur par de petits ajustements.",
                     "tilt_drift_tolerance": "Dérive maximale récente de stabilisation de l'inclinaison (%) à ignorer juste après l'automatisation. Des changements plus importants sont traités comme une commande manuelle.",
-                    "tilt_open_to_cover_open_delay": "Délai entre l'ouverture complète des lamelles et la réouverture du volet. S'applique uniquement aux volets avec contrôle d'inclinaison dont le mode d'inclinaison effectif en journée est Auto et qui ont été précédemment fermés pour protéger de la chaleur.",
+                    "tilt_open_to_cover_open_delay": "Délai en secondes entre l'ouverture complète des lamelles et la réouverture du volet. S'applique uniquement aux volets avec contrôle d'inclinaison dont le mode d'inclinaison effectif en journée est Auto et qui ont été précédemment fermés pour protéger de la chaleur.",
+                    "cover_movement_to_tilt_delay": "Délai en secondes entre le mouvement d'un volet et le réglage de son inclinaison. S'applique aux changements automatisés de position et d'inclinaison ainsi qu'aux modes de verrouillage Forcer l'ouverture et Forcer la fermeture.",
                     "tilt_vertical_position": "Pourcentage d'inclinaison Home Assistant pour des lamelles complètement verticales. Le mode Auto considère cela comme la position verticale des lamelles. Valeur par défaut : 0 %.",
                     "tilt_horizontal_position": "Pourcentage d'inclinaison Home Assistant pour des lamelles complètement horizontales. Le mode Auto considère cela comme la position horizontale des lamelles. Valeur par défaut : 100 %.",
                     "tilt_slat_overlap_ratio": "Rapport entre l'espacement et la largeur des lamelles (0,5–1,0). Des valeurs plus basses signifient plus de chevauchement. La valeur par défaut de 0,9 convient à la plupart des stores vénitiens. Pertinent uniquement pour le mode Auto."

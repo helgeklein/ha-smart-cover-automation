@@ -22,6 +22,7 @@ from custom_components.smart_cover_automation.automation_engine import (
     AutomationEngine,
     CurrentDayTemperatureExtrema,
     ScheduledCoverExecution,
+    ScheduledTiltExecution,
 )
 from custom_components.smart_cover_automation.config import ConfKeys, resolve
 from custom_components.smart_cover_automation.cover_automation import (
@@ -29,6 +30,7 @@ from custom_components.smart_cover_automation.cover_automation import (
     CoverMovementReason,
     CoverState,
     OwnershipDebugSnapshot,
+    PendingTiltAction,
     SensorData,
 )
 
@@ -2217,6 +2219,191 @@ class TestPendingCoverExecutionQueue:
             engine._cancel_pending_cover_executions_for_removed_covers(("cover.keep",))
 
         mock_cancel.assert_called_once_with("cover.remove", "cover no longer configured")
+
+
+class TestPendingTiltExecutionQueue:
+    """Test delayed tilt execution queue helpers."""
+
+    @staticmethod
+    def _make_engine(mock_ha_interface, mock_logger) -> AutomationEngine:
+        """Create an engine with a nonzero tilt delay."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value: 2,
+        }
+        return AutomationEngine(resolved=resolve(config), config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+
+    @staticmethod
+    def _make_action() -> PendingTiltAction:
+        """Create a minimal pending tilt action."""
+
+        return PendingTiltAction(
+            target_tilt=50,
+            features=0,
+            effective_position=20,
+            tilt_mode="auto",
+            record_action=True,
+            failure_label="tilt",
+        )
+
+    def test_schedule_pending_tilt_execution_adds_new_action(self, mock_ha_interface, mock_logger):
+        """A tilt action should be queued using the configured delay."""
+
+        engine = self._make_engine(mock_ha_interface, mock_logger)
+        cover_automation = MagicMock(entity_id="cover.test")
+        created_task = MagicMock(spec=asyncio.Task)
+
+        def create_task_side_effect(coroutine):
+            coroutine.close()
+            return created_task
+
+        with patch(
+            "custom_components.smart_cover_automation.automation_engine.asyncio.create_task",
+            side_effect=create_task_side_effect,
+        ):
+            engine._schedule_pending_tilt_execution(cover_automation, self._make_action())
+
+        scheduled = engine._pending_tilt_executions["cover.test"]
+        assert scheduled.schedule_id == 1
+        assert scheduled.action_signature == (50, 20, "auto", True, "tilt")
+        assert scheduled.task is created_task
+        mock_logger.info.assert_called_once_with("[%s] Queued tilt command in %s s", "cover.test", 2)
+
+    def test_routine_cover_queue_cleanup_keeps_pending_tilt(self, mock_ha_interface, mock_logger) -> None:
+        """Routine cover-queue cleanup must not cancel an already delayed tilt."""
+
+        engine = self._make_engine(mock_ha_interface, mock_logger)
+        task = MagicMock(spec=asyncio.Task)
+        engine._pending_tilt_executions["cover.test"] = ScheduledTiltExecution(
+            schedule_id=1,
+            action_signature=self._make_action().signature,
+            task=task,
+        )
+
+        engine._cancel_pending_cover_executions()
+
+        assert engine._pending_tilt_executions["cover.test"].task is task
+        task.cancel.assert_not_called()
+
+    def test_unchanged_config_keeps_pending_tilt(self, mock_ha_interface, mock_logger) -> None:
+        """Re-resolving equivalent options must not cancel a delayed tilt."""
+
+        engine = self._make_engine(mock_ha_interface, mock_logger)
+        task = MagicMock(spec=asyncio.Task)
+        engine._pending_tilt_executions["cover.test"] = ScheduledTiltExecution(
+            schedule_id=1,
+            action_signature=self._make_action().signature,
+            task=task,
+        )
+        engine.resolved = resolve(engine.config)
+
+        engine._cancel_pending_tilts_for_config_change()
+
+        assert engine._pending_tilt_executions["cover.test"].task is task
+        task.cancel.assert_not_called()
+
+    def test_raw_runtime_config_change_cancels_pending_tilt(self, mock_ha_interface, mock_logger) -> None:
+        """A queued tilt must not survive changing an external tilt value."""
+
+        engine = self._make_engine(mock_ha_interface, mock_logger)
+        task = MagicMock(spec=asyncio.Task)
+        engine._pending_tilt_executions["cover.test"] = ScheduledTiltExecution(
+            schedule_id=1,
+            action_signature=self._make_action().signature,
+            task=task,
+        )
+        engine.config = {**engine.config, const.NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY: 80}
+        engine.resolved = resolve(engine.config)
+
+        engine._cancel_pending_tilts_for_config_change()
+
+        assert "cover.test" not in engine._pending_tilt_executions
+        task.cancel.assert_called_once()
+
+    def test_lock_mode_change_cancels_pending_tilt(self, mock_ha_interface, mock_logger) -> None:
+        """A queued force-lock tilt must not survive an unlock transition."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value: 2,
+            ConfKeys.LOCK_MODE.value: const.LockMode.FORCE_OPEN.value,
+        }
+        engine = AutomationEngine(resolved=resolve(config), config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+        task = MagicMock(spec=asyncio.Task)
+        engine._pending_tilt_executions["cover.test"] = ScheduledTiltExecution(
+            schedule_id=1,
+            action_signature=self._make_action().signature,
+            task=task,
+        )
+        unlocked_config = {**config, ConfKeys.LOCK_MODE.value: const.LockMode.UNLOCKED.value}
+        engine.resolved = resolve(unlocked_config)
+
+        engine._cancel_pending_tilts_for_config_change()
+
+        assert "cover.test" not in engine._pending_tilt_executions
+        task.cancel.assert_called_once()
+
+    def test_disabling_heat_protection_cancels_pending_tilt(self, mock_ha_interface, mock_logger) -> None:
+        """A queued automatic tilt must not survive disabling heat protection."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value: 2,
+            ConfKeys.HEAT_PROTECTION_MODE.value: const.HeatProtectionMode.AUTO.value,
+        }
+        engine = AutomationEngine(resolved=resolve(config), config=config, ha_interface=mock_ha_interface, logger=mock_logger)
+        task = MagicMock(spec=asyncio.Task)
+        engine._pending_tilt_executions["cover.test"] = ScheduledTiltExecution(
+            schedule_id=1,
+            action_signature=self._make_action().signature,
+            task=task,
+        )
+        off_config = {**config, ConfKeys.HEAT_PROTECTION_MODE.value: const.HeatProtectionMode.OFF.value}
+        engine.resolved = resolve(off_config)
+
+        engine._cancel_pending_tilts_for_config_change()
+
+        assert "cover.test" not in engine._pending_tilt_executions
+        task.cancel.assert_called_once()
+
+    async def test_run_pending_tilt_execution_executes_current_action(self, mock_ha_interface, mock_logger):
+        """The current queued tilt action should execute once after its delay."""
+
+        engine = self._make_engine(mock_ha_interface, mock_logger)
+        action = self._make_action()
+        cover_automation = MagicMock()
+        cover_automation.execute_pending_tilt = AsyncMock()
+        engine._pending_tilt_executions["cover.test"] = ScheduledTiltExecution(
+            schedule_id=7,
+            action_signature=action.signature,
+            task=MagicMock(),
+        )
+
+        with patch("custom_components.smart_cover_automation.automation_engine.asyncio.sleep", new=AsyncMock()):
+            await engine._run_pending_tilt_execution("cover.test", 7, cover_automation, action, delay_seconds=2)
+
+        assert "cover.test" not in engine._pending_tilt_executions
+        cover_automation.execute_pending_tilt.assert_awaited_once_with(action)
+
+    def test_cancel_pending_tilt_execution_cancels_task(self, mock_ha_interface, mock_logger):
+        """Cancelling a pending tilt should remove and cancel its task."""
+
+        engine = self._make_engine(mock_ha_interface, mock_logger)
+        task = MagicMock(spec=asyncio.Task)
+        engine._pending_tilt_executions["cover.test"] = ScheduledTiltExecution(
+            schedule_id=1,
+            action_signature=self._make_action().signature,
+            task=task,
+        )
+
+        engine._cancel_pending_tilt_execution("cover.test", "manual override")
+
+        assert "cover.test" not in engine._pending_tilt_executions
+        task.cancel.assert_called_once()
 
 
 class TestLogAutomationResult:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -290,6 +291,24 @@ class CoverExecutionPlan:
 
 
 @dataclass(slots=True, frozen=True)
+class PendingTiltAction:
+    """Tilt command deferred until after a cover movement has started."""
+
+    target_tilt: int
+    features: int
+    effective_position: int
+    tilt_mode: str | None
+    record_action: bool
+    failure_label: str
+
+    @property
+    def signature(self) -> tuple[int, int, str | None, bool, str]:
+        """Return the fields that identify an equivalent queued tilt command."""
+
+        return (self.target_tilt, self.effective_position, self.tilt_mode, self.record_action, self.failure_label)
+
+
+@dataclass(slots=True, frozen=True)
 class ManualOverrideAssessment:
     """Details about an active manual override."""
 
@@ -322,6 +341,9 @@ class CoverAutomation:
         cover_pos_history_mgr: CoverPositionHistoryManager,
         ha_interface: Any,
         logger: Log,
+        defer_tilt_handler: Callable[[CoverAutomation, PendingTiltAction], None] | None = None,
+        cancel_pending_tilt_handler: Callable[[str, str], None] | None = None,
+        pending_tilt_matches_handler: Callable[[str, PendingTiltAction], bool] | None = None,
     ) -> None:
         """Initialize cover automation.
 
@@ -340,6 +362,9 @@ class CoverAutomation:
         self._cover_pos_history_mgr = cover_pos_history_mgr
         self._ha_interface = ha_interface
         self._logger = logger
+        self._defer_tilt_handler = defer_tilt_handler
+        self._cancel_pending_tilt_handler = cancel_pending_tilt_handler
+        self._pending_tilt_matches_handler = pending_tilt_matches_handler
 
         # Tilt support: cached flag (set on first process() call)
         self._cover_supports_tilt: bool | None = None
@@ -416,6 +441,7 @@ class CoverAutomation:
         was_manual_override_blocking = self._cover_pos_history_mgr.was_manual_override_blocking(self.entity_id)
         manual_override_assessment = self._assess_manual_override(current_pos, cover_state.tilt_current)
         if manual_override_assessment is not None:
+            self._cancel_pending_tilt("manual override detected")
             self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
             if self._should_ignore_manual_override(sensor_data):
                 self._cover_pos_history_mgr.clear_manual_override_blocked(self.entity_id)
@@ -1408,11 +1434,11 @@ class CoverAutomation:
                         lockout_protection_active=False,
                     )
                 elif reopening_allowed and self._should_delay_heat_protection_reopen(last_automation_closing_reason):
-                    delay_minutes = self.resolved.tilt_open_to_cover_open_delay
+                    delay_seconds = self.resolved.tilt_open_to_cover_open_delay
                     if delayed_reopen_action is None:
                         self._cover_pos_history_mgr.set_delayed_reopen_action(
                             self.entity_id,
-                            reopen_at=time_now + timedelta(minutes=delay_minutes),
+                            reopen_at=time_now + timedelta(seconds=delay_seconds),
                         )
                         desired_pos = current_pos
                         desired_pos_friendly_name = "opening tilt before delayed reopening after heat protection"
@@ -1861,6 +1887,7 @@ class CoverAutomation:
         self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
 
         if self.resolved.lock_mode == const.LockMode.HOLD_POSITION:
+            self._cancel_pending_tilt("lock mode changed")
             # Just block all automation (including tilt)
             self._log_cover_msg(f"Lock active ({self.resolved.lock_mode}), skipping automation", const.LogSeverity.INFO)
             self._set_lock_attrs(cover_state, desired_pos=current_pos, target_pos=current_pos, cover_moved=False)
@@ -1872,11 +1899,17 @@ class CoverAutomation:
                 cover_state, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_OPEN, features=features
             )
             if self._cover_supports_tilt:
-                try:
-                    await self._ha_interface.set_cover_tilt_position(self.entity_id, const.COVER_POS_FULLY_OPEN, features)
-                    cover_state.tilt_target = const.COVER_POS_FULLY_OPEN
-                except Exception as err:
-                    self._logger.error(f"[{self.entity_id}] Failed to set lock tilt: {err}")
+                await self._apply_or_defer_tilt(
+                    cover_state,
+                    target_tilt=const.COVER_POS_FULLY_OPEN,
+                    features=features,
+                    effective_position=cover_state.pos_target_final if cover_state.pos_target_final is not None else current_pos,
+                    cover_moved=cover_state.pos_target_final != current_pos,
+                    tilt_mode="lock",
+                    set_target_before_dispatch=False,
+                    record_immediate_action=False,
+                    failure_label="lock tilt",
+                )
 
             final_position = cover_state.pos_target_final if cover_state.pos_target_final is not None else current_pos
             final_tilt = cover_state.tilt_target if cover_state.tilt_target is not None else cover_state.tilt_current
@@ -1888,11 +1921,17 @@ class CoverAutomation:
                 cover_state, current_pos=current_pos, target_pos=const.COVER_POS_FULLY_CLOSED, features=features
             )
             if self._cover_supports_tilt:
-                try:
-                    await self._ha_interface.set_cover_tilt_position(self.entity_id, const.COVER_POS_FULLY_CLOSED, features)
-                    cover_state.tilt_target = const.COVER_POS_FULLY_CLOSED
-                except Exception as err:
-                    self._logger.error(f"[{self.entity_id}] Failed to set lock tilt: {err}")
+                await self._apply_or_defer_tilt(
+                    cover_state,
+                    target_tilt=const.COVER_POS_FULLY_CLOSED,
+                    features=features,
+                    effective_position=cover_state.pos_target_final if cover_state.pos_target_final is not None else current_pos,
+                    cover_moved=cover_state.pos_target_final != current_pos,
+                    tilt_mode="lock",
+                    set_target_before_dispatch=False,
+                    record_immediate_action=False,
+                    failure_label="lock tilt",
+                )
 
             final_position = cover_state.pos_target_final if cover_state.pos_target_final is not None else current_pos
             final_tilt = cover_state.tilt_target if cover_state.tilt_target is not None else cover_state.tilt_current
@@ -2177,15 +2216,111 @@ class CoverAutomation:
                 )
                 return
 
-        # Send tilt command
+        await self._apply_or_defer_tilt(
+            cover_state,
+            target_tilt=target_tilt,
+            features=features,
+            effective_position=effective_pos,
+            cover_moved=cover_moved,
+            tilt_mode=tilt_mode,
+        )
+
+    async def _apply_or_defer_tilt(
+        self,
+        cover_state: CoverState,
+        target_tilt: int,
+        features: int,
+        effective_position: int | None,
+        cover_moved: bool,
+        tilt_mode: str | None,
+        set_target_before_dispatch: bool = True,
+        record_immediate_action: bool = True,
+        failure_label: str = "tilt",
+    ) -> None:
+        """Set tilt now or queue it until after the configured movement delay."""
+
+        if set_target_before_dispatch:
+            cover_state.tilt_target = target_tilt
+        if (
+            cover_moved
+            and effective_position is not None
+            and self.resolved.cover_movement_to_tilt_delay > 0
+            and self._defer_tilt_handler is not None
+        ):
+            pending_action = PendingTiltAction(
+                target_tilt=target_tilt,
+                features=features,
+                effective_position=effective_position,
+                tilt_mode=tilt_mode,
+                record_action=record_immediate_action,
+                failure_label=failure_label,
+            )
+            self._defer_tilt_handler(
+                self,
+                pending_action,
+            )
+            self._log_cover_msg(
+                f"Tilt to {target_tilt}% queued after cover movement (delay: {self.resolved.cover_movement_to_tilt_delay} s)",
+                const.LogSeverity.INFO,
+            )
+            return
+
+        if effective_position is not None:
+            pending_action = PendingTiltAction(
+                target_tilt=target_tilt,
+                features=features,
+                effective_position=effective_position,
+                tilt_mode=tilt_mode,
+                record_action=record_immediate_action,
+                failure_label=failure_label,
+            )
+            if self._pending_tilt_matches_handler is not None and self._pending_tilt_matches_handler(self.entity_id, pending_action):
+                return
+        self._cancel_pending_tilt("superseded by immediate tilt action")
+
+        await self._set_tilt(
+            target_tilt,
+            features,
+            effective_position,
+            tilt_mode,
+            cover_state,
+            record_action=record_immediate_action,
+            failure_label=failure_label,
+        )
+
+    async def execute_pending_tilt(self, action: PendingTiltAction) -> None:
+        """Execute one previously queued tilt command."""
+
+        await self._set_tilt(
+            action.target_tilt,
+            action.features,
+            action.effective_position,
+            action.tilt_mode,
+            record_action=action.record_action,
+            failure_label=action.failure_label,
+        )
+
+    async def _set_tilt(
+        self,
+        target_tilt: int,
+        features: int,
+        effective_position: int | None,
+        tilt_mode: str | None,
+        cover_state: CoverState | None = None,
+        record_action: bool = True,
+        failure_label: str = "tilt",
+    ) -> None:
+        """Send a tilt command and record the resulting automation action."""
+
         try:
             actual_tilt = await self._ha_interface.set_cover_tilt_position(self.entity_id, target_tilt, features)
-            cover_state.tilt_target = actual_tilt
-            if effective_pos is not None:
-                self._record_recent_automation_action(effective_pos, actual_tilt)
+            if cover_state is not None:
+                cover_state.tilt_target = actual_tilt
+            if record_action and effective_position is not None:
+                self._record_recent_automation_action(effective_position, actual_tilt)
                 self._cover_pos_history_mgr.add(
                     self.entity_id,
-                    effective_pos,
+                    effective_position,
                     cover_moved=True,
                     tilt_position=actual_tilt,
                 )
@@ -2194,7 +2329,13 @@ class CoverAutomation:
                 const.LogSeverity.INFO,
             )
         except Exception as err:
-            self._logger.error(f"[{self.entity_id}] Failed to set tilt: {err}")
+            self._logger.error(f"[{self.entity_id}] Failed to set {failure_label}: {err}")
+
+    def _cancel_pending_tilt(self, reason: str) -> None:
+        """Cancel any queued tilt command through the owning engine."""
+
+        if self._cancel_pending_tilt_handler is not None:
+            self._cancel_pending_tilt_handler(self.entity_id, reason)
 
     def _determine_target_tilt(
         self,

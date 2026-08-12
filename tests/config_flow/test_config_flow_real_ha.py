@@ -406,6 +406,7 @@ class TestOptionsFlow:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value: 2,
+                ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value: 3,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
             },
             {},
@@ -415,6 +416,7 @@ class TestOptionsFlow:
         result = await _step_through_options_flow(hass, entry, step_inputs)
         assert result["type"] is FlowResultType.CREATE_ENTRY
         assert entry.options[ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value] == 2
+        assert entry.options[ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value] == 3
 
         result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
         assert result["type"] is FlowResultType.FORM
@@ -457,7 +459,11 @@ class TestOptionsFlow:
         delay_key = next(key for key in schema if getattr(key, "schema", None) == ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value)
         delay_default = delay_key.default() if callable(delay_key.default) else delay_key.default
 
+        movement_delay_key = next(key for key in schema if getattr(key, "schema", None) == ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value)
+        movement_delay_default = movement_delay_key.default() if callable(movement_delay_key.default) else movement_delay_key.default
+
         assert delay_default == 2
+        assert movement_delay_default == 3
 
     async def test_options_flow_step_2_rejects_invalid_per_cover_sun_azimuth_tolerance(
         self,

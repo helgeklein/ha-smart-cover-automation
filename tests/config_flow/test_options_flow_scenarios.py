@@ -20,6 +20,7 @@ from unittest.mock import MagicMock
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.data_entry_flow import FlowResultType
 
+from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
 from custom_components.smart_cover_automation.const import (
@@ -95,6 +96,8 @@ class TestOptionsFlowScenarios:
             ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
             ConfKeys.TILT_DRIFT_TOLERANCE.value: 5,
             ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value: 0,
+            ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value: 0,
+            const.OPTION_KEY_TILT_DELAYS_IN_SECONDS: True,
             ConfKeys.TILT_VERTICAL_POSITION.value: 0,
             ConfKeys.TILT_HORIZONTAL_POSITION.value: 100,
             ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,

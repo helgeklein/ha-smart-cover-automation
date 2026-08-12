@@ -63,6 +63,7 @@ def mock_resolved_config():
     resolved.tilt_min_change_delta = 5
     resolved.tilt_drift_tolerance = 5
     resolved.tilt_open_to_cover_open_delay = 0
+    resolved.cover_movement_to_tilt_delay = 0
     resolved.tilt_vertical_position = 0
     resolved.tilt_horizontal_position = 100
     resolved.tilt_slat_overlap_ratio = 0.9
@@ -1252,6 +1253,55 @@ class TestProcessWithTilt:
         assert cover_state.tilt_target == 100
 
     @pytest.mark.asyncio
+    async def test_process_defers_tilt_after_position_move_when_delay_configured(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features
+    ) -> None:
+        """A configured movement delay should queue tilt instead of sending it during the move."""
+
+        mock_resolved_config.tilt_mode_day = TiltMode.OPEN
+        mock_resolved_config.cover_movement_to_tilt_delay = 2
+        mock_ha_interface.set_cover_position = AsyncMock(return_value=0)
+        mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=100)
+        defer_tilt_handler = MagicMock()
+        auto = CoverAutomation(
+            entity_id="cover.test",
+            resolved=mock_resolved_config,
+            config=basic_config,
+            cover_pos_history_mgr=mock_cover_pos_history_mgr,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+            defer_tilt_handler=defer_tilt_handler,
+        )
+
+        state = MagicMock()
+        state.state = STATE_OPEN
+        state.attributes = {
+            ATTR_CURRENT_POSITION: 100,
+            ATTR_CURRENT_TILT_POSITION: 50,
+            "supported_features": tilt_features,
+        }
+        data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        cover_state = await auto.process(state, data)
+
+        mock_ha_interface.set_cover_position.assert_called_once()
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
+        defer_tilt_handler.assert_called_once()
+        action = defer_tilt_handler.call_args.args[1]
+        assert action.target_tilt == 100
+        assert action.effective_position == 0
+        assert cover_state.tilt_target == 100
+
+    @pytest.mark.asyncio
     async def test_process_applies_tilt_when_position_already_matches_target(
         self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger, tilt_features
     ) -> None:
@@ -1366,7 +1416,7 @@ class TestProcessWithTilt:
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 100, tilt_features)
         mock_cover_pos_history_mgr.set_delayed_reopen_action.assert_called_once()
         reopen_at = mock_cover_pos_history_mgr.set_delayed_reopen_action.call_args.kwargs["reopen_at"]
-        assert before + timedelta(minutes=2) <= reopen_at <= after + timedelta(minutes=2)
+        assert before + timedelta(seconds=2) <= reopen_at <= after + timedelta(seconds=2)
         assert cover_state.pos_target_desired == 0
         assert cover_state.pos_target_final is None
         assert cover_state.tilt_target == 100
@@ -1512,6 +1562,48 @@ class TestProcessWithTilt:
 
 class TestLockModeTilt:
     """Tests for tilt behavior during lock modes."""
+
+    @pytest.mark.asyncio
+    async def test_force_open_retains_matching_delayed_tilt_without_history_recording(
+        self,
+        mock_resolved_config,
+        basic_config,
+        mock_cover_pos_history_mgr,
+        mock_ha_interface,
+        mock_logger,
+        tilt_features,
+    ) -> None:
+        """Force-open polling must retain its delayed tilt command and history policy."""
+
+        mock_resolved_config.lock_mode = LockMode.FORCE_OPEN
+        mock_resolved_config.cover_movement_to_tilt_delay = 2
+        mock_ha_interface.set_cover_position = AsyncMock(return_value=100)
+        defer_tilt_handler = MagicMock()
+        cancel_pending_tilt_handler = MagicMock()
+        pending_tilt_matches_handler = MagicMock(return_value=True)
+        auto = CoverAutomation(
+            entity_id="cover.test",
+            resolved=mock_resolved_config,
+            config=basic_config,
+            cover_pos_history_mgr=mock_cover_pos_history_mgr,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+            defer_tilt_handler=defer_tilt_handler,
+            cancel_pending_tilt_handler=cancel_pending_tilt_handler,
+            pending_tilt_matches_handler=pending_tilt_matches_handler,
+        )
+        auto._cover_supports_tilt = True
+
+        await auto._process_lock_mode(CoverState(), current_pos=50, features=tilt_features)
+
+        queued_action = defer_tilt_handler.call_args.args[1]
+        assert queued_action.record_action is False
+
+        await auto._process_lock_mode(CoverState(), current_pos=100, features=tilt_features)
+
+        defer_tilt_handler.assert_called_once()
+        cancel_pending_tilt_handler.assert_not_called()
+        mock_ha_interface.set_cover_tilt_position.assert_not_called()
 
     #
     # test_force_open_sets_tilt_100
