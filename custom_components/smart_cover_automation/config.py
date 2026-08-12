@@ -107,8 +107,9 @@ class ConfKeys(StrEnum):
     TILT_MIN_CHANGE_DELTA = "tilt_min_change_delta"  # Minimum tilt change (%) to actually send a service call.
     TILT_DRIFT_TOLERANCE = "tilt_drift_tolerance"  # Ignore smaller recent tilt settle drift (%).
     TILT_OPEN_TO_COVER_OPEN_DELAY = (
-        "tilt_open_to_cover_open_delay"  # Delay stored in minutes between opening tilt and reopening the cover in day auto mode.
+        "tilt_open_to_cover_open_delay"  # Delay in seconds between opening tilt and reopening the cover in day auto mode.
     )
+    COVER_MOVEMENT_TO_TILT_DELAY = "cover_movement_to_tilt_delay"  # Delay in seconds between moving a cover and setting its tilt.
     TILT_VERTICAL_POSITION = "tilt_vertical_position"  # HA tilt position that corresponds to vertical slats in Auto mode.
     TILT_HORIZONTAL_POSITION = "tilt_horizontal_position"  # HA tilt position that corresponds to horizontal slats in Auto mode.
     TILT_MODE_DAY = "tilt_mode_day"  # Global tilt mode during daytime.
@@ -293,6 +294,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.TILT_MIN_CHANGE_DELTA: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.TILT_DRIFT_TOLERANCE: _ConfSpec(default=5, converter=_Converters.to_int),
     ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY: _ConfSpec(default=0, converter=_Converters.to_int),
+    ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.TILT_VERTICAL_POSITION: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.TILT_HORIZONTAL_POSITION: _ConfSpec(default=100, converter=_Converters.to_int),
     ConfKeys.TILT_MODE_DAY: _ConfSpec(default=TiltMode.AUTO, converter=TiltMode),
@@ -440,6 +442,7 @@ class ResolvedConfig:
     tilt_min_change_delta: int
     tilt_drift_tolerance: int
     tilt_open_to_cover_open_delay: int
+    cover_movement_to_tilt_delay: int
     tilt_vertical_position: int
     tilt_horizontal_position: int
     tilt_mode_day: TiltMode

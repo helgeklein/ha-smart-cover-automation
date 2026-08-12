@@ -197,6 +197,30 @@ def _is_external_blocked_time_range_key(key: str) -> bool:
 
 
 #
+# _async_migrate_tilt_delays_to_seconds
+#
+async def _async_migrate_tilt_delays_to_seconds(hass: HomeAssistant, entry: IntegrationConfigEntry) -> None:
+    """Migrate the tilt-to-cover reopening delay from minutes to seconds."""
+
+    current_options = _get_entry_options_dict(entry)
+    if current_options.get(const.OPTION_KEY_TILT_DELAYS_IN_SECONDS) is True:
+        return
+
+    updated_options = dict(current_options)
+    delay_key = ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value
+    legacy_delay = updated_options.get(delay_key)
+    if legacy_delay is not None:
+        try:
+            updated_options[delay_key] = int(legacy_delay) * 60
+        except TypeError, ValueError:
+            # Preserve malformed values for normal configuration validation.
+            pass
+
+    updated_options[const.OPTION_KEY_TILT_DELAYS_IN_SECONDS] = True
+    hass.config_entries.async_update_entry(entry, options=updated_options)
+
+
+#
 # _async_migrate_temperature_threshold_keys
 #
 async def _async_migrate_temperature_threshold_keys(hass: HomeAssistant, entry: IntegrationConfigEntry) -> None:
@@ -616,6 +640,7 @@ async def async_setup_entry(
     logger.info("Starting integration setup")
 
     try:
+        await _async_migrate_tilt_delays_to_seconds(hass, entry)
         await _async_migrate_temperature_threshold_keys(hass, entry)
 
         # Migrate unique IDs if needed

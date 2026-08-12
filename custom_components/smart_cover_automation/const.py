@@ -297,6 +297,8 @@ WEATHER_SUNNY_CONDITIONS: Final[tuple[str, ...]] = (
 # Home Assistant cover positions
 COVER_POS_FULLY_OPEN: Final = 100
 COVER_POS_FULLY_CLOSED: Final = 0
+MAX_TILT_DELAY_SECONDS: Final = 86_400
+OPTION_KEY_TILT_DELAYS_IN_SECONDS: Final = "tilt_delays_in_seconds"
 
 # Coordinator
 UPDATE_INTERVAL: Final = timedelta(seconds=60)

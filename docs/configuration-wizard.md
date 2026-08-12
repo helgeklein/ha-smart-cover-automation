@@ -135,7 +135,8 @@ The global tilt modes can be overridden per cover.
 
 - **Minimum tilt change:** Minimum tilt change (%) required before sending a command. Prevents excessive motor wear from small adjustments.
 - **Slat overlap ratio (d/L):** Ratio of slat spacing to slat width (`0.5` – `1.0`). Lower values mean more overlap between slats. The default of `0.9` works well for most venetian blinds. Only relevant for Auto mode.
-- **Tilt open to cover open delay:** Delay between opening the slats fully and reopening the cover. Only applies to covers with tilt support whose effective daytime tilt mode is Auto and that were previously closed for heat protection.
+- **Tilt open to cover open delay:** Delay in seconds between opening the slats fully and reopening the cover. Only applies to covers with tilt support whose effective daytime tilt mode is Auto and that were previously closed for heat protection.
+- **Cover movement to tilt delay:** Delay in seconds between moving a cover and applying its tilt. Applies to automated position-and-tilt changes and force-open or force-close lock mode.
 - **Horizontal tilt position:** Home Assistant tilt percentage for fully horizontal slats. Auto mode treats this as the horizontal slat position. Default: 100%.
 - **Vertical tilt position:** Home Assistant tilt percentage for fully vertical slats. Auto mode treats this as the vertical slat position. Default: 0%.
 - **Tilt drift tolerance:** Maximum recent tilt settle drift (%) to ignore during the short settling period after an automation command. Larger tilt changes are treated as manual override.

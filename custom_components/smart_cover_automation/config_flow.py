@@ -630,9 +630,24 @@ class FlowHelper:
         ] = selector.NumberSelector(
             selector.NumberSelectorConfig(
                 min=0,
-                max=1440,
+                max=const.MAX_TILT_DELAY_SECONDS,
                 step=1,
-                unit_of_measurement=UnitOfTime.MINUTES,
+                unit_of_measurement=UnitOfTime.SECONDS,
+                mode=selector.NumberSelectorMode.BOX,
+            )
+        )
+
+        schema_dict[
+            vol.Required(
+                ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value,
+                default=resolved_settings.cover_movement_to_tilt_delay,
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=const.MAX_TILT_DELAY_SECONDS,
+                step=1,
+                unit_of_measurement=UnitOfTime.SECONDS,
                 mode=selector.NumberSelectorMode.BOX,
             )
         )
@@ -1928,6 +1943,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_data[ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value] = int(
             user_input.get(ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value, 0)
         )
+        self._config_data[ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value] = int(user_input.get(ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value, 0))
+        self._config_data[const.OPTION_KEY_TILT_DELAYS_IN_SECONDS] = True
         self._config_data[ConfKeys.TILT_VERTICAL_POSITION.value] = int(user_input.get(ConfKeys.TILT_VERTICAL_POSITION.value, 0))
         self._config_data[ConfKeys.TILT_HORIZONTAL_POSITION.value] = int(user_input.get(ConfKeys.TILT_HORIZONTAL_POSITION.value, 100))
         self._config_data[ConfKeys.TILT_SLAT_OVERLAP_RATIO.value] = float(user_input.get(ConfKeys.TILT_SLAT_OVERLAP_RATIO.value, 0.9))

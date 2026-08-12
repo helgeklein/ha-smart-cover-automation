@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Mapping
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from datetime import time as dt_time
@@ -15,7 +16,7 @@ from homeassistant.util import dt as dt_util
 
 from . import const
 from .config import ResolvedConfig, resolve_effective_blocked_time_range_bounds
-from .cover_automation import CoverAutomation, CoverExecutionPlan, SensorData
+from .cover_automation import CoverAutomation, CoverExecutionPlan, PendingTiltAction, SensorData
 from .cover_position_history import CoverPositionHistoryManager, _movement_cause_for_legacy_reason_key
 from .data import CoordinatorData
 from .log import Log
@@ -61,6 +62,15 @@ class ScheduledCoverExecution:
     task: asyncio.Task[None]
 
 
+@dataclass(slots=True)
+class ScheduledTiltExecution:
+    """Tracks one pending tilt command after a cover movement."""
+
+    schedule_id: int
+    action_signature: tuple[int, int, str | None, bool, str]
+    task: asyncio.Task[None]
+
+
 class AutomationEngine:
     """Abstracts the complete automation across all covers."""
 
@@ -103,6 +113,9 @@ class AutomationEngine:
         self._current_day_temperature_extrema: CurrentDayTemperatureExtrema | None = None
         self._disabled_time_range_state = DisabledTimeRangeState()
         self._pending_cover_executions: dict[str, ScheduledCoverExecution] = {}
+        self._pending_tilt_executions: dict[str, ScheduledTiltExecution] = {}
+        self._last_resolved_config = resolved
+        self._last_raw_config = deepcopy(config)
         self._schedule_sequence = 0
         self._run_generation = 0
 
@@ -223,10 +236,28 @@ class AutomationEngine:
         )
 
     def cancel_pending_cover_executions(self) -> None:
+        """Cancel all queued cover and tilt executions."""
+
+        self._cancel_pending_cover_executions()
+        for entity_id in tuple(self._pending_tilt_executions):
+            self._cancel_pending_tilt_execution(entity_id, "automation context ended")
+
+    def _cancel_pending_cover_executions(self) -> None:
         """Cancel all queued staggered cover executions."""
 
         for entity_id in tuple(self._pending_cover_executions):
             self._cancel_pending_cover_execution(entity_id, "automation context ended")
+
+    def _cancel_pending_tilts_for_config_change(self) -> None:
+        """Cancel tilt commands queued under a previous automation policy."""
+
+        if self.resolved == self._last_resolved_config and self.config == self._last_raw_config:
+            return
+
+        for entity_id in tuple(self._pending_tilt_executions):
+            self._cancel_pending_tilt_execution(entity_id, "automation configuration changed")
+        self._last_resolved_config = self.resolved
+        self._last_raw_config = deepcopy(self.config)
 
     #
     # run
@@ -248,6 +279,8 @@ class AutomationEngine:
         is_first_run = self._first_run
         if self._first_run:
             self._first_run = False
+
+        self._cancel_pending_tilts_for_config_change()
 
         # Check if covers are configured
         covers = tuple(self.resolved.covers)
@@ -344,6 +377,7 @@ class AutomationEngine:
             "tilt_set_value_night": self.resolved.tilt_set_value_night,
             "tilt_min_change_delta": self.resolved.tilt_min_change_delta,
             "tilt_open_to_cover_open_delay": self.resolved.tilt_open_to_cover_open_delay,
+            "cover_movement_to_tilt_delay": self.resolved.cover_movement_to_tilt_delay,
             "tilt_slat_overlap_ratio": self.resolved.tilt_slat_overlap_ratio,
             "cover_movement_stagger_delay": self.resolved.cover_movement_stagger_delay,
         }
@@ -393,7 +427,7 @@ class AutomationEngine:
 
         stagger_delay = max(0, self.resolved.cover_movement_stagger_delay)
         if stagger_delay <= 0:
-            self.cancel_pending_cover_executions()
+            self._cancel_pending_cover_executions()
 
         self._run_generation += 1
         run_generation = self._run_generation
@@ -408,6 +442,9 @@ class AutomationEngine:
                 cover_pos_history_mgr=self._cover_pos_history_mgr,
                 ha_interface=self._ha_interface,
                 logger=self._logger,
+                defer_tilt_handler=self._schedule_pending_tilt_execution,
+                cancel_pending_tilt_handler=self._cancel_pending_tilt_execution,
+                pending_tilt_matches_handler=self._has_matching_pending_tilt_execution,
             )
 
             if stagger_delay <= 0:
@@ -655,6 +692,66 @@ class AutomationEngine:
         scheduled.task.cancel()
         self._logger.debug("[%s] Cancelled queued cover execution: %s", entity_id, reason)
 
+    def _schedule_pending_tilt_execution(self, cover_automation: CoverAutomation, action: PendingTiltAction) -> None:
+        """Schedule a tilt command after a configured cover-movement delay."""
+
+        existing = self._pending_tilt_executions.get(cover_automation.entity_id)
+        if existing is not None and existing.action_signature == action.signature:
+            return
+        if existing is not None:
+            self._cancel_pending_tilt_execution(cover_automation.entity_id, "superseded by a newer tilt action")
+
+        delay_seconds = max(0, self.resolved.cover_movement_to_tilt_delay)
+        self._schedule_sequence += 1
+        schedule_id = self._schedule_sequence
+        task = asyncio.create_task(
+            self._run_pending_tilt_execution(cover_automation.entity_id, schedule_id, cover_automation, action, delay_seconds)
+        )
+        self._pending_tilt_executions[cover_automation.entity_id] = ScheduledTiltExecution(
+            schedule_id=schedule_id,
+            action_signature=action.signature,
+            task=task,
+        )
+        self._logger.info("[%s] Queued tilt command in %s s", cover_automation.entity_id, delay_seconds)
+
+    def _has_matching_pending_tilt_execution(self, entity_id: str, action: PendingTiltAction) -> bool:
+        """Return whether an equivalent tilt command is already queued."""
+
+        scheduled = self._pending_tilt_executions.get(entity_id)
+        return scheduled is not None and scheduled.action_signature == action.signature
+
+    async def _run_pending_tilt_execution(
+        self,
+        entity_id: str,
+        schedule_id: int,
+        cover_automation: CoverAutomation,
+        action: PendingTiltAction,
+        delay_seconds: int,
+    ) -> None:
+        """Execute a queued tilt command if it is still current."""
+
+        try:
+            await asyncio.sleep(delay_seconds)
+        except asyncio.CancelledError:
+            return
+
+        scheduled = self._pending_tilt_executions.get(entity_id)
+        if scheduled is None or scheduled.schedule_id != schedule_id:
+            return
+
+        self._pending_tilt_executions.pop(entity_id, None)
+        await cover_automation.execute_pending_tilt(action)
+
+    def _cancel_pending_tilt_execution(self, entity_id: str, reason: str) -> None:
+        """Cancel one pending tilt command if it exists."""
+
+        scheduled = self._pending_tilt_executions.pop(entity_id, None)
+        if scheduled is None:
+            return
+
+        scheduled.task.cancel()
+        self._logger.debug("[%s] Cancelled queued tilt command: %s", entity_id, reason)
+
     def _cancel_pending_cover_executions_for_removed_covers(self, configured_covers: tuple[str, ...]) -> None:
         """Cancel queued executions that belong to covers no longer configured."""
 
@@ -662,6 +759,9 @@ class AutomationEngine:
         for entity_id in tuple(self._pending_cover_executions):
             if entity_id not in configured_cover_ids:
                 self._cancel_pending_cover_execution(entity_id, "cover no longer configured")
+        for entity_id in tuple(self._pending_tilt_executions):
+            if entity_id not in configured_cover_ids:
+                self._cancel_pending_tilt_execution(entity_id, "cover no longer configured")
 
     #
     # _gather_sensor_data

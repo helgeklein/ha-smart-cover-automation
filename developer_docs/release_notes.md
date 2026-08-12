@@ -1,3 +1,9 @@
+# v6.2
+
+## Cover Movement to Tilt Delay
+
+This new optional settings complements the existing **Tilt open to cover open delay**. It's useful in cases where tilt commands cancel cover movements (e.g., with Somfy blinds).
+
 # v6.1
 
 ## Morning Opening
