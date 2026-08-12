@@ -2271,6 +2271,49 @@ class TestPendingTiltExecutionQueue:
         assert scheduled.task is created_task
         mock_logger.info.assert_called_once_with("[%s] Queued tilt command in %s s", "cover.test", 2)
 
+    def test_schedule_pending_tilt_execution_keeps_matching_action(self, mock_ha_interface, mock_logger) -> None:
+        """An equivalent tilt action must retain its existing scheduled task."""
+
+        engine = self._make_engine(mock_ha_interface, mock_logger)
+        existing_task = MagicMock(spec=asyncio.Task)
+        engine._pending_tilt_executions["cover.test"] = ScheduledTiltExecution(
+            schedule_id=1,
+            action_signature=self._make_action().signature,
+            task=existing_task,
+        )
+
+        engine._schedule_pending_tilt_execution(MagicMock(entity_id="cover.test"), self._make_action())
+
+        assert engine._pending_tilt_executions["cover.test"].task is existing_task
+        existing_task.cancel.assert_not_called()
+
+    def test_schedule_pending_tilt_execution_replaces_superseded_action(self, mock_ha_interface, mock_logger) -> None:
+        """A new tilt target must cancel the superseded scheduled task."""
+
+        engine = self._make_engine(mock_ha_interface, mock_logger)
+        existing_task = MagicMock(spec=asyncio.Task)
+        replacement_task = MagicMock(spec=asyncio.Task)
+        engine._pending_tilt_executions["cover.test"] = ScheduledTiltExecution(
+            schedule_id=1,
+            action_signature=(25, 20, "auto", True, "tilt"),
+            task=existing_task,
+        )
+
+        def create_task_side_effect(coroutine):
+            coroutine.close()
+            return replacement_task
+
+        with patch(
+            "custom_components.smart_cover_automation.automation_engine.asyncio.create_task",
+            side_effect=create_task_side_effect,
+        ):
+            engine._schedule_pending_tilt_execution(MagicMock(entity_id="cover.test"), self._make_action())
+
+        scheduled = engine._pending_tilt_executions["cover.test"]
+        assert scheduled.action_signature == self._make_action().signature
+        assert scheduled.task is replacement_task
+        existing_task.cancel.assert_called_once()
+
     def test_routine_cover_queue_cleanup_keeps_pending_tilt(self, mock_ha_interface, mock_logger) -> None:
         """Routine cover-queue cleanup must not cancel an already delayed tilt."""
 
@@ -2388,6 +2431,40 @@ class TestPendingTiltExecutionQueue:
 
         assert "cover.test" not in engine._pending_tilt_executions
         cover_automation.execute_pending_tilt.assert_awaited_once_with(action)
+
+    async def test_run_pending_tilt_execution_skips_stale_action(self, mock_ha_interface, mock_logger) -> None:
+        """A superseded task must not execute its outdated tilt action."""
+
+        engine = self._make_engine(mock_ha_interface, mock_logger)
+        action = self._make_action()
+        cover_automation = MagicMock()
+        cover_automation.execute_pending_tilt = AsyncMock()
+        engine._pending_tilt_executions["cover.test"] = ScheduledTiltExecution(
+            schedule_id=8,
+            action_signature=action.signature,
+            task=MagicMock(),
+        )
+
+        with patch("custom_components.smart_cover_automation.automation_engine.asyncio.sleep", new=AsyncMock()):
+            await engine._run_pending_tilt_execution("cover.test", 7, cover_automation, action, delay_seconds=2)
+
+        assert engine._pending_tilt_executions["cover.test"].schedule_id == 8
+        cover_automation.execute_pending_tilt.assert_not_awaited()
+
+    async def test_run_pending_tilt_execution_cancellation_skips_action(self, mock_ha_interface, mock_logger) -> None:
+        """Cancelling a delayed tilt before expiry must prevent the service call."""
+
+        engine = self._make_engine(mock_ha_interface, mock_logger)
+        cover_automation = MagicMock()
+        cover_automation.execute_pending_tilt = AsyncMock()
+
+        with patch(
+            "custom_components.smart_cover_automation.automation_engine.asyncio.sleep",
+            new=AsyncMock(side_effect=asyncio.CancelledError),
+        ):
+            await engine._run_pending_tilt_execution("cover.test", 1, cover_automation, self._make_action(), delay_seconds=2)
+
+        cover_automation.execute_pending_tilt.assert_not_awaited()
 
     def test_cancel_pending_tilt_execution_cancels_task(self, mock_ha_interface, mock_logger):
         """Cancelling a pending tilt should remove and cancel its task."""
