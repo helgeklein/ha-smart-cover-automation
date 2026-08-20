@@ -46,7 +46,11 @@ from custom_components.smart_cover_automation.cover_automation import (
 from custom_components.smart_cover_automation.cover_automation import (
     SensorData as CoverSensorData,
 )
-from custom_components.smart_cover_automation.cover_position_history import PositionEntry, RecentAutomationAction
+from custom_components.smart_cover_automation.cover_position_history import (
+    CoverPositionHistoryManager,
+    PositionEntry,
+    RecentAutomationAction,
+)
 from custom_components.smart_cover_automation.movement import (
     AutomationManagedState,
     AutomationMode,
@@ -1376,21 +1380,21 @@ class TestMovementReasonHelpers:
         assert remaining is not None
         mock_cover_pos_history_mgr.clear_recent_automation_action.assert_called_once_with("cover.test")
 
-    def test_get_manual_override_remaining_ignores_live_tilt_when_history_has_none(
+    def test_get_manual_override_remaining_ignores_live_tilt_after_full_open_move(
         self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
     ):
-        """A live tilt value alone should not trigger override when history has no tilt baseline."""
+        """A full-open move should not treat the cover's automatic tilt report as manual movement."""
 
         mock_resolved_config.manual_override_duration = 3600
         entry = PositionEntry(
-            position=40,
+            position=100,
             timestamp=datetime.now(timezone.utc) - timedelta(seconds=30),
             cover_moved=True,
             tilt_position=None,
         )
         mock_cover_pos_history_mgr.get_latest_entry.return_value = entry
 
-        remaining = cover_automation._get_manual_override_remaining(40, 75)
+        remaining = cover_automation._get_manual_override_remaining(100, 100)
 
         assert remaining is None
 
@@ -3698,6 +3702,50 @@ class TestMaoveCoverIfNeeded:
         assert actual_pos == 80
         assert message == "Moved cover"
         mock_ha_interface.add_logbook_entry.assert_called_once()
+
+    async def test_move_cover_if_needed_opening_fully_open_omits_tilt_baseline(
+        self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr
+    ):
+        """A fully raised cover should not retain its pre-move tilt as an automation baseline."""
+
+        mock_ha_interface.set_cover_position.return_value = 100
+
+        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
+            current_pos=0,
+            desired_pos=100,
+            features=CoverEntityFeature.SET_POSITION,
+            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            current_tilt=94,
+        )
+
+        assert movement_needed is True
+        assert actual_pos == 100
+        assert message == "Moved cover"
+        mock_cover_pos_history_mgr.add.assert_called_once_with(
+            "cover.test",
+            100,
+            cover_moved=True,
+            tilt_position=None,
+        )
+        recent_call = mock_cover_pos_history_mgr.set_recent_automation_action.call_args
+        assert recent_call is not None
+        assert recent_call.kwargs["expected_tilt_position"] is None
+
+    async def test_move_cover_if_needed_opening_fully_open_does_not_trigger_manual_override(self, cover_automation, mock_ha_interface):
+        """A cover-reported tilt change after full opening must not block automation."""
+
+        cover_automation._cover_pos_history_mgr = CoverPositionHistoryManager()
+        mock_ha_interface.set_cover_position.return_value = 100
+
+        await cover_automation._move_cover_if_needed(
+            current_pos=0,
+            desired_pos=100,
+            features=CoverEntityFeature.SET_POSITION,
+            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            current_tilt=94,
+        )
+
+        assert cover_automation._get_manual_override_remaining(100, 100) is None
 
     async def test_move_cover_if_needed_opening_after_heat_protection(
         self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr

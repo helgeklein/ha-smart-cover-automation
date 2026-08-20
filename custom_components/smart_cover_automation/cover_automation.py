@@ -1741,7 +1741,8 @@ class CoverAutomation:
             actual_pos = await self._ha_interface.set_cover_position(self.entity_id, desired_pos, features)
             self._logger.debug(f"[{self.entity_id}] Actual position: {actual_pos}%")
 
-            self._record_automation_state(actual_pos, current_tilt, cover_moved=True)
+            recorded_tilt = None if actual_pos == const.COVER_POS_FULLY_OPEN else current_tilt
+            self._record_automation_state(actual_pos, recorded_tilt, cover_moved=True)
 
             if decision.control_reason == MovementControlReason.HEAT_PROTECTION and actual_pos != const.COVER_POS_FULLY_OPEN:
                 self._cover_pos_history_mgr.set_automation_managed_state(
