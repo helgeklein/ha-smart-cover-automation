@@ -1,3 +1,9 @@
+# v6.3
+
+## Recorded Tilt Position Cleared on Full Opening
+
+- Bugfix: When a cover is fully opened, the integration now clears its recorded tilt position. This prevents tilt changes caused by opening the cover from being misinterpreted as manual overrides.
+
 # v6.2
 
 ## Cover Movement to Tilt Delay
