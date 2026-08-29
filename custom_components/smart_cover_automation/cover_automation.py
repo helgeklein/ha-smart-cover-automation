@@ -1937,10 +1937,11 @@ class CoverAutomation:
             final_position = cover_state.pos_target_final if cover_state.pos_target_final is not None else current_pos
             final_tilt = cover_state.tilt_target if cover_state.tilt_target is not None else cover_state.tilt_current
             self._record_automation_state(final_position, final_tilt, cover_moved=final_position != current_pos)
-            self._cover_pos_history_mgr.set_automation_managed_state(
-                self.entity_id,
-                AutomationManagedState(position=final_position, automation_mode=AutomationMode.LOCK),
-            )
+            if final_position < current_pos:
+                self._cover_pos_history_mgr.set_automation_managed_state(
+                    self.entity_id,
+                    AutomationManagedState(position=final_position, automation_mode=AutomationMode.LOCK),
+                )
 
         else:
             # Have the type checker fail if a new lock mode is added but not handled here

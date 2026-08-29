@@ -256,6 +256,7 @@ class TestProcessLockModeForceClose:
         assert cover_state.pos_target_final == 0
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 0, cover_moved=False, tilt_position=None)
         mock_ha_interface.set_cover_position.assert_not_called()
+        mock_cover_pos_history_mgr.set_automation_managed_state.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_force_close_needs_movement_from_open(
@@ -279,6 +280,24 @@ class TestProcessLockModeForceClose:
             "cover.test",
             AutomationManagedState(position=0, automation_mode=AutomationMode.LOCK),
         )
+
+    @pytest.mark.asyncio
+    async def test_force_close_service_failure_does_not_claim_automation_ownership(
+        self, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+    ):
+        """Force-close failures must not make a passive reopen eligible."""
+        mock_ha_interface.set_cover_position.side_effect = RuntimeError("lock move failed")
+        cover_auto = create_cover_automation(
+            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, mock_cover_pos_history_mgr, mock_ha_interface, mock_logger
+        )
+
+        cover_state = CoverState()
+        locked = await cover_auto._process_lock_mode(cover_state, current_pos=100, features=0)
+
+        assert locked is True
+        assert cover_state.pos_target_desired == 0
+        assert cover_state.pos_target_final == 100
+        mock_cover_pos_history_mgr.set_automation_managed_state.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_force_close_needs_movement_from_partial(
