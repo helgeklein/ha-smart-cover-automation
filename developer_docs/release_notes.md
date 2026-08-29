@@ -1,8 +1,9 @@
 # v6.3
 
-## Recorded Tilt Position Cleared on Full Opening
+## Bugfixes
 
-- Bugfix: When a cover is fully opened, the integration now clears its recorded tilt position. This prevents tilt changes caused by opening the cover from being misinterpreted as manual overrides.
+- Recorded tilt position cleared on full opening: When a cover is fully opened, the integration now clears its recorded tilt position. This prevents tilt changes caused by opening the cover from being misinterpreted as manual overrides.
+- `set_lock` failed in standard Home Assistant automations when an entity target was selected in the UI because the service schema rejected the injected `entity_id`. The revised validation now accepts that target while still allowing untargeted broadcast calls.
 
 # v6.2
 

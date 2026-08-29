@@ -13,7 +13,7 @@ from functools import partial
 from inspect import isawaitable
 from typing import TYPE_CHECKING, Any, Final, cast
 
-from homeassistant.const import Platform  # pyright: ignore[reportMissingImports]
+from homeassistant.const import ATTR_ENTITY_ID, Platform  # pyright: ignore[reportMissingImports]
 from homeassistant.core import ServiceCall  # pyright: ignore[reportMissingImports]
 from homeassistant.helpers import entity_registry as er  # pyright: ignore[reportMissingImports]
 from homeassistant.loader import async_get_loaded_integration  # pyright: ignore[reportMissingImports]
@@ -525,6 +525,7 @@ async def _async_register_lock_service(hass: HomeAssistant) -> None:
     set_lock_schema = vol.Schema(
         {
             vol.Required(SERVICE_FIELD_LOCK_MODE): cv.string,
+            vol.Optional(ATTR_ENTITY_ID): cv.entity_ids,
         }
     )
 

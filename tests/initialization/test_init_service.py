@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from homeassistant.const import ATTR_ENTITY_ID
 
 from custom_components.smart_cover_automation import async_setup_entry
 from custom_components.smart_cover_automation.const import (
@@ -614,6 +615,9 @@ class TestSetLockServiceHandler:
 
             # Valid data should pass
             schema({"lock_mode": "unlocked"})
+
+            # UI entity targets should pass without requiring a target.
+            schema({"lock_mode": "unlocked", ATTR_ENTITY_ID: "select.sca_lock_mode"})
 
             # Missing lock_mode should raise error
             with pytest.raises(vol.MultipleInvalid):

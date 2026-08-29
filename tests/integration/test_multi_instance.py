@@ -14,8 +14,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import ATTR_SUPPORTED_FEATURES
+from homeassistant.const import ATTR_ENTITY_ID, ATTR_SUPPORTED_FEATURES
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -293,6 +294,34 @@ class TestMultiInstance:
         assert coord_b.lock_mode == LockMode.FORCE_CLOSE
 
         # Cleanup
+        await async_unload_entry(hass, cast(IntegrationConfigEntry, entry_b))
+        await async_unload_entry(hass, cast(IntegrationConfigEntry, entry_a))
+
+    async def test_set_lock_entity_target_updates_only_matching_instance(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Calling set_lock with an entity target updates its config entry only."""
+
+        entry_a, entry_b = await _setup_two_instances(hass)
+
+        coordinators = hass.data[DOMAIN][DATA_COORDINATORS]
+        coord_a = coordinators[ENTRY_ID_A]
+        coord_b = coordinators[ENTRY_ID_B]
+        registry = er.async_get(hass)
+        target_entity_id = er.async_entries_for_config_entry(registry, entry_a.entry_id)[0].entity_id
+
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_SET_LOCK,
+            {SERVICE_FIELD_LOCK_MODE: LockMode.FORCE_CLOSE},
+            target={ATTR_ENTITY_ID: target_entity_id},
+            blocking=True,
+        )
+
+        assert coord_a.lock_mode == LockMode.FORCE_CLOSE
+        assert coord_b.lock_mode == LockMode.UNLOCKED
+
         await async_unload_entry(hass, cast(IntegrationConfigEntry, entry_b))
         await async_unload_entry(hass, cast(IntegrationConfigEntry, entry_a))
 
