@@ -24,6 +24,7 @@ from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
     HA_WEATHER_COND_SUNNY,
     LockMode,
+    ReopeningMode,
 )
 
 from ..conftest import (
@@ -190,6 +191,49 @@ class TestLockModeOverridePriority:
 
 class TestLockModeStatePersistence:
     """Test lock mode survives coordinator refresh cycles."""
+
+    @pytest.mark.asyncio
+    async def test_passive_reopening_resumes_after_forced_lock_close(self, caplog):
+        """Passive reopening should resume after a forced lock close is released."""
+        coordinator = create_integration_coordinator(lock_mode=LockMode.FORCE_CLOSE)
+        hass = cast(MagicMock, coordinator.hass)
+        coordinator.config_entry.options[ConfKeys.AUTOMATIC_REOPENING_MODE.value] = ReopeningMode.PASSIVE  # type: ignore[index]
+
+        weather_state = MagicMock()
+        weather_state.state = HA_WEATHER_COND_SUNNY
+        weather_state.entity_id = MOCK_WEATHER_ENTITY_ID
+
+        cover_state = MagicMock()
+        cover_state.state = "open"
+        cover_state.attributes = {
+            ATTR_CURRENT_POSITION: TEST_COVER_OPEN,
+            ATTR_SUPPORTED_FEATURES: 15,
+        }
+
+        sun_state = MagicMock()
+        sun_state.state = "above_horizon"
+        sun_state.attributes = {"elevation": TEST_HIGH_ELEVATION, "azimuth": TEST_DIRECT_AZIMUTH}
+
+        hass.states.get.side_effect = lambda entity_id: {
+            MOCK_WEATHER_ENTITY_ID: weather_state,
+            MOCK_COVER_ENTITY_ID: cover_state,
+            MOCK_SUN_ENTITY_ID: sun_state,
+        }.get(entity_id)
+
+        set_weather_forecast_temp(float(TEST_COLD_TEMP))
+        caplog.set_level(logging.INFO, logger="custom_components.smart_cover_automation")
+
+        await coordinator.async_refresh()
+
+        cover_state.state = "closed"
+        cover_state.attributes[ATTR_CURRENT_POSITION] = TEST_COVER_CLOSED
+        coordinator.config_entry.options[ConfKeys.LOCK_MODE.value] = LockMode.UNLOCKED  # type: ignore[index]
+
+        await coordinator.async_refresh()
+        result = coordinator.data
+
+        assert result is not None
+        assert result.covers[MOCK_COVER_ENTITY_ID].pos_target_desired == TEST_COVER_OPEN
 
     @pytest.mark.asyncio
     async def test_lock_mode_persists_across_refresh_cycles(self, caplog):

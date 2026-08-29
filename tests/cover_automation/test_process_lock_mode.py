@@ -19,6 +19,7 @@ import pytest
 
 from custom_components.smart_cover_automation.const import LockMode
 from custom_components.smart_cover_automation.cover_automation import CoverAutomation, CoverState
+from custom_components.smart_cover_automation.movement import AutomationManagedState, AutomationMode
 
 
 @pytest.fixture
@@ -274,6 +275,10 @@ class TestProcessLockModeForceClose:
         assert cover_state.pos_target_final == 0
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 0, 0)
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 0, cover_moved=True, tilt_position=None)
+        mock_cover_pos_history_mgr.set_automation_managed_state.assert_called_once_with(
+            "cover.test",
+            AutomationManagedState(position=0, automation_mode=AutomationMode.LOCK),
+        )
 
     @pytest.mark.asyncio
     async def test_force_close_needs_movement_from_partial(
