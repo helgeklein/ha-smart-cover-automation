@@ -429,6 +429,8 @@ def _movement_cause_for_legacy_reason_key(reason_key: str) -> AutomationMode | N
 
     if reason_key == const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION:
         return AutomationMode.HEAT_PROTECTION
+    if reason_key == const.AUTOMATION_OWNERSHIP_REASON_LOCK:
+        return AutomationMode.LOCK
     if reason_key == const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET:
         return AutomationMode.EVENING_CLOSURE
     if reason_key == const.TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE:
@@ -441,6 +443,8 @@ def _legacy_reason_key_for_automation_mode(automation_mode: AutomationMode) -> s
 
     if automation_mode == AutomationMode.HEAT_PROTECTION:
         return const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
+    if automation_mode == AutomationMode.LOCK:
+        return const.AUTOMATION_OWNERSHIP_REASON_LOCK
     if automation_mode == AutomationMode.EVENING_CLOSURE:
         return const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
     return None

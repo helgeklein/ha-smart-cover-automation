@@ -4,6 +4,7 @@
 
 - Recorded tilt position cleared on full opening: When a cover is fully opened, the integration now clears its recorded tilt position. This prevents tilt changes caused by opening the cover from being misinterpreted as manual overrides.
 - `set_lock` failed in standard Home Assistant automations when an entity target was selected in the UI because the service schema rejected the injected `entity_id`. The revised validation now accepts that target while still allowing untargeted broadcast calls.
+- Unlocking after a forced lock close would not reopen covers in passive mode when reopening conditions applied, because lock-driven closures were not recorded as automation-owned.
 
 # v6.2
 
