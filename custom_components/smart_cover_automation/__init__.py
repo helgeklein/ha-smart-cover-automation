@@ -522,7 +522,7 @@ async def _async_register_lock_service(hass: HomeAssistant) -> None:
             await coordinator.async_set_lock_mode(lock_mode)
 
     # Define service schema
-    set_lock_schema = vol.Schema(
+    set_lock_schema = cv.make_entity_service_schema(
         {
             vol.Required(SERVICE_FIELD_LOCK_MODE): cv.string,
         }
