@@ -1,10 +1,8 @@
 source "https://rubygems.org"
 
-# GitHub Pages compatible gems
-gem "github-pages", "~> 231", group: :jekyll_plugins
-
-# Theme - using remote theme for GitHub Pages compatibility
-gem "jekyll-remote-theme", "~> 0.4.3"
+# Documentation generator and locally installed theme.
+gem "jekyll", "~> 4.3"
+gem "just-the-docs", "~> 0.12"
 
 # SEO and content plugins
 gem "jekyll-feed", "~> 0.15"

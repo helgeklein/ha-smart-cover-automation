@@ -11,7 +11,7 @@ logo: "/assets/img/logo.png"
 favicon: "/assets/img/icon.svg"
 
 # Theme
-remote_theme: just-the-docs/just-the-docs
+theme: just-the-docs
 
 # Navigation settings - force nav_order to be respected
 nav_sort: case_insensitive
@@ -45,7 +45,6 @@ heading_anchors: true
 
 # Plugins
 plugins:
-  - jekyll-remote-theme
   - jekyll-feed
   - jekyll-sitemap
   - jekyll-seo-tag
