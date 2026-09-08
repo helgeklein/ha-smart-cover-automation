@@ -178,7 +178,7 @@ Blocked time range settings:
 
 ### Evening Closure & Morning Opening
 
-Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening, either at a fixed time, with a certain delta before/after sunset or at an externally controlled time.
+Evening closure allows you to automatically close all or a subset of the previously selected covers in the evening. Closure can happen either at a fixed time, with a certain delta before/after sunset or at an externally controlled time.
 
 The same covers become eligible to reopen in the morning if normal automation permits, either at a fixed time, with a certain delta before/after sunrise or at an externally controlled time.
 

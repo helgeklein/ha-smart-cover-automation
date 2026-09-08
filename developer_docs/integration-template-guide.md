@@ -199,23 +199,23 @@ Use a smaller template if your integration only exposes a single passive entity 
 If you use this integration as a starter, the safest sequence is:
 
 1. Rename the package and identity.
-	Update the integration folder, `DOMAIN`, display name, manifest metadata, imports, translation keys, and HACS metadata if needed.
+    - Update the integration folder, `DOMAIN`, display name, manifest metadata, imports, translation keys, and HACS metadata if needed.
 2. Replace the domain model.
-	Keep the coordinator/entity/config split, but replace `automation_engine.py`, `cover_automation.py`, and related domain-specific helpers with your own logic.
+    - Keep the coordinator/entity/config split, but replace `automation_engine.py`, `cover_automation.py`, and related domain-specific helpers with your own logic.
 3. Redefine configuration in one place.
-	Update `ConfKeys`, `CONF_SPECS`, and `ResolvedConfig` in `config.py` before changing entities or flows.
+    - Update `ConfKeys`, `CONF_SPECS`, and `ResolvedConfig` in `config.py` before changing entities or flows.
 4. Adapt the options flow.
-	Keep the minimal config flow, then rewrite the multi-step options flow to match your settings, validation rules, and any per-entity dynamic sections.
+    - Keep the minimal config flow, then rewrite the multi-step options flow to match your settings, validation rules, and any per-entity dynamic sections.
 5. Rebuild the platforms you actually need.
-	Keep `IntegrationEntity` and the pattern of thin platform files, but remove unused platforms and replace entity descriptions, state mapping, and write-back logic.
+    - Keep `IntegrationEntity` and the pattern of thin platform files, but remove unused platforms and replace entity descriptions, state mapping, and write-back logic.
 6. Keep the HA boundary explicit.
-	Use `ha_interface.py` for Home Assistant API calls so business logic remains testable without deep HA mocks.
+    - Use `ha_interface.py` for Home Assistant API calls so business logic remains testable without deep HA mocks.
 7. Review migrations and cleanup paths.
-	Remove migrations you do not need, but keep the pattern for renamed options, unique IDs, and stale dynamic settings.
+    - Remove migrations you do not need, but keep the pattern for renamed options, unique IDs, and stale dynamic settings.
 8. Rewrite translations and services together.
-	If a flow, entity, selector, or service exists in code, add or update its translations at the same time.
+    - If a flow, entity, selector, or service exists in code, add or update its translations at the same time.
 9. Reshape the tests with the same architecture.
-	Mirror the code structure in `tests/`, keep config flow coverage high, and add fixtures around your new coordinator inputs and HA interface behavior.
+    - Mirror the code structure in `tests/`, keep config flow coverage high, and add fixtures around your new coordinator inputs and HA interface behavior.
 
 What is worth keeping almost unchanged:
 
