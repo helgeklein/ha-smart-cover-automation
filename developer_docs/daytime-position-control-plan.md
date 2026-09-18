@@ -2,107 +2,89 @@
 
 ## Scope
 
-Make normal daytime cover behavior configurable. Daytime control applies only when no higher-priority rule applies: lock mode, evening closure, active heat protection, or missing required weather data while the sun is hitting the cover. This proposal does not change heat-protection or evening-closure criteria.
+Make normal daytime cover behavior configurable without changing the criteria for heat protection or evening closure. Daytime control runs only after lock mode, evening closure, active heat protection, and missing required weather data while the sun hits the cover have held the cover in place.
 
-The default behavior must remain unchanged: **Daytime Control Mode: Passive**, **Daytime Strategy: Let light in**, and **Daytime Movement Directions: Open only**.
+The defaults are **Daytime Control Mode: Passive**, **Daytime Strategy: Let light in**, and **Daytime Movement Directions: Open only**. Passive intentionally treats every successful integration movement as ownership, so it supports subsequent daytime openings and closings.
 
-## Configuration
+## Settings
 
-**Daytime Control Mode** remains an existing runtime configuration select on the integration device. **Daytime Strategy** and **Daytime Movement Directions** are new configuration-wizard settings only; they do not create runtime select entities.
+| Setting | Location | Scope | Default |
+| --- | --- | --- | --- |
+| **Daytime Control Mode** | Existing integration-device select and current Time Settings field | Runtime configurable | Passive |
+| **Daytime Strategy** | New required wizard Step 3 | Global, with optional per-cover overrides | Let light in |
+| **Daytime Movement Directions** | New required wizard Step 3 | Global only | Open only |
+
+Rename the existing user-facing **Automatic Reopening** select to **Daytime Control Mode**. Keep its persisted `automatic_reopening_mode` key and entity unique ID for compatibility. The two new settings are changed only through the initial and options-flow wizards, take effect after integration reload, and do not create select entities.
 
 ### Daytime Control Mode
 
-Rename the existing user-facing **Automatic Reopening** setting. It remains in its current configuration location and defines which covers normal daytime control may move.
-
 | Option | Behavior |
 | --- | --- |
-| **Active** | Control every eligible cover. |
-| **Passive** | Control only covers that were previously moved by the integration and are at their last integration-set position. A manually moved cover stays where it is. |
-| **Off** | Do not automatically control covers during normal daytime operation. |
+| **Active** | Move every eligible cover. |
+| **Passive** | Move only a cover previously moved by the integration that remains at its integration-owned position. A manual change outside the existing drift tolerance blocks Passive until the cover returns to that position or Active moves it again. |
+| **Off** | Do not move covers during normal daytime operation. |
 
-UI description: "Choose which covers normal daytime control may move. Active can move every eligible cover. Passive can move only covers that were previously moved by the integration and are at their last integration-set position. Off does not move covers."
+Description: "Choose which covers normal daytime control may move. Active can move every eligible cover. Passive can move only covers previously moved by the integration that are at their last integration-set position. Off does not move covers."
 
 ### Daytime Strategy
 
-This new wizard setting defines the position daytime control tries to reach. Configure the global strategy and optional per-cover overrides in the new required **Step 3: Daytime Strategy** of the configuration wizard.
+| Option | Target |
+| --- | --- |
+| **Let light in** | Minimum cover position |
+| **Privacy** | Maximum cover position |
+| **External control** | Relevant external daytime-position number |
 
-Wizard description: "Choose how the integration should position covers during the day when heat protection is not active."
+Description: "Choose how the integration should position covers during the day when heat protection is not active."
 
-| Option | Target position | Shared description |
-| --- | --- | --- |
-| **Let light in** | Minimum cover position | "Move the cover toward its minimum cover position to let daylight into the room." |
-| **Privacy** | Maximum cover position | "Move the cover toward its maximum cover position to reduce visibility into the room." |
-| **External control** | External daytime-position number | "Use the position set in the daytime cover position: external control entity." |
-
-For Let light in and Privacy, the relevant per-cover Minimum or Maximum cover position overrides the global setting. A per-cover Daytime Strategy overrides the global strategy.
+Per-cover Minimum or Maximum cover position values apply to Let light in and Privacy. A per-cover Daytime Strategy overrides the global strategy. A per-cover External control strategy uses its own number; otherwise External control uses the global number.
 
 ### Daytime Movement Directions
 
-This new wizard setting limits which movements the selected Daytime Strategy may make. It affects direction only, not the strategy's target position.
-
 | Option | Behavior |
 | --- | --- |
-| **Open only** | Move only to open the cover. This preserves current behavior. |
-| **Close only** | Move only to close the cover. |
-| **Open and close** | Move in either direction. |
+| **Open only** | Allow only opening movements. |
+| **Close only** | Allow only closing movements. |
+| **Open and close** | Allow movements in either direction. |
 
-Wizard description: "When normal daytime control is allowed, choose whether it may open covers, close covers, or both."
-
-For example, Let light in with a Minimum cover position of 70% opens a cover at 30% in Open only or Open and close mode. Privacy with a Maximum cover position of 30% closes a cover at 70% in Close only or Open and close mode.
+Description: "When normal daytime control is allowed, choose whether it may open covers, close covers, or both." This setting only filters the strategy target's required direction; there are no per-cover direction overrides.
 
 ## External Daytime Position
 
-External control follows the existing external-tilt pattern: it is a number entity on the integration device, not a reference to another entity. Home Assistant automations write the target position to it; the value is stored in integration options and triggers an immediate coordinator refresh.
+External control follows the external-tilt pattern: Home Assistant automations write a whole-number percentage to an integration `number` entity, which stores the value in integration options and immediately refreshes the coordinator. It is not a reference to another entity.
 
-| Entity | Created when | Scope |
-| --- | --- | --- |
-| **Daytime cover position: external control** | The global Daytime Strategy is External control. | Every cover using the global strategy. |
-| **{Cover name}: Daytime cover position: external control** | The cover overrides Daytime Strategy with External control. | That cover only. |
-
-The number accepts whole percentages from 0 to 100: `0` is fully closed and `100` is fully open. An unset external target holds the affected cover and emits a cover-specific debug log. It never falls back to Minimum or Maximum cover position.
-
-## Decision Flow
-
-1. Apply existing higher-priority rules and guards. Lock mode, evening closure, active heat protection, and missing required weather data while the sun is hitting the cover prevent normal daytime control.
-2. Apply manual override. An external position or tilt change skips that cover for the configured duration, regardless of the daytime settings. The existing evening-closure trigger may bypass manual override when configured.
-3. Check normal daytime guards. Hold position during pre-closing, a blocked morning reopening period, a missing external morning opening time, or when the applicable below-horizon guard prevents movement.
-4. Apply Daytime Control Mode. Active allows every eligible cover; Passive requires prior integration movement and the current position to match the integration-owned position; Off holds position.
-5. Resolve the strategy target: Minimum cover position for Let light in, Maximum cover position for Privacy, or the relevant external number for External control. A missing target holds position.
-6. Compare the current and target positions. Move only if the required opening or closing direction is enabled; existing minimum-position-delta rules still determine whether a command is sent.
-
-## Configuration And Entities
-
-- Keep the persisted `automatic_reopening_mode` key and entity unique ID for backward compatibility; rename only its user-facing select class, labels, descriptions, and documentation to Daytime Control Mode.
-- Add stable, non-runtime config keys for `DaytimeStrategy` (`LET_LIGHT_IN`, `PRIVACY`, `EXTERNAL_CONTROL`) and `DaytimeMovementDirection` (`OPEN_ONLY`, `CLOSE_ONLY`, `OPEN_AND_CLOSE`). They are changed only through the configuration wizard and take effect when the updated configuration reloads the integration.
-- Add global Daytime Strategy plus optional per-cover strategy overrides in the wizard. A per-cover External control strategy uses its per-cover external-position number; otherwise External control uses the global number.
-- Keep Daytime Control Mode as the existing runtime select and configuration field; do not move it into the new l 3. Add only global/per-cover external daytime-position number entities as new runtime entities. Create each number only for the relevant External control strategy, following external tilt lifecycle behavior.
-- Insert **Step 3: Daytime Strategy** before position settings. Renumber the existing steps in the flow, constants, translations, and wizard documentation. The current Time Settings step, including the existing Daytime Control Mode field, moves from Step 6 to Step 7.
-
-| Current step | New step |
+| Entity | Creation rule |
 | --- | --- |
-| Step 3: Max/Min Positions | Step 4: Max/Min Positions |
-| Step 4: Tilt Angle Control | Step 5: Tilt Angle Control |
-| Step 5: Additional Settings and Window Sensors | Step 6: Additional Settings and Window Sensors |
-| Step 6: Time Settings | Step 7: Time Settings |
+| **Daytime cover position: external control** | One global entity whenever the global strategy is External control, including when every cover overrides it. It serves covers that inherit the global strategy. |
+| **{Cover name}: Daytime cover position: external control** | One entity for each cover whose strategy override is External control. Remove it on reload when that override changes. |
 
-- Generalize the passive ownership check from an automation closure to any integration movement so Passive works after daytime openings and closings.
-- Resolve the selected strategy and allowed direction in the normal daytime branch without changing the precedence of existing guards.
+The valid range is 0 through 100, where `0` is fully closed and `100` is fully open. An unset target holds that cover, emits a cover-specific debug log, and never falls back to Minimum or Maximum cover position.
+
+## Runtime Behavior
+
+1. Apply existing higher-priority guards: lock mode, evening closure, active heat protection, and missing required weather data while the sun hits the cover.
+2. Apply the existing manual-override pause. An external position or tilt change skips that cover for its configured duration. The existing evening-closure trigger may still bypass manual override when configured.
+3. Apply existing normal-daytime guards: pre-closing, blocked morning reopening, missing external morning opening time, and applicable below-horizon checks.
+4. Apply Daytime Control Mode. In Passive, record or update the integration-owned position after every successful integration move and require the current position to match it within the existing drift tolerance.
+5. Resolve the strategy target. A missing external target holds the cover.
+6. Move only when the required direction is enabled and the existing minimum-position-delta rule permits a command.
+
+## Implementation
+
+- Add non-runtime `DaytimeStrategy` keys: `LET_LIGHT_IN`, `PRIVACY`, and `EXTERNAL_CONTROL`; and `DaytimeMovementDirection` keys: `OPEN_ONLY`, `CLOSE_ONLY`, and `OPEN_AND_CLOSE`.
+- Add the global strategy, optional per-cover strategy overrides, and global-only movement directions to both configuration wizards as new Step 3. Shift Max/Min Positions to Step 4, Tilt Angle Control to Step 5, Additional Settings and Window Sensors to Step 6, and Time Settings to Step 7.
+- Keep Daytime Control Mode in its current runtime select and Time Settings field. Add only the required global and per-cover external daytime-position number entities at runtime.
+- Generalize integration ownership from an automation closure to any successful integration movement. Resolve strategy and direction only in the normal daytime branch; preserve all existing guard precedence.
 
 ## Translations And Documentation
 
-- Update all integration locales: `de`, `en`, `es`, `fr`, `it`, `nl`, `pl`, `pt`, `sv`, and `zh-CN`. Include the new Step 3 titles, fields, option labels, and wizard descriptions; the renamed Daytime Control Mode select and its existing configuration field; and global/per-cover external number names.
-- Preserve translation-key and entity-ID compatibility for renamed user-facing settings. Give all new settings stable descriptive keys.
-- Update `docs/configuration-wizard.md` with Step 3, all strategy choices, per-cover overrides, external-position entities, unset-target behavior, movement directions, and Steps 4-7 renumbering.
-- Update `docs/configuration-entities.md` with the renamed Daytime Control Mode, its manual-override behavior, and the global/per-cover external-position numbers including range, creation conditions, precedence, and automation use. Keep Daytime Strategy and Daytime Movement Directions in the configuration-wizard guide because they are wizard-only settings.
-- Replace existing automatic-reopening references with Daytime Control Mode terminology and ownership behavior. Modify only documentation sources; regenerate `docs/_site` and `.jekyll-cache` through the normal documentation build.
+- Update `de`, `en`, `es`, `fr`, `it`, `nl`, `pl`, `pt`, `sv`, and `zh-CN` with the Step 3 fields and options, renamed Daytime Control Mode, and external-number names. Preserve existing translation keys and entity IDs where applicable.
+- Update `docs/configuration-wizard.md` for Step 3, strategy overrides, movement directions, external target behavior, and renumbered steps.
+- Update `docs/configuration-entities.md` only for the renamed Daytime Control Mode and external-position numbers, including range, lifecycle, precedence, and automation use.
+- Replace human-facing Automatic Reopening wording with Daytime Control Mode. Modify documentation sources only; regenerate `docs/_site` and `.jekyll-cache` through the usual build.
 
 ## Verification
 
-- Preserve the default normal daytime behavior.
-- Test the control-mode matrix: Active moves every eligible cover, Passive requires a prior integration movement and its owned position, and Off holds position.
-- Test manual-override pause and expiry for every daytime control mode. Confirm the existing evening-closure bypass remains limited to its initial trigger.
-- Test all strategies with all permitted movement directions, including per-cover Minimum/Maximum position overrides.
-- Test global and per-cover External control target resolution, strategy precedence, entity creation/removal, immediate refresh after a value change, and hold-on-unset behavior.
-- Test the new wizard Step 3 and the renumbered Steps 4-7. Verify Daytime Strategy and Daytime Movement Directions are configured only through the wizard and have no select entities.
-- Validate all translation files and build the documentation site so labels, entities, and wizard steps render correctly.
-- Retain coverage for lock mode, heat protection, evening closure, indeterminate weather, pre-closing, morning guards, below-horizon checks, ownership, and movement delta behavior.
+- Cover the Active, Passive, and Off control-mode matrix, including Passive ownership after daytime openings and closings, manual changes, drift tolerance, and Active re-establishment of ownership.
+- Cover each strategy with every allowed direction, per-cover Minimum/Maximum positions, and all existing higher-priority and normal-daytime guards.
+- Cover global and per-cover External control precedence, number-entity creation and removal, updates, unset targets, immediate refresh, and debug logging.
+- Cover the initial and options-flow Step 3, Steps 4-7 renumbering, absence of new select entities, all translations, and documentation-site generation.
