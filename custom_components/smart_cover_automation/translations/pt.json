@@ -17,7 +17,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Passo 1 de 6",
+                "title": "Smart Cover Automation - Passo 1 de 7",
                 "description": "Selecione um **sensor de previsão do tempo** e as **persianas** para automatizar (obrigatório).",
                 "data": {
                     "covers": "Persianas para automatizar:",
@@ -29,7 +29,7 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Passo 2 de 6",
+                "title": "Smart Cover Automation - Passo 2 de 7",
                 "description": "Configure o **azimute** (direção) de cada persiana.\n\nTambém pode restringir os ângulos em que a automação considera que o sol está a incidir numa persiana nas quatro direções (esquerda, direita, cima e baixo), para ter em conta beirais, outros edifícios ou árvores próximas. Os valores por persiana configurados aqui substituem as definições globais do ângulo solar disponíveis na página do dispositivo da instância da integração.\n\n(0°=Norte, 90°=Este, 180°=Sul, 270°=Oeste)",
                 "sections": {
                     "section_azimuth": {
@@ -50,7 +50,24 @@
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Passo 3 de 6",
+                "title": "Smart Cover Automation - Passo 3 de 7",
+                "description": "Configure o controlo normal das persianas durante o dia. As definições globais aplicam-se a todas as persianas, salvo se forem substituídas por persiana.",
+                "data": {
+                    "daytime_strategy": "Estratégia diurna:",
+                    "daytime_movement_directions": "Direções de movimento diurnas:"
+                },
+                "data_description": {
+                    "daytime_strategy": "Escolha como a integração deve posicionar as persianas durante o dia quando a proteção contra o calor não está ativa.",
+                    "daytime_movement_directions": "Escolha se o controlo diurno normal pode abrir persianas, fechá-las ou ambos."
+                },
+                "sections": {
+                    "section_daytime_strategy": {
+                        "name": "Estratégia diurna (por persiana)"
+                    }
+                }
+            },
+            "4": {
+                "title": "Smart Cover Automation - Passo 4 de 7",
                 "description": "Configure as posições **mín/máx** das persianas (opcional).\nAs definições globais aplicam-se a todas as persianas, a menos que sejam substituídas por persiana.\n(0 = totalmente fechada, 100 = totalmente aberta)",
                 "data": {
                     "covers_max_closure": "Posição máxima da persiana (global):",
@@ -74,8 +91,8 @@
                     }
                 }
             },
-            "4": {
-                "title": "Smart Cover Automation - Passo 4 de 6",
+            "5": {
+                "title": "Smart Cover Automation - Passo 5 de 7",
                 "description": "Configure o **controlo do ângulo de inclinação** para persianas com lâminas orientáveis (opcional).\nAs definições globais aplicam-se a todas as persianas com inclinação, salvo configuração individual.",
                 "data": {
                     "tilt_mode_day": "Controlo de inclinação (dia):",
@@ -112,8 +129,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Passo 5 de 6",
+            "6": {
+                "title": "Smart Cover Automation - Passo 6 de 7",
                 "description": "Configure **definições adicionais** e **sensores de janela** opcionais para cada persiana. Os sensores de janela ativam a proteção contra bloqueio: se um sensor associado indicar que a janela está aberta, a persiana não será fechada.",
                 "sections": {
                     "section_additional_settings": {
@@ -130,8 +147,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Passo 6 de 6",
+            "7": {
+                "title": "Smart Cover Automation - Passo 7 de 7",
                 "description": "Configure **definições de tempo** para a automação (opcional).",
                 "data": {},
                 "data_description": {},
@@ -162,7 +179,6 @@
                             "close_covers_after_sunset_cover_list": "Persianas:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar a duração da sobreposição manual:",
                             "close_covers_after_sunset_keep_closed": "Manter as persianas fechadas:",
-                            "automatic_reopening_mode": "Reabertura automática:",
                             "morning_opening_mode": "Abertura matinal: modo:",
                             "morning_opening_time": "Abertura matinal: hora:"
                         },
@@ -173,7 +189,6 @@
                             "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas ao anoitecer.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando ativada, o fecho ao entardecer pode mover as persianas selecionadas mesmo que uma pausa por controlo manual ainda esteja ativa.",
                             "close_covers_after_sunset_keep_closed": "Quando ativada, as persianas selecionadas voltam a fechar durante o período noturno de fecho ao entardecer se forem reabertas. A duração da sobreposição manual é respeitada. O modo de bloqueio tem prioridade, por isso as persianas só voltam a fechar depois de o modo de bloqueio ser desativado.",
-                            "automatic_reopening_mode": "Escolha como a automação deve reabrir as persianas quando as condições de fecho deixarem de se aplicar. Ativo reabre sempre as persianas, Passivo só reabre as persianas que foram anteriormente fechadas pela automação e Desativado desativa a reabertura automática.",
                             "morning_opening_mode": "Escolha se a abertura matinal acontece antes do nascer do sol, depois do nascer do sol, a uma hora fixa ou é fornecida por uma entidade.",
                             "morning_opening_time": "Consoante o modo selecionado: atraso relativo em relação ao nascer do sol ou hora fixa do dia. Ignorado no modo externo."
                         }
@@ -214,7 +229,7 @@
         },
         "select": {
             "automatic_reopening_mode": {
-                "name": "Reabertura automática",
+                "name": "Modo de controlo diurno",
                 "state": {
                     "active": "Ativo",
                     "passive": "Passivo",
@@ -317,6 +332,12 @@
             },
             "daily_min_temperature_threshold": {
                 "name": "Proteção contra o calor: mín. temperatura mínima diária"
+            },
+            "daytime_external_position": {
+                "name": "Posição diurna da persiana: controlo externo"
+            },
+            "cover_daytime_external_position": {
+                "name": "{cover_name}: Posição diurna da persiana: controlo externo"
             }
         },
         "switch": {
@@ -404,6 +425,14 @@
                 "reason_keep_closed_after_evening_closure": {
                     "name": "manter a privacidade durante a noite",
                     "description": "Motivo usado quando a persiana volta a fechar durante o período noturno de manutenção do fecho."
+                },
+                "reason_daytime_privacy": {
+                    "name": "proporcionar privacidade durante o dia",
+                    "description": "Motivo usado quando a persiana se move para a posição de privacidade diurna."
+                },
+                "reason_daytime_external_control": {
+                    "name": "seguir o controlo diurno externo",
+                    "description": "Motivo usado quando a persiana se move para uma posição diurna fornecida externamente."
                 }
             }
         },
@@ -464,6 +493,21 @@
             "options": {
                 "fixed_time": "Hora absoluta",
                 "external": "Externo (horários fornecidos por entidades)"
+            }
+        },
+        "daytime_strategy": {
+            "options": {
+                "use_global": "Usar definição global",
+                "let_light_in": "Deixar entrar luz",
+                "privacy": "Privacidade",
+                "external_control": "Controlo externo"
+            }
+        },
+        "daytime_movement_directions": {
+            "options": {
+                "open_only": "Abrir apenas",
+                "close_only": "Fechar apenas",
+                "open_and_close": "Abrir e fechar"
             }
         }
     }

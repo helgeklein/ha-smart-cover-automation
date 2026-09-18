@@ -229,31 +229,39 @@ async def _step_through_options_flow(
     entry: MockConfigEntry,
     step_inputs: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    """Walk through all 6 options flow steps, returning the final result.
+    """Walk through all 7 options flow steps, returning the final result.
 
     Each element of *step_inputs* is the ``user_input`` dict for steps
-    init, 2, 3, 4, 5, 6 in order.  If fewer than 6 are given, remaining
+    init, 2, 4, 5, 6, 7 in order. Step 3 receives its standard daytime
+    configuration. If fewer than 6 are given, remaining
     steps receive ``{}``.
 
     Args:
         hass: Home Assistant instance.
         entry: Config entry whose options flow to start.
-        step_inputs: User inputs for each step (up to 6).
+        step_inputs: User inputs for each non-daytime step (up to 6).
 
     Returns:
         The final ``FlowResult`` dict (should be ``CREATE_ENTRY``).
     """
 
-    # Pad to 6 elements
+    # Pad the caller-provided non-daytime inputs to 6 elements.
     inputs = list(step_inputs) + [{}] * (6 - len(step_inputs))
+    inputs.insert(
+        2,
+        {
+            ConfKeys.DAYTIME_STRATEGY.value: "let_light_in",
+            ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value: "open_only",
+        },
+    )
 
     # Step init
     result = _as_dict(await hass.config_entries.options.async_init(entry.entry_id))
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "init"
 
-    # Steps init → 2 → 3 → 4 → 5 → 6
-    step_ids = ["init", "2", "3", "4", "5", "6"]
+    # Steps init → 2 → 3 → 4 → 5 → 6 → 7
+    step_ids = ["init", "2", "3", "4", "5", "6", "7"]
     for i, step_id in enumerate(step_ids):
         result = _as_dict(
             await hass.config_entries.options.async_configure(
@@ -447,13 +455,25 @@ class TestOptionsFlow:
             await hass.config_entries.options.async_configure(
                 result["flow_id"],
                 user_input={
+                    ConfKeys.DAYTIME_STRATEGY.value: "let_light_in",
+                    ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value: "open_only",
+                },
+            )
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "4"
+
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
                     ConfKeys.COVERS_MIN_CLOSURE.value: 100,
                     ConfKeys.COVERS_MAX_CLOSURE.value: 0,
                 },
             )
         )
         assert result["type"] is FlowResultType.FORM
-        assert result["step_id"] == "4"
+        assert result["step_id"] == "5"
 
         schema = result["data_schema"].schema
         delay_key = next(key for key in schema if getattr(key, "schema", None) == ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value)
@@ -567,21 +587,33 @@ class TestOptionsFlow:
             await hass.config_entries.options.async_configure(
                 result["flow_id"],
                 user_input={
-                    ConfKeys.COVERS_MIN_CLOSURE.value: 100,
-                    ConfKeys.COVERS_MAX_CLOSURE.value: 0,
+                    ConfKeys.DAYTIME_STRATEGY.value: "let_light_in",
+                    ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value: "open_only",
                 },
             )
         )
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == "4"
 
-        result = _as_dict(await hass.config_entries.options.async_configure(result["flow_id"], user_input={}))
+        result = _as_dict(
+            await hass.config_entries.options.async_configure(
+                result["flow_id"],
+                user_input={
+                    ConfKeys.COVERS_MIN_CLOSURE.value: 100,
+                    ConfKeys.COVERS_MAX_CLOSURE.value: 0,
+                },
+            )
+        )
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == "5"
 
         result = _as_dict(await hass.config_entries.options.async_configure(result["flow_id"], user_input={}))
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == "6"
+
+        result = _as_dict(await hass.config_entries.options.async_configure(result["flow_id"], user_input={}))
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "7"
 
         result = _as_dict(await hass.config_entries.options.async_configure(result["flow_id"], user_input={}))
 

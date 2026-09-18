@@ -88,6 +88,8 @@ class TestOptionsFlowScenarios:
             ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
             ConfKeys.COVERS_MAX_CLOSURE.value: 100.0,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
+            ConfKeys.DAYTIME_STRATEGY.value: const.DaytimeStrategy.LET_LIGHT_IN.value,
+            ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value: const.DaytimeMovementDirections.OPEN_ONLY.value,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
             ConfKeys.TILT_MODE_DAY.value: "auto",
             ConfKeys.TILT_MODE_NIGHT.value: "closed",
@@ -122,7 +124,18 @@ class TestOptionsFlowScenarios:
         assert result_dict["type"] == FlowResultType.FORM
         assert result_dict["step_id"] == "3"
 
-        # Step 3 - min/max closure per cover (no change - section auto-populated)
+        # Step 3 - daytime settings (no change).
+        result = await flow.async_step_3(
+            {
+                ConfKeys.DAYTIME_STRATEGY.value: const.DaytimeStrategy.LET_LIGHT_IN.value,
+                ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value: const.DaytimeMovementDirections.OPEN_ONLY.value,
+            }
+        )
+        result_dict = _as_dict(result)
+        assert result_dict["type"] == FlowResultType.FORM
+        assert result_dict["step_id"] == "4"
+
+        # Step 4 - min/max closure per cover (no change - section auto-populated)
         # Simulate HA UI auto-populating ALL covers with None/default values
         user_input = {
             STEP_3_SECTION_MIN_CLOSURE: {
@@ -134,15 +147,15 @@ class TestOptionsFlowScenarios:
                 f"{TEST_COVER_2}_{COVER_SFX_MAX_CLOSURE}": None,  # Auto-populated default
             },
         }
-        result = await flow.async_step_3(user_input)
+        result = await flow.async_step_4(user_input)
         result_dict = _as_dict(result)
         assert result_dict["type"] == FlowResultType.FORM
-        assert result_dict["step_id"] == "4"
+        assert result_dict["step_id"] == "5"
 
-        # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        # Step 5 - tilt (skip)
+        await flow.async_step_5({})
 
-        # Step 5 - window sensors (no change - section auto-populated)
+        # Step 6 - window sensors (no change - section auto-populated)
         # Simulate HA UI auto-populating ALL covers with empty lists
         user_input = {
             STEP_5_SECTION_WINDOW_SENSORS: {
@@ -150,12 +163,12 @@ class TestOptionsFlowScenarios:
                 f"{TEST_COVER_2}_{COVER_SFX_WINDOW_SENSORS}": [],  # Auto-populated default
             },
         }
-        result = await flow.async_step_5(user_input)
+        result = await flow.async_step_6(user_input)
         result_dict = _as_dict(result)
         assert result_dict["type"] == FlowResultType.FORM
-        assert result_dict["step_id"] == "6"
+        assert result_dict["step_id"] == "7"
 
-        # Step 6 - global settings (no change)
+        # Step 7 - time settings (no change)
         user_input = {
             ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
             ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -163,7 +176,7 @@ class TestOptionsFlowScenarios:
             ConfKeys.COVERS_MIN_CLOSURE.value: 0.0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
         }
-        result = await flow.async_step_6(user_input)
+        result = await flow.async_step_7(user_input)
         result_dict = _as_dict(result)
 
         # Verify flow completes successfully
@@ -214,16 +227,16 @@ class TestOptionsFlowScenarios:
             },
             STEP_3_SECTION_MAX_CLOSURE: {},  # No changes
         }
-        await flow.async_step_3(user_input)
+        await flow.async_step_4(user_input)
 
         # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        await flow.async_step_5({})
 
         # Step 5 - No changes to window sensors
-        await flow.async_step_5({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
 
         # Step 6 - Complete flow
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -286,16 +299,16 @@ class TestOptionsFlowScenarios:
                 f"{TEST_COVER_1}_{COVER_SFX_MAX_CLOSURE}": None,  # Explicit clear
             },
         }
-        await flow.async_step_3(user_input)
+        await flow.async_step_4(user_input)
 
         # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        await flow.async_step_5({})
 
         # Step 5 - No changes to window sensors
-        await flow.async_step_5({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
 
         # Step 6 - Complete flow
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -344,7 +357,7 @@ class TestOptionsFlowScenarios:
                 f"{TEST_COVER_2}_{COVER_SFX_AZIMUTH}": 90.0,
             }
         )
-        await flow.async_step_3(
+        await flow.async_step_4(
             {
                 STEP_3_SECTION_MIN_CLOSURE: {},
                 STEP_3_SECTION_MAX_CLOSURE: {},
@@ -352,7 +365,7 @@ class TestOptionsFlowScenarios:
         )
 
         # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        await flow.async_step_5({})
 
         # Step 5 - Add window sensor for TEST_COVER_1
         user_input = {
@@ -360,10 +373,10 @@ class TestOptionsFlowScenarios:
                 f"{TEST_COVER_1}_{COVER_SFX_WINDOW_SENSORS}": [TEST_BINARY_SENSOR],  # New sensor
             },
         }
-        await flow.async_step_5(user_input)
+        await flow.async_step_6(user_input)
 
         # Step 6 - Complete flow
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -426,20 +439,20 @@ class TestOptionsFlowScenarios:
 
         # Continue through remaining steps
         # Step 3 - min/max settings
-        await flow.async_step_3(
+        await flow.async_step_4(
             {
                 STEP_3_SECTION_MIN_CLOSURE: {},
                 STEP_3_SECTION_MAX_CLOSURE: {},
             }
         )
         # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        await flow.async_step_5({})
 
         # Step 5 - window sensors
-        await flow.async_step_5({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
 
         # Step 6 - Complete flow
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -498,7 +511,7 @@ class TestOptionsFlowScenarios:
         )
 
         # Step 3 - Add both min and max closures for both covers
-        await flow.async_step_3(
+        await flow.async_step_4(
             {
                 STEP_3_SECTION_MIN_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MIN_CLOSURE}": 10,
@@ -512,10 +525,10 @@ class TestOptionsFlowScenarios:
         )
 
         # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        await flow.async_step_5({})
 
         # Step 5 - Add window sensors for both covers
-        await flow.async_step_5(
+        await flow.async_step_6(
             {
                 STEP_5_SECTION_WINDOW_SENSORS: {
                     f"{TEST_COVER_1}_{COVER_SFX_WINDOW_SENSORS}": [TEST_BINARY_SENSOR],
@@ -525,7 +538,7 @@ class TestOptionsFlowScenarios:
         )
 
         # Step 6 - Complete flow
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -583,19 +596,19 @@ class TestOptionsFlowScenarios:
 
         # Continue through remaining steps
         # Step 3 - min/max settings
-        await flow.async_step_3(
+        await flow.async_step_4(
             {
                 STEP_3_SECTION_MIN_CLOSURE: {},
                 STEP_3_SECTION_MAX_CLOSURE: {},
             }
         )
         # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        await flow.async_step_5({})
 
         # Step 5 - window sensors
-        await flow.async_step_5({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
 
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -643,20 +656,20 @@ class TestOptionsFlowScenarios:
 
         # Continue through remaining steps
         # Step 3 - min/max settings
-        await flow.async_step_3(
+        await flow.async_step_4(
             {
                 STEP_3_SECTION_MIN_CLOSURE: {},
                 STEP_3_SECTION_MAX_CLOSURE: {},
             }
         )
         # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        await flow.async_step_5({})
 
         # Step 5 - window sensors
-        await flow.async_step_5({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
 
         # Step 6 - Complete flow
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -701,20 +714,20 @@ class TestOptionsFlowScenarios:
         await flow.async_step_init(None)
         await flow.async_step_2({f"{TEST_COVER_1}_{COVER_SFX_AZIMUTH}": 180.0})
         # Step 3 - min/max settings
-        await flow.async_step_3(
+        await flow.async_step_4(
             {
                 STEP_3_SECTION_MIN_CLOSURE: {},
                 STEP_3_SECTION_MAX_CLOSURE: {},
             }
         )
         # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        await flow.async_step_5({})
 
         # Step 5 - window sensors
-        await flow.async_step_5({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
 
         # Step 6 - Change global settings
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 30.0,  # Changed
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 45.0,  # Changed
@@ -772,7 +785,7 @@ class TestOptionsFlowScenarios:
         )
 
         # Step 3 - Add settings for new covers
-        await flow.async_step_3(
+        await flow.async_step_4(
             {
                 STEP_3_SECTION_MIN_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MIN_CLOSURE}": 10,  # Existing
@@ -782,9 +795,9 @@ class TestOptionsFlowScenarios:
             }
         )
 
-        await flow.async_step_5({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
 
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -842,7 +855,7 @@ class TestOptionsFlowScenarios:
             }
         )
         # Step 3 - min/max settings
-        await flow.async_step_3(
+        await flow.async_step_4(
             {
                 STEP_3_SECTION_MIN_CLOSURE: {},
                 STEP_3_SECTION_MAX_CLOSURE: {},
@@ -850,10 +863,10 @@ class TestOptionsFlowScenarios:
         )
 
         # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        await flow.async_step_5({})
 
         # Step 5 - Remove window sensors by setting to empty list
-        await flow.async_step_5(
+        await flow.async_step_6(
             {
                 STEP_5_SECTION_WINDOW_SENSORS: {
                     f"{TEST_COVER_1}_{COVER_SFX_WINDOW_SENSORS}": [],  # Explicit removal
@@ -862,7 +875,7 @@ class TestOptionsFlowScenarios:
             }
         )
 
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -916,7 +929,7 @@ class TestOptionsFlowScenarios:
         )
 
         # Step 3 - Update existing values
-        await flow.async_step_3(
+        await flow.async_step_4(
             {
                 STEP_3_SECTION_MIN_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MIN_CLOSURE}": 30,  # Changed from 10
@@ -929,9 +942,9 @@ class TestOptionsFlowScenarios:
             }
         )
 
-        await flow.async_step_5({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
 
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 20.0,
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,
@@ -996,7 +1009,7 @@ class TestOptionsFlowScenarios:
         )
 
         # Step 3 - Update min closure for cover 1, add settings for cover 3
-        await flow.async_step_3(
+        await flow.async_step_4(
             {
                 STEP_3_SECTION_MIN_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MIN_CLOSURE}": 25,  # Changed from 10
@@ -1010,10 +1023,10 @@ class TestOptionsFlowScenarios:
         )
 
         # Step 4 - tilt (skip)
-        await flow.async_step_4({})
+        await flow.async_step_5({})
 
         # Step 5 - Add window sensor for new cover
-        await flow.async_step_5(
+        await flow.async_step_6(
             {
                 STEP_5_SECTION_WINDOW_SENSORS: {
                     f"{test_cover_3}_{COVER_SFX_WINDOW_SENSORS}": ["binary_sensor.kitchen_window"],
@@ -1022,7 +1035,7 @@ class TestOptionsFlowScenarios:
         )
 
         # Step 6 - Change some global settings
-        result = await flow.async_step_6(
+        result = await flow.async_step_7(
             {
                 ConfKeys.SUN_ELEVATION_THRESHOLD.value: 25.0,  # Changed
                 ConfKeys.SUN_AZIMUTH_TOLERANCE.value: 90.0,  # Unchanged

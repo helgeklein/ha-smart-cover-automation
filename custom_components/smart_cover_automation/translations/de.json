@@ -17,7 +17,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Schritt 1 von 6",
+                "title": "Smart Cover Automation - Schritt 1 von 7",
                 "description": "Wählen Sie einen **Wettervorhersage-Sensor** und die zu automatisierenden **Rollläden** aus (erforderlich).",
                 "data": {
                     "covers": "Zu automatisierende Rollläden:",
@@ -29,7 +29,7 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Schritt 2 von 6",
+                "title": "Smart Cover Automation - Schritt 2 von 7",
                 "description": "Konfigurieren Sie den **Azimut** (Richtung) für jeden Rollladen.\n\nSie können außerdem die Winkel einschränken, bei denen die Automatisierung davon ausgeht, dass die Sonne auf einen Rollladen scheint, und zwar in alle vier Richtungen (links, rechts, oben und unten), um Dachüberstände, andere Gebäude oder nahe Bäume zu berücksichtigen. Die hier konfigurierten Werte pro Rollladen überschreiben die globalen Sonnenwinkeleinstellungen auf der Geräteseite der Integrationsinstanz.\n\n(0°=Nord, 90°=Ost, 180°=Süd, 270°=West)",
                 "sections": {
                     "section_azimuth": {
@@ -50,7 +50,24 @@
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Schritt 3 von 6",
+                "title": "Smart Cover Automation - Schritt 3 von 7",
+                "description": "Konfigurieren Sie die normale Steuerung der Rollläden am Tag. Globale Einstellungen gelten für alle Rollläden, sofern sie nicht pro Rollladen überschrieben werden.",
+                "data": {
+                    "daytime_strategy": "Tagesstrategie:",
+                    "daytime_movement_directions": "Bewegungsrichtungen am Tag:"
+                },
+                "data_description": {
+                    "daytime_strategy": "Wählen Sie, wie die Integration Rollläden am Tag positionieren soll, wenn der Hitzeschutz nicht aktiv ist.",
+                    "daytime_movement_directions": "Wählen Sie, ob die normale Tagessteuerung Rollläden öffnen, schließen oder beides darf."
+                },
+                "sections": {
+                    "section_daytime_strategy": {
+                        "name": "Tagesstrategie (pro Rollladen)"
+                    }
+                }
+            },
+            "4": {
+                "title": "Smart Cover Automation - Schritt 4 von 7",
                 "description": "Konfigurieren Sie die **Min/Max**-Positionen der Rollläden (optional).\nGlobale Einstellungen gelten für alle Rollläden, sofern sie nicht pro Rollladen überschrieben werden.\n(0 = vollständig geschlossen, 100 = vollständig geöffnet)",
                 "data": {
                     "covers_max_closure": "Maximale Rollladenposition (global):",
@@ -74,8 +91,8 @@
                     }
                 }
             },
-            "4": {
-                "title": "Smart Cover Automation - Schritt 4 von 6",
+            "5": {
+                "title": "Smart Cover Automation - Schritt 5 von 7",
                 "description": "Konfigurieren Sie die **Lamellenneigung** für Rollläden mit verstellbaren Lamellen (optional).\nGlobale Einstellungen gelten für alle neigungsfähigen Rollläden, sofern sie nicht pro Rollladen überschrieben werden.",
                 "data": {
                     "tilt_mode_day": "Lamellenneigung (Tag):",
@@ -112,8 +129,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Schritt 5 von 6",
+            "6": {
+                "title": "Smart Cover Automation - Schritt 6 von 7",
                 "description": "Konfigurieren Sie **zusätzliche Einstellungen** und optionale **Fenstersensoren** für jeden Rollladen. Fenstersensoren aktivieren den Aussperrschutz: Meldet ein zugeordneter Sensor ein offenes Fenster, wird der Rollladen nicht geschlossen.",
                 "sections": {
                     "section_additional_settings": {
@@ -130,8 +147,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Schritt 6 von 6",
+            "7": {
+                "title": "Smart Cover Automation - Schritt 7 von 7",
                 "description": "Konfigurieren Sie **Zeiteinstellungen** für die Automatisierung (optional).",
                 "data": {},
                 "data_description": {},
@@ -162,7 +179,6 @@
                             "close_covers_after_sunset_cover_list": "Rollläden:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Dauer der manuellen Übersteuerung ignorieren:",
                             "close_covers_after_sunset_keep_closed": "Rollläden geschlossen halten:",
-                            "automatic_reopening_mode": "Automatisches Wiederöffnen:",
                             "morning_opening_mode": "Morgendliches Öffnen: Modus:",
                             "morning_opening_time": "Morgendliches Öffnen: Zeit:"
                         },
@@ -173,7 +189,6 @@
                             "close_covers_after_sunset_cover_list": "Wählen Sie die Rollläden aus, die abends geschlossen werden sollen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wenn aktiviert, darf das Abendschließen ausgewählte Rollläden trotz aktiver Pause durch manuelle Übersteuerung bewegen.",
                             "close_covers_after_sunset_keep_closed": "Wenn aktiviert, werden ausgewählte Rollläden während der nächtlichen Abendschließphase erneut geschlossen, wenn sie wieder geöffnet werden. Die Dauer der manuellen Übersteuerung wird berücksichtigt. Der Sperrmodus hat Vorrang, daher werden Rollläden erst erneut geschlossen, nachdem der Sperrmodus deaktiviert wurde.",
-                            "automatic_reopening_mode": "Wählen Sie, wie die Automatisierung Rollläden wieder öffnen soll, wenn die Schließbedingungen nicht mehr gelten. Aktiv öffnet Rollläden immer wieder, Passiv öffnet nur Rollläden wieder, die zuvor von der Automatisierung geschlossen wurden, und Aus deaktiviert das automatische Wiederöffnen.",
                             "morning_opening_mode": "Wählen Sie, ob das morgendliche Öffnen vor Sonnenaufgang, nach Sonnenaufgang, zu einer festen Uhrzeit oder über eine Entität erfolgt.",
                             "morning_opening_time": "Je nach gewähltem Modus: relative Verzögerung zum Sonnenaufgang oder feste Uhrzeit. Im externen Modus ignoriert."
                         }
@@ -214,7 +229,7 @@
         },
         "select": {
             "automatic_reopening_mode": {
-                "name": "Automatisches Wiederöffnen",
+                "name": "Tagessteuerungsmodus",
                 "state": {
                     "active": "Aktiv",
                     "passive": "Passiv",
@@ -317,6 +332,12 @@
             },
             "daily_min_temperature_threshold": {
                 "name": "Hitzeschutz: min. Tagestiefsttemperatur"
+            },
+            "daytime_external_position": {
+                "name": "Rollladenposition am Tag: externe Steuerung"
+            },
+            "cover_daytime_external_position": {
+                "name": "{cover_name}: Rollladenposition am Tag: externe Steuerung"
             }
         },
         "switch": {
@@ -404,6 +425,14 @@
                 "reason_keep_closed_after_evening_closure": {
                     "name": "die Privatsphäre über Nacht zu wahren",
                     "description": "Grund, wenn der Rollladen während der nächtlichen Geschlossenhaltung erneut geschlossen wird."
+                },
+                "reason_daytime_privacy": {
+                    "name": "tagsüber Privatsphäre schaffen",
+                    "description": "Grund, wenn der Rollladen in seine Tagesposition für Privatsphäre fährt."
+                },
+                "reason_daytime_external_control": {
+                    "name": "externer Tagessteuerung folgen",
+                    "description": "Grund, wenn der Rollladen in eine extern vorgegebene Tagesposition fährt."
                 }
             }
         },
@@ -464,6 +493,21 @@
             "options": {
                 "fixed_time": "Absolute Uhrzeit",
                 "external": "Extern (Zeiten werden von Entitäten geliefert)"
+            }
+        },
+        "daytime_strategy": {
+            "options": {
+                "use_global": "Globale Einstellung verwenden",
+                "let_light_in": "Licht hereinlassen",
+                "privacy": "Privatsphäre",
+                "external_control": "Externe Steuerung"
+            }
+        },
+        "daytime_movement_directions": {
+            "options": {
+                "open_only": "Nur öffnen",
+                "close_only": "Nur schließen",
+                "open_and_close": "Öffnen und schließen"
             }
         }
     }

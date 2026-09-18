@@ -248,8 +248,8 @@ async def _run_options_flow(
         await hass.config_entries.options.async_configure(
             result["flow_id"],
             user_input={
-                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
-                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.DAYTIME_STRATEGY.value: "let_light_in",
+                ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value: "open_only",
             },
         )
     )
@@ -259,7 +259,10 @@ async def _run_options_flow(
     result = _as_dict(
         await hass.config_entries.options.async_configure(
             result["flow_id"],
-            user_input=step_4_input,
+            user_input={
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+            },
         )
     )
     assert result["type"] is FlowResultType.FORM
@@ -268,18 +271,22 @@ async def _run_options_flow(
     result = _as_dict(
         await hass.config_entries.options.async_configure(
             result["flow_id"],
-            user_input={},
+            user_input=step_4_input,
         )
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "6"
 
-    return _as_dict(
+    result = _as_dict(
         await hass.config_entries.options.async_configure(
             result["flow_id"],
             user_input={},
         )
     )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "7"
+
+    return _as_dict(await hass.config_entries.options.async_configure(result["flow_id"], user_input={}))
 
 
 class TestIntegrationRealHA:

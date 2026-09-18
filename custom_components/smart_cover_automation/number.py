@@ -18,20 +18,25 @@ from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime  #
 
 from .config import ConfKeys
 from .const import (
+    COVER_SFX_DAYTIME_EXTERNAL_POSITION,
+    COVER_SFX_DAYTIME_STRATEGY,
     COVER_SFX_TILT_EXTERNAL_VALUE_DAY,
     COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT,
     COVER_SFX_TILT_MODE_DAY,
     COVER_SFX_TILT_MODE_NIGHT,
+    NUMBER_KEY_COVER_DAYTIME_EXTERNAL_POSITION,
     NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_NIGHT,
     NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
+    NUMBER_KEY_DAYTIME_EXTERNAL_POSITION,
     NUMBER_KEY_MANUAL_OVERRIDE_DURATION,
     NUMBER_KEY_SUN_AZIMUTH_TOLERANCE,
     NUMBER_KEY_SUN_ELEVATION_MAX,
     NUMBER_KEY_SUN_ELEVATION_THRESHOLD,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
+    DaytimeStrategy,
     TiltMode,
 )
 from .entity import IntegrationEntity
@@ -82,8 +87,14 @@ async def async_setup_entry(
     if resolved.tilt_mode_night == TiltMode.EXTERNAL:
         entities.append(GlobalExternalTiltNightNumber(coordinator))
 
+    if resolved.daytime_strategy == DaytimeStrategy.EXTERNAL_CONTROL:
+        entities.append(GlobalExternalDaytimePositionNumber(coordinator))
+
     options = dict(coordinator.config_entry.options or {})
     for cover_entity_id in resolved.covers:
+        if options.get(f"{cover_entity_id}_{COVER_SFX_DAYTIME_STRATEGY}") == DaytimeStrategy.EXTERNAL_CONTROL:
+            entities.append(CoverExternalDaytimePositionNumber(coordinator, cover_entity_id))
+
         supports_tilt = cover_supports_tilt(hass, cover_entity_id)
         if supports_tilt is False:
             continue
@@ -233,6 +244,10 @@ class ExternalTiltNumber(IntegrationNumber):
         await self._async_persist_option(self._config_key, int(value))
 
 
+class ExternalDaytimePositionNumber(ExternalTiltNumber):
+    """Base number entity for externally supplied daytime cover positions."""
+
+
 #
 # ManualOverrideDurationNumber
 #
@@ -364,6 +379,26 @@ class GlobalExternalTiltDayNumber(ExternalTiltNumber):
         super().__init__(coordinator, entity_description, NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY)
 
 
+class GlobalExternalDaytimePositionNumber(ExternalDaytimePositionNumber):
+    """Global daytime cover position supplied by an external automation."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Initialize the global external daytime-position number."""
+
+        entity_description = NumberEntityDescription(
+            key=NUMBER_KEY_DAYTIME_EXTERNAL_POSITION,
+            translation_key=NUMBER_KEY_DAYTIME_EXTERNAL_POSITION,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:blinds",
+            native_min_value=0,
+            native_max_value=100,
+            native_step=1,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement="%",
+        )
+        super().__init__(coordinator, entity_description, NUMBER_KEY_DAYTIME_EXTERNAL_POSITION)
+
+
 #
 # GlobalExternalTiltNightNumber
 #
@@ -403,6 +438,28 @@ class CoverExternalTiltDayNumber(ExternalTiltNumber):
             translation_key=NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_DAY,
             entity_category=EntityCategory.CONFIG,
             icon="mdi:blinds-horizontal",
+            native_min_value=0,
+            native_max_value=100,
+            native_step=1,
+            mode=NumberMode.BOX,
+            native_unit_of_measurement="%",
+        )
+        super().__init__(coordinator, entity_description, config_key, {"cover_name": cover_name})
+
+
+class CoverExternalDaytimePositionNumber(ExternalDaytimePositionNumber):
+    """Per-cover daytime position supplied by an external automation."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator, cover_entity_id: str) -> None:
+        """Initialize the per-cover external daytime-position number."""
+
+        cover_name = format_cover_name(coordinator.hass, cover_entity_id)
+        config_key = f"{cover_entity_id}_{COVER_SFX_DAYTIME_EXTERNAL_POSITION}"
+        entity_description = NumberEntityDescription(
+            key=config_key,
+            translation_key=NUMBER_KEY_COVER_DAYTIME_EXTERNAL_POSITION,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:blinds",
             native_min_value=0,
             native_max_value=100,
             native_step=1,

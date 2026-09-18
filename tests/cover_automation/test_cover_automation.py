@@ -80,6 +80,8 @@ def mock_resolved_config():
     resolved.evening_closure_keep_closed = False
     resolved.evening_closure_cover_list = ()
     resolved.automatic_reopening_mode = ReopeningMode.ACTIVE
+    resolved.daytime_strategy = const.DaytimeStrategy.LET_LIGHT_IN
+    resolved.daytime_movement_directions = const.DaytimeMovementDirections.OPEN_ONLY
     resolved.heat_protection_mode = HeatProtectionMode.AUTO
     resolved.covers_min_position_delta = 5
     resolved.tilt_drift_tolerance = 5
@@ -1149,6 +1151,26 @@ class TestExternalTiltValueResolution:
         )
 
 
+class TestExternalDaytimePositionResolution:
+    """Test normal-daytime external position resolution."""
+
+    def test_get_daytime_target_uses_global_external_position(self, cover_automation, basic_config):
+        """Global external daytime control should use the global number value."""
+
+        basic_config[const.NUMBER_KEY_DAYTIME_EXTERNAL_POSITION] = 42
+
+        assert cover_automation._get_daytime_target(const.DaytimeStrategy.EXTERNAL_CONTROL) == 42
+
+    def test_get_daytime_target_prefers_per_cover_external_position(self, cover_automation, basic_config):
+        """A per-cover external strategy should select its own stored target."""
+
+        basic_config[f"cover.test_{const.COVER_SFX_DAYTIME_STRATEGY}"] = const.DaytimeStrategy.EXTERNAL_CONTROL.value
+        basic_config[f"cover.test_{const.COVER_SFX_DAYTIME_EXTERNAL_POSITION}"] = 61
+        basic_config[const.NUMBER_KEY_DAYTIME_EXTERNAL_POSITION] = 22
+
+        assert cover_automation._get_daytime_target(const.DaytimeStrategy.EXTERNAL_CONTROL) == 61
+
+
 class TestMovementReasonHelpers:
     """Test movement-reason helper mappings."""
 
@@ -2005,10 +2027,10 @@ class TestCalculateDesiredPosition:
         assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
         assert lockout_active is False
 
-    def test_calculate_desired_position_passive_reopening_never_closes_cover(
+    def test_calculate_desired_position_passive_open_only_holds_closing_target(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr, basic_config
     ):
-        """Passive reopening should hold when its configured open target is below the current position."""
+        """Passive daytime control should hold a target requiring a disabled closing direction."""
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
@@ -2029,7 +2051,7 @@ class TestCalculateDesiredPosition:
         position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=30)
 
         assert position == 30
-        assert reason == CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
+        assert reason is None
         assert lockout_active is False
 
     def test_calculate_desired_position_passive_reopens_after_automation_closure_with_stale_latest_history(
@@ -2402,8 +2424,8 @@ class TestCalculateDesiredPosition:
         assert position == 100
         assert reason == CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
 
-    def test_calculate_desired_position_reopens_after_evening_closure_below_horizon(self, cover_automation, mock_cover_pos_history_mgr):
-        """Evening-closure reopening may still follow the configured morning-opening schedule below the horizon."""
+    def test_calculate_desired_position_holds_opening_target_below_horizon(self, cover_automation, mock_cover_pos_history_mgr):
+        """Normal daytime opening targets must hold below the horizon."""
 
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
 
@@ -2419,8 +2441,8 @@ class TestCalculateDesiredPosition:
         )
 
         position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
+        assert position == 50
+        assert reason is None
 
     def test_calculate_desired_position_pre_closing_never_opens_evening_closed_cover(
         self, cover_automation, mock_cover_pos_history_mgr, mock_logger

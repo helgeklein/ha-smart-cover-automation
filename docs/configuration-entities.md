@@ -30,13 +30,17 @@ If **simulation mode** is enabled, the automation runs through all calculations 
 
 The entities in this section control the cover movements.
 
-### Automatic Reopening
+### Daytime Control Mode
 
-Choose how automation should reopen covers when closing conditions no longer apply. The following settings are available:
+Choose which covers normal daytime control may move. The following settings are available:
 
-- **Active:** Always reopens covers. In this mode, covers that were closed manually are reopened after the manual override duration has elapsed.
-- **Passive:** Only reopens covers that were previously closed by automation. In this mode, covers that were closed manually are not reopened.
-- **Off:** Disables automatic reopening.
+- **Active:** Moves every eligible cover.
+- **Passive:** Moves only covers previously moved by the integration that remain at their integration-owned position.
+- **Off:** Disables normal daytime movement.
+
+### Daytime Cover Position (External Control)
+
+These number entities are created when the global or a per-cover Daytime Strategy is **External control**. Set a whole-number position from 0 (fully closed) through 100 (fully open). A per-cover entity takes precedence over the global entity for a cover with a per-cover External control strategy. An unset value keeps the cover in place. Changing the corresponding strategy away from External control removes the entity and its stored value after integration reload.
 
 ### Lock Mode
 

@@ -206,7 +206,7 @@ def test_translation_has_evening_closure_section_keys(language_code: str) -> Non
 
     data = _load_translations(language_code)
     section = (
-        data.get(const.HA_OPTIONS, {}).get("step", {}).get("6", {}).get("sections", {}).get(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET, {})
+        data.get(const.HA_OPTIONS, {}).get("step", {}).get("7", {}).get("sections", {}).get(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET, {})
     )
     section_data = section.get("data", {})
     section_descriptions = section.get("data_description", {})
@@ -233,7 +233,7 @@ def test_translation_has_blocked_time_range_section_keys(language_code: str) -> 
     """Test that blocked-time-range section fields are translated in every language."""
 
     data = _load_translations(language_code)
-    section = data.get(const.HA_OPTIONS, {}).get("step", {}).get("6", {}).get("sections", {}).get(const.STEP_6_SECTION_TIME_RANGE, {})
+    section = data.get(const.HA_OPTIONS, {}).get("step", {}).get("7", {}).get("sections", {}).get(const.STEP_6_SECTION_TIME_RANGE, {})
     section_data = section.get("data", {})
     section_descriptions = section.get("data_description", {})
     expected_fields = {
@@ -324,13 +324,13 @@ def test_translation_has_morning_opening_sensor_labels(language_code: str) -> No
 
 
 @pytest.mark.parametrize("language_code", ["en"])
-def test_translation_has_step_4_tilt_keys(language_code: str) -> None:
-    """Test that step 4 tilt field labels and descriptions are translated in every language."""
+def test_translation_has_step_5_tilt_keys(language_code: str) -> None:
+    """Test that Step 5 tilt field labels and descriptions are translated in English."""
 
     data = _load_translations(language_code)
-    step_4 = data.get(const.HA_OPTIONS, {}).get("step", {}).get("4", {})
-    section_data = step_4.get("data", {})
-    section_descriptions = step_4.get("data_description", {})
+    step_5 = data.get(const.HA_OPTIONS, {}).get("step", {}).get("5", {})
+    section_data = step_5.get("data", {})
+    section_descriptions = step_5.get("data_description", {})
     expected_fields = {
         ConfKeys.TILT_MODE_DAY.value,
         ConfKeys.TILT_MODE_NIGHT.value,
@@ -347,17 +347,17 @@ def test_translation_has_step_4_tilt_keys(language_code: str) -> None:
     missing_labels = expected_fields - set(section_data.keys())
     missing_descriptions = expected_fields - set(section_descriptions.keys())
 
-    _assert_no_missing(language_code, missing_labels, "step 4 tilt labels")
-    _assert_no_missing(language_code, missing_descriptions, "step 4 tilt descriptions")
+    _assert_no_missing(language_code, missing_labels, "step 5 tilt labels")
+    _assert_no_missing(language_code, missing_descriptions, "step 5 tilt descriptions")
 
 
 @pytest.mark.parametrize("language_code", ["en"])
-def test_translation_has_step_5_additional_settings_keys(language_code: str) -> None:
-    """Test that step 5 additional-settings labels and descriptions are translated in every language."""
+def test_translation_has_step_6_additional_settings_keys(language_code: str) -> None:
+    """Test that Step 6 additional-settings labels and descriptions are translated in English."""
 
     data = _load_translations(language_code)
     section = (
-        data.get(const.HA_OPTIONS, {}).get("step", {}).get("5", {}).get("sections", {}).get(const.STEP_5_SECTION_ADDITIONAL_SETTINGS, {})
+        data.get(const.HA_OPTIONS, {}).get("step", {}).get("6", {}).get("sections", {}).get(const.STEP_5_SECTION_ADDITIONAL_SETTINGS, {})
     )
     section_data = section.get("data", {})
     section_descriptions = section.get("data_description", {})
@@ -366,8 +366,8 @@ def test_translation_has_step_5_additional_settings_keys(language_code: str) -> 
     missing_labels = expected_fields - set(section_data.keys())
     missing_descriptions = expected_fields - set(section_descriptions.keys())
 
-    _assert_no_missing(language_code, missing_labels, "step 5 additional-settings labels")
-    _assert_no_missing(language_code, missing_descriptions, "step 5 additional-settings descriptions")
+    _assert_no_missing(language_code, missing_labels, "step 6 additional-settings labels")
+    _assert_no_missing(language_code, missing_descriptions, "step 6 additional-settings descriptions")
 
 
 @pytest.mark.parametrize("language_code", _get_available_languages())

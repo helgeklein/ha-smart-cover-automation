@@ -17,7 +17,7 @@
         },
         "step": {
             "init": {
-                "title": "智能遮阳自动化 - 第 1 步，共 6 步",
+                "title": "智能遮阳自动化 - 第 1 步，共 7 步",
                 "description": "选择一个**天气预报传感器**以及要自动化的**遮阳设备**（必需）。",
                 "data": {
                     "covers": "要自动化的遮阳设备：",
@@ -29,7 +29,7 @@
                 }
             },
             "2": {
-                "title": "智能遮阳自动化 - 第 2 步,共 6 步",
+                "title": "智能遮阳自动化 - 第 2 步，共 7 步",
                 "description": "为每个遮阳设备配置**方位角**（方向）。\n\n您还可以限制自动化在四个方向（左、右、上、下）上认为阳光照射到某个遮阳设备的角度，以便将屋檐、其他建筑物或附近树木考虑在内。此处为每个遮阳设备配置的值会覆盖集成实例设备页面上的全局太阳角度设置。\n\n(0°=北，90°=东，180°=南，270°=西)",
                 "sections": {
                     "section_azimuth": {
@@ -50,7 +50,24 @@
                 }
             },
             "3": {
-                "title": "智能遮阳自动化 - 第 3 步,共 6 步",
+                "title": "智能遮阳自动化 - 第 3 步，共 7 步",
+                "description": "配置日间常规遮阳控制。全局设置适用于所有遮阳设备，除非针对单个遮阳设备进行了覆盖。",
+                "data": {
+                    "daytime_strategy": "日间策略：",
+                    "daytime_movement_directions": "日间移动方向："
+                },
+                "data_description": {
+                    "daytime_strategy": "选择在高温防护未启用时，集成应如何在日间定位遮阳设备。",
+                    "daytime_movement_directions": "选择日间常规控制是否可以开启、关闭遮阳设备，或两者皆可。"
+                },
+                "sections": {
+                    "section_daytime_strategy": {
+                        "name": "日间策略（每个遮阳设备）"
+                    }
+                }
+            },
+            "4": {
+                "title": "智能遮阳自动化 - 第 4 步，共 7 步",
                 "description": "配置遮阳设备 **最小/最大** 位置（可选）。\n全局设置适用于所有遮阳设备，除非对单个遮阳设备进行覆盖。\n(0 = 完全关闭，100 = 完全打开)",
                 "data": {
                     "covers_max_closure": "遮阳设备最大位置（全局）：",
@@ -74,8 +91,8 @@
                     }
                 }
             },
-            "4": {
-                "title": "智能遮阳自动化 - 第 4 步，共 6 步",
+            "5": {
+                "title": "智能遮阳自动化 - 第 5 步，共 7 步",
                 "description": "为带有可调叶片的遮阳设备配置**叶片倾斜角度控制**（可选）。\n全局设置适用于所有支持倾斜的遮阳设备，除非单独配置。",
                 "data": {
                     "tilt_mode_day": "倾斜角度控制（白天）：",
@@ -112,8 +129,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "智能遮阳自动化 - 第 5 步,共 6 步",
+            "6": {
+                "title": "智能遮阳自动化 - 第 6 步，共 7 步",
                 "description": "为每个遮阳设备配置**附加设置**和可选的**窗户传感器**。窗户传感器可启用防夹保护：如果关联传感器报告窗户已打开，则不会关闭该遮阳设备。",
                 "sections": {
                     "section_additional_settings": {
@@ -130,8 +147,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "智能遮阳自动化 - 第 6 步,共 6 步",
+            "7": {
+                "title": "智能遮阳自动化 - 第 7 步，共 7 步",
                 "description": "为自动化配置**时间设置**（可选）。",
                 "data": {},
                 "data_description": {},
@@ -162,7 +179,6 @@
                             "close_covers_after_sunset_cover_list": "遮阳设备：",
                             "close_covers_after_sunset_ignore_manual_override_duration": "忽略手动覆盖持续时间：",
                             "close_covers_after_sunset_keep_closed": "保持遮阳设备关闭：",
-                            "automatic_reopening_mode": "自动重新开启：",
                             "morning_opening_mode": "晨间开启：模式：",
                             "morning_opening_time": "晨间开启：时间："
                         },
@@ -173,7 +189,6 @@
                             "close_covers_after_sunset_cover_list": "选择需要在晚间关闭的遮阳设备。",
                             "close_covers_after_sunset_ignore_manual_override_duration": "启用后，即使手动覆盖暂停仍然有效，晚间关闭仍可移动所选遮阳设备。",
                             "close_covers_after_sunset_keep_closed": "启用后，所选遮阳设备如果在夜间晚间关闭时段内被重新打开，将会再次关闭。系统会遵守手动覆盖持续时间。锁定模式优先生效，因此只有在锁定模式被禁用后，遮阳设备才会再次关闭。",
-                            "automatic_reopening_mode": "选择当关闭条件不再适用时，自动化应如何重新开启遮阳设备。主动模式始终会重新开启遮阳设备，被动模式只会重新开启之前由自动化关闭的遮阳设备，关闭则禁用自动重新开启。",
                             "morning_opening_mode": "选择晨间开启是在日出前、日出后、固定时刻，还是由某个实体提供。",
                             "morning_opening_time": "根据所选模式：相对于日出的延迟时间或固定时刻。在外部模式下将被忽略。"
                         }
@@ -214,7 +229,7 @@
         },
         "select": {
             "automatic_reopening_mode": {
-                "name": "自动重新开启",
+                "name": "日间控制模式",
                 "state": {
                     "active": "主动",
                     "passive": "被动",
@@ -317,6 +332,12 @@
             },
             "daily_min_temperature_threshold": {
                 "name": "高温防护：每日最低温度下限"
+            },
+            "daytime_external_position": {
+                "name": "日间遮阳设备位置：外部控制"
+            },
+            "cover_daytime_external_position": {
+                "name": "{cover_name}: 日间遮阳设备位置：外部控制"
             }
         },
         "switch": {
@@ -404,6 +425,14 @@
                 "reason_keep_closed_after_evening_closure": {
                     "name": "在夜间保持隐私",
                     "description": "当遮阳设备在夜间保持关闭期间再次关闭时使用的原因。"
+                },
+                "reason_daytime_privacy": {
+                    "name": "提供日间隐私保护",
+                    "description": "当遮阳设备移动到其日间隐私位置时使用的原因。"
+                },
+                "reason_daytime_external_control": {
+                    "name": "遵循外部日间控制",
+                    "description": "当遮阳设备移动到外部提供的日间位置时使用的原因。"
                 }
             }
         },
@@ -464,6 +493,21 @@
             "options": {
                 "fixed_time": "绝对时间",
                 "external": "外部（时间由实体提供）"
+            }
+        },
+        "daytime_strategy": {
+            "options": {
+                "use_global": "使用全局设置",
+                "let_light_in": "引入光线",
+                "privacy": "隐私保护",
+                "external_control": "外部控制"
+            }
+        },
+        "daytime_movement_directions": {
+            "options": {
+                "open_only": "仅开启",
+                "close_only": "仅关闭",
+                "open_and_close": "开启和关闭"
             }
         }
     }

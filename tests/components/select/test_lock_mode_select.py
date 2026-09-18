@@ -350,7 +350,7 @@ async def test_automatic_reopening_mode_select_async_select_option_invalid(mock_
 
         mock_logger.error.assert_called_once()
         error_message = mock_logger.error.call_args[0][0]
-        assert "Invalid automatic reopening mode value" in error_message
+        assert "Invalid daytime control mode value" in error_message
         assert invalid_option in error_message
         coordinator.async_set_automatic_reopening_mode.assert_not_called()
 

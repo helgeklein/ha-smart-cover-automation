@@ -17,7 +17,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Stap 1 van 6",
+                "title": "Smart Cover Automation - Stap 1 van 7",
                 "description": "Selecteer een **weersvoorspellingssensor** en de **rolluiken** die moeten worden geautomatiseerd (verplicht).",
                 "data": {
                     "covers": "Te automatiseren rolluiken:",
@@ -29,7 +29,7 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Stap 2 van 6",
+                "title": "Smart Cover Automation - Stap 2 van 7",
                 "description": "Configureer de **azimut** (richting) voor elk rolluik.\n\nU kunt ook de hoeken beperken waarbij de automatisering ervan uitgaat dat de zon op een rolluik schijnt, in alle vier richtingen (links, rechts, boven en onder), om rekening te houden met dakoverstekken, andere gebouwen of nabijgelegen bomen. De hier geconfigureerde waarden per rolluik overschrijven de globale zonhoekinstellingen op de apparaats-pagina van de integratie-instantie.\n\n(0°=Noord, 90°=Oost, 180°=Zuid, 270°=West)",
                 "sections": {
                     "section_azimuth": {
@@ -50,7 +50,24 @@
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Stap 3 van 6",
+                "title": "Smart Cover Automation - Stap 3 van 7",
+                "description": "Configureer de normale bediening van de zonwering overdag. Globale instellingen gelden voor alle zonwering, tenzij deze per zonwering worden overschreven.",
+                "data": {
+                    "daytime_strategy": "Dagstrategie:",
+                    "daytime_movement_directions": "Bewegingsrichtingen overdag:"
+                },
+                "data_description": {
+                    "daytime_strategy": "Kies hoe de integratie de zonwering overdag moet positioneren wanneer hittebescherming niet actief is.",
+                    "daytime_movement_directions": "Kies of de normale bediening overdag zonwering mag openen, sluiten of beide."
+                },
+                "sections": {
+                    "section_daytime_strategy": {
+                        "name": "Dagstrategie (per zonwering)"
+                    }
+                }
+            },
+            "4": {
+                "title": "Smart Cover Automation - Stap 4 van 7",
                 "description": "Configureer de **min/max**-posities van de rolluiken (optioneel).\nGlobale instellingen gelden voor alle rolluiken tenzij per rolluik overschreven.\n(0 = volledig gesloten, 100 = volledig open)",
                 "data": {
                     "covers_max_closure": "Maximale positie van het rolluik (globaal):",
@@ -74,8 +91,8 @@
                     }
                 }
             },
-            "4": {
-                "title": "Smart Cover Automation - Stap 4 van 6",
+            "5": {
+                "title": "Smart Cover Automation - Stap 5 van 7",
                 "description": "Configureer de **kanteling** voor rolluiken met kantelbare lamellen (optioneel).\nGlobale instellingen gelden voor alle kantelbare rolluiken, tenzij per rolluik overschreven.",
                 "data": {
                     "tilt_mode_day": "Kantelregeling (dag):",
@@ -112,8 +129,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Stap 5 van 6",
+            "6": {
+                "title": "Smart Cover Automation - Stap 6 van 7",
                 "description": "Configureer **extra instellingen** en optionele **raamsensoren** voor elk rolluik. Raamsensoren activeren blokkeerbeveiliging: als een gekoppelde sensor meldt dat een raam openstaat, wordt het rolluik niet gesloten.",
                 "sections": {
                     "section_additional_settings": {
@@ -130,8 +147,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Stap 6 van 6",
+            "7": {
+                "title": "Smart Cover Automation - Stap 7 van 7",
                 "description": "Configureer **tijdinstellingen** voor de automatisering (optioneel).",
                 "data": {},
                 "data_description": {},
@@ -162,7 +179,6 @@
                             "close_covers_after_sunset_cover_list": "Rolluiken:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Duur van handmatige override negeren:",
                             "close_covers_after_sunset_keep_closed": "Rolluiken gesloten houden:",
-                            "automatic_reopening_mode": "Automatisch heropenen:",
                             "morning_opening_mode": "Ochtendopening: modus:",
                             "morning_opening_time": "Ochtendopening: tijd:"
                         },
@@ -173,7 +189,6 @@
                             "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die 's avonds moeten worden gesloten.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wanneer ingeschakeld mag de avondsluiting geselecteerde rolluiken bewegen, ook als een pauze door handmatige override nog actief is.",
                             "close_covers_after_sunset_keep_closed": "Wanneer ingeschakeld worden geselecteerde rolluiken tijdens de nachtelijke avondsluitingsperiode opnieuw gesloten als ze weer worden geopend. De duur van handmatige override wordt gerespecteerd. Vergrendelingsmodus heeft voorrang, dus rolluiken worden pas opnieuw gesloten nadat de vergrendelingsmodus is uitgeschakeld.",
-                            "automatic_reopening_mode": "Kies hoe de automatisering rolluiken opnieuw moet openen wanneer de sluitvoorwaarden niet langer van toepassing zijn. Actief opent rolluiken altijd opnieuw, Passief opent alleen rolluiken opnieuw die eerder door de automatisering zijn gesloten en Uit schakelt automatisch heropenen uit.",
                             "morning_opening_mode": "Kies of de ochtendopening vóór zonsopgang, na zonsopgang, op een vast tijdstip of via een entiteit plaatsvindt.",
                             "morning_opening_time": "Afhankelijk van de gekozen modus: relatieve vertraging ten opzichte van zonsopgang of vast tijdstip. Wordt genegeerd in de externe modus."
                         }
@@ -214,7 +229,7 @@
         },
         "select": {
             "automatic_reopening_mode": {
-                "name": "Automatisch heropenen",
+                "name": "Bedieningsmodus overdag",
                 "state": {
                     "active": "Actief",
                     "passive": "Passief",
@@ -317,6 +332,12 @@
             },
             "daily_min_temperature_threshold": {
                 "name": "Hittebescherming: min. dagelijkse minimumtemperatuur"
+            },
+            "daytime_external_position": {
+                "name": "Positie van zonwering overdag: externe bediening"
+            },
+            "cover_daytime_external_position": {
+                "name": "{cover_name}: Positie van zonwering overdag: externe bediening"
             }
         },
         "switch": {
@@ -404,6 +425,14 @@
                 "reason_keep_closed_after_evening_closure": {
                     "name": "de privacy 's nachts te behouden",
                     "description": "Reden die wordt gebruikt wanneer het rolluik opnieuw sluit tijdens de nachtelijke geslotenhoudperiode."
+                },
+                "reason_daytime_privacy": {
+                    "name": "privacy overdag bieden",
+                    "description": "Reden wanneer de zonwering naar de privacypositie voor overdag beweegt."
+                },
+                "reason_daytime_external_control": {
+                    "name": "externe bediening overdag volgen",
+                    "description": "Reden wanneer de zonwering naar een extern opgegeven dagpositie beweegt."
                 }
             }
         },
@@ -464,6 +493,21 @@
             "options": {
                 "fixed_time": "Absolute tijd",
                 "external": "Extern (tijden aangeleverd door entiteiten)"
+            }
+        },
+        "daytime_strategy": {
+            "options": {
+                "use_global": "Globale instelling gebruiken",
+                "let_light_in": "Licht binnenlaten",
+                "privacy": "Privacy",
+                "external_control": "Externe bediening"
+            }
+        },
+        "daytime_movement_directions": {
+            "options": {
+                "open_only": "Alleen openen",
+                "close_only": "Alleen sluiten",
+                "open_and_close": "Openen en sluiten"
             }
         }
     }

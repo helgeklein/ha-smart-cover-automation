@@ -99,7 +99,10 @@ COVER_SFX_TILT_MODE_DAY: Final[str] = "cover_tilt_mode_day"  # Per-cover tilt mo
 COVER_SFX_TILT_MODE_NIGHT: Final[str] = "cover_tilt_mode_night"  # Per-cover tilt mode override (night)
 COVER_SFX_TILT_EXTERNAL_VALUE_DAY: Final[str] = "cover_tilt_external_value_day"  # Per-cover externally controlled tilt value (day)
 COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT: Final[str] = "cover_tilt_external_value_night"  # Per-cover externally controlled tilt value (night)
+COVER_SFX_DAYTIME_STRATEGY: Final[str] = "daytime_strategy"  # Per-cover daytime position strategy override.
+COVER_SFX_DAYTIME_EXTERNAL_POSITION: Final[str] = "daytime_external_position"  # Per-cover externally controlled daytime position.
 COVER_SFX_WINDOW_SENSORS: Final[str] = "cover_window_sensors"  # Window sensor entity IDs
+DAYTIME_STRATEGY_USE_GLOBAL: Final[str] = "use_global"  # UI-only per-cover strategy value that clears the override.
 
 # Per-cover position history configuration
 COVER_POSITION_HISTORY_SIZE: Final[int] = 3  # Number of positions to store in history
@@ -166,6 +169,28 @@ class ReopeningMode(StrEnum):
 
 
 #
+# DaytimeStrategy
+#
+class DaytimeStrategy(StrEnum):
+    """Target position strategy for normal daytime automation."""
+
+    LET_LIGHT_IN = "let_light_in"
+    PRIVACY = "privacy"
+    EXTERNAL_CONTROL = "external_control"
+
+
+#
+# DaytimeMovementDirections
+#
+class DaytimeMovementDirections(StrEnum):
+    """Allowed directions for normal daytime automation."""
+
+    OPEN_ONLY = "open_only"
+    CLOSE_ONLY = "close_only"
+    OPEN_AND_CLOSE = "open_and_close"
+
+
+#
 # HeatProtectionMode
 #
 class HeatProtectionMode(StrEnum):
@@ -223,11 +248,15 @@ NUMBER_KEY_COVERS_MIN_CLOSURE: Final[str] = "covers_min_closure"  # Key for the 
 NUMBER_KEY_MANUAL_OVERRIDE_DURATION: Final[str] = "manual_override_duration"  # Key for the manual override duration number entity
 NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY: Final[str] = "tilt_external_value_day"  # Key for global external tilt value number entity (day)
 NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT: Final[str] = "tilt_external_value_night"  # Key for global external tilt value number entity (night)
+NUMBER_KEY_DAYTIME_EXTERNAL_POSITION: Final[str] = "daytime_external_position"  # Key for global external daytime position number entity
 NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_DAY: Final[str] = (
     "cover_tilt_external_value_day"  # Translation key for per-cover external tilt value number entities (day)
 )
 NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_NIGHT: Final[str] = (
     "cover_tilt_external_value_night"  # Translation key for per-cover external tilt value number entities (night)
+)
+NUMBER_KEY_COVER_DAYTIME_EXTERNAL_POSITION: Final[str] = (
+    "cover_daytime_external_position"  # Translation key for per-cover external daytime position number entities
 )
 TIME_KEY_MORNING_OPENING_EXTERNAL_TIME: Final[str] = (
     "morning_opening_external_time"  # Key for the global external morning opening time entity
@@ -270,6 +299,7 @@ STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_START: Final[str] = "section_sun_azimuth_to
 STEP_2_SECTION_SUN_AZIMUTH_TOLERANCE_END: Final[str] = "section_sun_azimuth_tolerance_end"
 STEP_2_SECTION_SUN_ELEVATION_MIN: Final[str] = "section_sun_elevation_min"
 STEP_2_SECTION_SUN_ELEVATION_MAX: Final[str] = "section_sun_elevation_max"
+STEP_3_SECTION_DAYTIME_STRATEGY: Final[str] = "section_daytime_strategy"
 STEP_3_SECTION_MAX_CLOSURE: Final[str] = "section_max_closure"
 STEP_3_SECTION_MIN_CLOSURE: Final[str] = "section_min_closure"
 STEP_3_SECTION_EVENING_MAX_CLOSURE: Final[str] = "section_evening_max_closure"
@@ -315,6 +345,8 @@ TRANSL_LOGBOOK_REASON_HEAT_PROTECTION: Final[str] = "reason_heat_protection"
 TRANSL_LOGBOOK_REASON_END_HEAT_PROTECTION: Final[str] = "reason_end_heat_protection"
 TRANSL_LOGBOOK_REASON_END_MANUAL_OVERRIDE: Final[str] = "reason_end_manual_override"
 TRANSL_LOGBOOK_REASON_LET_LIGHT_IN: Final[str] = "reason_let_light_in"
+TRANSL_LOGBOOK_REASON_DAYTIME_PRIVACY: Final[str] = "reason_daytime_privacy"
+TRANSL_LOGBOOK_REASON_DAYTIME_EXTERNAL_CONTROL: Final[str] = "reason_daytime_external_control"
 TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET: Final[str] = "reason_close_after_sunset"
 TRANSL_LOGBOOK_REASON_END_EVENING_CLOSURE: Final[str] = "reason_end_evening_closure"
 TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE: Final[str] = "reason_keep_closed_after_evening_closure"

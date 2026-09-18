@@ -146,6 +146,12 @@ def _legacy_reason_for_movement_decision(
             return CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
         if control_reason == MovementControlReason.LET_LIGHT_IN:
             return CoverMovementReason.OPENING_LET_LIGHT_IN
+        if control_reason in (
+            MovementControlReason.DAYTIME_LET_LIGHT_IN,
+            MovementControlReason.DAYTIME_PRIVACY,
+            MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
+        ):
+            return CoverMovementReason.OPENING_LET_LIGHT_IN
         return None
 
     if movement_decision.direction == MovementDirection.CLOSING or (
@@ -157,6 +163,12 @@ def _legacy_reason_for_movement_decision(
             return CoverMovementReason.CLOSING_AFTER_SUNSET
         if control_reason == MovementControlReason.EVENING_CLOSURE_HOLD:
             return CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE
+        if control_reason in (
+            MovementControlReason.DAYTIME_LET_LIGHT_IN,
+            MovementControlReason.DAYTIME_PRIVACY,
+            MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
+        ):
+            return CoverMovementReason.CLOSING_HEAT_PROTECTION
 
     return None
 
@@ -1065,14 +1077,17 @@ class CoverAutomation:
     def _is_current_position_automation_owned(self, current_pos: int) -> bool:
         """Return whether the current position still belongs to automation ownership."""
 
-        if self._cover_pos_history_mgr.get_closed_by_automation_reason(self.entity_id) is None:
-            return False
-
         automation_owned_position = self._cover_pos_history_mgr.get_automation_owned_position(self.entity_id)
         if not isinstance(automation_owned_position, int):
             return False
 
-        return self._positions_match_within_delta(current_pos, automation_owned_position)
+        managed_state = self._cover_pos_history_mgr.get_automation_managed_state(self.entity_id)
+        if isinstance(managed_state, AutomationManagedState):
+            return self._positions_match_within_delta(current_pos, automation_owned_position)
+
+        return self._cover_pos_history_mgr.get_closed_by_automation_reason(
+            self.entity_id
+        ) is not None and self._positions_match_within_delta(current_pos, automation_owned_position)
 
     def _capture_ownership_debug_snapshot(self, current_pos: int | None) -> OwnershipDebugSnapshot:
         """Capture ownership-related debug state for this evaluation."""
@@ -1092,7 +1107,7 @@ class CoverAutomation:
         if (
             current_pos is not None
             and self.resolved.automatic_reopening_mode == const.ReopeningMode.PASSIVE
-            and closed_by_automation_reason is not None
+            and (managed_state is not None or closed_by_automation_reason is not None)
         ):
             passive_reopening_eligible = self._is_passive_reopening_eligible(current_pos)
             if isinstance(automation_owned_position, int):
@@ -1402,128 +1417,106 @@ class CoverAutomation:
                     lockout_protection_active=False,
                 )
             else:
-                reopening_mode = self.resolved.automatic_reopening_mode
-                configured_open_target = min(
-                    const.COVER_POS_FULLY_OPEN,
-                    self._get_cover_closure_limit(get_max=False),
-                )
-                open_target = max(current_pos, configured_open_target)
-                passive_reopening_eligible = (
-                    reopening_mode == const.ReopeningMode.PASSIVE
-                    and last_automation_closing_reason is not None
-                    and self._is_passive_reopening_eligible(current_pos)
-                )
-                reopening_allowed = reopening_mode == const.ReopeningMode.ACTIVE or (passive_reopening_eligible)
-                reopening_reason = self._get_opening_movement_reason(
-                    last_automation_closing_reason,
-                    manual_override_just_expired=manual_override_just_expired,
-                )
+                daytime_mode = self.resolved.automatic_reopening_mode
+                strategy = self._get_effective_daytime_strategy()
+                target_position = self._get_daytime_target(strategy)
+                managed_state = self._cover_pos_history_mgr.get_automation_managed_state(self.entity_id)
+                has_automation_ownership = isinstance(managed_state, AutomationManagedState) or last_automation_closing_reason is not None
+                passive_daytime_eligible = has_automation_ownership and self._is_passive_reopening_eligible(current_pos)
 
-                if (
-                    reopening_allowed
-                    and sensor_data.sun_elevation <= 0
-                    and reopening_reason != CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
-                ):
+                if daytime_mode == const.ReopeningMode.OFF:
                     self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = current_pos
-                    desired_pos_friendly_name = "keeping current position because the sun is below the horizon"
-                    decision = MovementDecision(
-                        desired_position=desired_pos,
-                        direction=MovementDirection.HOLD,
-                        control_reason=None,
-                        lockout_protection_active=False,
-                    )
-                elif reopening_allowed and self._should_delay_heat_protection_reopen(last_automation_closing_reason):
-                    delay_seconds = self.resolved.tilt_open_to_cover_open_delay
-                    if delayed_reopen_action is None:
-                        self._cover_pos_history_mgr.set_delayed_reopen_action(
-                            self.entity_id,
-                            reopen_at=time_now + timedelta(seconds=delay_seconds),
-                        )
-                        desired_pos = current_pos
-                        desired_pos_friendly_name = "opening tilt before delayed reopening after heat protection"
-                        decision = MovementDecision(
-                            desired_position=desired_pos,
-                            direction=MovementDirection.HOLD,
-                            control_reason=MovementControlReason.TILT_TO_COVER_OPEN_DELAY,
-                            lockout_protection_active=False,
-                        )
-                    elif time_now < delayed_reopen_action.reopen_at:
-                        desired_pos = current_pos
-                        desired_pos_friendly_name = "keeping current position until delayed reopening after heat protection expires"
-                        decision = MovementDecision(
-                            desired_position=desired_pos,
-                            direction=MovementDirection.HOLD,
-                            control_reason=MovementControlReason.TILT_TO_COVER_OPEN_DELAY,
-                            lockout_protection_active=False,
-                        )
-                    else:
-                        desired_pos = open_target
-                        desired_pos_friendly_name = (
-                            "already at the open target after delayed reopening"
-                            if current_pos == desired_pos
-                            else "opening because delayed reopening after heat protection has expired"
-                        )
-                        decision = MovementDecision(
-                            desired_position=desired_pos,
-                            direction=MovementDirection.OPENING,
-                            control_reason=_movement_control_reason_for_opening_reason(reopening_reason),
-                            lockout_protection_active=False,
-                        )
-                elif reopening_mode == const.ReopeningMode.ACTIVE:
-                    self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
-                    desired_pos = open_target
-                    desired_pos_friendly_name = (
-                        "already at the open target" if current_pos == desired_pos else "opening because closing conditions no longer apply"
-                    )
-                    decision = MovementDecision(
-                        desired_position=desired_pos,
-                        direction=MovementDirection.OPENING,
-                        control_reason=_movement_control_reason_for_opening_reason(reopening_reason),
-                        lockout_protection_active=False,
-                    )
-                elif passive_reopening_eligible:
-                    self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
-                    desired_pos = open_target
-                    desired_pos_friendly_name = (
-                        "already at the open target after an automation-driven closure"
-                        if current_pos == desired_pos
-                        else "opening because this cover was previously closed by automation"
-                    )
-                    decision = MovementDecision(
-                        desired_position=desired_pos,
-                        direction=MovementDirection.OPENING,
-                        control_reason=_movement_control_reason_for_opening_reason(reopening_reason),
-                        lockout_protection_active=False,
-                    )
-                elif reopening_mode == const.ReopeningMode.PASSIVE:
+                    desired_pos_friendly_name = "keeping current position because daytime control is disabled"
+                    decision = MovementDecision(desired_pos, MovementDirection.HOLD, None, False)
+                elif daytime_mode == const.ReopeningMode.PASSIVE and not passive_daytime_eligible:
                     self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                     desired_pos = current_pos
                     desired_pos_friendly_name = (
-                        "already at the open target"
-                        if current_pos == open_target
-                        else "keeping current position because passive reopening only applies after automation closed this cover"
+                        "keeping current position because daytime control is passive and this position is not automation-owned"
                     )
-                    decision = MovementDecision(
-                        desired_position=desired_pos,
-                        direction=MovementDirection.HOLD,
-                        control_reason=None,
-                        lockout_protection_active=False,
-                    )
+                    decision = MovementDecision(desired_pos, MovementDirection.HOLD, None, False)
+                elif target_position is None:
+                    self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+                    desired_pos = current_pos
+                    desired_pos_friendly_name = "keeping current position because the external daytime target is not set"
+                    decision = MovementDecision(desired_pos, MovementDirection.HOLD, None, False)
                 else:
-                    self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
-                    desired_pos = current_pos
-                    desired_pos_friendly_name = (
-                        "already at the open target"
-                        if current_pos == open_target
-                        else "keeping current position because automatic reopening is disabled"
+                    required_direction = (
+                        MovementDirection.OPENING
+                        if target_position > current_pos
+                        else MovementDirection.CLOSING
+                        if target_position < current_pos
+                        else MovementDirection.HOLD
                     )
-                    decision = MovementDecision(
-                        desired_position=desired_pos,
-                        direction=MovementDirection.HOLD,
-                        control_reason=None,
-                        lockout_protection_active=False,
+                    control_reason = {
+                        const.DaytimeStrategy.LET_LIGHT_IN: MovementControlReason.DAYTIME_LET_LIGHT_IN,
+                        const.DaytimeStrategy.PRIVACY: MovementControlReason.DAYTIME_PRIVACY,
+                        const.DaytimeStrategy.EXTERNAL_CONTROL: MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
+                    }[strategy]
+                    daytime_directions = self._get_daytime_movement_directions()
+                    direction_allowed = (
+                        required_direction == MovementDirection.HOLD
+                        or daytime_directions == const.DaytimeMovementDirections.OPEN_AND_CLOSE
+                        or (
+                            required_direction == MovementDirection.OPENING
+                            and daytime_directions == const.DaytimeMovementDirections.OPEN_ONLY
+                        )
+                        or (
+                            required_direction == MovementDirection.CLOSING
+                            and daytime_directions == const.DaytimeMovementDirections.CLOSE_ONLY
+                        )
                     )
+
+                    if required_direction == MovementDirection.OPENING and sensor_data.sun_elevation <= 0:
+                        self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+                        desired_pos = current_pos
+                        desired_pos_friendly_name = "keeping current position because the sun is below the horizon"
+                        decision = MovementDecision(desired_pos, MovementDirection.HOLD, None, False)
+                    elif not direction_allowed:
+                        self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+                        desired_pos = current_pos
+                        desired_pos_friendly_name = "keeping current position because daytime movement direction is disabled"
+                        decision = MovementDecision(desired_pos, MovementDirection.HOLD, None, False)
+                    elif required_direction == MovementDirection.OPENING and self._should_delay_heat_protection_reopen(
+                        last_automation_closing_reason
+                    ):
+                        delay_seconds = self.resolved.tilt_open_to_cover_open_delay
+                        if delayed_reopen_action is None:
+                            self._cover_pos_history_mgr.set_delayed_reopen_action(
+                                self.entity_id,
+                                reopen_at=time_now + timedelta(seconds=delay_seconds),
+                            )
+                            desired_pos = current_pos
+                            desired_pos_friendly_name = "opening tilt before delayed reopening after heat protection"
+                            decision = MovementDecision(
+                                desired_pos,
+                                MovementDirection.HOLD,
+                                MovementControlReason.TILT_TO_COVER_OPEN_DELAY,
+                                False,
+                            )
+                        elif time_now < delayed_reopen_action.reopen_at:
+                            desired_pos = current_pos
+                            desired_pos_friendly_name = "keeping current position until delayed reopening after heat protection expires"
+                            decision = MovementDecision(
+                                desired_pos,
+                                MovementDirection.HOLD,
+                                MovementControlReason.TILT_TO_COVER_OPEN_DELAY,
+                                False,
+                            )
+                        else:
+                            desired_pos = target_position
+                            desired_pos_friendly_name = "moving after delayed reopening following heat protection"
+                            decision = MovementDecision(desired_pos, required_direction, control_reason, False)
+                    else:
+                        self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+                        desired_pos = target_position
+                        desired_pos_friendly_name = (
+                            "already at the daytime target"
+                            if required_direction == MovementDirection.HOLD
+                            else "moving to the daytime target"
+                        )
+                        decision = MovementDecision(desired_pos, required_direction, control_reason, False)
 
         self._log_cover_msg(
             f"Current position: {current_pos}%, desired position: {desired_pos}%, {desired_pos_friendly_name}", const.LogSeverity.INFO
@@ -1686,6 +1679,63 @@ class CoverAutomation:
         limit = to_int_or_none(self.config.get(per_cover_key))
         return limit if limit is not None else global_default
 
+    def _get_effective_daytime_strategy(self) -> const.DaytimeStrategy:
+        """Return this cover's strategy, preferring its optional override."""
+
+        per_cover_key = f"{self.entity_id}_{const.COVER_SFX_DAYTIME_STRATEGY}"
+        raw_strategy = self.config.get(per_cover_key, self.resolved.daytime_strategy)
+        if not isinstance(raw_strategy, (str, const.DaytimeStrategy)):
+            return const.DaytimeStrategy.LET_LIGHT_IN
+        try:
+            return const.DaytimeStrategy(raw_strategy)
+        except ValueError:
+            self._log_cover_msg(
+                f"Invalid daytime strategy for {per_cover_key}: {raw_strategy!r}; using the global setting",
+                const.LogSeverity.WARNING,
+            )
+            return self.resolved.daytime_strategy
+
+    def _get_daytime_movement_directions(self) -> const.DaytimeMovementDirections:
+        """Return the configured allowed directions with a safe default."""
+
+        raw_directions = self.resolved.daytime_movement_directions
+        if not isinstance(raw_directions, (str, const.DaytimeMovementDirections)):
+            return const.DaytimeMovementDirections.OPEN_ONLY
+        try:
+            return const.DaytimeMovementDirections(raw_directions)
+        except ValueError:
+            return const.DaytimeMovementDirections.OPEN_ONLY
+
+    def _get_daytime_target(self, strategy: const.DaytimeStrategy) -> int | None:
+        """Resolve the configured normal-daytime target for one cover."""
+
+        if strategy == const.DaytimeStrategy.LET_LIGHT_IN:
+            return self._get_cover_closure_limit(get_max=False)
+        if strategy == const.DaytimeStrategy.PRIVACY:
+            return self._get_cover_closure_limit(get_max=True)
+
+        per_cover_strategy_key = f"{self.entity_id}_{const.COVER_SFX_DAYTIME_STRATEGY}"
+        position_key = (
+            f"{self.entity_id}_{const.COVER_SFX_DAYTIME_EXTERNAL_POSITION}"
+            if self.config.get(per_cover_strategy_key) == const.DaytimeStrategy.EXTERNAL_CONTROL
+            else const.NUMBER_KEY_DAYTIME_EXTERNAL_POSITION
+        )
+        raw_position = self.config.get(position_key)
+        position = to_int_or_none(raw_position)
+        if position is None:
+            self._log_cover_msg(
+                f"External daytime position is not set for {position_key}; skipping daytime control",
+                const.LogSeverity.DEBUG,
+            )
+            return None
+        if not const.COVER_POS_FULLY_CLOSED <= position <= const.COVER_POS_FULLY_OPEN:
+            self._log_cover_msg(
+                f"External daytime position for {position_key} is out of range: {position}; skipping daytime control",
+                const.LogSeverity.WARNING,
+            )
+            return None
+        return position
+
     #
     # _move_cover_if_needed
     #
@@ -1757,6 +1807,15 @@ class CoverAutomation:
                     self.entity_id,
                     AutomationManagedState(position=actual_pos, automation_mode=AutomationMode.EVENING_CLOSURE),
                 )
+            elif decision.control_reason in (
+                MovementControlReason.DAYTIME_LET_LIGHT_IN,
+                MovementControlReason.DAYTIME_PRIVACY,
+                MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
+            ):
+                self._cover_pos_history_mgr.set_automation_managed_state(
+                    self.entity_id,
+                    AutomationManagedState(position=actual_pos, automation_mode=AutomationMode.DAYTIME_CONTROL),
+                )
             else:
                 self._cover_pos_history_mgr.clear_automation_managed_state(self.entity_id)
 
@@ -1810,6 +1869,24 @@ class CoverAutomation:
                     if previous_automation_mode == AutomationMode.HEAT_PROTECTION
                     else const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN
                 )
+            elif decision.control_reason in (
+                MovementControlReason.DAYTIME_LET_LIGHT_IN,
+                MovementControlReason.DAYTIME_PRIVACY,
+                MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
+            ):
+                verb_key = (
+                    const.TRANSL_LOGBOOK_VERB_OPENING
+                    if decision.direction == MovementDirection.OPENING
+                    else const.TRANSL_LOGBOOK_VERB_CLOSING
+                )
+                if decision.control_reason == MovementControlReason.DAYTIME_PRIVACY:
+                    reason_key = const.TRANSL_LOGBOOK_REASON_DAYTIME_PRIVACY
+                elif decision.control_reason == MovementControlReason.DAYTIME_EXTERNAL_CONTROL:
+                    reason_key = const.TRANSL_LOGBOOK_REASON_DAYTIME_EXTERNAL_CONTROL
+                elif previous_automation_mode == AutomationMode.HEAT_PROTECTION:
+                    reason_key = const.TRANSL_LOGBOOK_REASON_END_HEAT_PROTECTION
+                else:
+                    reason_key = const.TRANSL_LOGBOOK_REASON_LET_LIGHT_IN
             elif decision.direction == MovementDirection.CLOSING and decision.control_reason == MovementControlReason.EVENING_CLOSURE:
                 verb_key = const.TRANSL_LOGBOOK_VERB_CLOSING
                 reason_key = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET

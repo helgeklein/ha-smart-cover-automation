@@ -17,7 +17,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Krok 1 z 6",
+                "title": "Smart Cover Automation - Krok 1 z 7",
                 "description": "Wybierz **czujnik prognozy pogody** oraz **rolety** do automatyzacji (wymagane).",
                 "data": {
                     "covers": "Rolety do automatyzacji:",
@@ -29,7 +29,7 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Krok 2 z 6",
+                "title": "Smart Cover Automation - Krok 2 z 7",
                 "description": "Skonfiguruj **azymut** (kierunek) dla każdej rolety.\n\nMożesz także ograniczyć kąty, przy których automatyzacja uznaje, że słońce świeci na roletę we wszystkich czterech kierunkach (w lewo, w prawo, w górę i w dół), aby uwzględnić okapy dachowe, inne budynki lub pobliskie drzewa. Skonfigurowane tutaj wartości dla poszczególnych rolet nadpisują globalne ustawienia kąta słońca dostępne na stronie urządzenia instancji integracji.\n\n(0°=Północ, 90°=Wschód, 180°=Południe, 270°=Zachód)",
                 "sections": {
                     "section_azimuth": {
@@ -50,7 +50,24 @@
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Krok 3 z 6",
+                "title": "Smart Cover Automation - Krok 3 z 7",
+                "description": "Skonfiguruj normalne sterowanie osłonami w ciągu dnia. Ustawienia globalne dotyczą wszystkich osłon, chyba że zostaną zastąpione dla konkretnej osłony.",
+                "data": {
+                    "daytime_strategy": "Strategia dzienna:",
+                    "daytime_movement_directions": "Kierunki ruchu w ciągu dnia:"
+                },
+                "data_description": {
+                    "daytime_strategy": "Wybierz, jak integracja powinna ustawiać osłony w ciągu dnia, gdy ochrona przed ciepłem nie jest aktywna.",
+                    "daytime_movement_directions": "Wybierz, czy normalne sterowanie dzienne może otwierać osłony, zamykać je czy wykonywać oba ruchy."
+                },
+                "sections": {
+                    "section_daytime_strategy": {
+                        "name": "Strategia dzienna (dla osłony)"
+                    }
+                }
+            },
+            "4": {
+                "title": "Smart Cover Automation - Krok 4 z 7",
                 "description": "Skonfiguruj pozycje **min/max** rolet (opcjonalne).\nUstawienia globalne dotyczą wszystkich rolet, chyba że zostaną nadpisane dla konkretnej rolety.\n(0 = całkowicie zamknięte, 100 = całkowicie otwarte)",
                 "data": {
                     "covers_max_closure": "Maksymalna pozycja rolety (globalnie):",
@@ -74,8 +91,8 @@
                     }
                 }
             },
-            "4": {
-                "title": "Smart Cover Automation - Krok 4 z 6",
+            "5": {
+                "title": "Smart Cover Automation - Krok 5 z 7",
                 "description": "Skonfiguruj **kontrolę kąta nachylenia** dla rolet z regulowanymi lamelami (opcjonalne).\nUstawienia globalne dotyczą wszystkich rolet z nachyleniem, chyba że zostaną nadpisane dla poszczególnych rolet.",
                 "data": {
                     "tilt_mode_day": "Kontrola nachylenia (dzień):",
@@ -112,8 +129,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Krok 5 z 6",
+            "6": {
+                "title": "Smart Cover Automation - Krok 6 z 7",
                 "description": "Skonfiguruj **dodatkowe ustawienia** i opcjonalne **czujniki okienne** dla każdej rolety. Czujniki okienne włączają ochronę przed zablokowaniem: jeśli powiązany czujnik zgłosi otwarte okno, roleta nie zostanie zamknięta.",
                 "sections": {
                     "section_additional_settings": {
@@ -130,8 +147,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Krok 6 z 6",
+            "7": {
+                "title": "Smart Cover Automation - Krok 7 z 7",
                 "description": "Skonfiguruj **ustawienia czasowe** automatyzacji (opcjonalne).",
                 "data": {},
                 "data_description": {},
@@ -162,7 +179,6 @@
                             "close_covers_after_sunset_cover_list": "Rolety:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignoruj czas ręcznego nadpisania:",
                             "close_covers_after_sunset_keep_closed": "Pozostaw rolety zamknięte:",
-                            "automatic_reopening_mode": "Automatyczne ponowne otwieranie:",
                             "morning_opening_mode": "Poranne otwieranie: tryb:",
                             "morning_opening_time": "Poranne otwieranie: godzina:"
                         },
@@ -173,7 +189,6 @@
                             "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Po włączeniu zamykanie wieczorne może poruszyć wybrane rolety, nawet jeśli nadal trwa pauza po ręcznym nadpisaniu.",
                             "close_covers_after_sunset_keep_closed": "Po włączeniu wybrane rolety zostaną ponownie zamknięte podczas nocnego okresu wieczornego zamykania, jeśli zostaną ponownie otwarte. Czas ręcznego nadpisania jest respektowany. Tryb blokady ma pierwszeństwo, więc rolety zostaną ponownie zamknięte dopiero po wyłączeniu trybu blokady.",
-                            "automatic_reopening_mode": "Wybierz, jak automatyzacja ma ponownie otwierać rolety, gdy warunki zamknięcia przestaną obowiązywać. Aktywny zawsze ponownie otwiera rolety, Pasywny ponownie otwiera tylko rolety wcześniej zamknięte przez automatyzację, a Wyłączony wyłącza automatyczne ponowne otwieranie.",
                             "morning_opening_mode": "Wybierz, czy poranne otwieranie ma następować przed wschodem słońca, po wschodzie słońca, o stałej godzinie czy być dostarczane przez encję.",
                             "morning_opening_time": "W zależności od wybranego trybu: względne opóźnienie względem wschodu słońca lub stała godzina dnia. Ignorowane w trybie zewnętrznym."
                         }
@@ -214,7 +229,7 @@
         },
         "select": {
             "automatic_reopening_mode": {
-                "name": "Automatyczne ponowne otwieranie",
+                "name": "Tryb sterowania dziennego",
                 "state": {
                     "active": "Aktywny",
                     "passive": "Pasywny",
@@ -317,6 +332,12 @@
             },
             "daily_min_temperature_threshold": {
                 "name": "Ochrona przed upałem: min. dzienna temperatura minimalna"
+            },
+            "daytime_external_position": {
+                "name": "Dzienna pozycja osłony: sterowanie zewnętrzne"
+            },
+            "cover_daytime_external_position": {
+                "name": "{cover_name}: Dzienna pozycja osłony: sterowanie zewnętrzne"
             }
         },
         "switch": {
@@ -404,6 +425,14 @@
                 "reason_keep_closed_after_evening_closure": {
                     "name": "zachować prywatność przez noc",
                     "description": "Powód używany, gdy roleta zamyka się ponownie podczas nocnego okresu utrzymywania zamknięcia."
+                },
+                "reason_daytime_privacy": {
+                    "name": "zapewnić prywatność w ciągu dnia",
+                    "description": "Powód używany, gdy osłona przesuwa się do swojej dziennej pozycji prywatności."
+                },
+                "reason_daytime_external_control": {
+                    "name": "stosować zewnętrzne sterowanie dzienne",
+                    "description": "Powód używany, gdy osłona przesuwa się do zewnętrznie podanej pozycji dziennej."
                 }
             }
         },
@@ -464,6 +493,21 @@
             "options": {
                 "fixed_time": "Czas bezwzględny",
                 "external": "Zewnętrzne (czasy dostarczane przez encje)"
+            }
+        },
+        "daytime_strategy": {
+            "options": {
+                "use_global": "Użyj ustawienia globalnego",
+                "let_light_in": "Wpuść światło",
+                "privacy": "Prywatność",
+                "external_control": "Sterowanie zewnętrzne"
+            }
+        },
+        "daytime_movement_directions": {
+            "options": {
+                "open_only": "Tylko otwieranie",
+                "close_only": "Tylko zamykanie",
+                "open_and_close": "Otwieranie i zamykanie"
             }
         }
     }

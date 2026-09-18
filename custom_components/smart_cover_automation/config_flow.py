@@ -338,10 +338,88 @@ class FlowHelper:
         return schema_dict
 
     #
-    # build_schema_step_3
+    # build_schema_step_3_daytime
     #
     @staticmethod
-    def build_schema_step_3(
+    def build_schema_step_3_daytime(
+        covers: list[str],
+        defaults: Mapping[str, Any],
+        resolved_settings: ResolvedConfig,
+        hass: Any | None = None,
+        rendered_field_maps: dict[str, dict[str, str]] | None = None,
+    ) -> vol.Schema:
+        """Build schema for Step 3: daytime position control."""
+
+        strategy_options = [selector.SelectOptionDict(value=strategy.value, label=strategy.value) for strategy in const.DaytimeStrategy]
+        strategy_selector = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=strategy_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="daytime_strategy",
+            )
+        )
+        direction_options = [
+            selector.SelectOptionDict(value=direction.value, label=direction.value) for direction in const.DaytimeMovementDirections
+        ]
+        direction_selector = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=direction_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="daytime_movement_directions",
+            )
+        )
+        schema_dict: dict[vol.Marker, object] = {
+            vol.Required(ConfKeys.DAYTIME_STRATEGY.value, default=resolved_settings.daytime_strategy): strategy_selector,
+            vol.Required(
+                ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value,
+                default=resolved_settings.daytime_movement_directions,
+            ): direction_selector,
+        }
+
+        cover_labels = FlowHelper._build_cover_labels(covers, hass)
+        cover_strategy_options = [
+            selector.SelectOptionDict(value=const.DAYTIME_STRATEGY_USE_GLOBAL, label=const.DAYTIME_STRATEGY_USE_GLOBAL),
+            *strategy_options,
+        ]
+        cover_strategy_selector = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=cover_strategy_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="daytime_strategy",
+            )
+        )
+        cover_schema_dict: dict[vol.Marker, object] = {}
+        for cover in sorted(covers):
+            key = f"{cover}_{const.COVER_SFX_DAYTIME_STRATEGY}"
+            default = defaults.get(key, const.DAYTIME_STRATEGY_USE_GLOBAL)
+            cover_schema_dict[
+                vol.Optional(
+                    cover_labels[cover],
+                    default=default,
+                    description=FlowHelper._build_field_description(cover_labels[cover]),
+                )
+            ] = cover_strategy_selector
+
+        if cover_schema_dict:
+            FlowHelper._store_cover_field_map(
+                rendered_field_maps,
+                const.STEP_3_SECTION_DAYTIME_STRATEGY,
+                covers,
+                const.COVER_SFX_DAYTIME_STRATEGY,
+                cover_labels,
+            )
+            schema_dict[vol.Optional(const.STEP_3_SECTION_DAYTIME_STRATEGY)] = section(
+                vol.Schema(cover_schema_dict),
+                {"collapsed": True},
+            )
+
+        return vol.Schema(schema_dict)
+
+    #
+    # build_schema_step_4
+    #
+    @staticmethod
+    def build_schema_step_4(
         covers: list[str],
         defaults: Mapping[str, Any],
         resolved_settings: ResolvedConfig,
@@ -519,7 +597,7 @@ class FlowHelper:
     # build_schema_step_4_tilt
     #
     @staticmethod
-    def build_schema_step_4_tilt(
+    def build_schema_step_5_tilt(
         covers: list[str],
         defaults: Mapping[str, Any],
         resolved_settings: ResolvedConfig,
@@ -788,7 +866,7 @@ class FlowHelper:
     # build_schema_step_5
     #
     @staticmethod
-    def build_schema_step_5(
+    def build_schema_step_6(
         covers: list[str],
         defaults: Mapping[str, Any],
         hass: Any | None = None,
@@ -899,7 +977,7 @@ class FlowHelper:
     # build_schema_step_6
     #
     @staticmethod
-    def build_schema_step_6(covers: list[str], resolved_settings: ResolvedConfig) -> vol.Schema:
+    def build_schema_step_7(covers: list[str], resolved_settings: ResolvedConfig) -> vol.Schema:
         """Build schema for step 6 settings.
 
         Args:
@@ -1057,20 +1135,6 @@ class FlowHelper:
                 default=resolved_settings.evening_closure_keep_closed,
             )
         ] = selector.BooleanSelector()
-
-        automatic_reopening_mode_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.ReopeningMode]
-        evening_closure_schema_dict[
-            vol.Required(
-                ConfKeys.AUTOMATIC_REOPENING_MODE.value,
-                default=resolved_settings.automatic_reopening_mode,
-            )
-        ] = selector.SelectSelector(
-            selector.SelectSelectorConfig(
-                options=automatic_reopening_mode_options,
-                mode=selector.SelectSelectorMode.DROPDOWN,
-                translation_key="automatic_reopening_mode",
-            )
-        )
 
         # Group settings in collapsed section
         schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
@@ -1271,10 +1335,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 if suffix == const.COVER_SFX_WINDOW_SENSORS:
                     # Window sensors are lists - keep as-is
                     new_value = user_input_extracted[key]
-                elif suffix in (const.COVER_SFX_TILT_MODE_DAY, const.COVER_SFX_TILT_MODE_NIGHT):
-                    # Tilt modes are strings - keep as-is (or None if cleared)
+                elif suffix in (
+                    const.COVER_SFX_DAYTIME_STRATEGY,
+                    const.COVER_SFX_TILT_MODE_DAY,
+                    const.COVER_SFX_TILT_MODE_NIGHT,
+                ):
+                    # Select-based overrides are strings; the inherit-global option clears its override.
                     raw_val = user_input_extracted[key]
-                    new_value = str(raw_val) if not OptionsFlowHandler._is_empty_value(raw_val) else None
+                    new_value = (
+                        str(raw_val)
+                        if raw_val != const.DAYTIME_STRATEGY_USE_GLOBAL and not OptionsFlowHandler._is_empty_value(raw_val)
+                        else None
+                    )
                 else:
                     # Numeric per-cover overrides are integers (or None if cleared)
                     new_value = OptionsFlowHandler._to_int(user_input_extracted[key])
@@ -1795,14 +1867,57 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
             self._config_data.update(sun_azimuth_tolerance_data)
 
-            # Store step 2 data (temporarily, for the next step of the flow) and proceed to step 3
+            # Store Step 2 data and proceed to Step 3.
             return await self.async_step_3()
 
     #
     # async_step_3
     #
     async def async_step_3(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 3: Configure max/min position for each cover."""
+        """Step 3: Configure daytime position control."""
+
+        current_settings = self._current_settings()
+        covers = self._get_covers()
+        if user_input is None:
+            rendered_cover_field_maps: dict[str, dict[str, str]] = {}
+            return self._show_form(
+                step_id="3",
+                data_schema=FlowHelper.build_schema_step_3_daytime(
+                    covers=covers,
+                    defaults=current_settings,
+                    resolved_settings=resolve(current_settings),
+                    hass=self.hass,
+                    rendered_field_maps=rendered_cover_field_maps,
+                ),
+                last_step=False,
+                rendered_cover_field_maps=rendered_cover_field_maps,
+            )
+
+        self._logger.debug(f"Options flow Step 3 user input: {user_input}")
+        self._config_data[ConfKeys.DAYTIME_STRATEGY.value] = user_input[ConfKeys.DAYTIME_STRATEGY.value]
+        self._config_data[ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value] = user_input[ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value]
+        self._config_data.update(
+            self._build_section_cover_settings(
+                user_input,
+                const.STEP_3_SECTION_DAYTIME_STRATEGY,
+                const.COVER_SFX_DAYTIME_STRATEGY,
+                covers,
+                current_settings,
+                self.hass,
+                self._get_cover_field_map(
+                    const.STEP_3_SECTION_DAYTIME_STRATEGY,
+                    covers,
+                    const.COVER_SFX_DAYTIME_STRATEGY,
+                ),
+            )
+        )
+        return await self.async_step_4()
+
+    #
+    # async_step_4
+    #
+    async def async_step_4(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        """Step 4: Configure max/min position for each cover."""
 
         if user_input is None:
             # Get currently valid settings
@@ -1813,7 +1928,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             selected_covers = self._get_covers()
 
             rendered_cover_field_maps: dict[str, dict[str, str]] = {}
-            data_schema = FlowHelper.build_schema_step_3(
+            data_schema = FlowHelper.build_schema_step_4(
                 covers=selected_covers,
                 defaults=current_settings,
                 resolved_settings=resolved_settings,
@@ -1823,13 +1938,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             # Show the form
             return self._show_form(
-                step_id="3",
+                step_id="4",
                 data_schema=data_schema,
                 last_step=False,
                 rendered_cover_field_maps=rendered_cover_field_maps,
             )
 
-        self._logger.debug(f"Options flow step 3 user input: {user_input}")
+        self._logger.debug(f"Options flow Step 4 user input: {user_input}")
 
         # Get the selected covers
         covers_in_input = self._get_covers()
@@ -1892,12 +2007,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_data.update(evening_max_closure_data)
 
         # Proceed to step 4
-        return await self.async_step_4()
+        return await self.async_step_5()
 
     #
     # async_step_4
     #
-    async def async_step_4(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+    async def async_step_5(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 4: Configure tilt angle control for covers with tiltable slats."""
 
         if user_input is None:
@@ -1909,7 +2024,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             selected_covers = self._get_covers()
 
             rendered_cover_field_maps: dict[str, dict[str, str]] = {}
-            data_schema = FlowHelper.build_schema_step_4_tilt(
+            data_schema = FlowHelper.build_schema_step_5_tilt(
                 covers=selected_covers,
                 defaults=current_settings,
                 resolved_settings=resolved_settings,
@@ -1919,18 +2034,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             # Show the form
             return self._show_form(
-                step_id="4",
+                step_id="5",
                 data_schema=data_schema,
                 last_step=False,
                 rendered_cover_field_maps=rendered_cover_field_maps,
             )
 
-        self._logger.debug(f"Options flow step 4 user input: {user_input}")
+        self._logger.debug(f"Options flow Step 5 user input: {user_input}")
 
         # Get the selected covers
         covers_in_input = self._get_covers()
 
-        # Get currently valid settings
+        """Step 6: Configure additional settings and window sensors."""
         current_settings = self._current_settings()
 
         # Store global tilt settings
@@ -1974,12 +2089,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_data.update(tilt_night_data)
 
         # Proceed to step 5
-        return await self.async_step_5()
+        return await self.async_step_6()
 
     #
     # async_step_5
     #
-    async def async_step_5(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+    async def async_step_6(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 5: Configure additional settings and window sensors."""
 
         if user_input is None:
@@ -1990,7 +2105,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             selected_covers = self._get_covers()
 
             rendered_cover_field_maps: dict[str, dict[str, str]] = {}
-            data_schema = FlowHelper.build_schema_step_5(
+            data_schema = FlowHelper.build_schema_step_6(
                 covers=selected_covers,
                 defaults=current_settings,
                 hass=self.hass,
@@ -1999,18 +2114,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             # Show the form
             return self._show_form(
-                step_id="5",
+                step_id="6",
                 data_schema=data_schema,
                 last_step=False,
                 rendered_cover_field_maps=rendered_cover_field_maps,
             )
 
-        self._logger.debug(f"Options flow step 5 user input: {user_input}")
+        self._logger.debug(f"Options flow Step 6 user input: {user_input}")
 
         # Get the selected covers
         covers_in_input = self._get_covers()
 
-        # Get currently valid settings
+        """Step 7: Configure evening closure and night silence settings."""
         current_settings = self._current_settings()
 
         additional_settings, sections_present = FlowHelper.extract_from_section_input(
@@ -2037,12 +2152,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_data.update(window_sensor_data)
 
         # Proceed to step 6
-        return await self.async_step_6()
+        return await self.async_step_7()
 
     #
     # async_step_6
     #
-    async def async_step_6(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+    async def async_step_7(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         """Step 6: Configure evening closure and night silence settings."""
 
         if user_input is None:
@@ -2056,12 +2171,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             # Show the form
             return self._show_form(
-                step_id="6",
-                data_schema=FlowHelper.build_schema_step_6(covers=selected_covers, resolved_settings=resolved_settings),
+                step_id="7",
+                data_schema=FlowHelper.build_schema_step_7(covers=selected_covers, resolved_settings=resolved_settings),
                 last_step=True,
             )
 
-        self._logger.debug(f"Options flow step 6 user input: {user_input}")
+        self._logger.debug(f"Options flow Step 7 user input: {user_input}")
 
         # Extract section data if present
         section_names = {const.STEP_6_SECTION_TIME_RANGE, const.STEP_6_SECTION_CLOSE_AFTER_SUNSET}

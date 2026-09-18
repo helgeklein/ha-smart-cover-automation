@@ -459,8 +459,20 @@ class TestFlowHelperSchemaBuilding:
             getattr(key, "schema", None) for key in tolerance_end_schema
         }
 
-    def test_build_schema_step_3_with_no_per_cover_defaults(self) -> None:
-        """Test step 3 schema when covers have no per-cover min/max closure defaults.
+    def test_build_schema_step_3_daytime_uses_global_defaults(self) -> None:
+        """Step 3 should expose global settings and inherit-global cover defaults."""
+        from custom_components.smart_cover_automation.config import resolve
+
+        covers = [MOCK_COVER_ENTITY_ID]
+        schema = FlowHelper.build_schema_step_3_daytime(covers, {}, resolve({}))
+        schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema]
+
+        assert ConfKeys.DAYTIME_STRATEGY.value in schema_keys
+        assert ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value in schema_keys
+        assert const.STEP_3_SECTION_DAYTIME_STRATEGY in schema_keys
+
+    def test_build_schema_step_4_with_no_per_cover_defaults(self) -> None:
+        """Test Step 4 schema when covers have no per-cover min/max closure defaults.
 
         This exercises the else branch in _build_schema_cover_positions where
         default_value is None (lines 294, 306-309).
@@ -471,7 +483,7 @@ class TestFlowHelperSchemaBuilding:
         defaults: dict[str, Any] = {}  # No per-cover defaults
         resolved_settings = resolve(defaults)
 
-        schema = FlowHelper.build_schema_step_3(covers, defaults, resolved_settings)
+        schema = FlowHelper.build_schema_step_4(covers, defaults, resolved_settings)
 
         # Verify schema was created
         assert schema is not None
@@ -495,8 +507,8 @@ class TestFlowHelperSchemaBuilding:
         # (The actual structure is nested, but we're checking the schema was created)
         assert len(sections) >= 6  # 3 global settings + 3 sections
 
-    def test_build_schema_step_3_with_per_cover_defaults(self) -> None:
-        """Test step 3 schema when covers have per-cover min/max closure defaults."""
+    def test_build_schema_step_4_with_per_cover_defaults(self) -> None:
+        """Test Step 4 schema when covers have per-cover min/max closure defaults."""
         from custom_components.smart_cover_automation.config import resolve
 
         covers = [MOCK_COVER_ENTITY_ID]
@@ -506,7 +518,7 @@ class TestFlowHelperSchemaBuilding:
         }
         resolved_settings = resolve(defaults)
 
-        schema = FlowHelper.build_schema_step_3(covers, defaults, resolved_settings)
+        schema = FlowHelper.build_schema_step_4(covers, defaults, resolved_settings)
 
         # Verify schema was created
         assert schema is not None
@@ -530,8 +542,8 @@ class TestFlowHelperSchemaBuilding:
         min_field = _get_field_marker(min_section_schema, "Test Cover")
         assert min_field.description == {"name": "Test Cover", "suggested_value": "20"}
 
-    def test_build_schema_step_3_omits_sections_when_cover_position_helper_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Step 3 should keep globals but omit optional sections when no per-cover fields exist."""
+    def test_build_schema_step_4_omits_sections_when_cover_position_helper_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Step 4 should keep globals but omit optional sections when no per-cover fields exist."""
         from custom_components.smart_cover_automation.config import resolve
 
         monkeypatch.setattr(FlowHelper, "_build_schema_cover_positions", lambda covers, suffix, defaults, labels: {})
@@ -540,7 +552,7 @@ class TestFlowHelperSchemaBuilding:
         defaults: dict[str, Any] = {}
         resolved_settings = resolve(defaults)
 
-        schema = FlowHelper.build_schema_step_3(covers, defaults, resolved_settings)
+        schema = FlowHelper.build_schema_step_4(covers, defaults, resolved_settings)
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
 
         assert ConfKeys.COVERS_MAX_CLOSURE.value in schema_keys
@@ -718,7 +730,7 @@ class TestFlowHelperStep4TiltSchema:
         defaults: dict[str, Any] = {}
         resolved_settings = resolve(defaults)
 
-        schema = FlowHelper.build_schema_step_4_tilt(
+        schema = FlowHelper.build_schema_step_5_tilt(
             covers=covers,
             defaults=defaults,
             resolved_settings=resolved_settings,
@@ -744,7 +756,7 @@ class TestFlowHelperStep4TiltSchema:
         defaults: dict[str, Any] = {}
         resolved_settings = resolve(defaults)
 
-        schema = FlowHelper.build_schema_step_4_tilt(
+        schema = FlowHelper.build_schema_step_5_tilt(
             covers=covers,
             defaults=defaults,
             resolved_settings=resolved_settings,
@@ -773,7 +785,7 @@ class TestFlowHelperStep4TiltSchema:
         }
         resolved_settings = resolve(defaults)
 
-        schema = FlowHelper.build_schema_step_4_tilt(
+        schema = FlowHelper.build_schema_step_5_tilt(
             covers=covers,
             defaults=defaults,
             resolved_settings=resolved_settings,
@@ -798,7 +810,7 @@ class TestFlowHelperStep4TiltSchema:
         defaults: dict[str, Any] = {}
         resolved_settings = resolve(defaults)
 
-        schema = FlowHelper.build_schema_step_4_tilt(
+        schema = FlowHelper.build_schema_step_5_tilt(
             covers=covers,
             defaults=defaults,
             resolved_settings=resolved_settings,
@@ -823,7 +835,7 @@ class TestFlowHelperStep4TiltSchema:
         hass = self._make_tilt_hass(covers, {MOCK_COVER_ENTITY_ID_2})
         rendered_field_maps: dict[str, dict[str, str]] = {}
 
-        schema = FlowHelper.build_schema_step_4_tilt(
+        schema = FlowHelper.build_schema_step_5_tilt(
             covers=covers,
             defaults={},
             resolved_settings=resolve({}),
@@ -865,7 +877,7 @@ class TestFlowHelperStep4TiltSchema:
 
         hass.states.get.side_effect = mock_get_state
 
-        schema = FlowHelper.build_schema_step_4_tilt(
+        schema = FlowHelper.build_schema_step_5_tilt(
             covers=covers,
             defaults=defaults,
             resolved_settings=resolved_settings,
@@ -889,7 +901,7 @@ class TestFlowHelperStep4TiltSchema:
         defaults: dict[str, Any] = {}
         resolved_settings = resolve(defaults)
 
-        schema = FlowHelper.build_schema_step_4_tilt(
+        schema = FlowHelper.build_schema_step_5_tilt(
             covers=covers,
             defaults=defaults,
             resolved_settings=resolved_settings,
@@ -915,7 +927,7 @@ class TestFlowHelperStep4TiltSchema:
         covers = [MOCK_COVER_ENTITY_ID]
         defaults: dict[str, Any] = {}
 
-        schema = FlowHelper.build_schema_step_5(covers, defaults)
+        schema = FlowHelper.build_schema_step_6(covers, defaults)
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
 
         assert const.STEP_5_SECTION_ADDITIONAL_SETTINGS in schema_keys
@@ -930,7 +942,7 @@ class TestFlowHelperStep4TiltSchema:
         covers = [MOCK_COVER_ENTITY_ID]
         defaults = {f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}": ["binary_sensor.window"]}
 
-        schema = FlowHelper.build_schema_step_5(covers, defaults, mock_hass_with_covers)
+        schema = FlowHelper.build_schema_step_6(covers, defaults, mock_hass_with_covers)
         section_schema = _get_section_schema(schema, const.STEP_5_SECTION_WINDOW_SENSORS)
         field_marker = _get_field_marker(section_schema, "Test Cover")
 
