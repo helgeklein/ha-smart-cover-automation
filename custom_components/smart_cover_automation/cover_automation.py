@@ -458,6 +458,7 @@ class CoverAutomation:
             "min_closure": self._get_cover_closure_limit(get_max=False),
             "max_closure": self._get_cover_closure_limit(get_max=True),
             "evening_closure_max_closure": self._get_cover_closure_limit(get_max=True, evening_closure=True),
+            "daytime_strategy": self._get_effective_daytime_strategy(),
         }
         effective_pos = cover_state.pos_target_final if cover_state.pos_target_final is not None else cover_state.pos_current
         ownership_suffix = ""

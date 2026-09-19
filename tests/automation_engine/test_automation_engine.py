@@ -893,6 +893,8 @@ class TestGatherSensorData:
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.HEAT_PROTECTION_MODE.value: const.HeatProtectionMode.FORCED_ALL_WINDOWS.value,
+            ConfKeys.DAYTIME_STRATEGY.value: const.DaytimeStrategy.PRIVACY.value,
+            ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value: const.DaytimeMovementDirections.OPEN_AND_CLOSE.value,
             ConfKeys.COVERS_MIN_CLOSURE.value: 90,
             ConfKeys.COVERS_MAX_CLOSURE.value: 20,
             ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value: 10,
@@ -914,6 +916,11 @@ class TestGatherSensorData:
         ]
 
         assert any("heat_protection_mode" in message and "forced_all_windows" in message for message in info_messages)
+        assert any("'daytime_strategy': <DaytimeStrategy.PRIVACY: 'privacy'>" in message for message in info_messages)
+        assert any(
+            "'daytime_movement_directions': <DaytimeMovementDirections.OPEN_AND_CLOSE: 'open_and_close'>" in message
+            for message in info_messages
+        )
         assert any("'covers_min_closure': 90" in message for message in info_messages)
         assert any("'covers_max_closure': 20" in message for message in info_messages)
         assert any("'evening_closure_max_closure': 10" in message for message in info_messages)

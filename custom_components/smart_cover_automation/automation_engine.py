@@ -347,6 +347,8 @@ class AutomationEngine:
             "lock_mode": lock_mode,
             "heat_protection_mode": self.resolved.heat_protection_mode,
             "automatic_reopening_mode": self.resolved.automatic_reopening_mode,
+            "daytime_strategy": self.resolved.daytime_strategy,
+            "daytime_movement_directions": self.resolved.daytime_movement_directions,
             "covers_min_closure": self.resolved.covers_min_closure,
             "covers_max_closure": self.resolved.covers_max_closure,
             "evening_closure_max_closure": self.resolved.evening_closure_max_closure,

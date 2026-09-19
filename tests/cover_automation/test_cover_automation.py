@@ -4608,6 +4608,7 @@ class TestLogCoverMsg:
         assert "'min_closure': 95" in debug_message
         assert "'max_closure': 25" in debug_message
         assert "'evening_closure_max_closure': 15" in debug_message
+        assert "'daytime_strategy': <DaytimeStrategy.LET_LIGHT_IN: 'let_light_in'>" in debug_message
         assert "Ownership:" not in debug_message
 
     def test_capture_ownership_debug_snapshot_returns_structured_snapshot(
