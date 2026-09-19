@@ -35,13 +35,8 @@ from custom_components.smart_cover_automation.const import HeatProtectionMode, L
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverExecutionPlan,
-    CoverMovementReason,
     CoverState,
     OwnershipDebugSnapshot,
-    _automation_mode_for_logbook_reason,
-    _legacy_reason_for_movement_decision,
-    _movement_control_reason_for_opening_reason,
-    _movement_decision_from_legacy_reason,
 )
 from custom_components.smart_cover_automation.cover_automation import (
     SensorData as CoverSensorData,
@@ -207,102 +202,6 @@ class TestCoverAutomationInitialization:
         assert cover_auto.config == basic_config
         assert cover_auto._cover_pos_history_mgr == mock_cover_pos_history_mgr
         assert cover_auto._ha_interface == mock_ha_interface
-
-
-class TestMovementReasonMappings:
-    """Test helper mappings between legacy and refactored movement models."""
-
-    @pytest.mark.parametrize(
-        ("movement_reason", "expected_control_reason"),
-        [
-            (CoverMovementReason.OPENING_LET_LIGHT_IN, MovementControlReason.LET_LIGHT_IN),
-            (CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION, MovementControlReason.LET_LIGHT_IN),
-            (CoverMovementReason.OPENING_AFTER_MANUAL_OVERRIDE, MovementControlReason.LET_LIGHT_IN),
-            (CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE, MovementControlReason.MORNING_OPENING),
-        ],
-    )
-    def test_movement_control_reason_for_opening_reason(self, movement_reason, expected_control_reason) -> None:
-        """Opening reasons should map to the expected refactored control reason."""
-
-        assert _movement_control_reason_for_opening_reason(movement_reason) == expected_control_reason
-
-    def test_movement_decision_from_legacy_reason_uses_hold_for_static_heat_protection(self) -> None:
-        """Static heat-protection ownership should map to a hold decision when already at target."""
-
-        decision = _movement_decision_from_legacy_reason(
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
-            current_pos=30,
-            desired_pos=30,
-        )
-
-        assert decision == MovementDecision(
-            desired_position=30,
-            direction=MovementDirection.HOLD,
-            control_reason=MovementControlReason.HEAT_PROTECTION,
-            lockout_protection_active=False,
-        )
-
-    def test_movement_decision_from_legacy_reason_maps_evening_hold(self) -> None:
-        """Legacy overnight keep-closed should map to the evening hold control reason."""
-
-        decision = _movement_decision_from_legacy_reason(
-            CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE,
-            current_pos=40,
-            desired_pos=0,
-        )
-
-        assert decision == MovementDecision(
-            desired_position=0,
-            direction=MovementDirection.CLOSING,
-            control_reason=MovementControlReason.EVENING_CLOSURE_HOLD,
-            lockout_protection_active=False,
-        )
-
-    def test_legacy_reason_for_movement_decision_reuses_previous_heat_protection_context(self) -> None:
-        """LET_LIGHT_IN reopen decisions should map back to reopening after heat protection when ownership was retained."""
-
-        movement_decision = MovementDecision(
-            desired_position=100,
-            direction=MovementDirection.OPENING,
-            control_reason=MovementControlReason.LET_LIGHT_IN,
-            lockout_protection_active=False,
-        )
-
-        assert (
-            _legacy_reason_for_movement_decision(
-                movement_decision,
-                previous_automation_mode=AutomationMode.HEAT_PROTECTION,
-                manual_override_just_expired=False,
-            )
-            == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
-        )
-
-    def test_legacy_reason_for_movement_decision_uses_manual_override_reopen_reason(self) -> None:
-        """Manual override expiry should use the dedicated reopening reason when no previous automation mode exists."""
-
-        movement_decision = MovementDecision(
-            desired_position=100,
-            direction=MovementDirection.OPENING,
-            control_reason=MovementControlReason.LET_LIGHT_IN,
-            lockout_protection_active=False,
-        )
-
-        assert (
-            _legacy_reason_for_movement_decision(
-                movement_decision,
-                previous_automation_mode=None,
-                manual_override_just_expired=True,
-            )
-            == CoverMovementReason.OPENING_AFTER_MANUAL_OVERRIDE
-        )
-
-    def test_automation_mode_for_logbook_reason_maps_evening_closure_hold(self) -> None:
-        """Evening-closure hold logbook reasons should map back to evening ownership."""
-
-        assert (
-            _automation_mode_for_logbook_reason(const.TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE)
-            == AutomationMode.EVENING_CLOSURE
-        )
 
 
 class TestGetCoverAzimuth:
@@ -997,7 +896,7 @@ class TestDetermineTargetTilt:
         target = cover_automation._determine_target_tilt(
             cover_state,
             sensor_data,
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
             cover_moved=False,
         )
 
@@ -1018,7 +917,7 @@ class TestDetermineTargetTilt:
         target = cover_automation._determine_target_tilt(
             cover_state,
             sensor_data,
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
             cover_moved=False,
         )
 
@@ -1036,7 +935,7 @@ class TestDetermineTargetTilt:
         target = cover_automation._determine_target_tilt(
             cover_state,
             sensor_data,
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
             cover_moved=False,
         )
 
@@ -1058,7 +957,7 @@ class TestDetermineTargetTilt:
         target = cover_automation._determine_target_tilt(
             cover_state,
             sensor_data,
-            CoverMovementReason.CLOSING_AFTER_SUNSET,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.EVENING_CLOSURE, False),
             cover_moved=False,
         )
 
@@ -1077,13 +976,13 @@ class TestDetermineTargetTilt:
         day_target = cover_automation._determine_target_tilt(
             cover_state,
             sensor_data,
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
             cover_moved=False,
         )
         night_target = cover_automation._determine_target_tilt(
             cover_state,
             sensor_data,
-            CoverMovementReason.CLOSING_AFTER_SUNSET,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.EVENING_CLOSURE, False),
             cover_moved=False,
         )
 
@@ -1100,7 +999,7 @@ class TestDetermineTargetTilt:
         target = cover_automation._determine_target_tilt(
             cover_state,
             sensor_data,
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
             cover_moved=False,
         )
 
@@ -1116,7 +1015,7 @@ class TestDetermineTargetTilt:
         target = cover_automation._determine_target_tilt(
             cover_state,
             sensor_data,
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
             cover_moved=True,
         )
 
@@ -1219,72 +1118,7 @@ class TestDaytimeConfigurationResolution:
 
 
 class TestMovementReasonHelpers:
-    """Test movement-reason helper mappings."""
-
-    @pytest.mark.parametrize(
-        ("closing_reason", "manual_override_just_expired", "expected_reason"),
-        [
-            (const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION, False, CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION),
-            (const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET, False, CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE),
-            (const.TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE, False, CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE),
-            (None, True, CoverMovementReason.OPENING_AFTER_MANUAL_OVERRIDE),
-            (None, False, CoverMovementReason.OPENING_LET_LIGHT_IN),
-        ],
-    )
-    def test_get_opening_movement_reason_maps_closure_context(
-        self, cover_automation, closing_reason, manual_override_just_expired, expected_reason
-    ):
-        """Reopening should retain the reason that established its previous state."""
-
-        assert cover_automation._get_opening_movement_reason(closing_reason, manual_override_just_expired) == expected_reason
-
-    def test_is_opening_movement_reason_true_for_all_opening_reasons(self):
-        """All opening reasons should be recognized as reopening actions."""
-
-        opening_reasons = (
-            CoverMovementReason.OPENING_LET_LIGHT_IN,
-            CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION,
-            CoverMovementReason.OPENING_AFTER_MANUAL_OVERRIDE,
-            CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE,
-        )
-
-        for reason in opening_reasons:
-            assert CoverAutomation._is_opening_movement_reason(reason) is True
-
-    def test_is_opening_movement_reason_false_for_closing_and_preparation_reasons(self):
-        """Closing and delayed-reopen preparation reasons should not count as opening reasons."""
-
-        non_opening_reasons = (
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
-            CoverMovementReason.CLOSING_AFTER_SUNSET,
-            CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE,
-            CoverMovementReason.PREPARING_REOPEN_AFTER_HEAT_PROTECTION,
-        )
-
-        for reason in non_opening_reasons:
-            assert CoverAutomation._is_opening_movement_reason(reason) is False
-
-    def test_get_closing_logbook_reason_key_maps_all_supported_closing_reasons(self):
-        """Each supported closing reason should map to the matching logbook key."""
-
-        assert (
-            CoverAutomation._get_closing_logbook_reason_key(CoverMovementReason.CLOSING_HEAT_PROTECTION)
-            == const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION
-        )
-        assert (
-            CoverAutomation._get_closing_logbook_reason_key(CoverMovementReason.CLOSING_AFTER_SUNSET)
-            == const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
-        )
-        assert (
-            CoverAutomation._get_closing_logbook_reason_key(CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE)
-            == const.TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE
-        )
-
-    def test_get_closing_logbook_reason_key_rejects_non_closing_reason(self):
-        """Non-closing movement reasons should fail fast in the closing-reason mapper."""
-
-        with pytest.raises(ValueError, match="Unsupported closing movement reason"):
-            CoverAutomation._get_closing_logbook_reason_key(CoverMovementReason.OPENING_LET_LIGHT_IN)
+    """Test manual-override helper behavior."""
 
     def test_get_manual_override_remaining_ignores_expected_recent_automation_drift(
         self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
@@ -1550,27 +1384,25 @@ class TestMovementReasonHelpers:
 
         mock_cover_pos_history_mgr.clear_closed_by_automation.assert_not_called()
 
-    def test_get_evening_closure_movement_reason_for_keep_closed(self, cover_automation, sensor_data, mock_resolved_config):
-        """Test overnight keep-closed maps to its dedicated evening movement reason."""
+    def test_get_evening_closure_cause_for_keep_closed(self, cover_automation, sensor_data, mock_resolved_config):
+        """Test overnight keep-closed maps to its dedicated evening control reason."""
         mock_resolved_config.evening_closure_keep_closed = True
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
         sensor_data.post_evening_closure = True
 
-        result = cover_automation._get_evening_closure_movement_reason(sensor_data)
+        result = cover_automation._get_evening_closure_cause(sensor_data)
 
-        assert result == CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE
+        assert result == MovementControlReason.EVENING_CLOSURE_HOLD
 
-    def test_get_evening_closure_movement_reason_returns_none_without_valid_external_time(
-        self, cover_automation, sensor_data, mock_resolved_config
-    ):
-        """External evening closure without a valid time should not trigger a closing reason."""
+    def test_get_evening_closure_cause_returns_none_without_valid_external_time(self, cover_automation, sensor_data, mock_resolved_config):
+        """External evening closure without a valid time should not trigger a control reason."""
 
         mock_resolved_config.evening_closure_enabled = True
         mock_resolved_config.evening_closure_mode = const.EveningClosureMode.EXTERNAL
         mock_resolved_config.evening_closure_cover_list = ("cover.test",)
         sensor_data.has_valid_external_evening_closure_time = False
 
-        result = cover_automation._get_evening_closure_movement_reason(sensor_data)
+        result = cover_automation._get_evening_closure_cause(sensor_data)
 
         assert result is None
 
@@ -1764,9 +1596,9 @@ class TestCalculateAngleDifference:
 
 
 class TestCalculateDesiredPosition:
-    """Test _calculate_desired_position method."""
+    """Test _calculate_movement_decision method."""
 
-    def test_calculate_desired_position_heat_protection(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_heat_protection(self, cover_automation, mock_resolved_config):
         """Test desired position for heat protection (closing)."""
         mock_resolved_config.covers_max_closure = 0
 
@@ -1781,12 +1613,12 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
-        assert position == 0  # Fully closed
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
-        assert lockout_active is False
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
+        assert decision.desired_position == 0  # Fully closed
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_heat_protection_keeps_more_closed_cover(
+    def test_calculate_movement_decision_heat_protection_keeps_more_closed_cover(
         self, cover_automation, mock_logger, mock_resolved_config, basic_config
     ):
         """Heat protection should not open a cover that is already more closed than the target."""
@@ -1805,16 +1637,16 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=0)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=0)
 
-        assert position == 0
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 0
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
+        assert decision.lockout_protection_active is False
         mock_logger.info.assert_any_call(
             "[cover.test] Current position: 0%, desired position: 0%, keeping current position because it is already more closed than the heat protection position"
         )
 
-    def test_calculate_desired_position_heat_protection_relaxes_automation_owned_more_closed_cover(
+    def test_calculate_movement_decision_heat_protection_relaxes_automation_owned_more_closed_cover(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr, basic_config
     ):
         """Heat protection may reopen toward its target when automation still owns a more-closed position."""
@@ -1835,13 +1667,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=0)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=0)
 
-        assert position == 30
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 30
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_heat_protection_keeps_user_closed_more_closed_cover(
+    def test_calculate_movement_decision_heat_protection_keeps_user_closed_more_closed_cover(
         self, cover_automation, mock_logger, mock_resolved_config, mock_cover_pos_history_mgr, basic_config
     ):
         """Heat protection should not reopen a more-closed cover when automation no longer owns that position."""
@@ -1862,16 +1694,16 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=0)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=0)
 
-        assert position == 0
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 0
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
+        assert decision.lockout_protection_active is False
         mock_logger.info.assert_any_call(
             "[cover.test] Current position: 0%, desired position: 0%, keeping current position because it is already more closed than the heat protection position"
         )
 
-    def test_calculate_desired_position_heat_protection_off_disables_closing(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_heat_protection_off_disables_closing(self, cover_automation, mock_resolved_config):
         """Heat protection off should suppress closing even when weather and sun would normally match."""
 
         mock_resolved_config.heat_protection_mode = HeatProtectionMode.OFF
@@ -1887,13 +1719,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
 
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
-        assert lockout_active is False
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_heat_protection_forced_sunny_windows_keeps_azimuth_gate(
+    def test_calculate_movement_decision_heat_protection_forced_sunny_windows_keeps_azimuth_gate(
         self, cover_automation, mock_resolved_config
     ):
         """Forced sunny windows should ignore forecast booleans but still respect sun-hitting."""
@@ -1911,19 +1743,19 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
 
-        assert position == 0
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 0
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
+        assert decision.lockout_protection_active is False
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
 
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
-        assert lockout_active is False
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_heat_protection_forced_all_windows_ignores_azimuth(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_heat_protection_forced_all_windows_ignores_azimuth(self, cover_automation, mock_resolved_config):
         """Forced all windows should ignore azimuth but still require elevation within range."""
 
         mock_resolved_config.heat_protection_mode = HeatProtectionMode.FORCED_ALL_WINDOWS
@@ -1939,13 +1771,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
 
-        assert position == 0
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 0
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_let_light_in(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_let_light_in(self, cover_automation, mock_resolved_config):
         """Test desired position for letting light in (opening)."""
         mock_resolved_config.covers_min_closure = 100
 
@@ -1960,11 +1792,11 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 100  # Fully open
-        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+        assert decision.desired_position == 100  # Fully open
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
 
-    def test_calculate_desired_position_does_not_let_light_in_below_horizon(self, cover_automation, mock_logger, mock_resolved_config):
+    def test_calculate_movement_decision_does_not_let_light_in_below_horizon(self, cover_automation, mock_logger, mock_resolved_config):
         """Default opening to let light in should not run when the sun is below the horizon."""
 
         mock_resolved_config.covers_min_closure = 100
@@ -1980,16 +1812,16 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
 
-        assert position == 50
-        assert reason is None
-        assert lockout_active is False
+        assert decision.desired_position == 50
+        assert decision.control_reason is None
+        assert decision.lockout_protection_active is False
         mock_logger.info.assert_any_call(
             "[cover.test] Current position: 50%, desired position: 50%, keeping current position because the sun is below the horizon"
         )
 
-    def test_calculate_desired_position_reopens_from_logbook_fallback_without_managed_state(
+    def test_calculate_movement_decision_reopens_from_logbook_fallback_without_managed_state(
         self, cover_automation, mock_cover_pos_history_mgr
     ):
         """Legacy persisted heat-protection reasons should still drive reopening when managed state is unavailable."""
@@ -2008,13 +1840,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=30)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=30)
 
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_holds_when_weather_state_is_unknown_and_sun_hitting(
+    def test_calculate_movement_decision_holds_when_weather_state_is_unknown_and_sun_hitting(
         self, cover_automation, mock_cover_pos_history_mgr
     ):
         """Weather-dependent movement should hold position when required weather state is unknown."""
@@ -2032,13 +1864,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=0)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=0)
 
-        assert position == 0
-        assert reason is None
-        assert lockout_active is False
+        assert decision.desired_position == 0
+        assert decision.control_reason is None
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_reopens_when_sun_stops_hitting_even_if_weather_unknown(
+    def test_calculate_movement_decision_reopens_when_sun_stops_hitting_even_if_weather_unknown(
         self, cover_automation, mock_cover_pos_history_mgr
     ):
         """Sun geometry should still allow reopening when weather data is unavailable."""
@@ -2056,13 +1888,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=0)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=0)
 
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_passive_reopens_after_automation_closure(
+    def test_calculate_movement_decision_passive_reopens_after_automation_closure(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Passive mode reopens covers only when they were previously closed by automation."""
@@ -2086,12 +1918,12 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
-        assert lockout_active is False
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_passive_open_only_holds_closing_target(
+    def test_calculate_movement_decision_passive_open_only_holds_closing_target(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr, basic_config
     ):
         """Passive daytime control should hold a target requiring a disabled closing direction."""
@@ -2112,13 +1944,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=30)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=30)
 
-        assert position == 30
-        assert reason is None
-        assert lockout_active is False
+        assert decision.desired_position == 30
+        assert decision.control_reason is None
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_passive_reopens_after_automation_closure_with_stale_latest_history(
+    def test_calculate_movement_decision_passive_reopens_after_automation_closure_with_stale_latest_history(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Passive reopening should rely on automation ownership, not the mutable latest history entry."""
@@ -2143,13 +1975,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=0)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=0)
 
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_passive_reopens_after_evening_closure_with_small_owned_position_drift(
+    def test_calculate_movement_decision_passive_reopens_after_evening_closure_with_small_owned_position_drift(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Passive reopening should tolerate small overnight drift from the automation-owned evening-closure position."""
@@ -2158,6 +1990,10 @@ class TestCalculateDesiredPosition:
         mock_resolved_config.covers_min_position_delta = 5
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
         mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 20
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = AutomationManagedState(
+            position=20,
+            automation_mode=AutomationMode.EVENING_CLOSURE,
+        )
         mock_cover_pos_history_mgr.get_latest_entry.return_value = PositionEntry(
             position=20,
             timestamp=datetime.now(timezone.utc) - timedelta(hours=8),
@@ -2175,13 +2011,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=21)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=21)
 
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
-        assert lockout_active is False
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_passive_does_not_reopen_below_horizon(
+    def test_calculate_movement_decision_passive_does_not_reopen_below_horizon(
         self, cover_automation, mock_logger, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Passive reopening should not reopen covers below the horizon."""
@@ -2205,16 +2041,16 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=0)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=0)
 
-        assert position == 0
-        assert reason is None
-        assert lockout_active is False
+        assert decision.desired_position == 0
+        assert decision.control_reason is None
+        assert decision.lockout_protection_active is False
         mock_logger.info.assert_any_call(
             "[cover.test] Current position: 0%, desired position: 0%, keeping current position because the sun is below the horizon"
         )
 
-    def test_calculate_desired_position_passive_keeps_position_until_user_returns_to_automation_owned_state(
+    def test_calculate_movement_decision_passive_keeps_position_until_user_returns_to_automation_owned_state(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Passive mode should wait while the user leaves the cover away from the last automation-owned position."""
@@ -2238,13 +2074,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
 
-        assert position == 50
-        assert reason is None
-        assert lockout_active is False
+        assert decision.desired_position == 50
+        assert decision.control_reason is None
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_passive_keeps_position_without_automation_closure(
+    def test_calculate_movement_decision_passive_keeps_position_without_automation_closure(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Passive mode should not reopen covers that were not closed by automation."""
@@ -2263,12 +2099,12 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 50
-        assert reason is None
-        assert lockout_active is False
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+        assert decision.desired_position == 50
+        assert decision.control_reason is None
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_off_never_reopens(self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr):
+    def test_calculate_movement_decision_off_never_reopens(self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr):
         """Off mode should suppress automatic reopening even after automation closures."""
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.OFF
@@ -2285,12 +2121,12 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 50
-        assert reason is None
-        assert lockout_active is False
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+        assert decision.desired_position == 50
+        assert decision.control_reason is None
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_delays_auto_tilt_reopen_after_heat_protection(
+    def test_calculate_movement_decision_delays_auto_tilt_reopen_after_heat_protection(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Auto-tilt heat-protection reopening should prepare tilt first when a delay is configured."""
@@ -2311,14 +2147,14 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
 
-        assert position == 50
-        assert reason == CoverMovementReason.PREPARING_REOPEN_AFTER_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 50
+        assert decision.control_reason == MovementControlReason.TILT_TO_COVER_OPEN_DELAY
+        assert decision.lockout_protection_active is False
         mock_cover_pos_history_mgr.set_delayed_reopen_action.assert_called_once()
 
-    def test_calculate_desired_position_keeps_waiting_while_delayed_reopen_timer_active(
+    def test_calculate_movement_decision_keeps_waiting_while_delayed_reopen_timer_active(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Auto-tilt heat-protection reopening should wait until the delayed reopen timer expires."""
@@ -2342,14 +2178,14 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
 
-        assert position == 50
-        assert reason == CoverMovementReason.PREPARING_REOPEN_AFTER_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 50
+        assert decision.control_reason == MovementControlReason.TILT_TO_COVER_OPEN_DELAY
+        assert decision.lockout_protection_active is False
         mock_cover_pos_history_mgr.set_delayed_reopen_action.assert_not_called()
 
-    def test_calculate_desired_position_reopens_after_delayed_auto_tilt_wait_elapsed(
+    def test_calculate_movement_decision_reopens_after_delayed_auto_tilt_wait_elapsed(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Auto-tilt heat-protection reopening should open the cover after the delay elapsed."""
@@ -2373,13 +2209,13 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
 
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_does_not_delay_when_day_tilt_mode_is_not_auto(
+    def test_calculate_movement_decision_does_not_delay_when_day_tilt_mode_is_not_auto(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Delayed reopening should be limited to effective day auto tilt mode."""
@@ -2400,14 +2236,14 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
 
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
         mock_cover_pos_history_mgr.set_delayed_reopen_action.assert_not_called()
 
-    def test_calculate_desired_position_passive_does_not_arm_or_keep_delayed_reopen_away_from_owned_state(
+    def test_calculate_movement_decision_passive_does_not_arm_or_keep_delayed_reopen_away_from_owned_state(
         self, cover_automation, mock_resolved_config, mock_cover_pos_history_mgr
     ):
         """Passive mode should cancel delayed reopen while the user leaves the cover away from the automation-owned position."""
@@ -2436,15 +2272,15 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
 
-        assert position == 50
-        assert reason is None
-        assert lockout_active is False
+        assert decision.desired_position == 50
+        assert decision.control_reason is None
+        assert decision.lockout_protection_active is False
         mock_cover_pos_history_mgr.set_delayed_reopen_action.assert_not_called()
         mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
 
-    def test_calculate_desired_position_after_manual_override_expired(self, cover_automation):
+    def test_calculate_movement_decision_after_manual_override_expired(self, cover_automation):
         """Active mode should use a dedicated reopening reason when manual override just expired."""
 
         sensor_data = make_sensor_data(
@@ -2458,17 +2294,17 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(
+        decision = cover_automation._calculate_movement_decision(
             sensor_data,
             sun_hitting=False,
             current_pos=50,
             manual_override_just_expired=True,
         )
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_AFTER_MANUAL_OVERRIDE
-        assert lockout_active is False
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_reopens_after_evening_closure(self, cover_automation, mock_cover_pos_history_mgr):
+    def test_calculate_movement_decision_reopens_after_evening_closure(self, cover_automation, mock_cover_pos_history_mgr):
         """Reopening after an evening-closure close should use the evening-closure reopening reason."""
 
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
@@ -2484,11 +2320,11 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
 
-    def test_calculate_desired_position_holds_opening_target_below_horizon(self, cover_automation, mock_cover_pos_history_mgr):
+    def test_calculate_movement_decision_holds_opening_target_below_horizon(self, cover_automation, mock_cover_pos_history_mgr):
         """Normal daytime opening targets must hold below the horizon."""
 
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
@@ -2504,11 +2340,11 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 50
-        assert reason is None
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+        assert decision.desired_position == 50
+        assert decision.control_reason is None
 
-    def test_calculate_desired_position_pre_closing_never_opens_evening_closed_cover(
+    def test_calculate_movement_decision_pre_closing_never_opens_evening_closed_cover(
         self, cover_automation, mock_cover_pos_history_mgr, mock_logger
     ):
         """Pre-closing should never reopen or partially open a cover that is already more closed."""
@@ -2527,15 +2363,15 @@ class TestCalculateDesiredPosition:
             pre_closing=True,
         )
 
-        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=0)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=0)
 
-        assert position == 0
-        assert reason is None
+        assert decision.desired_position == 0
+        assert decision.control_reason is None
         mock_logger.info.assert_any_call(
             "[cover.test] Current position: 0%, desired position: 0%, keeping current position because it is already at the pre-closure position"
         )
 
-    def test_calculate_desired_position_pre_closing_keeps_more_closed_cover(
+    def test_calculate_movement_decision_pre_closing_keeps_more_closed_cover(
         self, cover_automation, mock_cover_pos_history_mgr, mock_logger, mock_resolved_config, basic_config
     ):
         """Pre-closing should keep a cover that is already more closed than the target."""
@@ -2556,15 +2392,15 @@ class TestCalculateDesiredPosition:
             pre_closing=True,
         )
 
-        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=10)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=10)
 
-        assert position == 10
-        assert reason is None
+        assert decision.desired_position == 10
+        assert decision.control_reason is None
         mock_logger.info.assert_any_call(
             "[cover.test] Current position: 10%, desired position: 10%, keeping current position because it is already more closed than the pre-closure position"
         )
 
-    def test_calculate_desired_position_pre_closing_skips_reopening_when_conditions_do_not_match(
+    def test_calculate_movement_decision_pre_closing_skips_reopening_when_conditions_do_not_match(
         self, cover_automation, mock_cover_pos_history_mgr, mock_logger
     ):
         """Pre-closing should hold position instead of using normal reopening behavior."""
@@ -2583,15 +2419,17 @@ class TestCalculateDesiredPosition:
             pre_closing=True,
         )
 
-        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=30)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=30)
 
-        assert position == 30
-        assert reason is None
+        assert decision.desired_position == 30
+        assert decision.control_reason is None
         mock_logger.info.assert_any_call(
             "[cover.test] Current position: 30%, desired position: 30%, keeping current position because pre-closing conditions don't apply"
         )
 
-    def test_calculate_desired_position_pre_closing_keeps_fully_open_cover(self, cover_automation, mock_cover_pos_history_mgr, mock_logger):
+    def test_calculate_movement_decision_pre_closing_keeps_fully_open_cover(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_logger
+    ):
         """Pre-closing should use the same no-op reason when a fully open cover does not need closing."""
 
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
@@ -2608,15 +2446,15 @@ class TestCalculateDesiredPosition:
             pre_closing=True,
         )
 
-        position, reason, _ = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=100)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=100)
 
-        assert position == 100
-        assert reason is None
+        assert decision.desired_position == 100
+        assert decision.control_reason is None
         mock_logger.info.assert_any_call(
             "[cover.test] Current position: 100%, desired position: 100%, keeping current position because pre-closing conditions don't apply"
         )
 
-    def test_calculate_desired_position_with_max_closure_limit(self, cover_automation, mock_resolved_config, basic_config):
+    def test_calculate_movement_decision_with_max_closure_limit(self, cover_automation, mock_resolved_config, basic_config):
         """Test desired position with max closure limit."""
         mock_resolved_config.covers_max_closure = 30
         basic_config["cover.test_cover_max_closure"] = 20
@@ -2632,11 +2470,11 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
-        assert position == 20  # Per-cover override
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
+        assert decision.desired_position == 20  # Per-cover override
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
 
-    def test_calculate_desired_position_with_min_closure_limit(self, cover_automation, mock_resolved_config, basic_config):
+    def test_calculate_movement_decision_with_min_closure_limit(self, cover_automation, mock_resolved_config, basic_config):
         """Test desired position with min closure limit."""
         mock_resolved_config.covers_min_closure = 80
         basic_config["cover.test_cover_min_closure"] = 90
@@ -2652,14 +2490,14 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 90  # Per-cover override
-        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+        assert decision.desired_position == 90  # Per-cover override
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
 
     #
-    # test_calculate_desired_position_sunset_closing_in_list
+    # test_calculate_movement_decision_sunset_closing_in_list
     #
-    def test_calculate_desired_position_sunset_closing_in_list(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_sunset_closing_in_list(self, cover_automation, mock_resolved_config):
         """Test evening closure takes priority when cover is in list and respects max closure limit."""
 
         mock_resolved_config.covers_max_closure = 0
@@ -2677,14 +2515,14 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
-        assert position == 0  # Fully closed (max closure is 0, so no limit applied)
-        assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET  # Sunset takes priority
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
+        assert decision.desired_position == 0  # Fully closed (max closure is 0, so no limit applied)
+        assert decision.control_reason == MovementControlReason.EVENING_CLOSURE  # Sunset takes priority
 
     #
-    # test_calculate_desired_position_sunset_closing_not_in_list
+    # test_calculate_movement_decision_sunset_closing_not_in_list
     #
-    def test_calculate_desired_position_sunset_closing_not_in_list(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_sunset_closing_not_in_list(self, cover_automation, mock_resolved_config):
         """Test sunset flag ignored when cover not in list."""
 
         mock_resolved_config.covers_max_closure = 0
@@ -2702,14 +2540,14 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
-        assert position == 0  # Still closed
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION  # Falls back to heat protection
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
+        assert decision.desired_position == 0  # Still closed
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION  # Falls back to heat protection
 
     #
-    # test_calculate_desired_position_sunset_closing_no_list_configured
+    # test_calculate_movement_decision_sunset_closing_no_list_configured
     #
-    def test_calculate_desired_position_sunset_closing_no_list_configured(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_sunset_closing_no_list_configured(self, cover_automation, mock_resolved_config):
         """Test sunset flag ignored when no cover list configured."""
 
         mock_resolved_config.covers_max_closure = 0
@@ -2726,14 +2564,14 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
-        assert position == 0  # Still closed
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION  # Falls back to heat protection
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
+        assert decision.desired_position == 0  # Still closed
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION  # Falls back to heat protection
 
     #
-    # test_calculate_desired_position_sunset_priority_over_opening
+    # test_calculate_movement_decision_sunset_priority_over_opening
     #
-    def test_calculate_desired_position_sunset_priority_over_opening(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_sunset_priority_over_opening(self, cover_automation, mock_resolved_config):
         """Test evening closure prevents opening for light and respects max closure limit."""
 
         mock_resolved_config.covers_max_closure = 15  # Set max closure limit
@@ -2753,14 +2591,14 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 15  # Respects max closure limit
-        assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET  # Sunset takes priority
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+        assert decision.desired_position == 15  # Respects max closure limit
+        assert decision.control_reason == MovementControlReason.EVENING_CLOSURE  # Sunset takes priority
 
     #
-    # test_calculate_desired_position_sunset_false_no_effect
+    # test_calculate_movement_decision_sunset_false_no_effect
     #
-    def test_calculate_desired_position_sunset_false_no_effect(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_sunset_false_no_effect(self, cover_automation, mock_resolved_config):
         """Test that sunset flag False doesn't affect normal operation."""
 
         mock_resolved_config.covers_min_closure = 100
@@ -2778,14 +2616,14 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 100  # Open for light
-        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN  # Normal behavior
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+        assert decision.desired_position == 100  # Open for light
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN  # Normal behavior
 
     #
-    # test_calculate_desired_position_sunset_closes_fully
+    # test_calculate_movement_decision_sunset_closes_fully
     #
-    def test_calculate_desired_position_sunset_closes_fully(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_sunset_closes_fully(self, cover_automation, mock_resolved_config):
         """Test evening closure respects max closure limit (global config)."""
 
         mock_resolved_config.covers_max_closure = 30
@@ -2803,14 +2641,14 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
-        assert position == 30  # Respects max closure limit
-        assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
+        assert decision.desired_position == 30  # Respects max closure limit
+        assert decision.control_reason == MovementControlReason.EVENING_CLOSURE
 
     #
-    # test_calculate_desired_position_sunset_with_per_cover_evening_closure_limit
+    # test_calculate_movement_decision_sunset_with_per_cover_evening_closure_limit
     #
-    def test_calculate_desired_position_sunset_with_per_cover_evening_closure_limit(
+    def test_calculate_movement_decision_sunset_with_per_cover_evening_closure_limit(
         self, cover_automation, mock_resolved_config, basic_config
     ):
         """Test evening closure respects per-cover max closure limit override."""
@@ -2831,9 +2669,9 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=50)
-        assert position == 20  # Respects per-cover override
-        assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+        assert decision.desired_position == 20  # Respects per-cover override
+        assert decision.control_reason == MovementControlReason.EVENING_CLOSURE
 
 
 class TestDaytimeMovementDecision:
@@ -3047,10 +2885,8 @@ class TestDaytimeMovementDecision:
 
         moved, actual_position, _message = await cover_automation._move_cover_if_needed(
             current_pos=current_position,
-            desired_pos=target_position,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
-            movement_decision=decision,
+            decision=decision,
         )
 
         assert moved is True
@@ -3062,7 +2898,7 @@ class TestDaytimeMovementDecision:
 
 
 class TestCalculateDesiredPositionLockout:
-    """Test lockout protection logic in _calculate_desired_position method."""
+    """Test lockout protection logic in _calculate_movement_decision method."""
 
     def test_lockout_protection_heat_protection_active(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
         """Test lockout protection prevents closing for heat protection."""
@@ -3081,12 +2917,12 @@ class TestCalculateDesiredPositionLockout:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
 
         # Lockout should prevent closing
-        assert lockout_active is True
-        assert position == 50  # Keeps current position
-        assert reason is None  # No movement reason
+        assert decision.lockout_protection_active is True
+        assert decision.desired_position == 50  # Keeps current position
+        assert decision.control_reason is None  # No movement reason
 
     def test_lockout_protection_heat_protection_inactive(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
         """Test heat protection closes when lockout not active."""
@@ -3105,12 +2941,12 @@ class TestCalculateDesiredPositionLockout:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
 
         # No lockout - should close
-        assert lockout_active is False
-        assert position == 0  # Closes
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
+        assert decision.lockout_protection_active is False
+        assert decision.desired_position == 0  # Closes
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
 
     def test_lockout_protection_sunset_closing_active(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
         """Test lockout protection prevents closing after sunset."""
@@ -3130,12 +2966,12 @@ class TestCalculateDesiredPositionLockout:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=75)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=75)
 
         # Lockout should prevent evening closure
-        assert lockout_active is True
-        assert position == 75  # Keeps current position
-        assert reason is None  # No movement reason
+        assert decision.lockout_protection_active is True
+        assert decision.desired_position == 75  # Keeps current position
+        assert decision.control_reason is None  # No movement reason
 
     def test_lockout_protection_sunset_closing_inactive(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
         """Test evening closure proceeds when lockout not active."""
@@ -3155,12 +2991,12 @@ class TestCalculateDesiredPositionLockout:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=75)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=75)
 
         # No lockout - should close for sunset
-        assert lockout_active is False
-        assert position == 0  # Closes
-        assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET
+        assert decision.lockout_protection_active is False
+        assert decision.desired_position == 0  # Closes
+        assert decision.control_reason == MovementControlReason.EVENING_CLOSURE
 
     def test_lockout_protection_not_checked_for_opening(self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface):
         """Test lockout protection is not checked when opening (let light in)."""
@@ -3179,12 +3015,12 @@ class TestCalculateDesiredPositionLockout:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=20)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=20)
 
         # Lockout doesn't apply to opening
-        assert lockout_active is False
-        assert position == 100  # Opens
-        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
+        assert decision.desired_position == 100  # Opens
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
 
     def test_lockout_protection_multiple_sensors_mixed_states(
         self, cover_automation, mock_resolved_config, basic_config, mock_ha_interface
@@ -3210,12 +3046,12 @@ class TestCalculateDesiredPositionLockout:
             post_evening_closure=False,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=50)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=50)
 
         # Lockout should activate because one window is open
-        assert lockout_active is True
-        assert position == 50  # Keeps current position
-        assert reason is None
+        assert decision.lockout_protection_active is True
+        assert decision.desired_position == 50  # Keeps current position
+        assert decision.control_reason is None
 
 
 class TestIsOpeningBlockAfterEveningClosureActive:
@@ -3255,7 +3091,7 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         result = cover_automation._is_opening_block_after_evening_closure_active(sensor_data)
         assert result is False
 
-    def test_calculate_desired_position_block_prevents_opening(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_block_prevents_opening(self, cover_automation, mock_resolved_config):
         """Test that opening block prevents opening but keeps current position."""
 
         mock_resolved_config.covers_min_closure = 100
@@ -3274,12 +3110,12 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         )
 
         # Test with current position at 30%
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=30)
-        assert position == 30  # Keeps current position
-        assert reason is None  # No movement reason
-        assert lockout_active is False
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=30)
+        assert decision.desired_position == 30  # Keeps current position
+        assert decision.control_reason is None  # No movement reason
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_block_does_not_apply_to_other_covers(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_block_does_not_apply_to_other_covers(self, cover_automation, mock_resolved_config):
         """Test that morning opening only affects covers in the evening closure list."""
 
         mock_resolved_config.covers_min_closure = 100
@@ -3296,12 +3132,12 @@ class TestIsOpeningBlockAfterEveningClosureActive:
             post_evening_closure=True,
         )
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=30)
-        assert position == 100
-        assert reason == CoverMovementReason.OPENING_LET_LIGHT_IN
-        assert lockout_active is False
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=30)
+        assert decision.desired_position == 100
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_block_allows_closing(self, cover_automation, mock_resolved_config):
+    def test_calculate_movement_decision_block_allows_closing(self, cover_automation, mock_resolved_config):
         """Test that opening block does NOT prevent closing operations."""
 
         mock_resolved_config.covers_max_closure = 0
@@ -3319,10 +3155,10 @@ class TestIsOpeningBlockAfterEveningClosureActive:
         )
 
         # Test that closing still happens despite opening block
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=100)
-        assert position == 0  # Closes fully
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION  # Closing still works
-        assert lockout_active is False
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=100)
+        assert decision.desired_position == 0  # Closes fully
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION  # Closing still works
+        assert decision.lockout_protection_active is False
 
 
 class TestGetCoverClosureLimit:
@@ -3432,20 +3268,20 @@ class TestGetEffectiveTempHot:
         assert result is False
         mock_logger.debug.assert_called_once_with("[cover.test] Per-cover weather hot external control active: not hot")
 
-    def test_calculate_desired_position_uses_per_cover_hot_override(self, cover_automation, basic_config, sensor_data):
+    def test_calculate_movement_decision_uses_per_cover_hot_override(self, cover_automation, basic_config, sensor_data):
         """Test that a per-cover hot override changes the heat-protection branch outcome."""
 
         basic_config[f"cover.test_{const.COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}"] = True
         sensor_data.temp_hot = False
         sensor_data.weather_sunny = True
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=True, current_pos=100)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=100)
 
-        assert position == 0
-        assert reason == CoverMovementReason.CLOSING_HEAT_PROTECTION
-        assert lockout_active is False
+        assert decision.desired_position == 0
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
+        assert decision.lockout_protection_active is False
 
-    def test_calculate_desired_position_skips_reopening_without_valid_external_morning_time(
+    def test_calculate_movement_decision_skips_reopening_without_valid_external_morning_time(
         self, cover_automation, sensor_data, mock_resolved_config
     ):
         """External morning opening without a valid time should suppress automatic reopening."""
@@ -3458,11 +3294,11 @@ class TestGetEffectiveTempHot:
         sensor_data.weather_sunny = False
         sensor_data.has_valid_external_morning_opening_time = False
 
-        position, reason, lockout_active = cover_automation._calculate_desired_position(sensor_data, sun_hitting=False, current_pos=0)
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=0)
 
-        assert position == 0
-        assert reason is None
-        assert lockout_active is False
+        assert decision.desired_position == 0
+        assert decision.control_reason is None
+        assert decision.lockout_protection_active is False
 
     async def test_process_logs_cover_specific_missing_external_evening_time(
         self, cover_automation, sensor_data, mock_resolved_config, mock_state, mock_logger, mock_ha_interface
@@ -3508,27 +3344,6 @@ class TestGetEffectiveTempHot:
 class TestApplyTilt:
     """Test tilt handling for weather-aware automation paths."""
 
-    async def test_apply_tilt_returns_immediately_without_movement_reason(
-        self,
-        cover_automation,
-        sensor_data,
-        mock_ha_interface,
-    ):
-        """Tilt handling should do nothing when no movement reason is active."""
-
-        cover_state = CoverState(pos_current=0, tilt_current=40, sun_hitting=True, sun_azimuth_diff=10.0)
-
-        await cover_automation._apply_tilt(
-            cover_state,
-            sensor_data,
-            CoverEntityFeature.SET_TILT_POSITION,
-            None,
-            cover_moved=False,
-        )
-
-        assert cover_state.tilt_target is None
-        mock_ha_interface.set_cover_tilt_position.assert_not_called()
-
     async def test_apply_tilt_skips_when_sunshine_state_unknown_and_sun_hitting(
         self,
         cover_automation,
@@ -3552,7 +3367,7 @@ class TestApplyTilt:
             cover_state,
             sensor_data,
             CoverEntityFeature.SET_TILT_POSITION,
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
             cover_moved=False,
         )
 
@@ -3583,7 +3398,7 @@ class TestApplyTilt:
             cover_state,
             sensor_data,
             CoverEntityFeature.SET_TILT_POSITION,
-            CoverMovementReason.OPENING_LET_LIGHT_IN,
+            MovementDecision(0, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
             cover_moved=False,
         )
 
@@ -3613,7 +3428,7 @@ class TestApplyTilt:
             cover_state,
             sensor_data,
             CoverEntityFeature.SET_TILT_POSITION,
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
             cover_moved=False,
         )
 
@@ -3641,7 +3456,7 @@ class TestApplyTilt:
             cover_state,
             sensor_data,
             CoverEntityFeature.SET_TILT_POSITION,
-            CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
             cover_moved=False,
         )
 
@@ -3654,7 +3469,7 @@ class TestIsLockoutActive:
 
     def test_is_lockout_active_no_sensors_configured(self, cover_automation):
         """Test when no window sensors are configured."""
-        result = cover_automation._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION)
+        result = cover_automation._is_lockout_protection_active(MovementDirection.CLOSING)
         assert result is False
 
     def test_is_lockout_active_all_windows_closed(self, cover_automation, basic_config, mock_ha_interface):
@@ -3662,7 +3477,7 @@ class TestIsLockoutActive:
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1", "binary_sensor.window2"]
         mock_ha_interface.get_entity_state.return_value = "off"
 
-        result = cover_automation._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION)
+        result = cover_automation._is_lockout_protection_active(MovementDirection.CLOSING)
         assert result is False
 
     def test_is_lockout_active_window_open_closing(self, cover_automation, basic_config, mock_ha_interface):
@@ -3670,7 +3485,7 @@ class TestIsLockoutActive:
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = STATE_ON
 
-        result = cover_automation._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION)
+        result = cover_automation._is_lockout_protection_active(MovementDirection.CLOSING)
         assert result is True
 
     def test_is_lockout_active_window_open_opening(self, cover_automation, basic_config, mock_ha_interface):
@@ -3678,7 +3493,7 @@ class TestIsLockoutActive:
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = STATE_ON
 
-        result = cover_automation._is_lockout_protection_active(CoverMovementReason.OPENING_LET_LIGHT_IN)
+        result = cover_automation._is_lockout_protection_active(MovementDirection.OPENING)
         assert result is False
 
     def test_is_lockout_active_multiple_sensors_one_open(self, cover_automation, basic_config, mock_ha_interface):
@@ -3690,7 +3505,7 @@ class TestIsLockoutActive:
 
         mock_ha_interface.get_entity_state.side_effect = get_state
 
-        result = cover_automation._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION)
+        result = cover_automation._is_lockout_protection_active(MovementDirection.CLOSING)
         assert result is True
 
     def test_is_lockout_active_sunset_closing(self, cover_automation, basic_config, mock_ha_interface):
@@ -3698,7 +3513,7 @@ class TestIsLockoutActive:
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = STATE_ON
 
-        result = cover_automation._is_lockout_protection_active(CoverMovementReason.CLOSING_AFTER_SUNSET)
+        result = cover_automation._is_lockout_protection_active(MovementDirection.CLOSING)
         assert result is True
 
     def test_is_lockout_active_keep_closed_after_evening_closure(self, cover_automation, basic_config, mock_ha_interface):
@@ -3706,14 +3521,14 @@ class TestIsLockoutActive:
         basic_config["cover.test_cover_window_sensors"] = ["binary_sensor.window1"]
         mock_ha_interface.get_entity_state.return_value = STATE_ON
 
-        result = cover_automation._is_lockout_protection_active(CoverMovementReason.CLOSING_KEEP_CLOSED_AFTER_EVENING_CLOSURE)
+        result = cover_automation._is_lockout_protection_active(MovementDirection.CLOSING)
         assert result is True
 
     def test_is_lockout_active_ignores_non_list_window_sensor_config(self, cover_automation, basic_config, mock_ha_interface):
         """Test malformed window sensor config does not trigger lockout or sensor lookups."""
         basic_config["cover.test_cover_window_sensors"] = "binary_sensor.window1"
 
-        result = cover_automation._is_lockout_protection_active(CoverMovementReason.CLOSING_HEAT_PROTECTION)
+        result = cover_automation._is_lockout_protection_active(MovementDirection.CLOSING)
 
         assert result is False
         mock_ha_interface.get_entity_state.assert_not_called()
@@ -3876,9 +3691,8 @@ class TestMaoveCoverIfNeeded:
         """Test when no movement is needed (same position)."""
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=50,
-            desired_pos=50,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            decision=MovementDecision(50, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
         )
         assert movement_needed is False
         assert actual_pos is None
@@ -3889,9 +3703,8 @@ class TestMaoveCoverIfNeeded:
         mock_resolved_config.covers_min_position_delta = 5
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=50,
-            desired_pos=52,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            decision=MovementDecision(52, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
         )
         assert movement_needed is False
         assert actual_pos is None
@@ -3902,9 +3715,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=100,
-            desired_pos=100,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION,
+            decision=MovementDecision(100, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
         )
 
         assert movement_needed is False
@@ -3922,9 +3734,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=80,
-            desired_pos=80,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION,
+            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
         )
 
         assert movement_needed is False
@@ -3942,9 +3753,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=96,
-            desired_pos=100,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE,
+            decision=MovementDecision(100, MovementDirection.OPENING, MovementControlReason.MORNING_OPENING, False),
         )
 
         assert movement_needed is False
@@ -3963,9 +3773,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=78,
-            desired_pos=80,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION,
+            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
         )
 
         assert movement_needed is False
@@ -3980,9 +3789,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=100,
-            desired_pos=20,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            decision=MovementDecision(20, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
             current_tilt=30,
         )
 
@@ -4004,9 +3812,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=20,
-            desired_pos=80,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
         )
 
         assert movement_needed is True
@@ -4023,9 +3830,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=0,
-            desired_pos=100,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            decision=MovementDecision(100, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
             current_tilt=94,
         )
 
@@ -4050,9 +3856,8 @@ class TestMaoveCoverIfNeeded:
 
         await cover_automation._move_cover_if_needed(
             current_pos=0,
-            desired_pos=100,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            decision=MovementDecision(100, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
             current_tilt=94,
         )
 
@@ -4064,12 +3869,15 @@ class TestMaoveCoverIfNeeded:
         """Test moving cover when reopening after heat protection ends."""
 
         mock_ha_interface.set_cover_position.return_value = 80
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = AutomationManagedState(
+            position=20,
+            automation_mode=AutomationMode.HEAT_PROTECTION,
+        )
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=20,
-            desired_pos=80,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION,
+            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
         )
 
         assert movement_needed is True
@@ -4087,9 +3895,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=20,
-            desired_pos=80,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE,
+            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.MORNING_OPENING, False),
         )
 
         assert movement_needed is True
@@ -4107,9 +3914,9 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=20,
-            desired_pos=80,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_AFTER_MANUAL_OVERRIDE,
+            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
+            manual_override_just_expired=True,
         )
 
         assert movement_needed is True
@@ -4125,10 +3932,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=20,
-            desired_pos=80,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
-            movement_decision=MovementDecision(
+            decision=MovementDecision(
                 desired_position=80,
                 direction=MovementDirection.HOLD,
                 control_reason=MovementControlReason.TILT_TO_COVER_OPEN_DELAY,
@@ -4139,13 +3944,8 @@ class TestMaoveCoverIfNeeded:
         assert movement_needed is False
         assert actual_pos is None
         assert message == "Skipped cover movement during delayed reopen preparation"
-        mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 80, CoverEntityFeature.SET_POSITION)
-        mock_cover_pos_history_mgr.add.assert_called_once_with(
-            "cover.test",
-            50,
-            cover_moved=True,
-            tilt_position=None,
-        )
+        mock_ha_interface.set_cover_position.assert_not_called()
+        mock_cover_pos_history_mgr.add.assert_not_called()
         mock_ha_interface.add_logbook_entry.assert_not_called()
 
     async def test_move_cover_if_needed_logs_heat_protection_reason_for_opening_decision(
@@ -4161,10 +3961,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=20,
-            desired_pos=70,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
-            movement_decision=MovementDecision(
+            decision=MovementDecision(
                 desired_position=70,
                 direction=MovementDirection.OPENING,
                 control_reason=MovementControlReason.HEAT_PROTECTION,
@@ -4186,10 +3984,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=0,
-            desired_pos=90,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
-            movement_decision=MovementDecision(
+            decision=MovementDecision(
                 desired_position=90,
                 direction=MovementDirection.OPENING,
                 control_reason=MovementControlReason.MORNING_OPENING,
@@ -4212,9 +4008,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=20,
-            desired_pos=80,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
         )
 
         assert movement_needed is False
@@ -4303,9 +4098,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=100,
-            desired_pos=0,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.CLOSING_AFTER_SUNSET,
+            decision=MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.EVENING_CLOSURE, False),
         )
 
         assert movement_needed is True
@@ -4332,9 +4126,8 @@ class TestMaoveCoverIfNeeded:
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=100,
-            desired_pos=20,
             features=CoverEntityFeature.SET_POSITION,
-            movement_reason=CoverMovementReason.CLOSING_HEAT_PROTECTION,
+            decision=MovementDecision(20, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False),
         )
 
         assert movement_needed is False
@@ -4507,8 +4300,7 @@ class TestLogCoverMsg:
             ),
             features=CoverEntityFeature.SET_POSITION,
             current_pos=21,
-            desired_pos=100,
-            movement_reason=CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE,
+            decision=MovementDecision(100, MovementDirection.OPENING, MovementControlReason.MORNING_OPENING, False),
             planned_tilt_target=None,
             ownership_debug_snapshot=cover_automation._capture_ownership_debug_snapshot(21),
         )

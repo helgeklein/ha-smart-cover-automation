@@ -27,12 +27,12 @@ from custom_components.smart_cover_automation.automation_engine import (
 from custom_components.smart_cover_automation.config import ConfKeys, resolve
 from custom_components.smart_cover_automation.cover_automation import (
     CoverExecutionPlan,
-    CoverMovementReason,
     CoverState,
     OwnershipDebugSnapshot,
     PendingTiltAction,
     SensorData,
 )
+from custom_components.smart_cover_automation.movement import MovementControlReason, MovementDecision, MovementDirection
 
 
 @pytest.fixture
@@ -1877,8 +1877,7 @@ class TestRunMethod:
             sensor_data=sensor_data,
             features=0,
             current_pos=10,
-            desired_pos=20,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            decision=MovementDecision(20, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
             planned_tilt_target=None,
             ownership_debug_snapshot=self._ownership_snapshot(),
         )
@@ -1887,8 +1886,7 @@ class TestRunMethod:
             sensor_data=sensor_data,
             features=0,
             current_pos=30,
-            desired_pos=40,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            decision=MovementDecision(40, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
             planned_tilt_target=None,
             ownership_debug_snapshot=self._ownership_snapshot(),
         )
@@ -1965,8 +1963,7 @@ class TestPendingCoverExecutionQueue:
             sensor_data=sensor_data,
             features=0,
             current_pos=10,
-            desired_pos=desired_pos,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            decision=MovementDecision(desired_pos, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
             planned_tilt_target=None,
             ownership_debug_snapshot=TestPendingCoverExecutionQueue._ownership_snapshot(),
         )
