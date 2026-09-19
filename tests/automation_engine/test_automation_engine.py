@@ -27,12 +27,12 @@ from custom_components.smart_cover_automation.automation_engine import (
 from custom_components.smart_cover_automation.config import ConfKeys, resolve
 from custom_components.smart_cover_automation.cover_automation import (
     CoverExecutionPlan,
-    CoverMovementReason,
     CoverState,
     OwnershipDebugSnapshot,
     PendingTiltAction,
     SensorData,
 )
+from custom_components.smart_cover_automation.movement import MovementControlReason, MovementDecision, MovementDirection
 
 
 @pytest.fixture
@@ -893,6 +893,8 @@ class TestGatherSensorData:
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
             ConfKeys.HEAT_PROTECTION_MODE.value: const.HeatProtectionMode.FORCED_ALL_WINDOWS.value,
+            ConfKeys.DAYTIME_STRATEGY.value: const.DaytimeStrategy.PRIVACY.value,
+            ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value: const.DaytimeMovementDirections.OPEN_AND_CLOSE.value,
             ConfKeys.COVERS_MIN_CLOSURE.value: 90,
             ConfKeys.COVERS_MAX_CLOSURE.value: 20,
             ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value: 10,
@@ -914,6 +916,11 @@ class TestGatherSensorData:
         ]
 
         assert any("heat_protection_mode" in message and "forced_all_windows" in message for message in info_messages)
+        assert any("'daytime_strategy': <DaytimeStrategy.PRIVACY: 'privacy'>" in message for message in info_messages)
+        assert any(
+            "'daytime_movement_directions': <DaytimeMovementDirections.OPEN_AND_CLOSE: 'open_and_close'>" in message
+            for message in info_messages
+        )
         assert any("'covers_min_closure': 90" in message for message in info_messages)
         assert any("'covers_max_closure': 20" in message for message in info_messages)
         assert any("'evening_closure_max_closure': 10" in message for message in info_messages)
@@ -1877,8 +1884,7 @@ class TestRunMethod:
             sensor_data=sensor_data,
             features=0,
             current_pos=10,
-            desired_pos=20,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            decision=MovementDecision(20, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
             planned_tilt_target=None,
             ownership_debug_snapshot=self._ownership_snapshot(),
         )
@@ -1887,8 +1893,7 @@ class TestRunMethod:
             sensor_data=sensor_data,
             features=0,
             current_pos=30,
-            desired_pos=40,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            decision=MovementDecision(40, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
             planned_tilt_target=None,
             ownership_debug_snapshot=self._ownership_snapshot(),
         )
@@ -1956,7 +1961,12 @@ class TestPendingCoverExecutionQueue:
         )
 
     @staticmethod
-    def _make_plan(desired_pos: int = 20) -> CoverExecutionPlan:
+    def _make_plan(
+        desired_pos: int = 20,
+        *,
+        manual_override_just_expired: bool = False,
+        planned_tilt_target: int | None = None,
+    ) -> CoverExecutionPlan:
         """Create a minimal execution plan for queue tests."""
 
         sensor_data = SensorData(180.0, 45.0, 25.0, 18.0, True, "sunny", True, False, False)
@@ -1965,10 +1975,10 @@ class TestPendingCoverExecutionQueue:
             sensor_data=sensor_data,
             features=0,
             current_pos=10,
-            desired_pos=desired_pos,
-            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
-            planned_tilt_target=None,
+            decision=MovementDecision(desired_pos, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
+            planned_tilt_target=planned_tilt_target,
             ownership_debug_snapshot=TestPendingCoverExecutionQueue._ownership_snapshot(),
+            manual_override_just_expired=manual_override_just_expired,
         )
 
     def test_schedule_pending_cover_execution_ignores_equivalent_later_plan(self, mock_ha_interface, mock_logger):
@@ -2041,8 +2051,16 @@ class TestPendingCoverExecutionQueue:
         assert scheduled.task is created_task
         mock_logger.info.assert_any_call("[%s] Queued cover execution in %.0f s", "cover.test", 60.0)
 
-    def test_schedule_pending_cover_execution_replaces_superseded_plan(self, mock_ha_interface, mock_logger):
-        """A newer queued execution should replace the existing pending one when the plan changes."""
+    @pytest.mark.parametrize(
+        "new_plan_kwargs",
+        [
+            {"desired_pos": 30},
+            {"manual_override_just_expired": True},
+            {"planned_tilt_target": 40},
+        ],
+    )
+    def test_schedule_pending_cover_execution_replaces_superseded_plan(self, mock_ha_interface, mock_logger, new_plan_kwargs):
+        """A newer queued execution should replace a plan with different execution semantics."""
 
         engine = AutomationEngine(
             resolved=resolve({ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"}),
@@ -2051,7 +2069,7 @@ class TestPendingCoverExecutionQueue:
             logger=mock_logger,
         )
         existing_plan = self._make_plan(20)
-        new_plan = self._make_plan(30)
+        new_plan = self._make_plan(**new_plan_kwargs)
         engine._pending_cover_executions["cover.test"] = ScheduledCoverExecution(
             schedule_id=1,
             execute_at=datetime(2026, 5, 23, 10, 5, tzinfo=timezone.utc),

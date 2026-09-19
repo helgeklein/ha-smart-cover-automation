@@ -22,12 +22,16 @@ from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.const import LockMode, ReopeningMode, TiltMode
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
-    CoverMovementReason,
     CoverState,
 )
 from custom_components.smart_cover_automation.cover_automation import (
     SensorData as CoverSensorData,
 )
+from custom_components.smart_cover_automation.movement import MovementControlReason, MovementDecision, MovementDirection
+
+OPENING_DECISION = MovementDecision(50, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False)
+HEAT_PROTECTION_DECISION = MovementDecision(50, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False)
+EVENING_CLOSURE_DECISION = MovementDecision(50, MovementDirection.CLOSING, MovementControlReason.EVENING_CLOSURE, False)
 
 
 def make_sensor_data(*, temp_min: float = 18.0, **kwargs):
@@ -405,7 +409,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(pos_current=25, tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, False)
 
         recent_call = mock_cover_pos_history_mgr.set_recent_automation_action.call_args
         assert recent_call is not None
@@ -434,7 +438,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(pos_target_final=80, tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, True)
 
         recent_call = mock_cover_pos_history_mgr.set_recent_automation_action.call_args
         assert recent_call is not None
@@ -463,7 +467,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(pos_current=25, tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, False)
 
         mock_cover_pos_history_mgr.set_recent_automation_action.assert_not_called()
         mock_cover_pos_history_mgr.add.assert_not_called()
@@ -482,7 +486,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, False)
 
         mock_ha_interface.set_cover_tilt_position.assert_not_called()
         assert cover_state.tilt_target is None
@@ -504,7 +508,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=True, sun_azimuth_diff=0.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, False)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", expected_tilt, tilt_features)
         assert cover_state.tilt_target == expected_tilt
@@ -524,7 +528,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(pos_current=50, tilt_current=35, sun_hitting=False, sun_azimuth_diff=45.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, False)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 70, tilt_features)
         assert cover_state.tilt_target == 70
@@ -536,8 +540,8 @@ class TestApplyTilt:
     @pytest.mark.parametrize(
         ("mode_attr", "value_key", "target_tilt", "movement_reason", "sun_hitting"),
         [
-            ("tilt_mode_day", "tilt_external_value_day", 42, CoverMovementReason.OPENING_LET_LIGHT_IN, True),
-            ("tilt_mode_night", "tilt_external_value_night", 23, CoverMovementReason.CLOSING_AFTER_SUNSET, False),
+            ("tilt_mode_day", "tilt_external_value_day", 42, OPENING_DECISION, True),
+            ("tilt_mode_night", "tilt_external_value_night", 23, EVENING_CLOSURE_DECISION, False),
         ],
     )
     async def test_external_mode_uses_global_value(
@@ -592,7 +596,7 @@ class TestApplyTilt:
                 "cover.test_cover_tilt_external_value_day",
                 42,
                 17,
-                CoverMovementReason.OPENING_LET_LIGHT_IN,
+                OPENING_DECISION,
                 True,
             ),
             (
@@ -602,7 +606,7 @@ class TestApplyTilt:
                 "cover.test_cover_tilt_external_value_night",
                 42,
                 19,
-                CoverMovementReason.CLOSING_AFTER_SUNSET,
+                EVENING_CLOSURE_DECISION,
                 False,
             ),
         ],
@@ -665,7 +669,7 @@ class TestApplyTilt:
                 "cover.test_cover_tilt_external_value_day",
                 42,
                 17,
-                CoverMovementReason.OPENING_LET_LIGHT_IN,
+                OPENING_DECISION,
                 True,
             ),
             (
@@ -674,7 +678,7 @@ class TestApplyTilt:
                 "cover.test_cover_tilt_external_value_night",
                 23,
                 19,
-                CoverMovementReason.CLOSING_AFTER_SUNSET,
+                EVENING_CLOSURE_DECISION,
                 False,
             ),
         ],
@@ -721,11 +725,11 @@ class TestApplyTilt:
     @pytest.mark.parametrize(
         ("mode_attr", "value_key", "movement_reason", "sun_hitting", "log_key"),
         [
-            ("tilt_mode_day", "tilt_external_value_day", CoverMovementReason.OPENING_LET_LIGHT_IN, True, "tilt_external_value_day"),
+            ("tilt_mode_day", "tilt_external_value_day", OPENING_DECISION, True, "tilt_external_value_day"),
             (
                 "tilt_mode_night",
                 "tilt_external_value_night",
-                CoverMovementReason.CLOSING_AFTER_SUNSET,
+                EVENING_CLOSURE_DECISION,
                 False,
                 "tilt_external_value_night",
             ),
@@ -767,11 +771,11 @@ class TestApplyTilt:
     @pytest.mark.parametrize(
         ("mode_attr", "value_key", "movement_reason", "sun_hitting", "log_key"),
         [
-            ("tilt_mode_day", "tilt_external_value_day", CoverMovementReason.OPENING_LET_LIGHT_IN, True, "tilt_external_value_day"),
+            ("tilt_mode_day", "tilt_external_value_day", OPENING_DECISION, True, "tilt_external_value_day"),
             (
                 "tilt_mode_night",
                 "tilt_external_value_night",
-                CoverMovementReason.CLOSING_AFTER_SUNSET,
+                EVENING_CLOSURE_DECISION,
                 False,
                 "tilt_external_value_night",
             ),
@@ -820,7 +824,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(pos_current=100, tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, False)
 
         mock_ha_interface.set_cover_tilt_position.assert_not_called()
         assert cover_state.tilt_target is None
@@ -839,7 +843,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(pos_target_final=100, tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_not_called()
         assert cover_state.tilt_target is None
@@ -859,7 +863,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 100, tilt_features)
         assert cover_state.tilt_target == 100
@@ -879,7 +883,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.CLOSING_HEAT_PROTECTION, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, HEAT_PROTECTION_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 0, tilt_features)
         assert cover_state.tilt_target == 0
@@ -900,7 +904,7 @@ class TestApplyTilt:
 
         # tilt_current=75 is the pre-move snapshot read from HA state before position change
         cover_state = CoverState(tilt_current=75, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 75, tilt_features)
         assert cover_state.tilt_target == 75
@@ -921,14 +925,14 @@ class TestApplyTilt:
         # First cycle: user had tilt at 75
         mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=75)
         cover_state1 = CoverState(tilt_current=75, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state1, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+        await auto._apply_tilt(cover_state1, sensor_data, tilt_features, OPENING_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 75, tilt_features)
 
         # Second cycle: user changed tilt to 30 between cycles
         mock_ha_interface.set_cover_tilt_position = AsyncMock(return_value=30)
         cover_state2 = CoverState(tilt_current=30, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state2, sensor_data, tilt_features, CoverMovementReason.CLOSING_HEAT_PROTECTION, True)
+        await auto._apply_tilt(cover_state2, sensor_data, tilt_features, HEAT_PROTECTION_DECISION, True)
 
         # Should restore 30, not 75 from the first cycle
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 30, tilt_features)
@@ -947,7 +951,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(tilt_current=None, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_not_called()
 
@@ -976,7 +980,7 @@ class TestApplyTilt:
             post_evening_closure=False,
         )
         cover_state = CoverState(tilt_current=100, sun_hitting=True, sun_azimuth_diff=0.0)
-        await auto._apply_tilt(cover_state, data, tilt_features, CoverMovementReason.CLOSING_HEAT_PROTECTION, True)
+        await auto._apply_tilt(cover_state, data, tilt_features, HEAT_PROTECTION_DECISION, True)
 
         # Verify set_cover_tilt_position was called with a value in the expected range
         call_args = mock_ha_interface.set_cover_tilt_position.call_args
@@ -1000,7 +1004,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(tilt_current=50, sun_hitting=False, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.CLOSING_AFTER_SUNSET, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, EVENING_CLOSURE_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 30, tilt_features)
 
@@ -1021,7 +1025,7 @@ class TestApplyTilt:
 
         cover_state = CoverState(tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
         # Not a sunset closure → daytime context
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.CLOSING_HEAT_PROTECTION, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, HEAT_PROTECTION_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 65, tilt_features)
 
@@ -1040,7 +1044,7 @@ class TestApplyTilt:
         auto._cover_supports_tilt = True
 
         cover_state = CoverState(tilt_current=50, sun_hitting=False, sun_azimuth_diff=90.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 100, tilt_features)
 
@@ -1061,7 +1065,7 @@ class TestApplyTilt:
         # Sun IS hitting geometrically, but weather is not sunny
         sensor_data.weather_sunny = False
         cover_state = CoverState(tilt_current=50, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once_with("cover.test", 100, tilt_features)
 
@@ -1079,7 +1083,7 @@ class TestApplyTilt:
 
         features = CoverEntityFeature.SET_POSITION  # No tilt
         cover_state = CoverState()
-        await auto._apply_tilt(cover_state, sensor_data, features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+        await auto._apply_tilt(cover_state, sensor_data, features, OPENING_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_not_called()
         assert cover_state.tilt_target is None
@@ -1100,7 +1104,7 @@ class TestApplyTilt:
 
         # Current tilt is 95, target is 100 — delta is 5, below threshold of 10
         cover_state = CoverState(tilt_current=95, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, False)
 
         mock_ha_interface.set_cover_tilt_position.assert_not_called()
 
@@ -1122,7 +1126,7 @@ class TestApplyTilt:
         # Current tilt is 95, target is 100 — delta is 5, below threshold
         # But cover_moved=True, so tilt should still be applied
         cover_state = CoverState(tilt_current=95, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, True)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, True)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once()
 
@@ -1143,7 +1147,7 @@ class TestApplyTilt:
 
         # Even tiny change should trigger update when delta=0
         cover_state = CoverState(tilt_current=99, sun_hitting=True, sun_azimuth_diff=10.0)
-        await auto._apply_tilt(cover_state, sensor_data, tilt_features, CoverMovementReason.OPENING_LET_LIGHT_IN, False)
+        await auto._apply_tilt(cover_state, sensor_data, tilt_features, OPENING_DECISION, False)
 
         mock_ha_interface.set_cover_tilt_position.assert_called_once()
 

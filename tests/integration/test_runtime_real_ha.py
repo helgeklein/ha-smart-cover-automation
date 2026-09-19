@@ -47,10 +47,10 @@ from custom_components.smart_cover_automation.const import (
 from custom_components.smart_cover_automation.cover_automation import (
     CoverAutomation,
     CoverExecutionPlan,
-    CoverMovementReason,
     SensorData,
 )
 from custom_components.smart_cover_automation.ha_interface import HomeAssistantInterface
+from custom_components.smart_cover_automation.movement import MovementControlReason, MovementDecision, MovementDirection
 
 # --- Test entity IDs ---
 TEST_COVER_1 = "cover.runtime_test_cover_1"
@@ -976,8 +976,12 @@ class TestRuntimeBehavior:
                     ),
                     features=COVER_FEATURES_SET_POSITION,
                     current_pos=COVER_POS_FULLY_OPEN,
-                    desired_pos=COVER_POS_FULLY_CLOSED,
-                    movement_reason=CoverMovementReason.CLOSING_HEAT_PROTECTION,
+                    decision=MovementDecision(
+                        COVER_POS_FULLY_CLOSED,
+                        MovementDirection.CLOSING,
+                        MovementControlReason.HEAT_PROTECTION,
+                        False,
+                    ),
                     planned_tilt_target=None,
                 ),
                 0,

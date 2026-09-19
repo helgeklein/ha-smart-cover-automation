@@ -17,7 +17,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Étape 1 sur 6",
+                "title": "Smart Cover Automation - Étape 1 sur 7",
                 "description": "Sélectionnez un **capteur de prévisions météo** et les **volets** à automatiser (obligatoire).",
                 "data": {
                     "covers": "Volets à automatiser :",
@@ -29,7 +29,7 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Étape 2 sur 6",
+                "title": "Smart Cover Automation - Étape 2 sur 7",
                 "description": "Configurez l'**azimut** (direction) de chaque volet.\n\nVous pouvez également restreindre les angles auxquels l'automatisation considère que le soleil brille sur un volet dans les quatre directions (gauche, droite, haut et bas) afin de tenir compte des avancées de toit, d'autres bâtiments ou d'arbres proches. Les valeurs par volet configurées ici remplacent les réglages globaux de l'angle du soleil disponibles sur la page de l'appareil de l'instance d'intégration.\n\n(0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest)",
                 "sections": {
                     "section_azimuth": {
@@ -50,7 +50,24 @@
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Étape 3 sur 6",
+                "title": "Smart Cover Automation - Étape 3 sur 7",
+                "description": "Configurez le contrôle normal des volets pendant la journée. Les réglages globaux s’appliquent à tous les volets, sauf s’ils sont remplacés par volet.",
+                "data": {
+                    "daytime_strategy": "Stratégie diurne :",
+                    "daytime_movement_directions": "Sens de mouvement diurne :"
+                },
+                "data_description": {
+                    "daytime_strategy": "Choisissez comment l’intégration doit positionner les volets pendant la journée lorsque la protection contre la chaleur n’est pas active.",
+                    "daytime_movement_directions": "Choisissez si le contrôle diurne normal peut ouvrir les volets, les fermer ou les deux."
+                },
+                "sections": {
+                    "section_daytime_strategy": {
+                        "name": "Stratégie diurne (par volet)"
+                    }
+                }
+            },
+            "4": {
+                "title": "Smart Cover Automation - Étape 4 sur 7",
                 "description": "Configurez les positions **min/max** des volets (facultatif).\nLes réglages globaux s'appliquent à tous les volets, sauf s'ils sont remplacés par volet.\n(0 = totalement fermé, 100 = totalement ouvert)",
                 "data": {
                     "covers_max_closure": "Position maximale du volet (globale) :",
@@ -74,8 +91,8 @@
                     }
                 }
             },
-            "4": {
-                "title": "Smart Cover Automation - Étape 4 sur 6",
+            "5": {
+                "title": "Smart Cover Automation - Étape 5 sur 7",
                 "description": "Configurez le **contrôle de l'angle d'inclinaison** pour les volets à lamelles orientables (facultatif).\nLes paramètres globaux s'appliquent à tous les volets orientables, sauf s'ils sont remplacés par volet.",
                 "data": {
                     "tilt_mode_day": "Contrôle de l'inclinaison (jour) :",
@@ -112,8 +129,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Étape 5 sur 6",
+            "6": {
+                "title": "Smart Cover Automation - Étape 6 sur 7",
                 "description": "Configurez des **paramètres supplémentaires** et des **capteurs de fenêtre** facultatifs pour chaque volet. Les capteurs de fenêtre activent la protection anti-blocage : si un capteur associé signale qu'une fenêtre est ouverte, le volet ne se ferme pas.",
                 "sections": {
                     "section_additional_settings": {
@@ -130,8 +147,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Étape 6 sur 6",
+            "7": {
+                "title": "Smart Cover Automation - Étape 7 sur 7",
                 "description": "Configurez les **paramètres temporels** de l'automatisation (facultatif).",
                 "data": {},
                 "data_description": {},
@@ -162,7 +179,6 @@
                             "close_covers_after_sunset_cover_list": "Volets :",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorer la durée de la commande manuelle :",
                             "close_covers_after_sunset_keep_closed": "Garder les volets fermés :",
-                            "automatic_reopening_mode": "Réouverture automatique :",
                             "morning_opening_mode": "Ouverture matinale : mode :",
                             "morning_opening_time": "Ouverture matinale : heure :"
                         },
@@ -173,7 +189,6 @@
                             "close_covers_after_sunset_cover_list": "Sélectionnez les volets qui doivent se fermer le soir.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Lorsqu'elle est activée, la fermeture du soir peut déplacer les volets sélectionnés même si une pause due à une commande manuelle est encore active.",
                             "close_covers_after_sunset_keep_closed": "Lorsqu'elle est activée, les volets sélectionnés sont refermés pendant la période nocturne de fermeture du soir s'ils sont rouverts. La durée de la commande manuelle est respectée. Le mode verrouillage est prioritaire, donc les volets ne sont refermés qu'après sa désactivation.",
-                            "automatic_reopening_mode": "Choisissez comment l'automatisation doit rouvrir les volets lorsque les conditions de fermeture ne s'appliquent plus. Actif rouvre toujours les volets, Passif ne rouvre que les volets précédemment fermés par l'automatisation, et Désactivé désactive la réouverture automatique.",
                             "morning_opening_mode": "Choisissez si l'ouverture matinale se fait avant le lever du soleil, après le lever du soleil, à heure fixe ou via une entité.",
                             "morning_opening_time": "Selon le mode choisi : délai relatif par rapport au lever du soleil ou heure fixe. Ignoré en mode externe."
                         }
@@ -214,7 +229,7 @@
         },
         "select": {
             "automatic_reopening_mode": {
-                "name": "Réouverture automatique",
+                "name": "Mode de contrôle diurne",
                 "state": {
                     "active": "Actif",
                     "passive": "Passif",
@@ -317,6 +332,12 @@
             },
             "daily_min_temperature_threshold": {
                 "name": "Protection contre la chaleur : température minimale quotidienne min."
+            },
+            "daytime_external_position": {
+                "name": "Position diurne du volet : contrôle externe"
+            },
+            "cover_daytime_external_position": {
+                "name": "{cover_name}: Position diurne du volet : contrôle externe"
             }
         },
         "switch": {
@@ -404,6 +425,14 @@
                 "reason_keep_closed_after_evening_closure": {
                     "name": "préserver l'intimité pendant la nuit",
                     "description": "Motif utilisé lorsque le volet se referme pendant la période nocturne de maintien fermé."
+                },
+                "reason_daytime_privacy": {
+                    "name": "assurer la confidentialité pendant la journée",
+                    "description": "Motif utilisé lorsque le volet se déplace vers sa position de confidentialité diurne."
+                },
+                "reason_daytime_external_control": {
+                    "name": "suivre le contrôle diurne externe",
+                    "description": "Motif utilisé lorsque le volet se déplace vers une position diurne fournie par une source externe."
                 }
             }
         },
@@ -464,6 +493,21 @@
             "options": {
                 "fixed_time": "Heure absolue",
                 "external": "Externe (heures fournies par des entités)"
+            }
+        },
+        "daytime_strategy": {
+            "options": {
+                "use_global": "Utiliser le réglage global",
+                "let_light_in": "Laisser entrer la lumière",
+                "privacy": "Confidentialité",
+                "external": "Externe (position fournie par une entité)"
+            }
+        },
+        "daytime_movement_directions": {
+            "options": {
+                "open_only": "Ouverture uniquement",
+                "close_only": "Fermeture uniquement",
+                "open_and_close": "Ouvrir et fermer"
             }
         }
     }

@@ -13,6 +13,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Callable, Generic, Mapping, TypeVar
 
 from custom_components.smart_cover_automation.const import (
+    COVER_SFX_DAYTIME_EXTERNAL_POSITION,
     COVER_SFX_TILT_EXTERNAL_VALUE_DAY,
     COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT,
     COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL,
@@ -20,6 +21,7 @@ from custom_components.smart_cover_automation.const import (
     LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
     NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD,
+    NUMBER_KEY_DAYTIME_EXTERNAL_POSITION,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
     SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL,
@@ -29,6 +31,8 @@ from custom_components.smart_cover_automation.const import (
     TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
     BlockedTimeRangeMode,
+    DaytimeMovementDirections,
+    DaytimeStrategy,
     EveningClosureMode,
     HeatProtectionMode,
     LockMode,
@@ -85,6 +89,8 @@ class ConfKeys(StrEnum):
     MORNING_OPENING_MODE = "morning_opening_mode"  # Morning opening: timing mode.
     MORNING_OPENING_TIME = "morning_opening_time"  # Morning opening: time value.
     AUTOMATIC_REOPENING_MODE = "automatic_reopening_mode"  # Automatic reopening behavior after automation-driven closures.
+    DAYTIME_STRATEGY = "daytime_strategy"  # Position strategy for normal daytime automation.
+    DAYTIME_MOVEMENT_DIRECTIONS = "daytime_movement_directions"  # Allowed directions for normal daytime automation.
     HEAT_PROTECTION_MODE = "heat_protection_mode"  # How heat protection interprets weather and sun exposure.
     COVERS = "covers"  # Tuple of cover entity_ids to control.
     COVERS_MAX_CLOSURE = "covers_max_closure"  # Maximum closure position (0 = fully closed, 100 = fully open)
@@ -272,6 +278,11 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
         converter=ReopeningMode,
         runtime_configurable=True,
     ),
+    ConfKeys.DAYTIME_STRATEGY: _ConfSpec(default=DaytimeStrategy.LET_LIGHT_IN, converter=DaytimeStrategy),
+    ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS: _ConfSpec(
+        default=DaytimeMovementDirections.OPEN_ONLY,
+        converter=DaytimeMovementDirections,
+    ),
     ConfKeys.HEAT_PROTECTION_MODE: _ConfSpec(
         default=HeatProtectionMode.AUTO,
         converter=HeatProtectionMode,
@@ -345,6 +356,7 @@ def get_runtime_configurable_keys() -> set[str]:
     keys.add(SWITCH_KEY_WEATHER_HOT_EXTERNAL_CONTROL)
     keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY)
     keys.add(NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT)
+    keys.add(NUMBER_KEY_DAYTIME_EXTERNAL_POSITION)
     keys.add(NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD)
     keys.add(NUMBER_KEY_DAILY_MIN_TEMPERATURE_THRESHOLD)
     keys.add(TIME_KEY_AUTOMATION_DISABLED_TIME_RANGE_EXTERNAL_START)
@@ -375,7 +387,11 @@ def is_runtime_configurable_key(key: str) -> bool:
         return True
 
     return key.endswith(f"_{COVER_SFX_WEATHER_HOT_EXTERNAL_CONTROL}") or key.endswith(
-        (f"_{COVER_SFX_TILT_EXTERNAL_VALUE_DAY}", f"_{COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}")
+        (
+            f"_{COVER_SFX_DAYTIME_EXTERNAL_POSITION}",
+            f"_{COVER_SFX_TILT_EXTERNAL_VALUE_DAY}",
+            f"_{COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}",
+        )
     )
 
 
@@ -424,6 +440,8 @@ class ResolvedConfig:
     morning_opening_mode: MorningOpeningMode
     morning_opening_time: time
     automatic_reopening_mode: ReopeningMode
+    daytime_strategy: DaytimeStrategy
+    daytime_movement_directions: DaytimeMovementDirections
     heat_protection_mode: HeatProtectionMode
     covers: tuple[str, ...]
     covers_max_closure: int

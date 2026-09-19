@@ -1,3 +1,31 @@
+# v7.0
+
+## Daytime Strategy
+
+The new daytime strategy and its related settings provide control over cover positions during daytime when heat protection is not active. Previously, the integration always opened the covers on such "normal" days. This is now but one of several strategies:
+
+- Let light in
+- Privacy
+- External control
+
+### Daytime Control Mode
+
+The existing setting **Automatic Reopening** has been renamed to **Daytime Control Mode**. The available options and the `passive` default are unchanged.
+
+### Daytime Movement Directions
+
+Previously, Smart Cover Automation would never move to a more closed position during "normal" daytime operations. This can now be configured via the new daytime movement directions setting with the options:
+
+- Open only
+- Close only
+- Open and close
+
+## Notable Changes
+
+### Options Flow
+
+The new **Daytime Strategy** and **Daytime Movement Directions** settings are configurable in a new step 3 of the options flow. The existing steps 3-6 have been moved to positions 4-7.
+
 # v6.3
 
 ## Bugfixes

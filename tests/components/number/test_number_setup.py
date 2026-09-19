@@ -8,17 +8,21 @@ Coverage target: number.py lines 31-54 (async_setup_entry function)
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock
 
 from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
 
+from custom_components.smart_cover_automation.config import ConfKeys
+from custom_components.smart_cover_automation.const import COVER_SFX_DAYTIME_STRATEGY, DaytimeStrategy
 from custom_components.smart_cover_automation.number import (
+    CoverExternalDaytimePositionNumber,
     CoverExternalTiltDayNumber,
     CoverExternalTiltNightNumber,
     DailyMaxTemperatureThresholdNumber,
     DailyMinTemperatureThresholdNumber,
+    GlobalExternalDaytimePositionNumber,
     GlobalExternalTiltDayNumber,
     GlobalExternalTiltNightNumber,
     ManualOverrideDurationNumber,
@@ -167,7 +171,7 @@ async def test_async_setup_entry_adds_external_tilt_numbers_when_modes_external(
         },
     )
     entry.runtime_data.coordinator = mock_coordinator_basic
-    mock_coordinator_basic.hass.states.get.return_value = MagicMock(
+    cast(MagicMock, mock_coordinator_basic.hass.states.get).return_value = MagicMock(
         attributes={ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION}
     )
 
@@ -183,6 +187,35 @@ async def test_async_setup_entry_adds_external_tilt_numbers_when_modes_external(
     assert isinstance(captured[7], GlobalExternalTiltNightNumber)
     assert isinstance(captured[8], CoverExternalTiltDayNumber)
     assert isinstance(captured[9], CoverExternalTiltNightNumber)
+
+
+async def test_async_setup_entry_adds_global_and_per_cover_external_daytime_position_numbers(
+    mock_coordinator_basic: DataUpdateCoordinator,
+) -> None:
+    """External daytime control should create the configured global and per-cover numbers."""
+
+    entry = mock_coordinator_basic.config_entry
+    cover_entity_id = "cover.test_cover"
+    set_test_options(
+        entry,
+        {
+            **dict(entry.options),
+            ConfKeys.DAYTIME_STRATEGY.value: DaytimeStrategy.EXTERNAL,
+            f"{cover_entity_id}_{COVER_SFX_DAYTIME_STRATEGY}": DaytimeStrategy.EXTERNAL,
+        },
+    )
+    entry.runtime_data.coordinator = mock_coordinator_basic
+
+    captured = []
+
+    def add_entities(new_entities, update_before_add: bool = False) -> None:  # noqa: ARG001, ANN001
+        captured.extend(list(new_entities))
+
+    await async_setup_entry(mock_coordinator_basic.hass, entry, add_entities)
+
+    assert len(captured) == 8
+    assert isinstance(captured[6], GlobalExternalDaytimePositionNumber)
+    assert isinstance(captured[7], CoverExternalDaytimePositionNumber)
 
 
 async def test_async_setup_entry_skips_per_cover_external_tilt_numbers_without_tilt_support(
@@ -203,7 +236,9 @@ async def test_async_setup_entry_skips_per_cover_external_tilt_numbers_without_t
     )
     entry.runtime_data.coordinator = mock_coordinator_basic
 
-    mock_coordinator_basic.hass.states.get.return_value = MagicMock(attributes={ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION})
+    cast(MagicMock, mock_coordinator_basic.hass.states.get).return_value = MagicMock(
+        attributes={ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION}
+    )
 
     captured = []
 

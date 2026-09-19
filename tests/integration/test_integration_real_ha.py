@@ -34,7 +34,7 @@ from custom_components.smart_cover_automation.const import (
     COVER_SFX_TILT_MODE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     STEP_2_SECTION_AZIMUTH,
-    STEP_4_SECTION_TILT_DAY,
+    STEP_5_SECTION_TILT_DAY,
     TiltMode,
 )
 
@@ -248,8 +248,8 @@ async def _run_options_flow(
         await hass.config_entries.options.async_configure(
             result["flow_id"],
             user_input={
-                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
-                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+                ConfKeys.DAYTIME_STRATEGY.value: "let_light_in",
+                ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value: "open_only",
             },
         )
     )
@@ -259,7 +259,10 @@ async def _run_options_flow(
     result = _as_dict(
         await hass.config_entries.options.async_configure(
             result["flow_id"],
-            user_input=step_4_input,
+            user_input={
+                ConfKeys.COVERS_MIN_CLOSURE.value: 0,
+                ConfKeys.COVERS_MAX_CLOSURE.value: 100,
+            },
         )
     )
     assert result["type"] is FlowResultType.FORM
@@ -268,18 +271,22 @@ async def _run_options_flow(
     result = _as_dict(
         await hass.config_entries.options.async_configure(
             result["flow_id"],
-            user_input={},
+            user_input=step_4_input,
         )
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "6"
 
-    return _as_dict(
+    result = _as_dict(
         await hass.config_entries.options.async_configure(
             result["flow_id"],
             user_input={},
         )
     )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "7"
+
+    return _as_dict(await hass.config_entries.options.async_configure(result["flow_id"], user_input={}))
 
 
 class TestIntegrationRealHA:
@@ -644,7 +651,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.EXTERNAL},
+                STEP_5_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.EXTERNAL},
             },
         )
         await hass.async_block_till_done()
@@ -669,7 +676,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.AUTO},
+                STEP_5_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.AUTO},
             },
         )
         await hass.async_block_till_done()
@@ -707,7 +714,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.EXTERNAL},
+                STEP_5_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.EXTERNAL},
             },
         )
         await hass.async_block_till_done()
@@ -739,7 +746,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.AUTO},
+                STEP_5_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.AUTO},
             },
         )
         await hass.async_block_till_done()

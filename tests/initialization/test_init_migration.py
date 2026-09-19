@@ -1075,6 +1075,53 @@ class TestAsyncRemoveStaleRegistryEntities:
         updated_options = mock_hass.config_entries.async_update_entry.call_args.kwargs["options"]
         assert "tilt_external_value_day" not in updated_options
 
+    async def test_stale_external_daytime_position_entities_and_values_are_deleted(
+        self,
+        mock_hass: MagicMock,
+        mock_entry: MagicMock,
+        mock_registry: MagicMock,
+    ) -> None:
+        """Cleanup should remove global and per-cover daytime external targets no longer configured."""
+
+        cover_entity_id = "cover.test_cover"
+        global_key = const.NUMBER_KEY_DAYTIME_EXTERNAL_POSITION
+        cover_key = f"{cover_entity_id}_{const.COVER_SFX_DAYTIME_EXTERNAL_POSITION}"
+        global_entity = MagicMock(
+            unique_id=f"{mock_entry.entry_id}_{global_key}",
+            entity_id="number.smart_cover_automation_daytime_external_position",
+        )
+        cover_entity = MagicMock(
+            unique_id=f"{mock_entry.entry_id}_{cover_key}",
+            entity_id="number.smart_cover_automation_test_cover_daytime_external_position",
+        )
+        mock_entry.options = {
+            "covers": [cover_entity_id],
+            global_key: 65,
+            cover_key: 35,
+        }
+        mock_hass.config_entries = MagicMock()
+
+        with (
+            patch(
+                "custom_components.smart_cover_automation.er.async_get",
+                return_value=mock_registry,
+            ),
+            patch(
+                "custom_components.smart_cover_automation.er.async_entries_for_config_entry",
+                return_value=[global_entity, cover_entity],
+            ),
+        ):
+            await _async_remove_stale_registry_entities(mock_hass, mock_entry)
+
+        assert mock_registry.async_remove.call_args_list == [
+            ((global_entity.entity_id,), {}),
+            ((cover_entity.entity_id,), {}),
+        ]
+        mock_hass.config_entries.async_update_entry.assert_called_once()
+        updated_options = mock_hass.config_entries.async_update_entry.call_args.kwargs["options"]
+        assert global_key not in updated_options
+        assert cover_key not in updated_options
+
     async def test_per_cover_external_tilt_entity_and_value_are_deleted_when_cover_lacks_tilt_support(
         self,
         mock_hass: MagicMock,

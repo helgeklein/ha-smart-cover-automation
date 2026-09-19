@@ -22,6 +22,9 @@ class MovementControlReason(StrEnum):
     EVENING_CLOSURE_HOLD = "evening_closure_hold"
     MORNING_OPENING = "morning_opening"
     LET_LIGHT_IN = "let_light_in"
+    DAYTIME_LET_LIGHT_IN = "daytime_let_light_in"
+    DAYTIME_PRIVACY = "daytime_privacy"
+    DAYTIME_EXTERNAL_CONTROL = "daytime_external_control"
     TILT_TO_COVER_OPEN_DELAY = "tilt_to_cover_open_delay"
 
 

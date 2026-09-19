@@ -20,7 +20,7 @@ from .cover_automation import CoverAutomation, CoverExecutionPlan, PendingTiltAc
 from .cover_position_history import CoverPositionHistoryManager, _movement_cause_for_legacy_reason_key
 from .data import CoordinatorData
 from .log import Log
-from .movement import AutomationManagedState
+from .movement import AutomationManagedState, MovementDecision
 
 if TYPE_CHECKING:
     from homeassistant.core import State
@@ -58,7 +58,7 @@ class ScheduledCoverExecution:
     schedule_id: int
     execute_at: datetime
     generation: int
-    plan_signature: tuple[int, Any, int | None]
+    plan_signature: tuple[MovementDecision, bool, int | None]
     task: asyncio.Task[None]
 
 
@@ -347,6 +347,8 @@ class AutomationEngine:
             "lock_mode": lock_mode,
             "heat_protection_mode": self.resolved.heat_protection_mode,
             "automatic_reopening_mode": self.resolved.automatic_reopening_mode,
+            "daytime_strategy": self.resolved.daytime_strategy,
+            "daytime_movement_directions": self.resolved.daytime_movement_directions,
             "covers_min_closure": self.resolved.covers_min_closure,
             "covers_max_closure": self.resolved.covers_max_closure,
             "evening_closure_max_closure": self.resolved.evening_closure_max_closure,

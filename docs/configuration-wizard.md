@@ -54,7 +54,7 @@ Select the covers the integration should automate.
 
 ## Step 2: Azimuth Settings
 
-In this step of the configuration wizard, you can specify two kinds of azimuths for each cover. An azimuth, by the way, is an angle measured from north.
+In this step of the configuration wizard, you specify each azimuths (directions), which are necessary for Smart Cover Automation to calculate when the sun is hitting a window.
 
 ### Cover Azimuth
 
@@ -77,9 +77,41 @@ The following settings are available for each cover:
 - **Minimum elevation:** Elevation at which the sun is considered to start hitting the window (bottom angle).
 - **Maximum elevation:** Elevation at which the sun is considered to stop hitting the window (top angle).
 
-### Minimum/Maximum Sun Angle
+## Step 3: Daytime Position Control
 
-## Step 3: Max/Min Positions (Optional)
+In this step of the configuration wizard, you select the normal daytime behavior used when heat protection is not active.
+
+The following **Daytime strategies** are available:
+
+- **Let light in:** moves covers to their configured minimum positions (see step 4).
+- **Privacy:** moves covers to their configured maximum positions (see step 4).
+- **External:** set the cover position from your own automation.
+  - When this mode is selected, the integration creates additional entities that receive the cover position.
+  - The integration-created entities are fully managed, i.e., they're deleted again if the mode is changed away from `external`.
+  - The integration-managed cover position entities are available globally as well as per cover, depending on where you configured `external` as daytime strategy mode.
+  - The integration only adjusts your cover positions if the position entities actually have a valid value (0-100).
+  - If both global and per-cover external cover position values are specified, the per-cover value takes precedence.
+
+**Daytime movement directions** limits normal operation to opening, closing, or permits both.
+
+### Global Strategy Setting
+
+The above daytime strategy setting is available as a global setting that's applied whenever no per-cover setting is configured.
+
+### Per-Cover Overrides
+
+The global daytime strategy can be overridden per cover.
+
+### Sun Below Horizon
+
+When the sun is below the horizon, daytime control does not open covers, but it can still close them.
+
+Note that **blocked time range** and **evening closure** take precedence:
+
+- Covers selected for evening closure are ignored by daytime control until after morning opening.
+- During the blocked time range, daytime control is inactive.
+
+## Step 4: Max/Min Positions (Optional)
 
 In this step of the configuration wizard, you can specify maximum and minimum positions (0 = fully closed, 100 = fully open). These options can be used to always let some light in and/or always provide a minimum of shade.
 
@@ -97,7 +129,7 @@ The above position settings are available as global settings that are applied wh
 
 The global positions can be overridden per cover.
 
-## Step 4: Tilt Angle Control (Optional)
+## Step 5: Tilt Angle Control (Optional)
 
 In this step of the configuration wizard, you can specify how the tilt angle of covers with adjustable slats is to be controlled. The following options are available:
 
@@ -141,7 +173,7 @@ The global tilt modes can be overridden per cover.
 - **Vertical tilt position:** Home Assistant tilt percentage for fully vertical slats. Auto mode treats this as the vertical slat position. Default: 0%.
 - **Tilt drift tolerance:** Maximum recent tilt settle drift (%) to ignore during the short settling period after an automation command. Larger tilt changes are treated as manual override.
 
-## Step 5: Additional Settings and Window Sensors (Optional)
+## Step 6: Additional Settings and Window Sensors (Optional)
 
 In this step of the configuration wizard, you can configure additional global settings plus optional window sensors for each cover.
 
@@ -153,7 +185,7 @@ In this step of the configuration wizard, you can configure additional global se
 
 You can enable lockout protection by configuring window sensors for each cover. If any window sensor associated with a cover reports that the window is open, the cover won't be closed. This is especially useful for patio or terrace doors with a cover that would block you from re-entering the building if closed.
 
-## Step 6: Time Settings (Optional)
+## Step 7: Time Settings (Optional)
 
 In this step of the configuration wizard, the following settings can be configured:
 
@@ -185,10 +217,7 @@ The same covers become eligible to reopen in the morning if normal automation pe
 **Notes:**
 
 - Covers closed by the evening closure function stay closed until the specified morning opening time or until the end of the blocked time range - whichever is later.
--  Whether a cover actually reopens also depends on the automatic reopening mode:
-    - In **Passive** automatic reopening mode, only covers previously closed by the automation are reopened.
-    - In **Active** automatic reopening mode, covers closed manually can reopen after the manual override duration has elapsed.
-    - In **Off** automatic reopening mode, covers are not reopened automatically.
+- Whether a cover actually moves also depends on **Daytime Control Mode** on the integration device page. Passive moves only covers at an integration-owned position; Active can move every eligible cover; Off suppresses normal daytime movement.
 
 **Evening closure settings:**
 
@@ -220,10 +249,6 @@ The same covers become eligible to reopen in the morning if normal automation pe
 - **Covers:** Subset of covers to close after sunset.
 - **Ignore manual override duration:** When enabled, the evening closure can move selected covers even if a manual override pause is still active.
 - **Keep covers closed:** When enabled, selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.
-- **Automatic reopening:** Controls how automation reopens covers after closing conditions no longer apply:
-  - **Active:** Always reopens covers.
-  - **Passive:** Only reopens covers that were previously closed by automation.
-  - **Off:** Disables automatic reopening.
 
 ## Next Steps
 

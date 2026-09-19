@@ -19,6 +19,7 @@ import pytest
 
 from custom_components.smart_cover_automation.const import LockMode
 from custom_components.smart_cover_automation.cover_automation import CoverAutomation, CoverState
+from custom_components.smart_cover_automation.cover_position_history import CoverPositionHistoryManager
 from custom_components.smart_cover_automation.movement import AutomationManagedState, AutomationMode
 
 
@@ -102,6 +103,22 @@ class TestProcessLockModeUnlocked:
         mock_cover_pos_history_mgr.add.assert_not_called()
         mock_ha_interface.set_cover_position.assert_not_called()
 
+    @pytest.mark.asyncio
+    async def test_unlocked_preserves_lock_ownership(self, mock_resolved_config, basic_config, mock_ha_interface, mock_logger):
+        """Unlocking should leave force-close ownership for passive control."""
+
+        history_manager = CoverPositionHistoryManager()
+        managed_state = AutomationManagedState(position=0, automation_mode=AutomationMode.LOCK)
+        history_manager.set_automation_managed_state("cover.test", managed_state)
+        cover_auto = create_cover_automation(
+            LockMode.UNLOCKED, mock_resolved_config, basic_config, history_manager, mock_ha_interface, mock_logger
+        )
+
+        locked = await cover_auto._process_lock_mode(CoverState(), current_pos=0, features=0)
+
+        assert locked is False
+        assert history_manager.get_automation_managed_state("cover.test") == managed_state
+
 
 class TestProcessLockModeHoldPosition:
     """Test _process_lock_mode with HOLD_POSITION mode."""
@@ -157,6 +174,23 @@ class TestProcessLockModeHoldPosition:
         assert cover_state.pos_target_desired == 100
         assert cover_state.pos_target_final == 100
         mock_cover_pos_history_mgr.add.assert_called_once_with("cover.test", 100, cover_moved=False, tilt_position=None)
+
+    @pytest.mark.asyncio
+    async def test_hold_position_clears_existing_ownership(self, mock_resolved_config, basic_config, mock_ha_interface, mock_logger):
+        """Holding a position should clear ownership from an earlier force-close."""
+
+        history_manager = CoverPositionHistoryManager()
+        history_manager.set_automation_managed_state(
+            "cover.test",
+            AutomationManagedState(position=0, automation_mode=AutomationMode.LOCK),
+        )
+        cover_auto = create_cover_automation(
+            LockMode.HOLD_POSITION, mock_resolved_config, basic_config, history_manager, mock_ha_interface, mock_logger
+        )
+
+        await cover_auto._process_lock_mode(CoverState(), current_pos=0, features=0)
+
+        assert history_manager.get_automation_managed_state("cover.test") is None
 
 
 class TestProcessLockModeForceOpen:
@@ -235,6 +269,24 @@ class TestProcessLockModeForceOpen:
         assert locked is True
         mock_ha_interface.set_cover_position.assert_called_once_with("cover.test", 100, features)
 
+    @pytest.mark.asyncio
+    async def test_force_open_clears_existing_ownership(self, mock_resolved_config, basic_config, mock_ha_interface, mock_logger):
+        """Force-open should clear ownership from an earlier force-close."""
+
+        history_manager = CoverPositionHistoryManager()
+        history_manager.set_automation_managed_state(
+            "cover.test",
+            AutomationManagedState(position=0, automation_mode=AutomationMode.LOCK),
+        )
+        mock_ha_interface.set_cover_position = AsyncMock(return_value=100)
+        cover_auto = create_cover_automation(
+            LockMode.FORCE_OPEN, mock_resolved_config, basic_config, history_manager, mock_ha_interface, mock_logger
+        )
+
+        await cover_auto._process_lock_mode(CoverState(), current_pos=0, features=0)
+
+        assert history_manager.get_automation_managed_state("cover.test") is None
+
 
 class TestProcessLockModeForceClose:
     """Test _process_lock_mode with FORCE_CLOSE mode."""
@@ -280,6 +332,46 @@ class TestProcessLockModeForceClose:
             "cover.test",
             AutomationManagedState(position=0, automation_mode=AutomationMode.LOCK),
         )
+
+    @pytest.mark.asyncio
+    async def test_force_close_retains_existing_lock_ownership(self, mock_resolved_config, basic_config, mock_ha_interface, mock_logger):
+        """Repeated force-close evaluations should retain ownership at the locked position."""
+
+        history_manager = CoverPositionHistoryManager()
+        mock_ha_interface.set_cover_position = AsyncMock(return_value=0)
+        cover_auto = create_cover_automation(
+            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, history_manager, mock_ha_interface, mock_logger
+        )
+
+        await cover_auto._process_lock_mode(CoverState(), current_pos=100, features=0)
+        mock_ha_interface.set_cover_position.reset_mock()
+        await cover_auto._process_lock_mode(CoverState(), current_pos=0, features=0)
+
+        assert history_manager.get_automation_managed_state("cover.test") == AutomationManagedState(
+            position=0,
+            automation_mode=AutomationMode.LOCK,
+        )
+        mock_ha_interface.set_cover_position.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_force_close_drift_and_failure_clear_stale_lock_ownership(
+        self, mock_resolved_config, basic_config, mock_ha_interface, mock_logger
+    ):
+        """A failed re-close must not retain ownership after the cover has drifted away."""
+
+        history_manager = CoverPositionHistoryManager()
+        history_manager.set_automation_managed_state(
+            "cover.test",
+            AutomationManagedState(position=0, automation_mode=AutomationMode.LOCK),
+        )
+        mock_ha_interface.set_cover_position.side_effect = RuntimeError("lock move failed")
+        cover_auto = create_cover_automation(
+            LockMode.FORCE_CLOSE, mock_resolved_config, basic_config, history_manager, mock_ha_interface, mock_logger
+        )
+
+        await cover_auto._process_lock_mode(CoverState(), current_pos=50, features=0)
+
+        assert history_manager.get_automation_managed_state("cover.test") is None
 
     @pytest.mark.asyncio
     async def test_force_close_service_failure_does_not_claim_automation_ownership(

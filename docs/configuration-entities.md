@@ -30,13 +30,40 @@ If **simulation mode** is enabled, the automation runs through all calculations 
 
 The entities in this section control the cover movements.
 
-### Automatic Reopening
+### Daytime Control Mode
 
-Choose how automation should reopen covers when closing conditions no longer apply. The following settings are available:
+Choose which covers normal daytime control may move. The following settings are available:
 
-- **Active:** Always reopens covers. In this mode, covers that were closed manually are reopened after the manual override duration has elapsed.
-- **Passive:** Only reopens covers that were previously closed by automation. In this mode, covers that were closed manually are not reopened.
-- **Off:** Disables automatic reopening.
+- **Active:** Moves every eligible cover.
+- **Passive:** Moves only covers that are at an integration-owned position, i.e., they are where one of the following Smart Cover Automation modes moved it to:
+    - Heat protection
+    - Evening closure
+    - Lock mode `Force close and lock`
+- **Off:** Disables normal daytime movement.
+
+Example:
+
+If a cover is manually closed at night, it won't be opened in the morning in passive mode. That would only happen in active mode.
+
+### Daytime Cover Position (External Control)
+
+These entities are only created when you select `External` as daytime strategy in the configuration wizard.
+
+#### Global Entities
+
+If `External` is configured as the global daytime strategy, the integration creates the following entity:
+
+- **Daytime cover position: external control:** External cover position used during daytime.
+
+Use case: you want to calculate the daytime cover position yourself.
+
+#### Per-Cover Entities
+
+If `External` is configured as a per-cover daytime strategy override, the integration creates a dedicated entity for that cover:
+
+- Per-cover `Daytime cover position: external control`
+
+Per-cover external daytime cover positions take precedence over the global external daytime cover position.
 
 ### Lock Mode
 

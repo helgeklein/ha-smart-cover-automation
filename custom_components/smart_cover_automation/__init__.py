@@ -22,6 +22,8 @@ from . import const
 from .config import CONF_SPECS, ConfKeys, is_runtime_configurable_key
 from .config_flow import OptionsFlowHandler
 from .const import (
+    COVER_SFX_DAYTIME_EXTERNAL_POSITION,
+    COVER_SFX_DAYTIME_STRATEGY,
     COVER_SFX_TILT_EXTERNAL_VALUE_DAY,
     COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT,
     DATA_COORDINATORS,
@@ -33,6 +35,7 @@ from .const import (
     NUMBER_KEY_COVERS_MAX_CLOSURE,
     NUMBER_KEY_COVERS_MIN_CLOSURE,
     NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD,
+    NUMBER_KEY_DAYTIME_EXTERNAL_POSITION,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
     SERVICE_FIELD_LOCK_MODE,
@@ -122,6 +125,28 @@ def _is_external_tilt_value_key(key: str) -> bool:
     return key in (NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY, NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT) or key.endswith(
         (f"_{COVER_SFX_TILT_EXTERNAL_VALUE_DAY}", f"_{COVER_SFX_TILT_EXTERNAL_VALUE_NIGHT}")
     )
+
+
+def _get_valid_external_daytime_position_keys(entry: IntegrationConfigEntry) -> set[str]:
+    """Return external daytime-position keys required by the active strategies."""
+
+    options = _get_entry_options_dict(entry)
+    covers = tuple(options.get(ConfKeys.COVERS.value, ()))
+    valid_keys: set[str] = set()
+    if options.get(ConfKeys.DAYTIME_STRATEGY.value) == const.DaytimeStrategy.EXTERNAL:
+        valid_keys.add(NUMBER_KEY_DAYTIME_EXTERNAL_POSITION)
+
+    for cover in covers:
+        if options.get(f"{cover}_{COVER_SFX_DAYTIME_STRATEGY}") == const.DaytimeStrategy.EXTERNAL:
+            valid_keys.add(f"{cover}_{COVER_SFX_DAYTIME_EXTERNAL_POSITION}")
+
+    return valid_keys
+
+
+def _is_external_daytime_position_key(key: str) -> bool:
+    """Return whether the key stores an external daytime cover position."""
+
+    return key == NUMBER_KEY_DAYTIME_EXTERNAL_POSITION or key.endswith(f"_{COVER_SFX_DAYTIME_EXTERNAL_POSITION}")
 
 
 #
@@ -399,11 +424,13 @@ async def _async_remove_stale_registry_entities(hass: HomeAssistant, entry: Inte
 
     stale_entries = [entity for entity in entries if entity.unique_id in removed_unique_ids]
     valid_external_tilt_value_keys = _get_valid_external_tilt_value_keys(hass, entry)
+    valid_external_daytime_position_keys = _get_valid_external_daytime_position_keys(entry)
     valid_external_morning_opening_keys = _get_valid_external_morning_opening_keys(entry)
     valid_external_evening_closure_keys = _get_valid_external_evening_closure_keys(entry)
     valid_external_blocked_time_range_keys = _get_valid_external_blocked_time_range_keys(entry)
     valid_auto_managed_keys = (
         valid_external_tilt_value_keys
+        | valid_external_daytime_position_keys
         | valid_external_morning_opening_keys
         | valid_external_evening_closure_keys
         | valid_external_blocked_time_range_keys
@@ -415,6 +442,7 @@ async def _async_remove_stale_registry_entities(hass: HomeAssistant, entry: Inte
         if entity.unique_id.startswith(f"{entry.entry_id}_")
         and (
             _is_external_tilt_value_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
+            or _is_external_daytime_position_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
             or _is_external_morning_opening_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
             or _is_external_evening_closure_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
             or _is_external_blocked_time_range_key(entity.unique_id.removeprefix(f"{entry.entry_id}_"))
@@ -427,6 +455,7 @@ async def _async_remove_stale_registry_entities(hass: HomeAssistant, entry: Inte
         key
         for key in current_options
         if _is_external_tilt_value_key(key)
+        or _is_external_daytime_position_key(key)
         or _is_external_morning_opening_key(key)
         or _is_external_evening_closure_key(key)
         or _is_external_blocked_time_range_key(key)

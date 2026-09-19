@@ -168,7 +168,7 @@ class LockModeSelect(EnumConfigSelect):
 
 
 class AutomaticReopeningModeSelect(EnumConfigSelect):
-    """Select entity for choosing the automatic reopening mode."""
+    """Select entity for choosing the daytime control mode."""
 
     def __init__(self, coordinator: DataUpdateCoordinator) -> None:
         super().__init__(
@@ -178,7 +178,7 @@ class AutomaticReopeningModeSelect(EnumConfigSelect):
             enum_type=const.ReopeningMode,
             coordinator_property="automatic_reopening_mode",
             coordinator_setter="async_set_automatic_reopening_mode",
-            invalid_value_label="automatic reopening mode",
+            invalid_value_label="daytime control mode",
         )
 
 

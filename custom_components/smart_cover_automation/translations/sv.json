@@ -17,7 +17,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Steg 1 av 6",
+                "title": "Smart Cover Automation - Steg 1 av 7",
                 "description": "Välj en **väderprognossensor** och de **persienner** som ska automatiseras (obligatoriskt).",
                 "data": {
                     "covers": "Persienner att automatisera:",
@@ -29,7 +29,7 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Steg 2 av 6",
+                "title": "Smart Cover Automation - Steg 2 av 7",
                 "description": "Konfigurera **azimut** (riktning) för varje persienn.\n\nDu kan också begränsa de vinklar där automatiseringen anser att solen lyser på en persienn i alla fyra riktningarna (vänster, höger, upp och ned), för att ta hänsyn till takutsprång, andra byggnader eller närliggande träd. De per-persienn-värden som konfigureras här åsidosätter de globala solvinkelinställningarna som finns på integrationsinstansens enhetssida.\n\n(0°=Nord, 90°=Öst, 180°=Syd, 270°=Väst)",
                 "sections": {
                     "section_azimuth": {
@@ -50,7 +50,24 @@
                 }
             },
             "3": {
-                "title": "Smart Cover Automation - Steg 3 av 6",
+                "title": "Smart Cover Automation - Steg 3 av 7",
+                "description": "Konfigurera normal styrning av solskydd under dagen. Globala inställningar gäller för alla solskydd om de inte åsidosätts per solskydd.",
+                "data": {
+                    "daytime_strategy": "Dagstrategi:",
+                    "daytime_movement_directions": "Rörelseriktningar under dagen:"
+                },
+                "data_description": {
+                    "daytime_strategy": "Välj hur integrationen ska positionera solskydd under dagen när värmeskyddet inte är aktivt.",
+                    "daytime_movement_directions": "Välj om normal styrning under dagen får öppna solskydd, stänga dem eller båda."
+                },
+                "sections": {
+                    "section_daytime_strategy": {
+                        "name": "Dagstrategi (per solskydd)"
+                    }
+                }
+            },
+            "4": {
+                "title": "Smart Cover Automation - Steg 4 av 7",
                 "description": "Konfigurera **min/max**-lägen för persienner (valfritt).\nGlobala inställningar gäller för alla persienner om de inte åsidosätts per persienn.\n(0 = helt stängd, 100 = helt öppen)",
                 "data": {
                     "covers_max_closure": "Högsta läge för persienn (globalt):",
@@ -74,8 +91,8 @@
                     }
                 }
             },
-            "4": {
-                "title": "Smart Cover Automation - Steg 4 av 6",
+            "5": {
+                "title": "Smart Cover Automation - Steg 5 av 7",
                 "description": "Konfigurera **lutningsvinkelkontroll** för persienner med vinklingsbara lameller (valfritt).\nGlobala inställningar gäller för alla lutningsbara persienner om de inte åsidosätts per persienn.",
                 "data": {
                     "tilt_mode_day": "Lutningskontroll (dag):",
@@ -112,8 +129,8 @@
                     }
                 }
             },
-            "5": {
-                "title": "Smart Cover Automation - Steg 5 av 6",
+            "6": {
+                "title": "Smart Cover Automation - Steg 6 av 7",
                 "description": "Konfigurera **ytterligare inställningar** och valfria **fönstersensorer** för varje persienn. Fönstersensorer aktiverar klämskydd: om en kopplad sensor rapporterar att ett fönster är öppet stängs persiennen inte.",
                 "sections": {
                     "section_additional_settings": {
@@ -130,8 +147,8 @@
                     }
                 }
             },
-            "6": {
-                "title": "Smart Cover Automation - Steg 6 av 6",
+            "7": {
+                "title": "Smart Cover Automation - Steg 7 av 7",
                 "description": "Konfigurera **tidsinställningar** för automationen (valfritt).",
                 "data": {},
                 "data_description": {},
@@ -162,7 +179,6 @@
                             "close_covers_after_sunset_cover_list": "Persienner:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorera varaktigheten för manuell överstyrning:",
                             "close_covers_after_sunset_keep_closed": "Håll persienner stängda:",
-                            "automatic_reopening_mode": "Automatisk återöppning:",
                             "morning_opening_mode": "Morgonöppning: läge:",
                             "morning_opening_time": "Morgonöppning: tid:"
                         },
@@ -173,7 +189,6 @@
                             "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas på kvällen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "När den är aktiverad får kvällsstängningen flytta valda persienner även om en paus från manuell överstyrning fortfarande är aktiv.",
                             "close_covers_after_sunset_keep_closed": "När funktionen är aktiverad stängs valda persienner igen under den nattliga kvällsstängningsperioden om de öppnas på nytt. Tiden för manuell överstyrning respekteras. Låsläget har företräde, så persiennerna stängs bara igen efter att låsläget har inaktiverats.",
-                            "automatic_reopening_mode": "Välj hur automationen ska öppna persienner igen när stängningsvillkoren inte längre gäller. Aktiv öppnar alltid persienner igen, Passiv öppnar bara persienner igen som tidigare har stängts av automationen och Av inaktiverar automatisk återöppning.",
                             "morning_opening_mode": "Välj om morgonöppningen ska ske före soluppgången, efter soluppgången, vid en fast tidpunkt eller levereras av en entitet.",
                             "morning_opening_time": "Beroende på valt läge: relativ fördröjning i förhållande till soluppgången eller fast tidpunkt. Ignoreras i externt läge."
                         }
@@ -214,7 +229,7 @@
         },
         "select": {
             "automatic_reopening_mode": {
-                "name": "Automatisk återöppning",
+                "name": "Styrningsläge för dagen",
                 "state": {
                     "active": "Aktiv",
                     "passive": "Passiv",
@@ -317,6 +332,12 @@
             },
             "daily_min_temperature_threshold": {
                 "name": "Värmeskydd: min. daglig lägsta temperatur"
+            },
+            "daytime_external_position": {
+                "name": "Solskyddsposition under dagen: extern styrning"
+            },
+            "cover_daytime_external_position": {
+                "name": "{cover_name}: Solskyddsposition under dagen: extern styrning"
             }
         },
         "switch": {
@@ -404,6 +425,14 @@
                 "reason_keep_closed_after_evening_closure": {
                     "name": "bevara integriteten under natten",
                     "description": "Orsak som används när persiennen stängs igen under nattens håll-stängd-period."
+                },
+                "reason_daytime_privacy": {
+                    "name": "skydda privatlivet under dagen",
+                    "description": "Orsak som används när solskyddet flyttas till sin integritetsposition för dagen."
+                },
+                "reason_daytime_external_control": {
+                    "name": "följa extern styrning under dagen",
+                    "description": "Orsak som används när solskyddet flyttas till en externt angiven dagposition."
                 }
             }
         },
@@ -440,7 +469,7 @@
                 "closed": "Stängd (vertikal — blockera ljus)",
                 "manual": "Manuell (återställ manuellt inställd vinkel)",
                 "auto": "Auto (blockera direkt solljus)",
-                "external": "Extern (lamellvinkel anges via entitet)",
+                "external": "Externt (lamellvinkel som anges av en entitet)",
                 "set_value": "Fast värde (fast lutningsvinkel)"
             }
         },
@@ -449,7 +478,7 @@
                 "before_sunset": "Före solnedgången (relativ fördröjning)",
                 "after_sunset": "Efter solnedgången (relativ fördröjning)",
                 "fixed_time": "Fast tidpunkt",
-                "external": "Externt (tid som levereras av en entitet)"
+                "external": "Externt (tid som anges av en entitet)"
             }
         },
         "morning_opening_mode": {
@@ -457,13 +486,28 @@
                 "before_sunrise": "Före soluppgången (relativ fördröjning)",
                 "after_sunrise": "Efter soluppgången (relativ fördröjning)",
                 "fixed_time": "Fast tidpunkt",
-                "external": "Extern (tid anges av en entitet)"
+                "external": "Externt (tid som anges av en entitet)"
             }
         },
         "blocked_time_range_mode": {
             "options": {
                 "fixed_time": "Absolut tid",
-                "external": "Extern (tider anges av entiteter)"
+                "external": "Externt (tider som anges av entiteter)"
+            }
+        },
+        "daytime_strategy": {
+            "options": {
+                "use_global": "Använd global inställning",
+                "let_light_in": "Släpp in ljus",
+                "privacy": "Integritet",
+                "external": "Externt (position som anges av en entitet)"
+            }
+        },
+        "daytime_movement_directions": {
+            "options": {
+                "open_only": "Endast öppna",
+                "close_only": "Endast stänga",
+                "open_and_close": "Öppna och stäng"
             }
         }
     }
