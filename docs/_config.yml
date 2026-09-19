@@ -58,6 +58,15 @@ kramdown:
     block:
       line_numbers: false
 
+# Just the Docs currently uses Sass APIs deprecated by Dart Sass. Suppress
+# third-party warnings until the theme publishes a compatible release.
+sass:
+  quiet_deps: true
+  silence_deprecations:
+    - import
+    - global-builtin
+    - color-functions
+
 # Collections
 collections:
   docs:
