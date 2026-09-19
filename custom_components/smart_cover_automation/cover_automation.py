@@ -936,6 +936,16 @@ class CoverAutomation:
             self.entity_id
         ) is not None and self._positions_match_within_delta(current_pos, automation_owned_position)
 
+    def _is_current_force_close_lock_owned_position(self, current_pos: int) -> bool:
+        """Return whether a force-close lock still owns the current position."""
+
+        managed_state = self._cover_pos_history_mgr.get_automation_managed_state(self.entity_id)
+        return (
+            isinstance(managed_state, AutomationManagedState)
+            and managed_state.automation_mode == AutomationMode.LOCK
+            and self._positions_match_within_delta(current_pos, managed_state.position)
+        )
+
     def _capture_ownership_debug_snapshot(self, current_pos: int | None) -> OwnershipDebugSnapshot:
         """Capture ownership-related debug state for this evaluation."""
 
@@ -1676,7 +1686,11 @@ class CoverAutomation:
         if self.resolved.lock_mode == const.LockMode.UNLOCKED:
             return False
 
-        self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
+        retain_force_close_ownership = (
+            self.resolved.lock_mode == const.LockMode.FORCE_CLOSE and self._is_current_force_close_lock_owned_position(current_pos)
+        )
+        if not retain_force_close_ownership:
+            self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
         self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
 
         if self.resolved.lock_mode == const.LockMode.HOLD_POSITION:
