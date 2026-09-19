@@ -3007,6 +3007,20 @@ class TestDaytimeMovementDecision:
         assert eligible == MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.DAYTIME_PRIVACY, False)
         assert ineligible == MovementDecision(60, MovementDirection.HOLD, None, False)
 
+    def test_passive_daytime_control_recognizes_matching_target_without_ownership(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_logger, mock_resolved_config
+    ):
+        """A matching daytime target needs no ownership because it requires no movement."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = None
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = None
+
+        decision = cover_automation._calculate_movement_decision(self._normal_daytime_sensor(), sun_hitting=False, current_pos=100)
+
+        assert decision == MovementDecision(100, MovementDirection.HOLD, MovementControlReason.DAYTIME_LET_LIGHT_IN, False)
+        mock_logger.info.assert_any_call("[cover.test] Current position: 100%, desired position: 100%, already at the daytime target")
+
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         ("current_position", "target_position", "control_reason"),
