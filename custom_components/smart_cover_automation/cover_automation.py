@@ -1052,9 +1052,7 @@ class CoverAutomation:
 
         return (angle1 - angle2 + 180) % 360 - 180
 
-    def _calculate_movement_decision(
-        self, sensor_data: SensorData, sun_hitting: bool, current_pos: int, manual_override_just_expired: bool = False
-    ) -> MovementDecision:
+    def _calculate_movement_decision(self, sensor_data: SensorData, sun_hitting: bool, current_pos: int) -> MovementDecision:
         """Calculate the desired movement decision based on sensor data."""
 
         effective_temp_hot = self._get_effective_temp_hot(sensor_data)

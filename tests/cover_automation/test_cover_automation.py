@@ -2280,8 +2280,18 @@ class TestCalculateDesiredPosition:
         mock_cover_pos_history_mgr.set_delayed_reopen_action.assert_not_called()
         mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
 
-    def test_calculate_movement_decision_after_manual_override_expired(self, cover_automation):
-        """Active mode should use a dedicated reopening reason when manual override just expired."""
+    async def test_evaluate_records_manual_override_expiry_on_execution_plan(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_state
+    ):
+        """An expired manual override should be retained as execution context."""
+
+        mock_cover_pos_history_mgr.get_latest_entry.return_value = PositionEntry(
+            position=0,
+            timestamp=datetime.now(timezone.utc) - timedelta(seconds=3700),
+            cover_moved=True,
+        )
+        mock_cover_pos_history_mgr.was_manual_override_blocking.return_value = True
+        mock_state.attributes[ATTR_CURRENT_POSITION] = 0
 
         sensor_data = make_sensor_data(
             sun_azimuth=180.0,
@@ -2294,15 +2304,12 @@ class TestCalculateDesiredPosition:
             post_evening_closure=False,
         )
 
-        decision = cover_automation._calculate_movement_decision(
-            sensor_data,
-            sun_hitting=False,
-            current_pos=50,
-            manual_override_just_expired=True,
-        )
-        assert decision.desired_position == 100
-        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
-        assert decision.lockout_protection_active is False
+        _cover_state, plan, _ownership_debug_snapshot = await cover_automation.evaluate(mock_state, sensor_data)
+
+        assert plan is not None
+        assert plan.decision == MovementDecision(100, MovementDirection.OPENING, MovementControlReason.DAYTIME_LET_LIGHT_IN, False)
+        assert plan.manual_override_just_expired is True
+        mock_cover_pos_history_mgr.clear_manual_override_blocked.assert_called_once_with("cover.test")
 
     def test_calculate_movement_decision_reopens_after_evening_closure(self, cover_automation, mock_cover_pos_history_mgr):
         """Reopening after an evening-closure close should use the evening-closure reopening reason."""
