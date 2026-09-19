@@ -28,9 +28,9 @@ from custom_components.smart_cover_automation.const import (
     COVER_SFX_MAX_CLOSURE,
     COVER_SFX_MIN_CLOSURE,
     COVER_SFX_WINDOW_SENSORS,
-    STEP_3_SECTION_MAX_CLOSURE,
-    STEP_3_SECTION_MIN_CLOSURE,
-    STEP_5_SECTION_WINDOW_SENSORS,
+    STEP_4_SECTION_MAX_CLOSURE,
+    STEP_4_SECTION_MIN_CLOSURE,
+    STEP_6_SECTION_WINDOW_SENSORS,
 )
 
 # Test constants
@@ -138,11 +138,11 @@ class TestOptionsFlowScenarios:
         # Step 4 - min/max closure per cover (no change - section auto-populated)
         # Simulate HA UI auto-populating ALL covers with None/default values
         user_input = {
-            STEP_3_SECTION_MIN_CLOSURE: {
+            STEP_4_SECTION_MIN_CLOSURE: {
                 f"{TEST_COVER_1}_{COVER_SFX_MIN_CLOSURE}": None,  # Auto-populated default
                 f"{TEST_COVER_2}_{COVER_SFX_MIN_CLOSURE}": None,  # Auto-populated default
             },
-            STEP_3_SECTION_MAX_CLOSURE: {
+            STEP_4_SECTION_MAX_CLOSURE: {
                 f"{TEST_COVER_1}_{COVER_SFX_MAX_CLOSURE}": 20,  # Existing value unchanged
                 f"{TEST_COVER_2}_{COVER_SFX_MAX_CLOSURE}": None,  # Auto-populated default
             },
@@ -158,7 +158,7 @@ class TestOptionsFlowScenarios:
         # Step 6 - window sensors (no change - section auto-populated)
         # Simulate HA UI auto-populating ALL covers with empty lists
         user_input = {
-            STEP_5_SECTION_WINDOW_SENSORS: {
+            STEP_6_SECTION_WINDOW_SENSORS: {
                 f"{TEST_COVER_1}_{COVER_SFX_WINDOW_SENSORS}": [],  # Auto-populated default
                 f"{TEST_COVER_2}_{COVER_SFX_WINDOW_SENSORS}": [],  # Auto-populated default
             },
@@ -222,10 +222,10 @@ class TestOptionsFlowScenarios:
 
         # Step 3 - Add min closure for TEST_COVER_1 only
         user_input = {
-            STEP_3_SECTION_MIN_CLOSURE: {
+            STEP_4_SECTION_MIN_CLOSURE: {
                 f"{TEST_COVER_1}_{COVER_SFX_MIN_CLOSURE}": 30,  # New setting
             },
-            STEP_3_SECTION_MAX_CLOSURE: {},  # No changes
+            STEP_4_SECTION_MAX_CLOSURE: {},  # No changes
         }
         await flow.async_step_4(user_input)
 
@@ -233,7 +233,7 @@ class TestOptionsFlowScenarios:
         await flow.async_step_5({})
 
         # Step 5 - No changes to window sensors
-        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_6_SECTION_WINDOW_SENSORS: {}})
 
         # Step 6 - Complete flow
         result = await flow.async_step_7(
@@ -294,8 +294,8 @@ class TestOptionsFlowScenarios:
         # Step 3 - Clear max closure for TEST_COVER_1
         # User clears the field, HA sends None
         user_input = {
-            STEP_3_SECTION_MIN_CLOSURE: {},
-            STEP_3_SECTION_MAX_CLOSURE: {
+            STEP_4_SECTION_MIN_CLOSURE: {},
+            STEP_4_SECTION_MAX_CLOSURE: {
                 f"{TEST_COVER_1}_{COVER_SFX_MAX_CLOSURE}": None,  # Explicit clear
             },
         }
@@ -305,7 +305,7 @@ class TestOptionsFlowScenarios:
         await flow.async_step_5({})
 
         # Step 5 - No changes to window sensors
-        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_6_SECTION_WINDOW_SENSORS: {}})
 
         # Step 6 - Complete flow
         result = await flow.async_step_7(
@@ -359,8 +359,8 @@ class TestOptionsFlowScenarios:
         )
         await flow.async_step_4(
             {
-                STEP_3_SECTION_MIN_CLOSURE: {},
-                STEP_3_SECTION_MAX_CLOSURE: {},
+                STEP_4_SECTION_MIN_CLOSURE: {},
+                STEP_4_SECTION_MAX_CLOSURE: {},
             }
         )
 
@@ -369,7 +369,7 @@ class TestOptionsFlowScenarios:
 
         # Step 5 - Add window sensor for TEST_COVER_1
         user_input = {
-            STEP_5_SECTION_WINDOW_SENSORS: {
+            STEP_6_SECTION_WINDOW_SENSORS: {
                 f"{TEST_COVER_1}_{COVER_SFX_WINDOW_SENSORS}": [TEST_BINARY_SENSOR],  # New sensor
             },
         }
@@ -441,15 +441,15 @@ class TestOptionsFlowScenarios:
         # Step 3 - min/max settings
         await flow.async_step_4(
             {
-                STEP_3_SECTION_MIN_CLOSURE: {},
-                STEP_3_SECTION_MAX_CLOSURE: {},
+                STEP_4_SECTION_MIN_CLOSURE: {},
+                STEP_4_SECTION_MAX_CLOSURE: {},
             }
         )
         # Step 4 - tilt (skip)
         await flow.async_step_5({})
 
         # Step 5 - window sensors
-        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_6_SECTION_WINDOW_SENSORS: {}})
 
         # Step 6 - Complete flow
         result = await flow.async_step_7(
@@ -513,11 +513,11 @@ class TestOptionsFlowScenarios:
         # Step 3 - Add both min and max closures for both covers
         await flow.async_step_4(
             {
-                STEP_3_SECTION_MIN_CLOSURE: {
+                STEP_4_SECTION_MIN_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MIN_CLOSURE}": 10,
                     f"{TEST_COVER_2}_{COVER_SFX_MIN_CLOSURE}": 20,
                 },
-                STEP_3_SECTION_MAX_CLOSURE: {
+                STEP_4_SECTION_MAX_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MAX_CLOSURE}": 80,
                     f"{TEST_COVER_2}_{COVER_SFX_MAX_CLOSURE}": 90,
                 },
@@ -530,7 +530,7 @@ class TestOptionsFlowScenarios:
         # Step 5 - Add window sensors for both covers
         await flow.async_step_6(
             {
-                STEP_5_SECTION_WINDOW_SENSORS: {
+                STEP_6_SECTION_WINDOW_SENSORS: {
                     f"{TEST_COVER_1}_{COVER_SFX_WINDOW_SENSORS}": [TEST_BINARY_SENSOR],
                     f"{TEST_COVER_2}_{COVER_SFX_WINDOW_SENSORS}": ["binary_sensor.window_2"],
                 },
@@ -598,15 +598,15 @@ class TestOptionsFlowScenarios:
         # Step 3 - min/max settings
         await flow.async_step_4(
             {
-                STEP_3_SECTION_MIN_CLOSURE: {},
-                STEP_3_SECTION_MAX_CLOSURE: {},
+                STEP_4_SECTION_MIN_CLOSURE: {},
+                STEP_4_SECTION_MAX_CLOSURE: {},
             }
         )
         # Step 4 - tilt (skip)
         await flow.async_step_5({})
 
         # Step 5 - window sensors
-        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_6_SECTION_WINDOW_SENSORS: {}})
 
         result = await flow.async_step_7(
             {
@@ -658,15 +658,15 @@ class TestOptionsFlowScenarios:
         # Step 3 - min/max settings
         await flow.async_step_4(
             {
-                STEP_3_SECTION_MIN_CLOSURE: {},
-                STEP_3_SECTION_MAX_CLOSURE: {},
+                STEP_4_SECTION_MIN_CLOSURE: {},
+                STEP_4_SECTION_MAX_CLOSURE: {},
             }
         )
         # Step 4 - tilt (skip)
         await flow.async_step_5({})
 
         # Step 5 - window sensors
-        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_6_SECTION_WINDOW_SENSORS: {}})
 
         # Step 6 - Complete flow
         result = await flow.async_step_7(
@@ -716,15 +716,15 @@ class TestOptionsFlowScenarios:
         # Step 3 - min/max settings
         await flow.async_step_4(
             {
-                STEP_3_SECTION_MIN_CLOSURE: {},
-                STEP_3_SECTION_MAX_CLOSURE: {},
+                STEP_4_SECTION_MIN_CLOSURE: {},
+                STEP_4_SECTION_MAX_CLOSURE: {},
             }
         )
         # Step 4 - tilt (skip)
         await flow.async_step_5({})
 
         # Step 5 - window sensors
-        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_6_SECTION_WINDOW_SENSORS: {}})
 
         # Step 6 - Change global settings
         result = await flow.async_step_7(
@@ -787,15 +787,15 @@ class TestOptionsFlowScenarios:
         # Step 3 - Add settings for new covers
         await flow.async_step_4(
             {
-                STEP_3_SECTION_MIN_CLOSURE: {
+                STEP_4_SECTION_MIN_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MIN_CLOSURE}": 10,  # Existing
                     f"{TEST_COVER_2}_{COVER_SFX_MIN_CLOSURE}": 15,  # New
                 },
-                STEP_3_SECTION_MAX_CLOSURE: {},
+                STEP_4_SECTION_MAX_CLOSURE: {},
             }
         )
 
-        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_6_SECTION_WINDOW_SENSORS: {}})
 
         result = await flow.async_step_7(
             {
@@ -857,8 +857,8 @@ class TestOptionsFlowScenarios:
         # Step 3 - min/max settings
         await flow.async_step_4(
             {
-                STEP_3_SECTION_MIN_CLOSURE: {},
-                STEP_3_SECTION_MAX_CLOSURE: {},
+                STEP_4_SECTION_MIN_CLOSURE: {},
+                STEP_4_SECTION_MAX_CLOSURE: {},
             }
         )
 
@@ -868,7 +868,7 @@ class TestOptionsFlowScenarios:
         # Step 5 - Remove window sensors by setting to empty list
         await flow.async_step_6(
             {
-                STEP_5_SECTION_WINDOW_SENSORS: {
+                STEP_6_SECTION_WINDOW_SENSORS: {
                     f"{TEST_COVER_1}_{COVER_SFX_WINDOW_SENSORS}": [],  # Explicit removal
                     f"{TEST_COVER_2}_{COVER_SFX_WINDOW_SENSORS}": ["binary_sensor.window_2"],  # Keep
                 },
@@ -931,18 +931,18 @@ class TestOptionsFlowScenarios:
         # Step 3 - Update existing values
         await flow.async_step_4(
             {
-                STEP_3_SECTION_MIN_CLOSURE: {
+                STEP_4_SECTION_MIN_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MIN_CLOSURE}": 30,  # Changed from 10
                     f"{TEST_COVER_2}_{COVER_SFX_MIN_CLOSURE}": 20,  # Unchanged
                 },
-                STEP_3_SECTION_MAX_CLOSURE: {
+                STEP_4_SECTION_MAX_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MAX_CLOSURE}": 60,  # Changed from 80
                     f"{TEST_COVER_2}_{COVER_SFX_MAX_CLOSURE}": None,  # No max for cover 2
                 },
             }
         )
 
-        await flow.async_step_6({STEP_5_SECTION_WINDOW_SENSORS: {}})
+        await flow.async_step_6({STEP_6_SECTION_WINDOW_SENSORS: {}})
 
         result = await flow.async_step_7(
             {
@@ -1011,11 +1011,11 @@ class TestOptionsFlowScenarios:
         # Step 3 - Update min closure for cover 1, add settings for cover 3
         await flow.async_step_4(
             {
-                STEP_3_SECTION_MIN_CLOSURE: {
+                STEP_4_SECTION_MIN_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MIN_CLOSURE}": 25,  # Changed from 10
                     f"{test_cover_3}_{COVER_SFX_MIN_CLOSURE}": 30,  # New
                 },
-                STEP_3_SECTION_MAX_CLOSURE: {
+                STEP_4_SECTION_MAX_CLOSURE: {
                     f"{TEST_COVER_1}_{COVER_SFX_MAX_CLOSURE}": 70,  # New
                     f"{test_cover_3}_{COVER_SFX_MAX_CLOSURE}": None,  # No max
                 },
@@ -1028,7 +1028,7 @@ class TestOptionsFlowScenarios:
         # Step 5 - Add window sensor for new cover
         await flow.async_step_6(
             {
-                STEP_5_SECTION_WINDOW_SENSORS: {
+                STEP_6_SECTION_WINDOW_SENSORS: {
                     f"{test_cover_3}_{COVER_SFX_WINDOW_SENSORS}": ["binary_sensor.kitchen_window"],
                 },
             }

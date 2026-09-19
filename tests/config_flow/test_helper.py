@@ -538,7 +538,7 @@ class TestFlowHelperSchemaBuilding:
         assert ConfKeys.COVERS_MIN_CLOSURE.value in sections
         assert ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value in sections
 
-        min_section_schema = _get_section_schema(schema, const.STEP_3_SECTION_MIN_CLOSURE)
+        min_section_schema = _get_section_schema(schema, const.STEP_4_SECTION_MIN_CLOSURE)
         min_field = _get_field_marker(min_section_schema, "Test Cover")
         assert min_field.description == {"name": "Test Cover", "suggested_value": "20"}
 
@@ -558,9 +558,9 @@ class TestFlowHelperSchemaBuilding:
         assert ConfKeys.COVERS_MAX_CLOSURE.value in schema_keys
         assert ConfKeys.COVERS_MIN_CLOSURE.value in schema_keys
         assert ConfKeys.EVENING_CLOSURE_MAX_CLOSURE.value in schema_keys
-        assert const.STEP_3_SECTION_MIN_CLOSURE not in schema_keys
-        assert const.STEP_3_SECTION_MAX_CLOSURE not in schema_keys
-        assert const.STEP_3_SECTION_EVENING_MAX_CLOSURE not in schema_keys
+        assert const.STEP_4_SECTION_MIN_CLOSURE not in schema_keys
+        assert const.STEP_4_SECTION_MAX_CLOSURE not in schema_keys
+        assert const.STEP_4_SECTION_EVENING_MAX_CLOSURE not in schema_keys
 
 
 class TestFlowHelperFlattenSection:
@@ -740,8 +740,8 @@ class TestFlowHelperStep4TiltSchema:
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
 
         # Should contain per-cover tilt day/night sections
-        assert const.STEP_4_SECTION_TILT_DAY in schema_keys
-        assert const.STEP_4_SECTION_TILT_NIGHT in schema_keys
+        assert const.STEP_5_SECTION_TILT_DAY in schema_keys
+        assert const.STEP_5_SECTION_TILT_NIGHT in schema_keys
 
     #
     # test_step_4_no_per_cover_sections_without_tilt_covers
@@ -766,8 +766,8 @@ class TestFlowHelperStep4TiltSchema:
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
 
         # Should NOT contain per-cover tilt sections
-        assert const.STEP_4_SECTION_TILT_DAY not in schema_keys
-        assert const.STEP_4_SECTION_TILT_NIGHT not in schema_keys
+        assert const.STEP_5_SECTION_TILT_DAY not in schema_keys
+        assert const.STEP_5_SECTION_TILT_NIGHT not in schema_keys
 
     #
     # test_step_4_per_cover_tilt_uses_existing_defaults
@@ -794,10 +794,10 @@ class TestFlowHelperStep4TiltSchema:
 
         # Schema should be created with per-cover sections
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
-        assert const.STEP_4_SECTION_TILT_DAY in schema_keys
-        assert const.STEP_4_SECTION_TILT_NIGHT in schema_keys
+        assert const.STEP_5_SECTION_TILT_DAY in schema_keys
+        assert const.STEP_5_SECTION_TILT_NIGHT in schema_keys
 
-        day_section_schema = _get_section_schema(schema, const.STEP_4_SECTION_TILT_DAY)
+        day_section_schema = _get_section_schema(schema, const.STEP_5_SECTION_TILT_DAY)
         day_field = _get_field_marker(day_section_schema, "Test Cover")
         assert day_field.description == {"name": "Test Cover", "suggested_value": "closed"}
 
@@ -823,8 +823,8 @@ class TestFlowHelperStep4TiltSchema:
         assert ConfKeys.TILT_MODE_NIGHT.value in schema_keys
         assert ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value in schema_keys
         assert ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value in schema_keys
-        assert const.STEP_4_SECTION_TILT_DAY not in schema_keys
-        assert const.STEP_4_SECTION_TILT_NIGHT not in schema_keys
+        assert const.STEP_5_SECTION_TILT_DAY not in schema_keys
+        assert const.STEP_5_SECTION_TILT_NIGHT not in schema_keys
 
     def test_step_4_rendered_field_maps_only_include_tilt_capable_schema_keys(self) -> None:
         """Rendered step-4 field maps should only include tilt-capable covers and match schema keys."""
@@ -843,13 +843,13 @@ class TestFlowHelperStep4TiltSchema:
             rendered_field_maps=rendered_field_maps,
         )
 
-        day_schema = _get_section_schema(schema, const.STEP_4_SECTION_TILT_DAY)
-        night_schema = _get_section_schema(schema, const.STEP_4_SECTION_TILT_NIGHT)
+        day_schema = _get_section_schema(schema, const.STEP_5_SECTION_TILT_DAY)
+        night_schema = _get_section_schema(schema, const.STEP_5_SECTION_TILT_NIGHT)
 
         expected_keys = {"Test Cover 2"}
 
-        assert set(rendered_field_maps[const.STEP_4_SECTION_TILT_DAY]) == expected_keys
-        assert set(rendered_field_maps[const.STEP_4_SECTION_TILT_NIGHT]) == expected_keys
+        assert set(rendered_field_maps[const.STEP_5_SECTION_TILT_DAY]) == expected_keys
+        assert set(rendered_field_maps[const.STEP_5_SECTION_TILT_NIGHT]) == expected_keys
         assert {getattr(key, "schema", None) for key in day_schema} == expected_keys
         assert {getattr(key, "schema", None) for key in night_schema} == expected_keys
 
@@ -886,8 +886,8 @@ class TestFlowHelperStep4TiltSchema:
 
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
 
-        assert const.STEP_4_SECTION_TILT_DAY in schema_keys
-        assert const.STEP_4_SECTION_TILT_NIGHT in schema_keys
+        assert const.STEP_5_SECTION_TILT_DAY in schema_keys
+        assert const.STEP_5_SECTION_TILT_NIGHT in schema_keys
 
     def test_step_4_omits_sections_when_tilt_mode_helper_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Step 4 should omit optional per-cover tilt sections when helper builders return no fields."""
@@ -914,8 +914,8 @@ class TestFlowHelperStep4TiltSchema:
         assert ConfKeys.TILT_MODE_NIGHT.value in schema_keys
         assert ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value in schema_keys
         assert ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value in schema_keys
-        assert const.STEP_4_SECTION_TILT_DAY not in schema_keys
-        assert const.STEP_4_SECTION_TILT_NIGHT not in schema_keys
+        assert const.STEP_5_SECTION_TILT_DAY not in schema_keys
+        assert const.STEP_5_SECTION_TILT_NIGHT not in schema_keys
 
     def test_build_schema_step_5_omits_window_sensor_section_when_entity_helper_returns_empty(
         self, monkeypatch: pytest.MonkeyPatch
@@ -930,8 +930,8 @@ class TestFlowHelperStep4TiltSchema:
         schema = FlowHelper.build_schema_step_6(covers, defaults)
         schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema.keys()]
 
-        assert const.STEP_5_SECTION_ADDITIONAL_SETTINGS in schema_keys
-        assert const.STEP_5_SECTION_WINDOW_SENSORS not in schema_keys
+        assert const.STEP_6_SECTION_ADDITIONAL_SETTINGS in schema_keys
+        assert const.STEP_6_SECTION_WINDOW_SENSORS not in schema_keys
 
     def test_build_schema_step_5_labels_window_sensor_fields_with_cover_name(
         self,
@@ -943,7 +943,7 @@ class TestFlowHelperStep4TiltSchema:
         defaults = {f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}": ["binary_sensor.window"]}
 
         schema = FlowHelper.build_schema_step_6(covers, defaults, mock_hass_with_covers)
-        section_schema = _get_section_schema(schema, const.STEP_5_SECTION_WINDOW_SENSORS)
+        section_schema = _get_section_schema(schema, const.STEP_6_SECTION_WINDOW_SENSORS)
         field_marker = _get_field_marker(section_schema, "Test Cover")
 
         assert field_marker.description == {"name": "Test Cover"}

@@ -17,7 +17,7 @@
         },
         "step": {
             "init": {
-                "title": "Smart Cover Automation - Step 1 of 6",
+                "title": "Smart Cover Automation - Step 1 of 7",
                 "description": "Select a **weather forecast sensor** and the **covers** to automate (required).",
                 "data": {
                     "covers": "Covers to automate:",
@@ -29,7 +29,7 @@
                 }
             },
             "2": {
-                "title": "Smart Cover Automation - Step 2 of 6",
+                "title": "Smart Cover Automation - Step 2 of 7",
                 "description": "Configure the **azimuth** (direction) for each cover.\n\nYou can also restrict the angles at which the automation considers the sun to be shining on a cover in all four directions (left, right, up, and down) to account for roof overhangs, other buildings, or nearby trees. The per-cover values configured here override the global sun-angle settings available on the integration instance's device page.\n\n(0°=North, 90°=East, 180°=South, 270°=West)",
                 "sections": {
                     "section_azimuth": {

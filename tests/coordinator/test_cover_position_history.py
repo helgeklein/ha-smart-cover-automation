@@ -381,6 +381,19 @@ class TestAutomationClosedMarkers:
             "cover.legacy": {"position": 10, "automation_mode": AutomationMode.HEAT_PROTECTION.value},
         }
 
+    def test_daytime_control_ownership_round_trips_through_persistence(self) -> None:
+        """DAYTIME_CONTROL ownership should survive export and restore across a restart."""
+
+        manager = CoverPositionHistoryManager()
+        state = AutomationManagedState(position=63, automation_mode=AutomationMode.DAYTIME_CONTROL)
+        manager.set_automation_managed_state("cover.living_room", state)
+
+        restored_manager = CoverPositionHistoryManager()
+        restored = restored_manager.restore_automation_managed_states(manager.export_automation_managed_states())
+
+        assert restored == {"cover.living_room"}
+        assert restored_manager.get_automation_managed_state("cover.living_room") == state
+
     @pytest.mark.asyncio
     async def test_coordinator_runtime_state_round_trip(self, hass) -> None:
         """Persisted runtime state should survive coordinator recreation."""

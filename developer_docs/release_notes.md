@@ -1,3 +1,9 @@
+# v7.0
+
+## Daytime Strategy
+
+
+
 # v6.3
 
 ## Bugfixes

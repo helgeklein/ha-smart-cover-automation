@@ -426,7 +426,7 @@ class FlowHelper:
         hass: Any | None = None,
         rendered_field_maps: dict[str, dict[str, str]] | None = None,
     ) -> vol.Schema:
-        """Build schema for step 3: min/max position per cover.
+        """Build schema for Step 4: min/max position per cover.
 
         Args:
             covers: List of cover entity IDs
@@ -434,7 +434,7 @@ class FlowHelper:
             resolved_settings: Resolved configuration with defaults
 
         Returns:
-            Schema for step 3 form
+            Schema for Step 4 form
         """
 
         schema_dict: dict[vol.Marker, object] = {}
@@ -497,12 +497,12 @@ class FlowHelper:
         if min_schema_dict:
             FlowHelper._store_cover_field_map(
                 rendered_field_maps,
-                const.STEP_3_SECTION_MIN_CLOSURE,
+                const.STEP_4_SECTION_MIN_CLOSURE,
                 covers,
                 const.COVER_SFX_MIN_CLOSURE,
                 cover_labels,
             )
-            schema_dict[vol.Optional(const.STEP_3_SECTION_MIN_CLOSURE)] = section(
+            schema_dict[vol.Optional(const.STEP_4_SECTION_MIN_CLOSURE)] = section(
                 vol.Schema(min_schema_dict),
                 {"collapsed": True},
             )
@@ -512,12 +512,12 @@ class FlowHelper:
         if max_schema_dict:
             FlowHelper._store_cover_field_map(
                 rendered_field_maps,
-                const.STEP_3_SECTION_MAX_CLOSURE,
+                const.STEP_4_SECTION_MAX_CLOSURE,
                 covers,
                 const.COVER_SFX_MAX_CLOSURE,
                 cover_labels,
             )
-            schema_dict[vol.Optional(const.STEP_3_SECTION_MAX_CLOSURE)] = section(
+            schema_dict[vol.Optional(const.STEP_4_SECTION_MAX_CLOSURE)] = section(
                 vol.Schema(max_schema_dict),
                 {"collapsed": True},
             )
@@ -531,12 +531,12 @@ class FlowHelper:
         if evening_max_schema_dict:
             FlowHelper._store_cover_field_map(
                 rendered_field_maps,
-                const.STEP_3_SECTION_EVENING_MAX_CLOSURE,
+                const.STEP_4_SECTION_EVENING_MAX_CLOSURE,
                 covers,
                 const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
                 cover_labels,
             )
-            schema_dict[vol.Optional(const.STEP_3_SECTION_EVENING_MAX_CLOSURE)] = section(
+            schema_dict[vol.Optional(const.STEP_4_SECTION_EVENING_MAX_CLOSURE)] = section(
                 vol.Schema(evening_max_schema_dict),
                 {"collapsed": True},
             )
@@ -594,7 +594,7 @@ class FlowHelper:
         return schema_dict
 
     #
-    # build_schema_step_4_tilt
+    # build_schema_step_5_tilt
     #
     @staticmethod
     def build_schema_step_5_tilt(
@@ -604,7 +604,7 @@ class FlowHelper:
         hass: Any,
         rendered_field_maps: dict[str, dict[str, str]] | None = None,
     ) -> vol.Schema:
-        """Build schema for step 4: tilt angle control.
+        """Build schema for Step 5: tilt angle control.
 
         Only covers that support CoverEntityFeature.SET_TILT_POSITION are shown
         in the per-cover override sections.
@@ -616,7 +616,7 @@ class FlowHelper:
             hass: Home Assistant instance (for checking cover features)
 
         Returns:
-            Schema for step 4 form
+            Schema for Step 5 form
         """
 
         from homeassistant.components.cover import CoverEntityFeature  # pyright: ignore[reportMissingImports]
@@ -789,12 +789,12 @@ class FlowHelper:
             if day_schema_dict:
                 FlowHelper._store_cover_field_map(
                     rendered_field_maps,
-                    const.STEP_4_SECTION_TILT_DAY,
+                    const.STEP_5_SECTION_TILT_DAY,
                     tilt_capable_covers,
                     const.COVER_SFX_TILT_MODE_DAY,
                     cover_labels,
                 )
-                schema_dict[vol.Optional(const.STEP_4_SECTION_TILT_DAY)] = section(
+                schema_dict[vol.Optional(const.STEP_5_SECTION_TILT_DAY)] = section(
                     vol.Schema(day_schema_dict),
                     {"collapsed": True},
                 )
@@ -810,12 +810,12 @@ class FlowHelper:
             if night_schema_dict:
                 FlowHelper._store_cover_field_map(
                     rendered_field_maps,
-                    const.STEP_4_SECTION_TILT_NIGHT,
+                    const.STEP_5_SECTION_TILT_NIGHT,
                     tilt_capable_covers,
                     const.COVER_SFX_TILT_MODE_NIGHT,
                     cover_labels,
                 )
-                schema_dict[vol.Optional(const.STEP_4_SECTION_TILT_NIGHT)] = section(
+                schema_dict[vol.Optional(const.STEP_5_SECTION_TILT_NIGHT)] = section(
                     vol.Schema(night_schema_dict),
                     {"collapsed": True},
                 )
@@ -863,7 +863,7 @@ class FlowHelper:
         return schema_dict
 
     #
-    # build_schema_step_5
+    # build_schema_step_6
     #
     @staticmethod
     def build_schema_step_6(
@@ -872,14 +872,14 @@ class FlowHelper:
         hass: Any | None = None,
         rendered_field_maps: dict[str, dict[str, str]] | None = None,
     ) -> vol.Schema:
-        """Build schema for step 5: additional settings and window sensors.
+        """Build schema for Step 6: additional settings and window sensors.
 
         Args:
             covers: List of cover entity IDs
             defaults: Dictionary to look up default values
 
         Returns:
-            Schema for step 5 form
+            Schema for Step 6 form
         """
 
         resolved_settings = resolve(defaults)
@@ -901,7 +901,7 @@ class FlowHelper:
                 )
             )
         }
-        schema_dict[vol.Optional(const.STEP_5_SECTION_ADDITIONAL_SETTINGS)] = section(vol.Schema(additional_settings_schema))
+        schema_dict[vol.Optional(const.STEP_6_SECTION_ADDITIONAL_SETTINGS)] = section(vol.Schema(additional_settings_schema))
 
         # Build schema dict for window sensors and group inside collapsible section
         window_sensors_schema_dict = FlowHelper._build_schema_cover_entities(
@@ -913,12 +913,12 @@ class FlowHelper:
         if window_sensors_schema_dict:
             FlowHelper._store_cover_field_map(
                 rendered_field_maps,
-                const.STEP_5_SECTION_WINDOW_SENSORS,
+                const.STEP_6_SECTION_WINDOW_SENSORS,
                 covers,
                 const.COVER_SFX_WINDOW_SENSORS,
                 cover_labels,
             )
-            schema_dict[vol.Optional(const.STEP_5_SECTION_WINDOW_SENSORS)] = section(
+            schema_dict[vol.Optional(const.STEP_6_SECTION_WINDOW_SENSORS)] = section(
                 vol.Schema(window_sensors_schema_dict),
                 {"collapsed": True},
             )
@@ -974,18 +974,18 @@ class FlowHelper:
         return schema_dict
 
     #
-    # build_schema_step_6
+    # build_schema_step_7
     #
     @staticmethod
     def build_schema_step_7(covers: list[str], resolved_settings: ResolvedConfig) -> vol.Schema:
-        """Build schema for step 6 settings.
+        """Build schema for Step 7 settings.
 
         Args:
             covers: List of cover entity IDs
             resolved_settings: Resolved configuration with defaults
 
         Returns:
-            Schema for step 6 form
+            Schema for Step 7 form
         """
 
         schema_dict: dict[vol.Marker, object] = {}
@@ -1043,7 +1043,7 @@ class FlowHelper:
         ] = selector.BooleanSelector()
 
         # Group settings in collapsed section
-        schema_dict[vol.Optional(const.STEP_6_SECTION_TIME_RANGE)] = section(
+        schema_dict[vol.Optional(const.STEP_7_SECTION_TIME_RANGE)] = section(
             vol.Schema(time_range_schema_dict),
             {"collapsed": True},
         )
@@ -1137,7 +1137,7 @@ class FlowHelper:
         ] = selector.BooleanSelector()
 
         # Group settings in collapsed section
-        schema_dict[vol.Optional(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)] = section(
+        schema_dict[vol.Optional(const.STEP_7_SECTION_CLOSE_AFTER_SUNSET)] = section(
             vol.Schema(evening_closure_schema_dict),
             {"collapsed": True},
         )
@@ -1971,31 +1971,31 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Build complete lists of min and max closure settings for all covers
         min_closure_data = self._build_section_cover_settings(
             user_input,
-            const.STEP_3_SECTION_MIN_CLOSURE,
+            const.STEP_4_SECTION_MIN_CLOSURE,
             const.COVER_SFX_MIN_CLOSURE,
             covers_in_input,
             current_settings,
             self.hass,
-            self._get_cover_field_map(const.STEP_3_SECTION_MIN_CLOSURE, covers_in_input, const.COVER_SFX_MIN_CLOSURE),
+            self._get_cover_field_map(const.STEP_4_SECTION_MIN_CLOSURE, covers_in_input, const.COVER_SFX_MIN_CLOSURE),
         )
         max_closure_data = self._build_section_cover_settings(
             user_input,
-            const.STEP_3_SECTION_MAX_CLOSURE,
+            const.STEP_4_SECTION_MAX_CLOSURE,
             const.COVER_SFX_MAX_CLOSURE,
             covers_in_input,
             current_settings,
             self.hass,
-            self._get_cover_field_map(const.STEP_3_SECTION_MAX_CLOSURE, covers_in_input, const.COVER_SFX_MAX_CLOSURE),
+            self._get_cover_field_map(const.STEP_4_SECTION_MAX_CLOSURE, covers_in_input, const.COVER_SFX_MAX_CLOSURE),
         )
         evening_max_closure_data = self._build_section_cover_settings(
             user_input,
-            const.STEP_3_SECTION_EVENING_MAX_CLOSURE,
+            const.STEP_4_SECTION_EVENING_MAX_CLOSURE,
             const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
             covers_in_input,
             current_settings,
             self.hass,
             self._get_cover_field_map(
-                const.STEP_3_SECTION_EVENING_MAX_CLOSURE,
+                const.STEP_4_SECTION_EVENING_MAX_CLOSURE,
                 covers_in_input,
                 const.COVER_SFX_EVENING_CLOSURE_MAX_CLOSURE,
             ),
@@ -2006,14 +2006,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_data.update(max_closure_data)
         self._config_data.update(evening_max_closure_data)
 
-        # Proceed to step 4
+        # Proceed to Step 5.
         return await self.async_step_5()
 
     #
-    # async_step_4
+    # async_step_5
     #
     async def async_step_5(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 4: Configure tilt angle control for covers with tiltable slats."""
+        """Step 5: Configure tilt angle control for covers with tiltable slats."""
 
         if user_input is None:
             # Get currently valid settings
@@ -2045,7 +2045,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Get the selected covers
         covers_in_input = self._get_covers()
 
-        """Step 6: Configure additional settings and window sensors."""
+        """Step 5: Configure tilt angle control for covers with tiltable slats."""
         current_settings = self._current_settings()
 
         # Store global tilt settings
@@ -2067,35 +2067,35 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Build per-cover tilt mode settings
         tilt_day_data = self._build_section_cover_settings(
             user_input,
-            const.STEP_4_SECTION_TILT_DAY,
+            const.STEP_5_SECTION_TILT_DAY,
             const.COVER_SFX_TILT_MODE_DAY,
             covers_in_input,
             current_settings,
             self.hass,
-            self._get_cover_field_map(const.STEP_4_SECTION_TILT_DAY, covers_in_input, const.COVER_SFX_TILT_MODE_DAY),
+            self._get_cover_field_map(const.STEP_5_SECTION_TILT_DAY, covers_in_input, const.COVER_SFX_TILT_MODE_DAY),
         )
         tilt_night_data = self._build_section_cover_settings(
             user_input,
-            const.STEP_4_SECTION_TILT_NIGHT,
+            const.STEP_5_SECTION_TILT_NIGHT,
             const.COVER_SFX_TILT_MODE_NIGHT,
             covers_in_input,
             current_settings,
             self.hass,
-            self._get_cover_field_map(const.STEP_4_SECTION_TILT_NIGHT, covers_in_input, const.COVER_SFX_TILT_MODE_NIGHT),
+            self._get_cover_field_map(const.STEP_5_SECTION_TILT_NIGHT, covers_in_input, const.COVER_SFX_TILT_MODE_NIGHT),
         )
 
         # Store the per-cover tilt settings
         self._config_data.update(tilt_day_data)
         self._config_data.update(tilt_night_data)
 
-        # Proceed to step 5
+        # Proceed to Step 6.
         return await self.async_step_6()
 
     #
-    # async_step_5
+    # async_step_6
     #
     async def async_step_6(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 5: Configure additional settings and window sensors."""
+        """Step 6: Configure additional settings and window sensors."""
 
         if user_input is None:
             # Get currently valid settings
@@ -2125,14 +2125,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Get the selected covers
         covers_in_input = self._get_covers()
 
-        """Step 7: Configure evening closure and night silence settings."""
+        """Step 6: Configure additional settings and window sensors."""
         current_settings = self._current_settings()
 
         additional_settings, sections_present = FlowHelper.extract_from_section_input(
             user_input,
-            {const.STEP_5_SECTION_ADDITIONAL_SETTINGS},
+            {const.STEP_6_SECTION_ADDITIONAL_SETTINGS},
         )
-        if const.STEP_5_SECTION_ADDITIONAL_SETTINGS in sections_present:
+        if const.STEP_6_SECTION_ADDITIONAL_SETTINGS in sections_present:
             self._config_data[ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value] = int(
                 additional_settings.get(ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value, 0)
             )
@@ -2140,25 +2140,25 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Build complete lists of window sensor settings for all covers
         window_sensor_data = self._build_section_cover_settings(
             user_input,
-            const.STEP_5_SECTION_WINDOW_SENSORS,
+            const.STEP_6_SECTION_WINDOW_SENSORS,
             const.COVER_SFX_WINDOW_SENSORS,
             covers_in_input,
             current_settings,
             self.hass,
-            self._get_cover_field_map(const.STEP_5_SECTION_WINDOW_SENSORS, covers_in_input, const.COVER_SFX_WINDOW_SENSORS),
+            self._get_cover_field_map(const.STEP_6_SECTION_WINDOW_SENSORS, covers_in_input, const.COVER_SFX_WINDOW_SENSORS),
         )
 
         # Store the complete per-cover settings
         self._config_data.update(window_sensor_data)
 
-        # Proceed to step 6
+        # Proceed to Step 7.
         return await self.async_step_7()
 
     #
-    # async_step_6
+    # async_step_7
     #
     async def async_step_7(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
-        """Step 6: Configure evening closure and night silence settings."""
+        """Step 7: Configure evening closure and night silence settings."""
 
         if user_input is None:
             # Get currently valid settings
@@ -2179,10 +2179,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._logger.debug(f"Options flow Step 7 user input: {user_input}")
 
         # Extract section data if present
-        section_names = {const.STEP_6_SECTION_TIME_RANGE, const.STEP_6_SECTION_CLOSE_AFTER_SUNSET}
+        section_names = {const.STEP_7_SECTION_TIME_RANGE, const.STEP_7_SECTION_CLOSE_AFTER_SUNSET}
         user_input_extracted, sections_present = FlowHelper.extract_from_section_input(user_input, section_names)
 
-        # Store step 6 data (use extracted data to handle sections properly)
+        # Store Step 7 data (use extracted data to handle sections properly).
         self._config_data.update(user_input_extracted)
 
         # Finalize and save configuration

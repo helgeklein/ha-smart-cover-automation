@@ -489,7 +489,7 @@ class TestOptionsFlowStep2:
 
         result = await flow.async_step_4(
             {
-                const.STEP_3_SECTION_MIN_CLOSURE: {
+                const.STEP_4_SECTION_MIN_CLOSURE: {
                     "Test Cover": "40",
                 },
             }
@@ -518,7 +518,7 @@ class TestOptionsFlowStep2:
 
         result = await flow.async_step_5(
             {
-                const.STEP_4_SECTION_TILT_DAY: {
+                const.STEP_5_SECTION_TILT_DAY: {
                     "Test Cover": const.TiltMode.CLOSED.value,
                 },
             }
@@ -546,7 +546,7 @@ class TestOptionsFlowStep2:
 
         result = await flow.async_step_6(
             {
-                const.STEP_5_SECTION_WINDOW_SENSORS: {
+                const.STEP_6_SECTION_WINDOW_SENSORS: {
                     "Test Cover": ["binary_sensor.window_1"],
                 },
             }
@@ -874,8 +874,8 @@ class TestOptionsFlowIntegration:
                 ConfKeys.TILT_VERTICAL_POSITION.value: 0,
                 ConfKeys.TILT_HORIZONTAL_POSITION.value: 100,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                const.STEP_4_SECTION_TILT_DAY: {},
-                const.STEP_4_SECTION_TILT_NIGHT: {},
+                const.STEP_5_SECTION_TILT_DAY: {},
+                const.STEP_5_SECTION_TILT_NIGHT: {},
             }
         )
 
@@ -896,10 +896,10 @@ class TestOptionsFlowIntegration:
 
         result = await flow.async_step_6(
             {
-                const.STEP_5_SECTION_ADDITIONAL_SETTINGS: {
+                const.STEP_6_SECTION_ADDITIONAL_SETTINGS: {
                     ConfKeys.COVER_MOVEMENT_STAGGER_DELAY.value: 12,
                 },
-                const.STEP_5_SECTION_WINDOW_SENSORS: {},
+                const.STEP_6_SECTION_WINDOW_SENSORS: {},
             }
         )
 
@@ -1242,7 +1242,7 @@ class TestOptionsFlowIntegration:
             }
         )
 
-        await flow.async_step_4({const.STEP_3_SECTION_EVENING_MAX_CLOSURE: {}})
+        await flow.async_step_4({const.STEP_4_SECTION_EVENING_MAX_CLOSURE: {}})
         await flow.async_step_5({})
         await flow.async_step_6({})
 
@@ -1385,7 +1385,7 @@ class TestOptionsFlowHelperMethods:
         from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
 
         user_input = {
-            const.STEP_3_SECTION_MAX_CLOSURE: {
+            const.STEP_4_SECTION_MAX_CLOSURE: {
                 # Only one cover present
                 f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MAX_CLOSURE}": 90,
             }
@@ -1398,7 +1398,7 @@ class TestOptionsFlowHelperMethods:
         current_settings: dict[str, Any] = {}
 
         result = OptionsFlowHandler._build_section_cover_settings(
-            user_input, const.STEP_3_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers, current_settings
+            user_input, const.STEP_4_SECTION_MAX_CLOSURE, const.COVER_SFX_MAX_CLOSURE, covers, current_settings
         )
 
         # First cover should have the value
@@ -1412,7 +1412,7 @@ class TestOptionsFlowHelperMethods:
         """Test _build_section_cover_settings handles tilt mode suffixes."""
 
         user_input = {
-            const.STEP_4_SECTION_TILT_DAY: {
+            const.STEP_5_SECTION_TILT_DAY: {
                 f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_DAY}": "closed",
             },
         }
@@ -1421,7 +1421,7 @@ class TestOptionsFlowHelperMethods:
         current_settings: dict[str, Any] = {}
 
         result = OptionsFlowHandler._build_section_cover_settings(
-            user_input, const.STEP_4_SECTION_TILT_DAY, const.COVER_SFX_TILT_MODE_DAY, covers, current_settings
+            user_input, const.STEP_5_SECTION_TILT_DAY, const.COVER_SFX_TILT_MODE_DAY, covers, current_settings
         )
 
         # Tilt mode should be stored as a string
@@ -1434,7 +1434,7 @@ class TestOptionsFlowHelperMethods:
         """Test _build_section_cover_settings handles cleared tilt mode values."""
 
         user_input = {
-            const.STEP_4_SECTION_TILT_NIGHT: {
+            const.STEP_5_SECTION_TILT_NIGHT: {
                 f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_NIGHT}": "",
             },
         }
@@ -1445,7 +1445,7 @@ class TestOptionsFlowHelperMethods:
         }
 
         result = OptionsFlowHandler._build_section_cover_settings(
-            user_input, const.STEP_4_SECTION_TILT_NIGHT, const.COVER_SFX_TILT_MODE_NIGHT, covers, current_settings
+            user_input, const.STEP_5_SECTION_TILT_NIGHT, const.COVER_SFX_TILT_MODE_NIGHT, covers, current_settings
         )
 
         # Cleared value should be stored as None (changed from "open")
@@ -1455,12 +1455,12 @@ class TestOptionsFlowHelperMethods:
         """A non-mapping section payload should be ignored safely."""
 
         user_input = {
-            const.STEP_4_SECTION_TILT_NIGHT: 123,
+            const.STEP_5_SECTION_TILT_NIGHT: 123,
         }
 
         result = OptionsFlowHandler._build_section_cover_settings(
             user_input,
-            const.STEP_4_SECTION_TILT_NIGHT,
+            const.STEP_5_SECTION_TILT_NIGHT,
             const.COVER_SFX_TILT_MODE_NIGHT,
             [MOCK_COVER_ENTITY_ID],
             {f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_TILT_MODE_NIGHT}": "open"},
@@ -1473,14 +1473,14 @@ class TestOptionsFlowHelperMethods:
 
         current_value = ["binary_sensor.window_1"]
         user_input = {
-            const.STEP_5_SECTION_WINDOW_SENSORS: {
+            const.STEP_6_SECTION_WINDOW_SENSORS: {
                 f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}": list(current_value),
             },
         }
 
         result = OptionsFlowHandler._build_section_cover_settings(
             user_input,
-            const.STEP_5_SECTION_WINDOW_SENSORS,
+            const.STEP_6_SECTION_WINDOW_SENSORS,
             const.COVER_SFX_WINDOW_SENSORS,
             [MOCK_COVER_ENTITY_ID],
             {f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_WINDOW_SENSORS}": current_value},
@@ -1492,14 +1492,14 @@ class TestOptionsFlowHelperMethods:
         """Unchanged numeric per-cover values should not be written back."""
 
         user_input = {
-            const.STEP_3_SECTION_MIN_CLOSURE: {
+            const.STEP_4_SECTION_MIN_CLOSURE: {
                 f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}": "40",
             },
         }
 
         result = OptionsFlowHandler._build_section_cover_settings(
             user_input,
-            const.STEP_3_SECTION_MIN_CLOSURE,
+            const.STEP_4_SECTION_MIN_CLOSURE,
             const.COVER_SFX_MIN_CLOSURE,
             [MOCK_COVER_ENTITY_ID],
             {f"{MOCK_COVER_ENTITY_ID}_{const.COVER_SFX_MIN_CLOSURE}": 40},
@@ -1883,9 +1883,9 @@ class TestOptionsFlowStep6CloseAfterSunset:
         schema_keys = [str(key) for key in schema.schema.keys()]
 
         # The section itself should be in schema
-        assert any(const.STEP_6_SECTION_CLOSE_AFTER_SUNSET in key for key in schema_keys)
+        assert any(const.STEP_7_SECTION_CLOSE_AFTER_SUNSET in key for key in schema_keys)
 
-        section_key = next(key for key in schema.schema if str(key) == const.STEP_6_SECTION_CLOSE_AFTER_SUNSET)
+        section_key = next(key for key in schema.schema if str(key) == const.STEP_7_SECTION_CLOSE_AFTER_SUNSET)
         section_schema = schema.schema[section_key].schema.schema
         section_defaults = {key.schema: key.default() for key in section_schema if hasattr(key, "schema") and hasattr(key, "default")}
 
@@ -1920,7 +1920,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
         result_dict = _as_dict(result)
         schema = result_dict["data_schema"]
 
-        section_key = next(key for key in schema.schema if str(key) == const.STEP_6_SECTION_TIME_RANGE)
+        section_key = next(key for key in schema.schema if str(key) == const.STEP_7_SECTION_TIME_RANGE)
         section_schema = schema.schema[section_key].schema.schema
         section_defaults = {key.schema: key.default() for key in section_schema if hasattr(key, "schema") and hasattr(key, "default")}
 
@@ -1952,7 +1952,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
 
         result = await flow.async_step_7(
             {
-                const.STEP_6_SECTION_TIME_RANGE: {
+                const.STEP_7_SECTION_TIME_RANGE: {
                     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE.value: True,
                     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_MODE.value: const.BlockedTimeRangeMode.FIXED_TIME,
                     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START.value: "22:00:00",
@@ -2039,7 +2039,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
 
         # Submit step 6 with close_after_sunset settings
         user_input = {
-            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "01:30:00",
@@ -2090,7 +2090,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
         await flow.async_step_6({})
 
         user_input = {
-            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
@@ -2134,7 +2134,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
         await flow.async_step_6({})
 
         user_input = {
-            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
                 ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.BEFORE_SUNSET.value,
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
@@ -2193,7 +2193,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
 
         # Submit step 6 with close_after_sunset disabled
         user_input = {
-            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: False,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
@@ -2250,7 +2250,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
 
         # Submit step 6 with empty cover list
         user_input = {
-            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
@@ -2307,7 +2307,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
 
         # Submit step 6 with zero delay
         user_input = {
-            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:00:00",
@@ -2370,7 +2370,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
 
         # Submit step 6 with multiple covers
         user_input = {
-            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "02:00:30",
@@ -2432,7 +2432,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
 
         # Submit step 6 with nested section data
         user_input = {
-            const.STEP_6_SECTION_CLOSE_AFTER_SUNSET: {
+            const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
                 ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "01:15:30",
@@ -2449,7 +2449,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
         saved_data = result_dict["data"]
 
         # Verify section key is NOT in saved data (should be flattened)
-        assert const.STEP_6_SECTION_CLOSE_AFTER_SUNSET not in saved_data
+        assert const.STEP_7_SECTION_CLOSE_AFTER_SUNSET not in saved_data
 
         # Verify all settings are at top level
         assert ConfKeys.EVENING_CLOSURE_ENABLED.value in saved_data

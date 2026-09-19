@@ -34,7 +34,7 @@ from custom_components.smart_cover_automation.const import (
     COVER_SFX_TILT_MODE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     STEP_2_SECTION_AZIMUTH,
-    STEP_4_SECTION_TILT_DAY,
+    STEP_5_SECTION_TILT_DAY,
     TiltMode,
 )
 
@@ -651,7 +651,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.EXTERNAL},
+                STEP_5_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.EXTERNAL},
             },
         )
         await hass.async_block_till_done()
@@ -676,7 +676,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.AUTO},
+                STEP_5_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.AUTO},
             },
         )
         await hass.async_block_till_done()
@@ -714,7 +714,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.EXTERNAL},
+                STEP_5_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.EXTERNAL},
             },
         )
         await hass.async_block_till_done()
@@ -746,7 +746,7 @@ class TestIntegrationRealHA:
                 ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
                 ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
                 ConfKeys.TILT_SLAT_OVERLAP_RATIO.value: 0.9,
-                STEP_4_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.AUTO},
+                STEP_5_SECTION_TILT_DAY: {_cover_label(TEST_COVER_1): TiltMode.AUTO},
             },
         )
         await hass.async_block_till_done()

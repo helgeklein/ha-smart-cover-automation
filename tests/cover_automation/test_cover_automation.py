@@ -2772,6 +2772,217 @@ class TestCalculateDesiredPosition:
         assert reason == CoverMovementReason.CLOSING_AFTER_SUNSET
 
 
+class TestDaytimeMovementDecision:
+    """Test normal daytime strategy decisions without legacy-reason adaptation."""
+
+    @staticmethod
+    def _normal_daytime_sensor(sun_elevation: float = 45.0) -> CoverSensorData:
+        """Return sensor data that reaches normal daytime control."""
+
+        return make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=sun_elevation,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+    @pytest.mark.parametrize(
+        (
+            "strategy",
+            "directions",
+            "external_target",
+            "current_position",
+            "expected_position",
+            "expected_direction",
+            "expected_reason",
+        ),
+        [
+            (
+                const.DaytimeStrategy.LET_LIGHT_IN,
+                const.DaytimeMovementDirections.OPEN_ONLY,
+                None,
+                20,
+                100,
+                MovementDirection.OPENING,
+                MovementControlReason.DAYTIME_LET_LIGHT_IN,
+            ),
+            (
+                const.DaytimeStrategy.LET_LIGHT_IN,
+                const.DaytimeMovementDirections.CLOSE_ONLY,
+                None,
+                20,
+                20,
+                MovementDirection.HOLD,
+                None,
+            ),
+            (
+                const.DaytimeStrategy.LET_LIGHT_IN,
+                const.DaytimeMovementDirections.OPEN_AND_CLOSE,
+                None,
+                20,
+                100,
+                MovementDirection.OPENING,
+                MovementControlReason.DAYTIME_LET_LIGHT_IN,
+            ),
+            (
+                const.DaytimeStrategy.PRIVACY,
+                const.DaytimeMovementDirections.OPEN_ONLY,
+                None,
+                80,
+                80,
+                MovementDirection.HOLD,
+                None,
+            ),
+            (
+                const.DaytimeStrategy.PRIVACY,
+                const.DaytimeMovementDirections.CLOSE_ONLY,
+                None,
+                80,
+                0,
+                MovementDirection.CLOSING,
+                MovementControlReason.DAYTIME_PRIVACY,
+            ),
+            (
+                const.DaytimeStrategy.PRIVACY,
+                const.DaytimeMovementDirections.OPEN_AND_CLOSE,
+                None,
+                80,
+                0,
+                MovementDirection.CLOSING,
+                MovementControlReason.DAYTIME_PRIVACY,
+            ),
+            (
+                const.DaytimeStrategy.EXTERNAL_CONTROL,
+                const.DaytimeMovementDirections.OPEN_ONLY,
+                100,
+                20,
+                100,
+                MovementDirection.OPENING,
+                MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
+            ),
+            (
+                const.DaytimeStrategy.EXTERNAL_CONTROL,
+                const.DaytimeMovementDirections.CLOSE_ONLY,
+                100,
+                20,
+                20,
+                MovementDirection.HOLD,
+                None,
+            ),
+            (
+                const.DaytimeStrategy.EXTERNAL_CONTROL,
+                const.DaytimeMovementDirections.OPEN_AND_CLOSE,
+                0,
+                80,
+                0,
+                MovementDirection.CLOSING,
+                MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
+            ),
+        ],
+    )
+    def test_daytime_strategy_respects_movement_directions(
+        self,
+        cover_automation,
+        basic_config,
+        mock_resolved_config,
+        strategy,
+        directions,
+        external_target,
+        current_position,
+        expected_position,
+        expected_direction,
+        expected_reason,
+    ):
+        """Each strategy should move only in its configured allowed direction."""
+
+        mock_resolved_config.daytime_strategy = strategy
+        mock_resolved_config.daytime_movement_directions = directions
+        if external_target is not None:
+            basic_config[const.NUMBER_KEY_DAYTIME_EXTERNAL_POSITION] = external_target
+
+        decision = cover_automation._calculate_movement_decision(
+            self._normal_daytime_sensor(),
+            sun_hitting=False,
+            current_pos=current_position,
+        )
+
+        assert decision == MovementDecision(expected_position, expected_direction, expected_reason, False)
+
+    def test_daytime_opening_holds_below_horizon_but_closing_continues(self, cover_automation, mock_resolved_config):
+        """Below the horizon, normal daytime opening stops while privacy closing remains allowed."""
+
+        mock_resolved_config.daytime_movement_directions = const.DaytimeMovementDirections.OPEN_AND_CLOSE
+        sensor_data = self._normal_daytime_sensor(sun_elevation=0.0)
+
+        opening = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=20)
+        mock_resolved_config.daytime_strategy = const.DaytimeStrategy.PRIVACY
+        closing = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=80)
+
+        assert opening == MovementDecision(20, MovementDirection.HOLD, None, False)
+        assert closing == MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.DAYTIME_PRIVACY, False)
+
+    def test_passive_daytime_control_requires_current_automation_owned_position(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Passive daytime control should resume only at its DAYTIME_CONTROL-owned position."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_resolved_config.daytime_strategy = const.DaytimeStrategy.PRIVACY
+        mock_resolved_config.daytime_movement_directions = const.DaytimeMovementDirections.OPEN_AND_CLOSE
+        managed_state = AutomationManagedState(position=40, automation_mode=AutomationMode.DAYTIME_CONTROL)
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = managed_state
+        mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 40
+
+        eligible = cover_automation._calculate_movement_decision(self._normal_daytime_sensor(), sun_hitting=False, current_pos=40)
+        ineligible = cover_automation._calculate_movement_decision(self._normal_daytime_sensor(), sun_hitting=False, current_pos=60)
+
+        assert eligible == MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.DAYTIME_PRIVACY, False)
+        assert ineligible == MovementDecision(60, MovementDirection.HOLD, None, False)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("current_position", "target_position", "control_reason"),
+        [
+            (20, 100, MovementControlReason.DAYTIME_LET_LIGHT_IN),
+            (80, 0, MovementControlReason.DAYTIME_PRIVACY),
+            (20, 75, MovementControlReason.DAYTIME_EXTERNAL_CONTROL),
+        ],
+    )
+    async def test_successful_daytime_move_records_daytime_control_ownership(
+        self,
+        cover_automation,
+        mock_cover_pos_history_mgr,
+        mock_ha_interface,
+        current_position,
+        target_position,
+        control_reason,
+    ):
+        """Every successful daytime position move should establish DAYTIME_CONTROL ownership."""
+
+        mock_ha_interface.set_cover_position.return_value = target_position
+        direction = MovementDirection.OPENING if target_position > current_position else MovementDirection.CLOSING
+        decision = MovementDecision(target_position, direction, control_reason, False)
+
+        moved, actual_position, _message = await cover_automation._move_cover_if_needed(
+            current_pos=current_position,
+            desired_pos=target_position,
+            features=CoverEntityFeature.SET_POSITION,
+            movement_reason=CoverMovementReason.OPENING_LET_LIGHT_IN,
+            movement_decision=decision,
+        )
+
+        assert moved is True
+        assert actual_position == target_position
+        mock_cover_pos_history_mgr.set_automation_managed_state.assert_called_once_with(
+            "cover.test",
+            AutomationManagedState(position=target_position, automation_mode=AutomationMode.DAYTIME_CONTROL),
+        )
+
+
 class TestCalculateDesiredPositionLockout:
     """Test lockout protection logic in _calculate_desired_position method."""
 
