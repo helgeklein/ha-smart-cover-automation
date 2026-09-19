@@ -33,6 +33,14 @@ if TYPE_CHECKING:
 
 COVER_RESULT_NO_MOVEMENT = "no movement"
 
+_REOPEN_COMPLETION_REASONS = (
+    MovementControlReason.LET_LIGHT_IN,
+    MovementControlReason.MORNING_OPENING,
+    MovementControlReason.DAYTIME_LET_LIGHT_IN,
+    MovementControlReason.DAYTIME_PRIVACY,
+    MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
+)
+
 
 def _automation_mode_for_logbook_reason(reason_key: str | None) -> AutomationMode | None:
     """Map a persisted closing logbook reason back to durable automation ownership."""
@@ -47,13 +55,25 @@ def _automation_mode_for_logbook_reason(reason_key: str | None) -> AutomationMod
     return None
 
 
-def _ends_automation_managed_reopen(decision: MovementDecision) -> bool:
-    """Return whether a decision reopens into the normal daytime state."""
+def _completes_automation_managed_reopen(
+    decision: MovementDecision,
+    managed_state: AutomationManagedState | None,
+) -> bool:
+    """Return whether a decision completes reopening from a closing automation mode."""
 
-    return decision.direction == MovementDirection.OPENING and decision.control_reason in (
-        MovementControlReason.LET_LIGHT_IN,
-        MovementControlReason.MORNING_OPENING,
-    )
+    if managed_state is None or managed_state.automation_mode not in (
+        AutomationMode.HEAT_PROTECTION,
+        AutomationMode.EVENING_CLOSURE,
+    ):
+        return False
+
+    if decision.control_reason not in _REOPEN_COMPLETION_REASONS:
+        return False
+
+    if decision.direction == MovementDirection.OPENING:
+        return True
+
+    return decision.direction == MovementDirection.HOLD and decision.desired_position > managed_state.position
 
 
 def _requires_execution_plan(decision: MovementDecision) -> bool:
@@ -361,9 +381,14 @@ class CoverAutomation:
         movement_decision = self._calculate_movement_decision(sensor_data, sun_hitting, current_pos)
         cover_state.pos_target_desired = movement_decision.desired_position
         cover_state.lockout_protection = movement_decision.lockout_protection_active
-        ownership_debug_snapshot = self._capture_ownership_debug_snapshot(current_pos)
 
         if not _requires_execution_plan(movement_decision):
+            managed_state = self._cover_pos_history_mgr.get_automation_managed_state(self.entity_id)
+            if not isinstance(managed_state, AutomationManagedState):
+                managed_state = None
+            if _completes_automation_managed_reopen(movement_decision, managed_state):
+                self._clear_completed_reopen_ownership()
+            ownership_debug_snapshot = self._capture_ownership_debug_snapshot(current_pos)
             self._cover_pos_history_mgr.add(
                 self.entity_id,
                 current_pos,
@@ -372,6 +397,7 @@ class CoverAutomation:
             )
             return cover_state, None, ownership_debug_snapshot
 
+        ownership_debug_snapshot = self._capture_ownership_debug_snapshot(current_pos)
         cover_moved = self._is_cover_move_required(current_pos, movement_decision.desired_position)
         planned_tilt_target = self._determine_target_tilt(cover_state, sensor_data, movement_decision, cover_moved)
         cover_state.tilt_target = planned_tilt_target
@@ -1491,6 +1517,12 @@ class CoverAutomation:
     #
     # _move_cover_if_needed
     #
+    def _clear_completed_reopen_ownership(self) -> None:
+        """Clear closing ownership after automation has demonstrably reopened the cover."""
+
+        self._cover_pos_history_mgr.clear_automation_managed_state(self.entity_id)
+        self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+
     async def _move_cover_if_needed(
         self,
         current_pos: int,
@@ -1522,17 +1554,13 @@ class CoverAutomation:
             return False, None, "Skipped cover movement during delayed reopen preparation"
 
         if desired_pos == current_pos:
-            if _ends_automation_managed_reopen(decision):
-                self._cover_pos_history_mgr.clear_automation_managed_state(self.entity_id)
-                self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
-                self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+            if _completes_automation_managed_reopen(decision, managed_state):
+                self._clear_completed_reopen_ownership()
             return False, None, "No movement needed"
 
         if abs(desired_pos - current_pos) < self.resolved.covers_min_position_delta:
-            if _ends_automation_managed_reopen(decision):
-                self._cover_pos_history_mgr.clear_automation_managed_state(self.entity_id)
-                self._cover_pos_history_mgr.clear_closed_by_automation(self.entity_id)
-                self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+            if _completes_automation_managed_reopen(decision, managed_state):
+                self._clear_completed_reopen_ownership()
             return False, None, "Skipped minor adjustment"
 
         # Movement needed

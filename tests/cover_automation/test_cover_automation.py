@@ -2311,6 +2311,67 @@ class TestCalculateDesiredPosition:
         assert plan.manual_override_just_expired is True
         mock_cover_pos_history_mgr.clear_manual_override_blocked.assert_called_once_with("cover.test")
 
+    @pytest.mark.parametrize(
+        ("automation_mode", "daytime_strategy", "current_position", "owned_position", "external_target", "clears_ownership"),
+        [
+            (AutomationMode.HEAT_PROTECTION, const.DaytimeStrategy.LET_LIGHT_IN, 100, 0, None, True),
+            (AutomationMode.EVENING_CLOSURE, const.DaytimeStrategy.EXTERNAL, 80, 0, 80, True),
+            (AutomationMode.HEAT_PROTECTION, const.DaytimeStrategy.PRIVACY, 0, 0, None, False),
+            (AutomationMode.HEAT_PROTECTION, const.DaytimeStrategy.EXTERNAL, 0, 0, 0, False),
+        ],
+    )
+    async def test_evaluate_clears_ownership_only_for_matched_reopening_targets(
+        self,
+        mock_resolved_config,
+        basic_config,
+        mock_ha_interface,
+        mock_logger,
+        mock_state,
+        automation_mode,
+        daytime_strategy,
+        current_position,
+        owned_position,
+        external_target,
+        clears_ownership,
+    ):
+        """Matched daytime targets should clear only closing ownership that they reopen beyond."""
+
+        history_manager = CoverPositionHistoryManager()
+        history_manager.set_automation_managed_state(
+            "cover.test",
+            AutomationManagedState(position=owned_position, automation_mode=automation_mode),
+        )
+        mock_resolved_config.lock_mode = LockMode.UNLOCKED
+        mock_resolved_config.daytime_strategy = daytime_strategy
+        if external_target is not None:
+            basic_config[const.NUMBER_KEY_DAYTIME_EXTERNAL_POSITION] = external_target
+        mock_state.attributes[ATTR_CURRENT_POSITION] = current_position
+        cover_automation = CoverAutomation(
+            entity_id="cover.test",
+            resolved=mock_resolved_config,
+            config=basic_config,
+            cover_pos_history_mgr=history_manager,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+        )
+
+        _cover_state, plan, ownership_debug_snapshot = await cover_automation.evaluate(mock_state, sensor_data)
+
+        assert plan is None
+        assert (history_manager.get_automation_managed_state("cover.test") is None) is clears_ownership
+        assert (ownership_debug_snapshot.automation_managed_mode is None) is clears_ownership
+        mock_ha_interface.set_cover_position.assert_not_called()
+
     def test_calculate_movement_decision_reopens_after_evening_closure(self, cover_automation, mock_cover_pos_history_mgr):
         """Reopening after an evening-closure close should use the evening-closure reopening reason."""
 
@@ -3720,6 +3781,9 @@ class TestMaoveCoverIfNeeded:
     async def test_move_cover_if_needed_clears_reopen_state_when_already_open(self, cover_automation, mock_cover_pos_history_mgr):
         """Opening no-op should still clear automation-closed and delayed-reopen markers."""
 
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = AutomationManagedState(
+            position=0, automation_mode=AutomationMode.HEAT_PROTECTION
+        )
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=100,
             features=CoverEntityFeature.SET_POSITION,
@@ -3729,7 +3793,7 @@ class TestMaoveCoverIfNeeded:
         assert movement_needed is False
         assert actual_pos is None
         assert message == "No movement needed"
-        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
+        mock_cover_pos_history_mgr.clear_automation_managed_state.assert_called_once_with("cover.test")
         mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
 
     async def test_move_cover_if_needed_clears_reopen_state_for_daytime_target_without_movement(
@@ -3738,6 +3802,9 @@ class TestMaoveCoverIfNeeded:
         """Opening no-op to a non-100 daytime target should still clear owned-state bookkeeping."""
 
         mock_resolved_config.covers_min_closure = 80
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = AutomationManagedState(
+            position=0, automation_mode=AutomationMode.EVENING_CLOSURE
+        )
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=80,
@@ -3748,7 +3815,7 @@ class TestMaoveCoverIfNeeded:
         assert movement_needed is False
         assert actual_pos is None
         assert message == "No movement needed"
-        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
+        mock_cover_pos_history_mgr.clear_automation_managed_state.assert_called_once_with("cover.test")
         mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
 
     async def test_move_cover_if_needed_clears_reopen_state_for_minor_opening_adjustment(
@@ -3757,6 +3824,9 @@ class TestMaoveCoverIfNeeded:
         """Opening adjustments below the min delta should still clear reopen bookkeeping."""
 
         mock_resolved_config.covers_min_position_delta = 5
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = AutomationManagedState(
+            position=0, automation_mode=AutomationMode.EVENING_CLOSURE
+        )
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=96,
@@ -3767,7 +3837,7 @@ class TestMaoveCoverIfNeeded:
         assert movement_needed is False
         assert actual_pos is None
         assert message == "Skipped minor adjustment"
-        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
+        mock_cover_pos_history_mgr.clear_automation_managed_state.assert_called_once_with("cover.test")
         mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
 
     async def test_move_cover_if_needed_clears_reopen_state_for_minor_daytime_target_adjustment(
@@ -3777,18 +3847,65 @@ class TestMaoveCoverIfNeeded:
 
         mock_resolved_config.covers_min_position_delta = 5
         mock_resolved_config.covers_min_closure = 80
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = AutomationManagedState(
+            position=0, automation_mode=AutomationMode.HEAT_PROTECTION
+        )
 
         movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
             current_pos=78,
             features=CoverEntityFeature.SET_POSITION,
-            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
+            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.DAYTIME_LET_LIGHT_IN, False),
         )
 
         assert movement_needed is False
         assert actual_pos is None
         assert message == "Skipped minor adjustment"
-        mock_cover_pos_history_mgr.clear_closed_by_automation.assert_called_once_with("cover.test")
+        mock_cover_pos_history_mgr.clear_automation_managed_state.assert_called_once_with("cover.test")
         mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
+
+    async def test_move_cover_if_needed_retains_daytime_ownership_for_minor_daytime_adjustment(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Daytime ownership should survive a minor adjustment toward its existing target."""
+
+        mock_resolved_config.covers_min_position_delta = 5
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = AutomationManagedState(
+            position=80, automation_mode=AutomationMode.DAYTIME_CONTROL
+        )
+
+        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
+            current_pos=78,
+            features=CoverEntityFeature.SET_POSITION,
+            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.DAYTIME_LET_LIGHT_IN, False),
+        )
+
+        assert movement_needed is False
+        assert actual_pos is None
+        assert message == "Skipped minor adjustment"
+        mock_cover_pos_history_mgr.clear_automation_managed_state.assert_not_called()
+        mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_not_called()
+
+    async def test_move_cover_if_needed_retains_heat_ownership_for_minor_heat_protection_opening(
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+    ):
+        """Heat-protection repositioning should not clear heat-protection ownership."""
+
+        mock_resolved_config.covers_min_position_delta = 5
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = AutomationManagedState(
+            position=70, automation_mode=AutomationMode.HEAT_PROTECTION
+        )
+
+        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
+            current_pos=78,
+            features=CoverEntityFeature.SET_POSITION,
+            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.HEAT_PROTECTION, False),
+        )
+
+        assert movement_needed is False
+        assert actual_pos is None
+        assert message == "Skipped minor adjustment"
+        mock_cover_pos_history_mgr.clear_automation_managed_state.assert_not_called()
+        mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_not_called()
 
     async def test_move_cover_if_needed_closing_heat_protection(self, cover_automation, mock_ha_interface, mock_cover_pos_history_mgr):
         """Test moving cover for heat protection."""
