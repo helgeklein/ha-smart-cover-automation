@@ -7,14 +7,19 @@ from unittest.mock import Mock
 import pytest
 
 from custom_components.smart_cover_automation.const import (
+    COVER_SFX_DAYTIME_EXTERNAL_POSITION,
+    NUMBER_KEY_COVER_DAYTIME_EXTERNAL_POSITION,
     NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_COVER_TILT_EXTERNAL_VALUE_NIGHT,
+    NUMBER_KEY_DAYTIME_EXTERNAL_POSITION,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_DAY,
     NUMBER_KEY_TILT_EXTERNAL_VALUE_NIGHT,
 )
 from custom_components.smart_cover_automation.number import (
+    CoverExternalDaytimePositionNumber,
     CoverExternalTiltDayNumber,
     CoverExternalTiltNightNumber,
+    GlobalExternalDaytimePositionNumber,
     GlobalExternalTiltDayNumber,
     GlobalExternalTiltNightNumber,
 )
@@ -89,3 +94,37 @@ def test_cover_external_tilt_number_translation_and_unique_id(
     assert entity.entity_description.translation_key == translation_key
     assert entity.translation_placeholders == {"cover_name": "Test Cover"}
     assert entity.unique_id == f"{mock_coordinator_basic.config_entry.entry_id}_cover.test_cover_{config_suffix}"
+
+
+@pytest.mark.parametrize(
+    ("entity_class", "config_key", "entity_args", "translation_key"),
+    [
+        (GlobalExternalDaytimePositionNumber, NUMBER_KEY_DAYTIME_EXTERNAL_POSITION, (), NUMBER_KEY_DAYTIME_EXTERNAL_POSITION),
+        (
+            CoverExternalDaytimePositionNumber,
+            f"cover.test_cover_{COVER_SFX_DAYTIME_EXTERNAL_POSITION}",
+            ("cover.test_cover",),
+            NUMBER_KEY_COVER_DAYTIME_EXTERNAL_POSITION,
+        ),
+    ],
+)
+async def test_external_daytime_position_number_persists_integer_value(
+    mock_coordinator_basic,
+    entity_class,
+    config_key,
+    entity_args,
+    translation_key,
+) -> None:
+    """External daytime-position numbers should persist whole-number targets for each scope."""
+
+    entity = entity_class(mock_coordinator_basic, *entity_args)
+    mock_coordinator_basic.hass.config_entries.async_update_entry = Mock()
+
+    assert entity.native_value is None
+    assert entity.entity_description.translation_key == translation_key
+
+    await entity.async_set_native_value(37.0)
+
+    mock_coordinator_basic.hass.config_entries.async_update_entry.assert_called_once()
+    options = mock_coordinator_basic.hass.config_entries.async_update_entry.call_args.kwargs["options"]
+    assert options[config_key] == 37

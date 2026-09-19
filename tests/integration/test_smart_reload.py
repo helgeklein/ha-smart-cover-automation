@@ -26,8 +26,11 @@ from custom_components.smart_cover_automation.const import (
     COVER_POS_FULLY_OPEN,
     COVER_SFX_AZIMUTH,
     DATA_COORDINATORS,
+    NUMBER_KEY_DAYTIME_EXTERNAL_POSITION,
+    DaytimeStrategy,
     LockMode,
 )
+from custom_components.smart_cover_automation.number import GlobalExternalDaytimePositionNumber
 
 # ============================================================================
 # Constants
@@ -338,3 +341,30 @@ class TestSmartReload:
 
         # Lock mode updated
         assert current_coordinator.lock_mode == LockMode.FORCE_OPEN
+
+    async def test_external_daytime_position_number_refreshes_coordinator_in_place(
+        self,
+        hass: HomeAssistant,
+    ) -> None:
+        """Writing the global external daytime target should immediately refresh the coordinator."""
+
+        entry = await _create_and_load_entry(
+            hass,
+            extra_options={ConfKeys.DAYTIME_STRATEGY.value: DaytimeStrategy.EXTERNAL_CONTROL},
+        )
+        coordinator = _get_coordinator(hass, entry)
+        original_coordinator_id = id(coordinator)
+        number = GlobalExternalDaytimePositionNumber(coordinator)
+
+        with patch(
+            "custom_components.smart_cover_automation.ha_interface.HomeAssistantInterface.get_daily_temperature_extrema",
+            new_callable=AsyncMock,
+            return_value=(30.0, 18.0),
+        ):
+            await number.async_set_native_value(37.0)
+            await hass.async_block_till_done()
+
+        assert entry.state is ConfigEntryState.LOADED
+        current_coordinator = _get_coordinator(hass, entry)
+        assert id(current_coordinator) == original_coordinator_id
+        assert current_coordinator._merged_config[NUMBER_KEY_DAYTIME_EXTERNAL_POSITION] == 37
