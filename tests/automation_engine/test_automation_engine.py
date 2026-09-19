@@ -1954,7 +1954,12 @@ class TestPendingCoverExecutionQueue:
         )
 
     @staticmethod
-    def _make_plan(desired_pos: int = 20) -> CoverExecutionPlan:
+    def _make_plan(
+        desired_pos: int = 20,
+        *,
+        manual_override_just_expired: bool = False,
+        planned_tilt_target: int | None = None,
+    ) -> CoverExecutionPlan:
         """Create a minimal execution plan for queue tests."""
 
         sensor_data = SensorData(180.0, 45.0, 25.0, 18.0, True, "sunny", True, False, False)
@@ -1964,8 +1969,9 @@ class TestPendingCoverExecutionQueue:
             features=0,
             current_pos=10,
             decision=MovementDecision(desired_pos, MovementDirection.OPENING, MovementControlReason.LET_LIGHT_IN, False),
-            planned_tilt_target=None,
+            planned_tilt_target=planned_tilt_target,
             ownership_debug_snapshot=TestPendingCoverExecutionQueue._ownership_snapshot(),
+            manual_override_just_expired=manual_override_just_expired,
         )
 
     def test_schedule_pending_cover_execution_ignores_equivalent_later_plan(self, mock_ha_interface, mock_logger):
@@ -2038,8 +2044,16 @@ class TestPendingCoverExecutionQueue:
         assert scheduled.task is created_task
         mock_logger.info.assert_any_call("[%s] Queued cover execution in %.0f s", "cover.test", 60.0)
 
-    def test_schedule_pending_cover_execution_replaces_superseded_plan(self, mock_ha_interface, mock_logger):
-        """A newer queued execution should replace the existing pending one when the plan changes."""
+    @pytest.mark.parametrize(
+        "new_plan_kwargs",
+        [
+            {"desired_pos": 30},
+            {"manual_override_just_expired": True},
+            {"planned_tilt_target": 40},
+        ],
+    )
+    def test_schedule_pending_cover_execution_replaces_superseded_plan(self, mock_ha_interface, mock_logger, new_plan_kwargs):
+        """A newer queued execution should replace a plan with different execution semantics."""
 
         engine = AutomationEngine(
             resolved=resolve({ConfKeys.COVERS.value: ["cover.test"], ConfKeys.WEATHER_ENTITY_ID.value: "weather.test"}),
@@ -2048,7 +2062,7 @@ class TestPendingCoverExecutionQueue:
             logger=mock_logger,
         )
         existing_plan = self._make_plan(20)
-        new_plan = self._make_plan(30)
+        new_plan = self._make_plan(**new_plan_kwargs)
         engine._pending_cover_executions["cover.test"] = ScheduledCoverExecution(
             schedule_id=1,
             execute_at=datetime(2026, 5, 23, 10, 5, tzinfo=timezone.utc),
