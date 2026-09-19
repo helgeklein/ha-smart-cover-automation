@@ -2895,15 +2895,19 @@ class TestDaytimeMovementDecision:
         assert opening == MovementDecision(20, MovementDirection.HOLD, None, False)
         assert closing == MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.DAYTIME_PRIVACY, False)
 
+    @pytest.mark.parametrize(
+        "automation_mode",
+        [AutomationMode.HEAT_PROTECTION, AutomationMode.EVENING_CLOSURE, AutomationMode.LOCK],
+    )
     def test_passive_daytime_control_requires_current_automation_owned_position(
-        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
+        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config, automation_mode
     ):
-        """Passive daytime control should resume only at its DAYTIME_CONTROL-owned position."""
+        """Passive daytime control should resume only at a position owned by an eligible automation mode."""
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
         mock_resolved_config.daytime_strategy = const.DaytimeStrategy.PRIVACY
         mock_resolved_config.daytime_movement_directions = const.DaytimeMovementDirections.OPEN_AND_CLOSE
-        managed_state = AutomationManagedState(position=40, automation_mode=AutomationMode.DAYTIME_CONTROL)
+        managed_state = AutomationManagedState(position=40, automation_mode=automation_mode)
         mock_cover_pos_history_mgr.get_automation_managed_state.return_value = managed_state
         mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 40
 
@@ -2927,6 +2931,19 @@ class TestDaytimeMovementDecision:
         assert decision == MovementDecision(100, MovementDirection.HOLD, MovementControlReason.DAYTIME_LET_LIGHT_IN, False)
         mock_logger.info.assert_any_call("[cover.test] Current position: 100%, desired position: 100%, already at the daytime target")
 
+    def test_active_daytime_control_moves_unowned_cover(self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config):
+        """Active daytime control should close an eligible cover without ownership."""
+
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.ACTIVE
+        mock_resolved_config.daytime_strategy = const.DaytimeStrategy.PRIVACY
+        mock_resolved_config.daytime_movement_directions = const.DaytimeMovementDirections.OPEN_AND_CLOSE
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = None
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = None
+
+        decision = cover_automation._calculate_movement_decision(self._normal_daytime_sensor(), sun_hitting=False, current_pos=100)
+
+        assert decision == MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.DAYTIME_PRIVACY, False)
+
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         ("current_position", "target_position", "control_reason"),
@@ -2936,7 +2953,11 @@ class TestDaytimeMovementDecision:
             (20, 75, MovementControlReason.DAYTIME_EXTERNAL_CONTROL),
         ],
     )
-    async def test_successful_daytime_move_records_daytime_control_ownership(
+    @pytest.mark.parametrize(
+        "automation_mode",
+        [AutomationMode.HEAT_PROTECTION, AutomationMode.EVENING_CLOSURE, AutomationMode.LOCK],
+    )
+    async def test_successful_daytime_move_clears_existing_ownership(
         self,
         cover_automation,
         mock_cover_pos_history_mgr,
@@ -2944,10 +2965,15 @@ class TestDaytimeMovementDecision:
         current_position,
         target_position,
         control_reason,
+        automation_mode,
     ):
-        """Every successful daytime position move should establish DAYTIME_CONTROL ownership."""
+        """A successful daytime position move should clear existing ownership."""
 
         mock_ha_interface.set_cover_position.return_value = target_position
+        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = AutomationManagedState(
+            position=current_position,
+            automation_mode=automation_mode,
+        )
         direction = MovementDirection.OPENING if target_position > current_position else MovementDirection.CLOSING
         decision = MovementDecision(target_position, direction, control_reason, False)
 
@@ -2959,10 +2985,63 @@ class TestDaytimeMovementDecision:
 
         assert moved is True
         assert actual_position == target_position
-        mock_cover_pos_history_mgr.set_automation_managed_state.assert_called_once_with(
-            "cover.test",
-            AutomationManagedState(position=target_position, automation_mode=AutomationMode.DAYTIME_CONTROL),
+        mock_cover_pos_history_mgr.clear_automation_managed_state.assert_called_once_with("cover.test")
+        mock_cover_pos_history_mgr.set_automation_managed_state.assert_not_called()
+
+    async def test_failed_daytime_move_retains_existing_ownership(self, cover_automation, mock_cover_pos_history_mgr, mock_ha_interface):
+        """A failed daytime command must not discard existing ownership."""
+
+        mock_ha_interface.set_cover_position.side_effect = RuntimeError("command failed")
+        decision = MovementDecision(0, MovementDirection.CLOSING, MovementControlReason.DAYTIME_PRIVACY, False)
+
+        moved, actual_position, _message = await cover_automation._move_cover_if_needed(
+            current_pos=80,
+            features=CoverEntityFeature.SET_POSITION,
+            decision=decision,
         )
+
+        assert moved is False
+        assert actual_position is None
+        mock_cover_pos_history_mgr.clear_automation_managed_state.assert_not_called()
+
+    async def test_passive_daytime_move_does_not_authorize_later_daytime_move(
+        self, basic_config, mock_ha_interface, mock_logger, mock_resolved_config
+    ):
+        """A daytime move must not establish ownership for a later passive daytime move."""
+
+        history_manager = CoverPositionHistoryManager()
+        history_manager.set_automation_managed_state(
+            "cover.test",
+            AutomationManagedState(position=80, automation_mode=AutomationMode.HEAT_PROTECTION),
+        )
+        mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_resolved_config.daytime_strategy = const.DaytimeStrategy.PRIVACY
+        mock_resolved_config.daytime_movement_directions = const.DaytimeMovementDirections.OPEN_AND_CLOSE
+        mock_ha_interface.set_cover_position.return_value = 0
+        cover_automation = CoverAutomation(
+            entity_id="cover.test",
+            resolved=mock_resolved_config,
+            config=basic_config,
+            cover_pos_history_mgr=history_manager,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+
+        privacy_decision = cover_automation._calculate_movement_decision(self._normal_daytime_sensor(), sun_hitting=False, current_pos=80)
+        moved, actual_position, _message = await cover_automation._move_cover_if_needed(
+            current_pos=80,
+            features=CoverEntityFeature.SET_POSITION,
+            decision=privacy_decision,
+        )
+
+        assert moved is True
+        assert actual_position == 0
+        assert history_manager.get_automation_managed_state("cover.test") is None
+
+        mock_resolved_config.daytime_strategy = const.DaytimeStrategy.LET_LIGHT_IN
+        later_decision = cover_automation._calculate_movement_decision(self._normal_daytime_sensor(), sun_hitting=False, current_pos=0)
+
+        assert later_decision == MovementDecision(0, MovementDirection.HOLD, None, False)
 
 
 class TestCalculateDesiredPositionLockout:
@@ -3862,28 +3941,6 @@ class TestMaoveCoverIfNeeded:
         assert message == "Skipped minor adjustment"
         mock_cover_pos_history_mgr.clear_automation_managed_state.assert_called_once_with("cover.test")
         mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_called_once_with("cover.test")
-
-    async def test_move_cover_if_needed_retains_daytime_ownership_for_minor_daytime_adjustment(
-        self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config
-    ):
-        """Daytime ownership should survive a minor adjustment toward its existing target."""
-
-        mock_resolved_config.covers_min_position_delta = 5
-        mock_cover_pos_history_mgr.get_automation_managed_state.return_value = AutomationManagedState(
-            position=80, automation_mode=AutomationMode.DAYTIME_CONTROL
-        )
-
-        movement_needed, actual_pos, message = await cover_automation._move_cover_if_needed(
-            current_pos=78,
-            features=CoverEntityFeature.SET_POSITION,
-            decision=MovementDecision(80, MovementDirection.OPENING, MovementControlReason.DAYTIME_LET_LIGHT_IN, False),
-        )
-
-        assert movement_needed is False
-        assert actual_pos is None
-        assert message == "Skipped minor adjustment"
-        mock_cover_pos_history_mgr.clear_automation_managed_state.assert_not_called()
-        mock_cover_pos_history_mgr.clear_delayed_reopen_action.assert_not_called()
 
     async def test_move_cover_if_needed_retains_heat_ownership_for_minor_heat_protection_opening(
         self, cover_automation, mock_cover_pos_history_mgr, mock_resolved_config

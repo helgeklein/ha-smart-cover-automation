@@ -35,7 +35,10 @@ The entities in this section control the cover movements.
 Choose which covers normal daytime control may move. The following settings are available:
 
 - **Active:** Moves every eligible cover.
-- **Passive:** Moves only covers that are at the last integration-owned position.
+- **Passive:** Moves only covers that are at an integration-owned position, i.e., they are where one of the following Smart Cover Automation modes moved it to:
+    - Heat protection
+    - Evening closure
+    - Lock mode `Force close and lock`
 - **Off:** Disables normal daytime movement.
 
 Example:

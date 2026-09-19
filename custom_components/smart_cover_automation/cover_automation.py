@@ -1585,15 +1585,6 @@ class CoverAutomation:
                     self.entity_id,
                     AutomationManagedState(position=actual_pos, automation_mode=AutomationMode.EVENING_CLOSURE),
                 )
-            elif decision.control_reason in (
-                MovementControlReason.DAYTIME_LET_LIGHT_IN,
-                MovementControlReason.DAYTIME_PRIVACY,
-                MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
-            ):
-                self._cover_pos_history_mgr.set_automation_managed_state(
-                    self.entity_id,
-                    AutomationManagedState(position=actual_pos, automation_mode=AutomationMode.DAYTIME_CONTROL),
-                )
             else:
                 self._cover_pos_history_mgr.clear_automation_managed_state(self.entity_id)
 

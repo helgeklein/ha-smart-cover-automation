@@ -34,7 +34,6 @@ class AutomationMode(StrEnum):
     HEAT_PROTECTION = "heat_protection"
     EVENING_CLOSURE = "evening_closure"
     LOCK = "lock"
-    DAYTIME_CONTROL = "daytime_control"
 
 
 @dataclass(slots=True, frozen=True)
