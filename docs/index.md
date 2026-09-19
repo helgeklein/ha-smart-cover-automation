@@ -41,6 +41,9 @@ A Home Assistant integration to automate the control of your smart home's window
     - In the evening before a hot sunny day, pre-close covers the sun will shine on the next morning.
     - Don't move any covers when people are sleeping.
     - Reopen the closed covers in the morning.
+- **Daytime strategy:**
+    - Choose how covers are positioned during normal daytime when heat protection is not active.
+    - Choices include: let light in, privacy, and external control.
 - **Plant light:**
     - Define min/max positions for the covers so that plants on the windowsill receive enough light.
 - **Lock mode** for wind or hail protection, and other scenarios:

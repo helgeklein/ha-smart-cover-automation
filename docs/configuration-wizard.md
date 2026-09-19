@@ -79,7 +79,7 @@ The following settings are available for each cover:
 
 ## Step 3: Daytime Position Control
 
-In this step of the configuration wizard, you select the normal daytime behavior used when heat protection is inactive.
+In this step of the configuration wizard, you select the normal daytime behavior used when heat protection is not active.
 
 The following **Daytime strategies** are available:
 
@@ -92,9 +92,24 @@ The following **Daytime strategies** are available:
   - The integration only adjusts your cover positions if the position entities actually have a valid value (0-100).
   - If both global and per-cover external cover position values are specified, the per-cover value takes precedence.
 
-**Daytime movement directions** limits normal operation to opening, closing, or both. A disabled direction keeps the current position.
+**Daytime movement directions** limits normal operation to opening, closing, or permits both.
 
-Optional per-cover strategy overrides are available in a collapsible section. **Use global setting** removes the override. External-control entities appear once the wizard has been completed and the integration reloaded; an unset number keeps that cover in place. At or below the horizon, opening targets hold while closing targets remain eligible.
+### Global Strategy Setting
+
+The above daytime strategy setting is available as a global setting that's applied whenever no per-cover setting is configured.
+
+### Per-Cover Overrides
+
+The global daytime strategy can be overridden per cover.
+
+### Sun Below Horizon
+
+When the sun is below the horizon, daytime control does not open covers, but it can still close them.
+
+Note that **blocked time range** and **evening closure** take precedence:
+
+- Covers selected for evening closure are ignored by daytime control until after morning opening.
+- During the blocked time range, daytime control is inactive.
 
 ## Step 4: Max/Min Positions (Optional)
 
