@@ -455,21 +455,6 @@
                 "off": "Off"
             }
         },
-        "daytime_strategy": {
-            "options": {
-                "use_global": "Use global setting",
-                "let_light_in": "Let light in",
-                "privacy": "Privacy",
-                "external_control": "External control"
-            }
-        },
-        "daytime_movement_directions": {
-            "options": {
-                "open_only": "Open only",
-                "close_only": "Close only",
-                "open_and_close": "Open and close"
-            }
-        },
         "lock_mode": {
             "options": {
                 "unlocked": "Unlocked (automation active)",
@@ -508,6 +493,21 @@
             "options": {
                 "fixed_time": "Absolute time",
                 "external": "External (times supplied via entities)"
+            }
+        },
+        "daytime_strategy": {
+            "options": {
+                "use_global": "Use global setting",
+                "let_light_in": "Let light in",
+                "privacy": "Privacy",
+                "external": "External (position supplied via entity)"
+            }
+        },
+        "daytime_movement_directions": {
+            "options": {
+                "open_only": "Open only",
+                "close_only": "Close only",
+                "open_and_close": "Open and close"
             }
         }
     }

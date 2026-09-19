@@ -1452,7 +1452,7 @@ class CoverAutomation:
                     control_reason = {
                         const.DaytimeStrategy.LET_LIGHT_IN: MovementControlReason.DAYTIME_LET_LIGHT_IN,
                         const.DaytimeStrategy.PRIVACY: MovementControlReason.DAYTIME_PRIVACY,
-                        const.DaytimeStrategy.EXTERNAL_CONTROL: MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
+                        const.DaytimeStrategy.EXTERNAL: MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
                     }[strategy]
                     daytime_directions = self._get_daytime_movement_directions()
                     direction_allowed = (
@@ -1717,7 +1717,7 @@ class CoverAutomation:
         per_cover_strategy_key = f"{self.entity_id}_{const.COVER_SFX_DAYTIME_STRATEGY}"
         position_key = (
             f"{self.entity_id}_{const.COVER_SFX_DAYTIME_EXTERNAL_POSITION}"
-            if self.config.get(per_cover_strategy_key) == const.DaytimeStrategy.EXTERNAL_CONTROL
+            if self.config.get(per_cover_strategy_key) == const.DaytimeStrategy.EXTERNAL
             else const.NUMBER_KEY_DAYTIME_EXTERNAL_POSITION
         )
         raw_position = self.config.get(position_key)

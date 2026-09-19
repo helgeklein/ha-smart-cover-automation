@@ -133,11 +133,11 @@ def _get_valid_external_daytime_position_keys(entry: IntegrationConfigEntry) -> 
     options = _get_entry_options_dict(entry)
     covers = tuple(options.get(ConfKeys.COVERS.value, ()))
     valid_keys: set[str] = set()
-    if options.get(ConfKeys.DAYTIME_STRATEGY.value) == const.DaytimeStrategy.EXTERNAL_CONTROL:
+    if options.get(ConfKeys.DAYTIME_STRATEGY.value) == const.DaytimeStrategy.EXTERNAL:
         valid_keys.add(NUMBER_KEY_DAYTIME_EXTERNAL_POSITION)
 
     for cover in covers:
-        if options.get(f"{cover}_{COVER_SFX_DAYTIME_STRATEGY}") == const.DaytimeStrategy.EXTERNAL_CONTROL:
+        if options.get(f"{cover}_{COVER_SFX_DAYTIME_STRATEGY}") == const.DaytimeStrategy.EXTERNAL:
             valid_keys.add(f"{cover}_{COVER_SFX_DAYTIME_EXTERNAL_POSITION}")
 
     return valid_keys

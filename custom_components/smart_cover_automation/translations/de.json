@@ -469,7 +469,7 @@
                 "closed": "Geschlossen (vertikal — Licht blockieren)",
                 "manual": "Manuell (manuell eingestellten Winkel beibehalten)",
                 "auto": "Automatisch (direktes Sonnenlicht blockieren)",
-                "external": "Extern (Lamellenneigung über Entität vorgegeben)",
+                "external": "Extern (Lamellenneigung wird über eine Entität vorgegeben)",
                 "set_value": "Festwert (fester Neigungswinkel)"
             }
         },
@@ -478,7 +478,7 @@
                 "before_sunset": "Vor Sonnenuntergang (relative Verzögerung)",
                 "after_sunset": "Nach Sonnenuntergang (relative Verzögerung)",
                 "fixed_time": "Feste Uhrzeit",
-                "external": "Extern (Zeit wird von einer Entität geliefert)"
+                "external": "Extern (Zeit wird über eine Entität vorgegeben)"
             }
         },
         "morning_opening_mode": {
@@ -486,13 +486,13 @@
                 "before_sunrise": "Vor Sonnenaufgang (relative Verzögerung)",
                 "after_sunrise": "Nach Sonnenaufgang (relative Verzögerung)",
                 "fixed_time": "Feste Uhrzeit",
-                "external": "Extern (Zeit wird von einer Entität geliefert)"
+                "external": "Extern (Zeit wird über eine Entität vorgegeben)"
             }
         },
         "blocked_time_range_mode": {
             "options": {
                 "fixed_time": "Absolute Uhrzeit",
-                "external": "Extern (Zeiten werden von Entitäten geliefert)"
+                "external": "Extern (Zeiten werden über Entitäten vorgegeben)"
             }
         },
         "daytime_strategy": {
@@ -500,7 +500,7 @@
                 "use_global": "Globale Einstellung verwenden",
                 "let_light_in": "Licht hereinlassen",
                 "privacy": "Privatsphäre",
-                "external_control": "Externe Steuerung"
+                "external": "Extern (Position wird über eine Entität vorgegeben)"
             }
         },
         "daytime_movement_directions": {

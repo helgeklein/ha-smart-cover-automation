@@ -469,7 +469,7 @@
                 "closed": "Fechado (vertical — bloquear luz)",
                 "manual": "Manual (restaurar ângulo definido manualmente)",
                 "auto": "Auto (bloquear luz solar direta)",
-                "external": "Externo (ângulo de inclinação fornecido por entidade)",
+                "external": "Externo (ângulo de inclinação fornecido por uma entidade)",
                 "set_value": "Valor fixo (ângulo de inclinação fixo)"
             }
         },
@@ -500,7 +500,7 @@
                 "use_global": "Usar definição global",
                 "let_light_in": "Deixar entrar luz",
                 "privacy": "Privacidade",
-                "external_control": "Controlo externo"
+                "external": "Externo (posição fornecida por uma entidade)"
             }
         },
         "daytime_movement_directions": {

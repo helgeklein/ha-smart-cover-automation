@@ -500,7 +500,7 @@
                 "use_global": "Użyj ustawienia globalnego",
                 "let_light_in": "Wpuść światło",
                 "privacy": "Prywatność",
-                "external_control": "Sterowanie zewnętrzne"
+                "external": "Zewnętrzne (pozycja dostarczana przez encję)"
             }
         },
         "daytime_movement_directions": {

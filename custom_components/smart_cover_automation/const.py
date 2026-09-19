@@ -176,7 +176,7 @@ class DaytimeStrategy(StrEnum):
 
     LET_LIGHT_IN = "let_light_in"
     PRIVACY = "privacy"
-    EXTERNAL_CONTROL = "external_control"
+    EXTERNAL = "external"
 
 
 #

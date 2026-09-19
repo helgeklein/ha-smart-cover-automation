@@ -1159,16 +1159,16 @@ class TestExternalDaytimePositionResolution:
 
         basic_config[const.NUMBER_KEY_DAYTIME_EXTERNAL_POSITION] = 42
 
-        assert cover_automation._get_daytime_target(const.DaytimeStrategy.EXTERNAL_CONTROL) == 42
+        assert cover_automation._get_daytime_target(const.DaytimeStrategy.EXTERNAL) == 42
 
     def test_get_daytime_target_prefers_per_cover_external_position(self, cover_automation, basic_config):
         """A per-cover external strategy should select its own stored target."""
 
-        basic_config[f"cover.test_{const.COVER_SFX_DAYTIME_STRATEGY}"] = const.DaytimeStrategy.EXTERNAL_CONTROL.value
+        basic_config[f"cover.test_{const.COVER_SFX_DAYTIME_STRATEGY}"] = const.DaytimeStrategy.EXTERNAL.value
         basic_config[f"cover.test_{const.COVER_SFX_DAYTIME_EXTERNAL_POSITION}"] = 61
         basic_config[const.NUMBER_KEY_DAYTIME_EXTERNAL_POSITION] = 22
 
-        assert cover_automation._get_daytime_target(const.DaytimeStrategy.EXTERNAL_CONTROL) == 61
+        assert cover_automation._get_daytime_target(const.DaytimeStrategy.EXTERNAL) == 61
 
 
 class TestMovementReasonHelpers:
@@ -2856,7 +2856,7 @@ class TestDaytimeMovementDecision:
                 MovementControlReason.DAYTIME_PRIVACY,
             ),
             (
-                const.DaytimeStrategy.EXTERNAL_CONTROL,
+                const.DaytimeStrategy.EXTERNAL,
                 const.DaytimeMovementDirections.OPEN_ONLY,
                 100,
                 20,
@@ -2865,7 +2865,7 @@ class TestDaytimeMovementDecision:
                 MovementControlReason.DAYTIME_EXTERNAL_CONTROL,
             ),
             (
-                const.DaytimeStrategy.EXTERNAL_CONTROL,
+                const.DaytimeStrategy.EXTERNAL,
                 const.DaytimeMovementDirections.CLOSE_ONLY,
                 100,
                 20,
@@ -2874,7 +2874,7 @@ class TestDaytimeMovementDecision:
                 None,
             ),
             (
-                const.DaytimeStrategy.EXTERNAL_CONTROL,
+                const.DaytimeStrategy.EXTERNAL,
                 const.DaytimeMovementDirections.OPEN_AND_CLOSE,
                 0,
                 80,

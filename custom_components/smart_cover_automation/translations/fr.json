@@ -500,7 +500,7 @@
                 "use_global": "Utiliser le réglage global",
                 "let_light_in": "Laisser entrer la lumière",
                 "privacy": "Confidentialité",
-                "external_control": "Contrôle externe"
+                "external": "Externe (position fournie par une entité)"
             }
         },
         "daytime_movement_directions": {

@@ -500,7 +500,7 @@
                 "use_global": "使用全局设置",
                 "let_light_in": "引入光线",
                 "privacy": "隐私保护",
-                "external_control": "外部控制"
+                "external": "外部（通过实体提供位置）"
             }
         },
         "daytime_movement_directions": {

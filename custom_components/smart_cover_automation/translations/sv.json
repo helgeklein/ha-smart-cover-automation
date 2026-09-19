@@ -469,7 +469,7 @@
                 "closed": "Stängd (vertikal — blockera ljus)",
                 "manual": "Manuell (återställ manuellt inställd vinkel)",
                 "auto": "Auto (blockera direkt solljus)",
-                "external": "Extern (lamellvinkel anges via entitet)",
+                "external": "Externt (lamellvinkel som anges av en entitet)",
                 "set_value": "Fast värde (fast lutningsvinkel)"
             }
         },
@@ -478,7 +478,7 @@
                 "before_sunset": "Före solnedgången (relativ fördröjning)",
                 "after_sunset": "Efter solnedgången (relativ fördröjning)",
                 "fixed_time": "Fast tidpunkt",
-                "external": "Externt (tid som levereras av en entitet)"
+                "external": "Externt (tid som anges av en entitet)"
             }
         },
         "morning_opening_mode": {
@@ -486,13 +486,13 @@
                 "before_sunrise": "Före soluppgången (relativ fördröjning)",
                 "after_sunrise": "Efter soluppgången (relativ fördröjning)",
                 "fixed_time": "Fast tidpunkt",
-                "external": "Extern (tid anges av en entitet)"
+                "external": "Externt (tid som anges av en entitet)"
             }
         },
         "blocked_time_range_mode": {
             "options": {
                 "fixed_time": "Absolut tid",
-                "external": "Extern (tider anges av entiteter)"
+                "external": "Externt (tider som anges av entiteter)"
             }
         },
         "daytime_strategy": {
@@ -500,7 +500,7 @@
                 "use_global": "Använd global inställning",
                 "let_light_in": "Släpp in ljus",
                 "privacy": "Integritet",
-                "external_control": "Extern styrning"
+                "external": "Externt (position som anges av en entitet)"
             }
         },
         "daytime_movement_directions": {

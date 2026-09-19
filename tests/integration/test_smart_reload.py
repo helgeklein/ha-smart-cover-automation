@@ -350,7 +350,7 @@ class TestSmartReload:
 
         entry = await _create_and_load_entry(
             hass,
-            extra_options={ConfKeys.DAYTIME_STRATEGY.value: DaytimeStrategy.EXTERNAL_CONTROL},
+            extra_options={ConfKeys.DAYTIME_STRATEGY.value: DaytimeStrategy.EXTERNAL},
         )
         coordinator = _get_coordinator(hass, entry)
         original_coordinator_id = id(coordinator)

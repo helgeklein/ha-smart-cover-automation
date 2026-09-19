@@ -8,7 +8,7 @@ Coverage target: number.py lines 31-54 (async_setup_entry function)
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock
 
 from homeassistant.components.cover import CoverEntityFeature
@@ -171,7 +171,7 @@ async def test_async_setup_entry_adds_external_tilt_numbers_when_modes_external(
         },
     )
     entry.runtime_data.coordinator = mock_coordinator_basic
-    mock_coordinator_basic.hass.states.get.return_value = MagicMock(
+    cast(MagicMock, mock_coordinator_basic.hass.states.get).return_value = MagicMock(
         attributes={ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION | CoverEntityFeature.SET_TILT_POSITION}
     )
 
@@ -200,8 +200,8 @@ async def test_async_setup_entry_adds_global_and_per_cover_external_daytime_posi
         entry,
         {
             **dict(entry.options),
-            ConfKeys.DAYTIME_STRATEGY.value: DaytimeStrategy.EXTERNAL_CONTROL,
-            f"{cover_entity_id}_{COVER_SFX_DAYTIME_STRATEGY}": DaytimeStrategy.EXTERNAL_CONTROL,
+            ConfKeys.DAYTIME_STRATEGY.value: DaytimeStrategy.EXTERNAL,
+            f"{cover_entity_id}_{COVER_SFX_DAYTIME_STRATEGY}": DaytimeStrategy.EXTERNAL,
         },
     )
     entry.runtime_data.coordinator = mock_coordinator_basic
@@ -236,7 +236,9 @@ async def test_async_setup_entry_skips_per_cover_external_tilt_numbers_without_t
     )
     entry.runtime_data.coordinator = mock_coordinator_basic
 
-    mock_coordinator_basic.hass.states.get.return_value = MagicMock(attributes={ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION})
+    cast(MagicMock, mock_coordinator_basic.hass.states.get).return_value = MagicMock(
+        attributes={ATTR_SUPPORTED_FEATURES: CoverEntityFeature.SET_POSITION}
+    )
 
     captured = []
 

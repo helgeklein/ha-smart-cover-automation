@@ -87,12 +87,12 @@ async def async_setup_entry(
     if resolved.tilt_mode_night == TiltMode.EXTERNAL:
         entities.append(GlobalExternalTiltNightNumber(coordinator))
 
-    if resolved.daytime_strategy == DaytimeStrategy.EXTERNAL_CONTROL:
+    if resolved.daytime_strategy == DaytimeStrategy.EXTERNAL:
         entities.append(GlobalExternalDaytimePositionNumber(coordinator))
 
     options = dict(coordinator.config_entry.options or {})
     for cover_entity_id in resolved.covers:
-        if options.get(f"{cover_entity_id}_{COVER_SFX_DAYTIME_STRATEGY}") == DaytimeStrategy.EXTERNAL_CONTROL:
+        if options.get(f"{cover_entity_id}_{COVER_SFX_DAYTIME_STRATEGY}") == DaytimeStrategy.EXTERNAL:
             entities.append(CoverExternalDaytimePositionNumber(coordinator, cover_entity_id))
 
         supports_tilt = cover_supports_tilt(hass, cover_entity_id)

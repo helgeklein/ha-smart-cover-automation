@@ -469,7 +469,7 @@
                 "closed": "Gesloten (verticaal — licht blokkeren)",
                 "manual": "Handmatig (handmatig ingestelde hoek herstellen)",
                 "auto": "Auto (direct zonlicht blokkeren)",
-                "external": "Extern (kantelhoek aangeleverd via entiteit)",
+                "external": "Extern (kantelhoek aangeleverd door een entiteit)",
                 "set_value": "Vaste waarde (vaste kantelhoek)"
             }
         },
@@ -500,7 +500,7 @@
                 "use_global": "Globale instelling gebruiken",
                 "let_light_in": "Licht binnenlaten",
                 "privacy": "Privacy",
-                "external_control": "Externe bediening"
+                "external": "Extern (positie aangeleverd door een entiteit)"
             }
         },
         "daytime_movement_directions": {

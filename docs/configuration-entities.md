@@ -35,12 +35,32 @@ The entities in this section control the cover movements.
 Choose which covers normal daytime control may move. The following settings are available:
 
 - **Active:** Moves every eligible cover.
-- **Passive:** Moves only covers previously moved by the integration that remain at their integration-owned position.
+- **Passive:** Moves only covers that are at the last integration-owned position.
 - **Off:** Disables normal daytime movement.
+
+Example:
+
+If a cover is manually closed at night, it won't be opened in the morning in passive mode. That would only happen in active mode.
 
 ### Daytime Cover Position (External Control)
 
-These number entities are created when the global or a per-cover Daytime Strategy is **External control**. Set a whole-number position from 0 (fully closed) through 100 (fully open). A per-cover entity takes precedence over the global entity for a cover with a per-cover External control strategy. An unset value keeps the cover in place. Changing the corresponding strategy away from External control removes the entity and its stored value after integration reload.
+These entities are only created when you select `External` as daytime strategy in the configuration wizard.
+
+#### Global Entities
+
+If `External` is configured as the global daytime strategy, the integration creates the following entity:
+
+- **Daytime cover position: external control:** External cover position used during daytime.
+
+Use case: you want to calculate the daytime cover position yourself.
+
+#### Per-Cover Entities
+
+If `External` is configured as a per-cover daytime strategy override, the integration creates a dedicated entity for that cover:
+
+- Per-cover `Daytime cover position: external control`
+
+Per-cover external daytime cover positions take precedence over the global external daytime cover position.
 
 ### Lock Mode
 

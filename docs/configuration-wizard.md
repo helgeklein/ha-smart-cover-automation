@@ -54,7 +54,7 @@ Select the covers the integration should automate.
 
 ## Step 2: Azimuth Settings
 
-In this step of the configuration wizard, you can specify two kinds of azimuths for each cover. An azimuth, by the way, is an angle measured from north.
+In this step of the configuration wizard, you specify each azimuths (directions), which are necessary for Smart Cover Automation to calculate when the sun is hitting a window.
 
 ### Cover Azimuth
 
@@ -77,13 +77,24 @@ The following settings are available for each cover:
 - **Minimum elevation:** Elevation at which the sun is considered to start hitting the window (bottom angle).
 - **Maximum elevation:** Elevation at which the sun is considered to stop hitting the window (top angle).
 
-### Minimum/Maximum Sun Angle
-
 ## Step 3: Daytime Position Control
 
-Choose the normal daytime behavior used when heat protection is inactive. **Daytime strategy** is required: **Let light in** uses the minimum position from Step 4, **Privacy** uses the maximum position from Step 4, and **External control** uses an integration-created daytime-position number. **Daytime movement directions** limits normal operation to opening, closing, or both. A disabled direction keeps the current position.
+In this step of the configuration wizard, you select the normal daytime behavior used when heat protection is inactive.
 
-Optional per-cover strategy overrides are available in a collapsible section. **Use global setting** removes the override. External-control numbers appear after the wizard is saved and the integration reloads; an unset number keeps that cover in place. At or below the horizon, opening targets hold while closing targets remain eligible.
+The following **Daytime strategies** are available:
+
+- **Let light in:** moves covers to their configured minimum positions (see step 4).
+- **Privacy:** moves covers to their configured maximum positions (see step 4).
+- **External:** set the cover position from your own automation.
+  - When this mode is selected, the integration creates additional entities that receive the cover position.
+  - The integration-created entities are fully managed, i.e., they're deleted again if the mode is changed away from `external`.
+  - The integration-managed cover position entities are available globally as well as per cover, depending on where you configured `external` as daytime strategy mode.
+  - The integration only adjusts your cover positions if the position entities actually have a valid value (0-100).
+  - If both global and per-cover external cover position values are specified, the per-cover value takes precedence.
+
+**Daytime movement directions** limits normal operation to opening, closing, or both. A disabled direction keeps the current position.
+
+Optional per-cover strategy overrides are available in a collapsible section. **Use global setting** removes the override. External-control entities appear once the wizard has been completed and the integration reloaded; an unset number keeps that cover in place. At or below the horizon, opening targets hold while closing targets remain eligible.
 
 ## Step 4: Max/Min Positions (Optional)
 
