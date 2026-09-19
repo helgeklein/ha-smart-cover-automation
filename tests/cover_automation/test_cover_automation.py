@@ -1170,9 +1170,73 @@ class TestExternalDaytimePositionResolution:
 
         assert cover_automation._get_daytime_target(const.DaytimeStrategy.EXTERNAL) == 61
 
+    @pytest.mark.parametrize(
+        ("external_position", "log_method"),
+        [
+            ("invalid", "debug"),
+            (const.COVER_POS_FULLY_OPEN + 1, "warning"),
+        ],
+    )
+    def test_get_daytime_target_skips_invalid_external_position(
+        self, cover_automation, basic_config, mock_logger, external_position, log_method
+    ):
+        """Malformed external positions should be skipped before movement is considered."""
+
+        basic_config[const.NUMBER_KEY_DAYTIME_EXTERNAL_POSITION] = external_position
+
+        assert cover_automation._get_daytime_target(const.DaytimeStrategy.EXTERNAL) is None
+        getattr(mock_logger, log_method).assert_called_once()
+
+
+class TestDaytimeConfigurationResolution:
+    """Test safe fallback behavior for malformed daytime configuration."""
+
+    def test_invalid_daytime_strategy_falls_back_to_global_strategy(
+        self, cover_automation, basic_config, mock_logger, mock_resolved_config
+    ):
+        """An invalid per-cover strategy should retain the configured global strategy."""
+
+        basic_config[f"cover.test_{const.COVER_SFX_DAYTIME_STRATEGY}"] = "invalid"
+        mock_resolved_config.daytime_strategy = const.DaytimeStrategy.PRIVACY
+
+        assert cover_automation._get_effective_daytime_strategy() == const.DaytimeStrategy.PRIVACY
+        mock_logger.warning.assert_called_once()
+
+    def test_non_string_daytime_strategy_uses_safe_opening_default(self, cover_automation, basic_config):
+        """A non-string strategy value should fall back to the safe opening strategy."""
+
+        basic_config[f"cover.test_{const.COVER_SFX_DAYTIME_STRATEGY}"] = None
+
+        assert cover_automation._get_effective_daytime_strategy() == const.DaytimeStrategy.LET_LIGHT_IN
+
+    @pytest.mark.parametrize("directions", [None, "invalid"])
+    def test_invalid_daytime_movement_directions_use_open_only_default(self, cover_automation, mock_resolved_config, directions):
+        """Malformed direction settings should never permit an unintended closing move."""
+
+        mock_resolved_config.daytime_movement_directions = directions
+
+        assert cover_automation._get_daytime_movement_directions() == const.DaytimeMovementDirections.OPEN_ONLY
+
 
 class TestMovementReasonHelpers:
     """Test movement-reason helper mappings."""
+
+    @pytest.mark.parametrize(
+        ("closing_reason", "manual_override_just_expired", "expected_reason"),
+        [
+            (const.TRANSL_LOGBOOK_REASON_HEAT_PROTECTION, False, CoverMovementReason.OPENING_AFTER_HEAT_PROTECTION),
+            (const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET, False, CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE),
+            (const.TRANSL_LOGBOOK_REASON_KEEP_CLOSED_AFTER_EVENING_CLOSURE, False, CoverMovementReason.OPENING_AFTER_EVENING_CLOSURE),
+            (None, True, CoverMovementReason.OPENING_AFTER_MANUAL_OVERRIDE),
+            (None, False, CoverMovementReason.OPENING_LET_LIGHT_IN),
+        ],
+    )
+    def test_get_opening_movement_reason_maps_closure_context(
+        self, cover_automation, closing_reason, manual_override_just_expired, expected_reason
+    ):
+        """Reopening should retain the reason that established its previous state."""
+
+        assert cover_automation._get_opening_movement_reason(closing_reason, manual_override_just_expired) == expected_reason
 
     def test_is_opening_movement_reason_true_for_all_opening_reasons(self):
         """All opening reasons should be recognized as reopening actions."""
