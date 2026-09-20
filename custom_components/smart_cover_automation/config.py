@@ -280,7 +280,7 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ),
     ConfKeys.DAYTIME_STRATEGY: _ConfSpec(default=DaytimeStrategy.LET_LIGHT_IN, converter=DaytimeStrategy),
     ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS: _ConfSpec(
-        default=DaytimeMovementDirections.OPEN_ONLY,
+        default=DaytimeMovementDirections.OPEN_AND_CLOSE,
         converter=DaytimeMovementDirections,
     ),
     ConfKeys.HEAT_PROTECTION_MODE: _ConfSpec(

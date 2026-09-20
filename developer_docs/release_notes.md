@@ -4,7 +4,7 @@
 
 The new daytime strategy and its related settings provide control over cover positions during daytime when heat protection is not active. Previously, the integration always opened the covers on such "normal" days. This is now but one of several strategies:
 
-- Let light in
+- Let light in (default)
 - Privacy
 - External control
 
@@ -18,7 +18,7 @@ Previously, Smart Cover Automation would never move to a more closed position du
 
 - Open only
 - Close only
-- Open and close
+- Open and close (default)
 
 ## Notable Changes
 
