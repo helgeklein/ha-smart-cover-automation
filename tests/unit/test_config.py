@@ -46,7 +46,13 @@ from custom_components.smart_cover_automation.config import (
     resolve_effective_blocked_time_range_bounds,
     resolve_entry,
 )
-from custom_components.smart_cover_automation.const import BlockedTimeRangeMode, HeatProtectionMode, MorningOpeningMode, ReopeningMode
+from custom_components.smart_cover_automation.const import (
+    BlockedTimeRangeMode,
+    DaytimeMovementDirections,
+    HeatProtectionMode,
+    MorningOpeningMode,
+    ReopeningMode,
+)
 
 # =============================================================================
 # Configuration Registry and Contract Validation Tests
@@ -372,6 +378,13 @@ class TestConfigurationResolution:
 
         assert rs_default.automatic_reopening_mode == ReopeningMode.PASSIVE
         assert rs_passive.automatic_reopening_mode == ReopeningMode.PASSIVE
+
+    def test_resolve_daytime_movement_directions_default(self):
+        """Test daytime movement directions default to both directions."""
+
+        resolved = resolve({})
+
+        assert resolved.daytime_movement_directions == DaytimeMovementDirections.OPEN_AND_CLOSE
 
     def test_resolve_heat_protection_mode(self):
         """Test heat protection mode defaults and explicit resolution."""

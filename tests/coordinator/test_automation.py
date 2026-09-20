@@ -78,8 +78,8 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
                 80,
                 TEST_HOT_TEMP,
                 HA_WEATHER_COND_PARTCLOUDY,
-                100,
-                "Hot partly cloudy, indirect sun, already more open than min closure",
+                80,
+                "Hot partly cloudy, indirect sun, closes to min closure",
             ),
             # Comfortable weather scenarios - Direct sun hitting window (temp < threshold, no temp automation)
             (
@@ -106,8 +106,8 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
                 60,
                 TEST_COMFORTABLE_TEMP_2,
                 HA_WEATHER_COND_PARTCLOUDY,
-                100,
-                "Comfortable partly cloudy, direct sun, already more open than min closure",
+                60,
+                "Comfortable partly cloudy, direct sun, closes to min closure",
             ),
             # Comfortable weather scenarios - Indirect sun (not hitting window)
             (
@@ -125,8 +125,8 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
                 70,
                 TEST_COMFORTABLE_TEMP_2,
                 HA_WEATHER_COND_SUNNY,
-                100,
-                "Comfortable sunny day, indirect sun, already more open than min closure",
+                70,
+                "Comfortable sunny day, indirect sun, closes to min closure",
             ),
             (
                 TEST_INDIRECT_AZIMUTH,
@@ -134,8 +134,8 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
                 50,
                 TEST_COMFORTABLE_TEMP_2,
                 HA_WEATHER_COND_PARTCLOUDY,
-                100,
-                "Comfortable partly cloudy, indirect sun, already more open than min closure",
+                50,
+                "Comfortable partly cloudy, indirect sun, closes to min closure",
             ),
             # Cold weather scenarios - Direct sun hitting window (temp < threshold, no temp automation)
             (TEST_DIRECT_AZIMUTH, 0, 100, TEST_COLD_TEMP, HA_WEATHER_COND_SUNNY, 100, "Cold sunny day, direct sun, temp below threshold"),
@@ -146,8 +146,8 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
                 80,
                 TEST_COLD_TEMP,
                 HA_WEATHER_COND_PARTCLOUDY,
-                100,
-                "Cold partly cloudy, direct sun, already more open than min closure",
+                80,
+                "Cold partly cloudy, direct sun, closes to min closure",
             ),
             # Cold weather scenarios - Indirect sun (not hitting window)
             (TEST_INDIRECT_AZIMUTH, 0, 100, TEST_COLD_TEMP, HA_WEATHER_COND_SUNNY, 100, "Cold sunny day, indirect sun, full opening"),
@@ -157,8 +157,8 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
                 80,
                 TEST_COLD_TEMP,
                 HA_WEATHER_COND_SUNNY,
-                100,
-                "Cold sunny day, indirect sun, already more open than min closure",
+                80,
+                "Cold sunny day, indirect sun, closes to min closure",
             ),
             (
                 TEST_INDIRECT_AZIMUTH,
@@ -166,8 +166,8 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
                 60,
                 TEST_COLD_TEMP,
                 HA_WEATHER_COND_PARTCLOUDY,
-                100,
-                "Cold partly cloudy, indirect sun, already more open than min closure",
+                60,
+                "Cold partly cloudy, indirect sun, closes to min closure",
             ),
             # Edge cases with different weather-temperature combinations
             (TEST_DIRECT_AZIMUTH, 10, 90, TEST_HOT_TEMP, HA_WEATHER_COND_SUNNY, 10, "Hot sunny edge case, tight max closure"),
@@ -177,10 +177,10 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
                 35,
                 TEST_COLD_TEMP,
                 HA_WEATHER_COND_PARTCLOUDY,
-                100,
-                "Cold partly cloudy edge case, already more open than min closure",
+                35,
+                "Cold partly cloudy edge case, closes to min closure",
             ),
-            # Non-sunny weather scenarios - Covers should remain open regardless of temperature/sun
+            # Non-sunny weather scenarios - Covers respect the configured minimum closure.
             (TEST_DIRECT_AZIMUTH, 0, 100, TEST_HOT_TEMP, "cloudy", 100, "Hot cloudy day, direct sun, covers stay open"),
             (TEST_DIRECT_AZIMUTH, 20, 100, TEST_HOT_TEMP, "rainy", 100, "Hot rainy day, direct sun, covers stay open"),
             (TEST_DIRECT_AZIMUTH, 50, 100, TEST_HOT_TEMP, "foggy", 100, "Hot foggy day, direct sun, covers stay open"),
@@ -190,10 +190,10 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
                 80,
                 TEST_COMFORTABLE_TEMP_2,
                 "cloudy",
-                100,
-                "Comfortable cloudy day, already more open than min closure",
+                80,
+                "Comfortable cloudy day, closes to min closure",
             ),
-            (TEST_DIRECT_AZIMUTH, 30, 70, TEST_COLD_TEMP, "rainy", 100, "Cold rainy day, already more open than min closure"),
+            (TEST_DIRECT_AZIMUTH, 30, 70, TEST_COLD_TEMP, "rainy", 70, "Cold rainy day, closes to min closure"),
             (TEST_INDIRECT_AZIMUTH, 0, 100, TEST_HOT_TEMP, "snowy", 100, "Hot snowy day, indirect sun, covers stay open"),
             (
                 TEST_INDIRECT_AZIMUTH,
@@ -201,10 +201,10 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
                 60,
                 TEST_COMFORTABLE_TEMP_2,
                 "foggy",
-                100,
-                "Comfortable foggy day, already more open than min closure",
+                60,
+                "Comfortable foggy day, closes to min closure",
             ),
-            (TEST_INDIRECT_AZIMUTH, 0, 50, TEST_COLD_TEMP, "cloudy", 100, "Cold cloudy day, already more open than min closure"),
+            (TEST_INDIRECT_AZIMUTH, 0, 50, TEST_COLD_TEMP, "cloudy", 50, "Cold cloudy day, closes to min closure"),
             # Non-sunny weather with extreme temperatures - Still no sun automation
             (TEST_DIRECT_AZIMUTH, 0, 100, "30.0", "stormy", 100, "Extremely hot stormy day, covers stay open"),
             (TEST_DIRECT_AZIMUTH, 20, 100, "15.0", "hail", 100, "Very cold hail day, covers stay open"),
@@ -233,7 +233,7 @@ class TestCombinedAutomation(TestDataUpdateCoordinatorBase):
         - Hot weather scenarios (sunny/partly cloudy) with direct/indirect sun
         - Comfortable weather scenarios with various sun positions
         - Cold weather scenarios where sun warmth is desired
-        - Non-sunny weather scenarios (cloudy, rainy, foggy, etc.) where covers stay open
+        - Non-sunny weather scenarios (cloudy, rainy, foggy, etc.) that respect the minimum closure
         - Direct sun hits with various max_closure limits
         - Indirect sun with various min_closure limits
         - Edge cases where min/max ranges overlap

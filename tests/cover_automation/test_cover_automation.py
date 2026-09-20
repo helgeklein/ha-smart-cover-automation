@@ -76,7 +76,7 @@ def mock_resolved_config():
     resolved.evening_closure_cover_list = ()
     resolved.automatic_reopening_mode = ReopeningMode.ACTIVE
     resolved.daytime_strategy = const.DaytimeStrategy.LET_LIGHT_IN
-    resolved.daytime_movement_directions = const.DaytimeMovementDirections.OPEN_ONLY
+    resolved.daytime_movement_directions = const.DaytimeMovementDirections.OPEN_AND_CLOSE
     resolved.heat_protection_mode = HeatProtectionMode.AUTO
     resolved.covers_min_position_delta = 5
     resolved.tilt_drift_tolerance = 5
@@ -1929,6 +1929,7 @@ class TestCalculateDesiredPosition:
         """Passive daytime control should hold a target requiring a disabled closing direction."""
 
         mock_resolved_config.automatic_reopening_mode = ReopeningMode.PASSIVE
+        mock_resolved_config.daytime_movement_directions = const.DaytimeMovementDirections.OPEN_ONLY
         mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
         mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 30
         basic_config[f"cover.test_{const.COVER_SFX_MIN_CLOSURE}"] = 0
