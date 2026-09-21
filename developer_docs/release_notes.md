@@ -20,6 +20,8 @@ Previously, Smart Cover Automation would never move to a more closed position du
 - Close only
 - Open and close (default)
 
+Existing installations retain the previous implicit setting "open only" on upgrade, so there's no change in behavior. New installations default to "open and close".
+
 ## Notable Changes
 
 ### Options Flow

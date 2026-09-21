@@ -87,6 +87,28 @@ def _get_entry_options_dict(entry: IntegrationConfigEntry) -> dict[str, Any]:
     return {}
 
 
+async def async_migrate_entry(hass: HomeAssistant, entry: IntegrationConfigEntry) -> bool:
+    """Migrate a config entry to the current schema version."""
+
+    if entry.version > const.CONFIG_ENTRY_VERSION:
+        return False
+
+    if entry.version == const.CONFIG_ENTRY_VERSION:
+        return True
+
+    updated_options = _get_entry_options_dict(entry)
+    updated_options.setdefault(
+        ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value,
+        const.DaytimeMovementDirections.OPEN_ONLY,
+    )
+    hass.config_entries.async_update_entry(
+        entry,
+        options=updated_options,
+        version=const.CONFIG_ENTRY_VERSION,
+    )
+    return True
+
+
 #
 # _get_valid_external_tilt_value_keys
 #

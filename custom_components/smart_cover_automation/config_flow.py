@@ -1202,7 +1202,7 @@ class FlowHandler(config_entries.ConfigFlow):
 
     # Schema version
     # When changing the schema, increment the version and implement async_migrate_entry
-    VERSION = 1
+    VERSION = const.CONFIG_ENTRY_VERSION
     # Explicit domain attribute for tests referencing FlowHandler.domain
     domain = const.DOMAIN
 

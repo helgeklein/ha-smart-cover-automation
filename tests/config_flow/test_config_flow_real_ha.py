@@ -22,7 +22,7 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.smart_cover_automation import DOMAIN
+from custom_components.smart_cover_automation import DOMAIN, const
 from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.const import (
     COVER_SFX_AZIMUTH,
@@ -316,6 +316,23 @@ class TestConfigFlow:
         assert result["type"] is FlowResultType.CREATE_ENTRY
         assert result["title"] == INTEGRATION_NAME
         assert result["data"] == {}
+        assert result["result"].version == const.CONFIG_ENTRY_VERSION
+
+    async def test_legacy_config_entry_migration_is_dispatched(self, hass: HomeAssistant) -> None:
+        """Home Assistant discovers and applies the integration migration hook."""
+
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            title=INTEGRATION_NAME,
+            data={},
+            options={},
+            version=const.CONFIG_ENTRY_VERSION - 1,
+        )
+        entry.add_to_hass(hass)
+
+        assert await entry.async_migrate(hass)
+        assert entry.version == const.CONFIG_ENTRY_VERSION
+        assert entry.options[ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value] == const.DaytimeMovementDirections.OPEN_ONLY
 
 
 # ============================================================================

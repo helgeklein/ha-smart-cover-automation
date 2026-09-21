@@ -34,6 +34,9 @@ if TYPE_CHECKING:
 #       Instantiated at module load time by _init_logger().
 LOGGER: Log
 
+# Config-entry schema version used to identify entries that need migration.
+CONFIG_ENTRY_VERSION: Final[int] = 2
+
 
 #
 # _init_logger
