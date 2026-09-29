@@ -107,6 +107,7 @@ class SensorData:
     weather_sunny: bool | None
     evening_closure: bool
     post_evening_closure: bool
+    pre_sunrise_morning_opening: bool = False
     has_valid_external_evening_closure_time: bool = True
     has_valid_external_morning_opening_time: bool = True
     ignore_weather_external_controls: bool = False
@@ -1293,7 +1294,16 @@ class CoverAutomation:
                             )
                         )
 
-                        if required_direction == MovementDirection.OPENING and sensor_data.sun_elevation <= 0:
+                        allow_pre_sunrise_morning_opening = (
+                            sensor_data.pre_sunrise_morning_opening
+                            and self.resolved.evening_closure_enabled
+                            and self.entity_id in self.resolved.evening_closure_cover_list
+                        )
+                        if (
+                            required_direction == MovementDirection.OPENING
+                            and sensor_data.sun_elevation <= 0
+                            and not allow_pre_sunrise_morning_opening
+                        ):
                             self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                             desired_pos = current_pos
                             desired_pos_friendly_name = "keeping current position because the sun is below the horizon"

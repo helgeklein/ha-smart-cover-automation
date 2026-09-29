@@ -1490,6 +1490,67 @@ class TestTimeCalculationHelpers:
 
         assert result == datetime(2025, 11, 5, 6, 40, 0, tzinfo=dt_util.get_default_time_zone())
 
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_before_sunrise_offset_crossing_midnight_releases_at_midnight(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
+        """A long before-sunrise offset must not open on the previous date."""
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.FIXED_TIME.value,
+            ConfKeys.EVENING_CLOSURE_TIME.value: "20:00:00",
+            ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
+            ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.BEFORE_SUNRISE.value,
+            ConfKeys.MORNING_OPENING_TIME.value: "10:00:00",
+        }
+        engine = AutomationEngine(
+            resolved=resolve(config),
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        mock_get_astral.side_effect = lambda _hass, _event, target_date: datetime.combine(
+            target_date, time(7), tzinfo=dt_util.get_default_time_zone()
+        )
+
+        assert engine._get_morning_opening_time_for_date(date(2025, 11, 5)) == datetime(2025, 11, 5, tzinfo=dt_util.get_default_time_zone())
+
+        freezer.move_to("2025-11-04 23:59:59")
+        assert engine._compute_post_evening_closure() is True
+        assert engine._is_pre_sunrise_morning_opening_active() is False
+
+        freezer.move_to("2025-11-05 00:00:00")
+        assert engine._compute_post_evening_closure() is False
+        assert engine._is_pre_sunrise_morning_opening_active() is True
+
+    @patch("custom_components.smart_cover_automation.automation_engine.get_astral_event_date")
+    def test_pre_sunrise_morning_opening_is_active_after_configured_time(self, mock_get_astral, mock_ha_interface, mock_logger, freezer):
+        """Test that a before-sunrise opening is active until sunrise."""
+        from datetime import datetime
+
+        config = {
+            ConfKeys.COVERS.value: ["cover.test"],
+            ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
+            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.BEFORE_SUNRISE.value,
+            ConfKeys.MORNING_OPENING_TIME.value: "00:20:00",
+        }
+        resolved = resolve(config)
+        engine = AutomationEngine(
+            resolved=resolved,
+            config=config,
+            ha_interface=mock_ha_interface,
+            logger=mock_logger,
+        )
+        mock_get_astral.return_value = datetime(2025, 11, 5, 7, 0, 0, tzinfo=dt_util.get_default_time_zone())
+
+        freezer.move_to("2025-11-05 06:40:00")
+        assert engine._is_pre_sunrise_morning_opening_active() is True
+
+        freezer.move_to("2025-11-05 07:00:00")
+        assert engine._is_pre_sunrise_morning_opening_active() is False
+
 
 class TestInTimePeriodAutomationDisabled:
     """Test _in_time_period_automation_disabled method."""

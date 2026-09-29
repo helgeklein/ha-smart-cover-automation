@@ -1,6 +1,9 @@
 {
     "name": "smart_cover_automation",
-    "image": "mcr.microsoft.com/devcontainers/python:3.14",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
     // Install Ruby and the Bundler version declared in the docs lockfile
     "onCreateCommand": "sudo apt-get update && sudo apt-get install -y ruby-full build-essential zlib1g-dev ripgrep && sudo gem install bundler:$(awk '/^BUNDLED WITH$/{getline; gsub(/^ +/, \"\"); print; exit}' docs/Gemfile.lock) --no-document",
     "postCreateCommand": "scripts/setup",
