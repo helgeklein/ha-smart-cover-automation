@@ -899,6 +899,7 @@ class AutomationEngine:
         # Compute post-evening-closure flag for the opening block.
         # The cover logic applies it only to evening-closure covers.
         post_evening_closure = self._compute_post_evening_closure()
+        pre_sunrise_morning_opening = not post_evening_closure and self._is_pre_sunrise_morning_opening_active()
         has_valid_external_evening_closure_time = self.resolved.evening_closure_mode != const.EveningClosureMode.EXTERNAL or (
             self._get_valid_external_time(const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME) is not None
         )
@@ -917,6 +918,7 @@ class AutomationEngine:
                 weather_sunny=weather_sunny,
                 evening_closure=evening_closure,
                 post_evening_closure=post_evening_closure,
+                pre_sunrise_morning_opening=pre_sunrise_morning_opening,
                 has_valid_external_evening_closure_time=has_valid_external_evening_closure_time,
                 has_valid_external_morning_opening_time=has_valid_external_morning_opening_time,
             ),
@@ -1070,9 +1072,24 @@ class AutomationEngine:
         delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
         delay = timedelta(seconds=delay_seconds)
         if mode == const.MorningOpeningMode.BEFORE_SUNRISE:
-            return sunrise_time - delay
+            return max(sunrise_time - delay, self._get_local_datetime_for_date(target_date, dt_time.min))
 
         return sunrise_time + delay
+
+    def _is_pre_sunrise_morning_opening_active(self) -> bool:
+        """Return whether the configured morning opening time has passed before sunrise."""
+
+        if not self.resolved.evening_closure_enabled:
+            return False
+
+        now = dt_util.now()
+        target_date = dt_util.as_local(now).date()
+        morning_opening_time = self._get_morning_opening_time_for_date(target_date)
+        sunrise_time = get_astral_event_date(self._ha_interface.hass, SUN_EVENT_SUNRISE, target_date)
+        if morning_opening_time is None or sunrise_time is None:
+            return False
+
+        return morning_opening_time <= now < sunrise_time
 
     #
     # _check_evening_closure

@@ -1821,6 +1821,31 @@ class TestCalculateDesiredPosition:
             "[cover.test] Current position: 50%, desired position: 50%, keeping current position because the sun is below the horizon"
         )
 
+    def test_calculate_movement_decision_allows_configured_pre_sunrise_morning_opening(self, cover_automation, mock_resolved_config):
+        """A released morning opening may reopen an evening-closure cover before sunrise."""
+
+        mock_resolved_config.covers_min_closure = 100
+        mock_resolved_config.evening_closure_enabled = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=-5.0,
+            temp_max=20.0,
+            temp_hot=False,
+            weather_condition="cloudy",
+            weather_sunny=False,
+            evening_closure=False,
+            post_evening_closure=False,
+            pre_sunrise_morning_opening=True,
+        )
+
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=False, current_pos=50)
+
+        assert decision.desired_position == 100
+        assert decision.direction == MovementDirection.OPENING
+        assert decision.control_reason == MovementControlReason.DAYTIME_LET_LIGHT_IN
+
     def test_calculate_movement_decision_reopens_from_logbook_fallback_without_managed_state(
         self, cover_automation, mock_cover_pos_history_mgr
     ):
