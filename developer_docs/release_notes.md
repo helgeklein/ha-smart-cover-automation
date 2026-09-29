@@ -1,3 +1,16 @@
+# v7.1
+
+## Bugfixes
+
+- Morning opening:
+    - Times before sunrise didn't work. The automation would open at sunrise instead.
+    - Times before sunrise are now capped at midnight.
+
+
+## Notable Changes
+
+- VS Code Pylance errors regarding `homeassistant` imports: Python dependencies are now installed into the global interpreter.
+
 # v7.0
 
 ## Daytime Strategy
