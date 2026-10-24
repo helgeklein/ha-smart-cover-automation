@@ -46,45 +46,6 @@
     "editor.hover.delay": 1000,
     // Additional performance optimizations
     "python.analysis.completeFunctionParens": false,
-    // GitHub Copilot settings
-    "chat.tools.terminal.autoApprove": {
-        "awk": true,
-        "curl": true,
-        "echo": true,
-        "head": true,
-        "grep": true,
-        "ls": true,
-        "lsof": true,
-        "mypy": true,
-        "nohup": true,
-        "pgrep": true,
-        "pkill": true,
-        "ps": true,
-        "pytest": true,
-        "ruff": true,
-        "sed": true,
-        "sleep": true,
-        "tail": true,
-        "tee": true,
-        "time": true,
-        "uptime": true,
-        "who": true,
-        "/(\\.\/)?scripts\/lint/": true,
-        "/(\\.\/)?scripts\/test/": true,
-        "/(\\.\/)?scripts\/type-check/": true,
-        "/^apt-cache (search|show)\\b/": true,
-        "/^git\\s+(status|diff|log|show)\\b/": true,
-        "/^grep (-A|-E|-i)\\b/": true,
-        "/^(/usr/local/bin/)?python(3)? -m (mypy|py_compile|pytest|ruff)\\b/": true,
-        "/^time\\b/": true,
-        "rm": false,
-        "rmdir": false,
-        "del": false,
-        "kill": false,
-        "chmod": false,
-        "chown": false,
-        "/^git\\s+(push|reset|revert|clean)\\b/": false
-    },
     "workbench.colorCustomizations": {
         "activityBar.activeBackground": "#32999f",
         "activityBar.background": "#32999f",
@@ -111,5 +72,7 @@
         "statusBar.debuggingBackground": "#32999f",
         "statusBar.debuggingForeground": "#e7e7e7"
     },
-    "peacock.remoteColor": "#32999f"
+    // Copilot and Chat Settings: allow automatic approval and terminal file writes (this is a devcontainer)
+    "chat.permissions.default": "autoApprove",
+    "chat.tools.terminal.blockDetectedFileWrites": "never"
 }
