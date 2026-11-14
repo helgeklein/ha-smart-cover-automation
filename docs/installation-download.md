@@ -2,23 +2,24 @@
 layout: default
 title: "Installation: Download"
 nav_order: 2
-description: "Installation guide part 1 for Smart Cover Automation for Home Assistant, via HACS or manually."
+description: "Installation guide part 1 for Smart Cover Automation for Home Assistant, via Marketplace or manually."
 permalink: /installation-download/
 ---
 
 # Installation: Download Integration
 
-## Method 1: Via HACS (Recommended)
+## Method 1: Via Marketplace (Recommended)
 
-HACS is the easiest way to download the latest stable release of the integration and keep it up to date in Home Assistant.
+Home Assistant Marketplace (formerly HACS) is the easiest way to download the latest stable release of the integration and keep it up to date in Home Assistant.
 
 ### Prerequisites
 
-- [HACS](https://hacs.xyz/) must be installed and configured in your Home Assistant instance.
+- HA versions 2026.11 or later: Marketplace ships as part of Home Assistant.
+- HA versions prior to 2026.11: [HACS](https://hacs.xyz/) must be installed and configured in your Home Assistant instance.
 
 ### Download the Integration
 
-- Search for **Smart Cover Automation** in HACS.
+- Search for **Smart Cover Automation** in Marketplace.
 - Click **Download** in the bottom right corner.
 - Restart Home Assistant when prompted.
 
