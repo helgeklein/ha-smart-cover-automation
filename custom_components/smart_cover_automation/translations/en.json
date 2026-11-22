@@ -197,7 +197,7 @@
                             "close_covers_after_sunset_earliest_enabled": "When enabled, covers close no earlier than the earliest time, even if the time calculated from sunset is earlier. Only applies to the modes before and after sunset. If the latest time is also enabled, it takes precedence.",
                             "close_covers_after_sunset_earliest_time": "Earliest time of day for evening closure. Ignored unless the limit is enabled.",
                             "close_covers_after_sunset_latest_enabled": "When enabled, covers close no later than the latest time, even if the time calculated from sunset is later. Only applies to the modes before and after sunset.",
-                            "close_covers_after_sunset_latest_time": "Latest time of day for evening closure. Must be before midnight. Ignored unless the limit is enabled.",
+                            "close_covers_after_sunset_latest_time": "Latest time of day for evening closure. Midnight (00:00) means the end of the evening. Ignored unless the limit is enabled.",
                             "close_covers_after_sunset_cover_list": "Select the covers that should be closed in the evening.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active.",
                             "close_covers_after_sunset_keep_closed": "When enabled, selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.",

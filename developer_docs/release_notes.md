@@ -6,7 +6,13 @@
 
 ## Earliest & Latest Time for Evening Closure & Morning Opening
 
-In the modes relative to sunset and sunrise, evening closure and morning opening can now be limited to an earliest and/or latest time of day, e.g., "open at sunrise, but not before 7:00 am and no later than 7:30 am". The limits are configured in the wizard and disabled by default. They are only shown when a mode relative to sunset or sunrise is selected. If they conflict, the latest time takes precedence.
+In the modes relative to sunset and sunrise, evening closure and morning opening can now be limited to an earliest and/or latest time of day, e.g., "open at sunrise, but not before 7:00 am and no later than 7:30 am". The limits are configured in the wizard and disabled by default. They are only shown when a mode relative to sunset or sunrise is selected. If they conflict, the latest time takes precedence. A latest evening time of midnight (00:00) means the end of the evening.
+
+## Bugfixes
+
+- Heat protection partially opened covers closed by evening closure before the morning opening time. These covers now stay closed until the morning opening time; heat protection can still close them further.
+- Evening closure could be skipped if the closing time was shortly before midnight.
+- On the day of the DST rollback, times in the repeated hour (e.g., a morning opening time of 02:30) could shift by one hour.
 
 # v7.1
 

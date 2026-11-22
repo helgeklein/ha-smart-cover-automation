@@ -471,6 +471,18 @@ class TestFlowHelperSchemaBuilding:
         assert ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value in schema_keys
         assert const.STEP_3_SECTION_DAYTIME_STRATEGY in schema_keys
 
+    def test_build_schema_step_3_daytime_without_covers_omits_per_cover_section(self) -> None:
+        """Without covers, Step 3 should expose only the global settings and no per-cover section."""
+        from custom_components.smart_cover_automation.config import resolve
+
+        rendered_field_maps: dict[str, dict[str, str]] = {}
+        schema = FlowHelper.build_schema_step_3_daytime([], {}, resolve({}), rendered_field_maps=rendered_field_maps)
+        schema_keys = [str(key.schema) if hasattr(key, "schema") else str(key) for key in schema.schema]
+
+        assert schema_keys == [ConfKeys.DAYTIME_STRATEGY.value, ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value]
+        # No per-cover field map is stored either
+        assert const.STEP_3_SECTION_DAYTIME_STRATEGY not in rendered_field_maps
+
     def test_build_schema_step_4_with_no_per_cover_defaults(self) -> None:
         """Test Step 4 schema when covers have no per-cover min/max closure defaults.
 

@@ -1673,6 +1673,68 @@ class TestCalculateDesiredPosition:
         assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
         assert decision.lockout_protection_active is False
 
+    def test_calculate_movement_decision_heat_protection_respects_morning_reopening_block(
+        self, cover_automation, mock_logger, mock_resolved_config, mock_cover_pos_history_mgr, basic_config
+    ):
+        """Before the morning opening time, heat protection must not partially open an evening-closed cover."""
+
+        mock_resolved_config.covers_max_closure = 30
+        mock_resolved_config.evening_closure_enabled = True
+        mock_resolved_config.evening_closure_keep_closed = False
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        basic_config["cover.test_cover_max_closure"] = 30
+        mock_cover_pos_history_mgr.get_closed_by_automation_reason.return_value = const.TRANSL_LOGBOOK_REASON_CLOSE_AFTER_SUNSET
+        mock_cover_pos_history_mgr.get_automation_owned_position.return_value = 0
+
+        # Hot and sunny, but still before the morning opening time
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=True,
+        )
+
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=0)
+
+        assert decision.desired_position == 0
+        assert decision.direction == MovementDirection.HOLD
+        # No heat protection reason: the cover stays owned by evening closure
+        assert decision.control_reason is None
+        mock_logger.info.assert_any_call(
+            "[cover.test] Current position: 0%, desired position: 0%, keeping current position because morning reopening is still blocked"
+        )
+
+    def test_calculate_movement_decision_heat_protection_closes_further_during_morning_reopening_block(
+        self, cover_automation, mock_resolved_config, basic_config
+    ):
+        """The morning reopening block only prevents opening: heat protection may still close a cover further."""
+
+        mock_resolved_config.covers_max_closure = 30
+        mock_resolved_config.evening_closure_enabled = True
+        mock_resolved_config.evening_closure_cover_list = ("cover.test",)
+        basic_config["cover.test_cover_max_closure"] = 30
+
+        sensor_data = make_sensor_data(
+            sun_azimuth=180.0,
+            sun_elevation=45.0,
+            temp_max=30.0,
+            temp_hot=True,
+            weather_condition="sunny",
+            weather_sunny=True,
+            evening_closure=False,
+            post_evening_closure=True,
+        )
+
+        decision = cover_automation._calculate_movement_decision(sensor_data, sun_hitting=True, current_pos=80)
+
+        assert decision.desired_position == 30
+        assert decision.direction == MovementDirection.CLOSING
+        assert decision.control_reason == MovementControlReason.HEAT_PROTECTION
+
     def test_calculate_movement_decision_heat_protection_keeps_user_closed_more_closed_cover(
         self, cover_automation, mock_logger, mock_resolved_config, mock_cover_pos_history_mgr, basic_config
     ):

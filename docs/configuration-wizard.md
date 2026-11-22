@@ -233,7 +233,7 @@ The same covers become eligible to reopen in the morning if normal automation pe
 - **Evening closure: limit to an earliest time:** When enabled, covers close no earlier than `Evening closure: earliest time`, even if the time calculated from sunset is earlier. Only shown in the modes before and after sunset. Example: close 15 minutes after sunset, but not before 6:00 pm.
 - **Evening closure: earliest time:** Earliest time of day for evening closure. Only shown if the limit is enabled.
 - **Evening closure: limit to a latest time:** When enabled, covers close no later than `Evening closure: latest time`, even if the time calculated from sunset is later. Only shown in the modes before and after sunset. Example: close 15 minutes after sunset, but no later than 9:30 pm.
-- **Evening closure: latest time:** Latest time of day for evening closure. Must be before midnight. Only shown if the limit is enabled.
+- **Evening closure: latest time:** Latest time of day for evening closure. Midnight (00:00) means the end of the evening. Only shown if the limit is enabled.
 
 **Morning opening settings:**
 
