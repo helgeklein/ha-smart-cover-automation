@@ -95,6 +95,7 @@
                 "title": "Smart Cover Automation - Steg 5 av 7",
                 "description": "Konfigurera **lutningsvinkelkontroll** för persienner med vinklingsbara lameller (valfritt).\nGlobala inställningar gäller för alla lutningsbara persienner om de inte åsidosätts per persienn.",
                 "data": {
+                    "tilt_control": "Lamellvinkelstyrning:",
                     "tilt_mode_day": "Lutningskontroll (dag):",
                     "tilt_mode_night": "Lutningskontroll (natt):",
                     "tilt_set_value_day": "Daglutningsvinkel (fast värde):",
@@ -108,6 +109,7 @@
                     "tilt_slat_overlap_ratio": "Lamellöverlappningskvot (d/L):"
                 },
                 "data_description": {
+                    "tilt_control": "När integrationen får ändra lamellernas lutningsvinkel. De övriga lutningsinställningarna visas bara för de valda tiderna på dygnet. Låsläget påverkas inte.",
                     "tilt_mode_day": "Hur lutningsvinkeln på lamellerna ska styras under dagen.",
                     "tilt_mode_night": "Hur lutningsvinkeln på lamellerna ska styras på natten (tillämpas vid kvällsstängning).",
                     "tilt_set_value_day": "Fast lutningsvinkel för dagläget. 0 % = helt stängd (vertikal, blockerar ljus), 100 % = helt öppen (horisontell, släpper in ljus). Används endast när daglutningsläget är inställt på ”Fast värde”.",
@@ -182,7 +184,7 @@
                             "close_covers_after_sunset_latest_time": "Kvällsstängning: senaste tid:",
                             "close_covers_after_sunset_cover_list": "Persienner:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorera varaktigheten för manuell överstyrning:",
-                            "close_covers_after_sunset_keep_closed": "Håll persienner stängda:",
+                            "morning_opening": "Öppna persienner på morgonen:",
                             "morning_opening_mode": "Morgonöppning: läge:",
                             "morning_opening_time": "Morgonöppning: tid:",
                             "morning_opening_earliest_enabled": "Morgonöppning: begränsa till en tidigaste tid:",
@@ -191,7 +193,7 @@
                             "morning_opening_latest_time": "Morgonöppning: senaste tid:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "När den är aktiverad stängs persiennerna automatiskt på kvällen.",
+                            "close_covers_after_sunset": "Av: persiennerna stängs inte på kvällen. Stäng en gång: persiennerna stängs på kvällen och kan sedan öppnas manuellt. Stäng och håll stängd: valda persienner stängs igen under den nattliga kvällsstängningsperioden om de öppnas på nytt. Tiden för manuell överstyrning respekteras. Låsläget har företräde, så persiennerna stängs bara igen efter att låsläget har inaktiverats.",
                             "close_covers_after_sunset_mode": "Välj om kvällsstängningen ska ske före solnedgången, efter solnedgången, vid en fast tidpunkt eller levereras av en entitet.",
                             "close_covers_after_sunset_delay": "Beroende på valt läge: relativ fördröjning i förhållande till solnedgången eller fast tidpunkt. Ignoreras i externt läge.",
                             "close_covers_after_sunset_earliest_enabled": "När aktiverat stängs skydden tidigast vid den angivna tiden, även om tiden beräknad från solnedgången är tidigare. Gäller endast lägena före och efter solnedgång. Om även den senaste tiden är aktiverad har den företräde.",
@@ -200,7 +202,7 @@
                             "close_covers_after_sunset_latest_time": "Senaste tid för kvällsstängning. Midnatt (00:00) betyder slutet av kvällen. Ignoreras om begränsningen inte är aktiverad.",
                             "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas på kvällen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "När den är aktiverad får kvällsstängningen flytta valda persienner även om en paus från manuell överstyrning fortfarande är aktiv.",
-                            "close_covers_after_sunset_keep_closed": "När funktionen är aktiverad stängs valda persienner igen under den nattliga kvällsstängningsperioden om de öppnas på nytt. Tiden för manuell överstyrning respekteras. Låsläget har företräde, så persiennerna stängs bara igen efter att låsläget har inaktiverats.",
+                            "morning_opening": "När den är aktiverad öppnas persienner som stängts av kvällsstängningen igen på morgonen. När den är inaktiverad förblir de stängda tills de flyttas manuellt; inte heller värmeskyddet öppnar dem delvis.",
                             "morning_opening_mode": "Välj om morgonöppningen ska ske före soluppgången, efter soluppgången, vid en fast tidpunkt eller levereras av en entitet.",
                             "morning_opening_time": "Beroende på valt läge: relativ fördröjning i förhållande till soluppgången eller fast tidpunkt. Ignoreras i externt läge.",
                             "morning_opening_earliest_enabled": "När aktiverat öppnas skydden tidigast vid den angivna tiden, även om tiden beräknad från soluppgången är tidigare. Gäller endast lägena före och efter soluppgång. Om även den senaste tiden är aktiverad har den företräde.",
@@ -268,6 +270,23 @@
                     "hold_position": "Behåll aktuell position",
                     "force_open": "Tvinga öppning och lås",
                     "force_close": "Tvinga stängning och lås"
+                }
+            },
+            "evening_closure": {
+                "name": "Kvällsstängning",
+                "state": {
+                    "off": "Av",
+                    "close_once": "Stäng en gång",
+                    "close_and_keep_closed": "Stäng och håll stängd"
+                }
+            },
+            "tilt_control": {
+                "name": "Lamellvinkelstyrning",
+                "state": {
+                    "off": "Av",
+                    "day_only": "Endast dag",
+                    "night_only": "Endast natt",
+                    "day_and_night": "Dag och natt"
                 }
             }
         },
@@ -374,6 +393,9 @@
             },
             "weather_sunny_external_control": {
                 "name": "Väder: soligt? (extern styrning)"
+            },
+            "morning_opening": {
+                "name": "Morgonöppning"
             }
         }
     },
@@ -524,6 +546,21 @@
                 "open_only": "Endast öppna",
                 "close_only": "Endast stänga",
                 "open_and_close": "Öppna och stäng"
+            }
+        },
+        "evening_closure": {
+            "options": {
+                "off": "Av",
+                "close_once": "Stäng en gång",
+                "close_and_keep_closed": "Stäng och håll stängd"
+            }
+        },
+        "tilt_control": {
+            "options": {
+                "off": "Av",
+                "day_only": "Endast dag",
+                "night_only": "Endast natt",
+                "day_and_night": "Dag och natt"
             }
         }
     }

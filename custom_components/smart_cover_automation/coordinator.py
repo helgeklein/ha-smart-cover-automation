@@ -13,7 +13,7 @@ from . import const
 from .automation_engine import AutomationEngine
 from .automation_state_store import AutomationStateStore
 from .config import ConfKeys, ResolvedConfig, resolve_entry
-from .const import HeatProtectionMode, LockMode, ReopeningMode
+from .const import EveningClosureControl, HeatProtectionMode, LockMode, ReopeningMode, TiltControl
 from .data import CoordinatorData
 from .ha_interface import HomeAssistantInterface, WeatherEntityNotFoundError
 from .log import Log
@@ -193,6 +193,20 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
         resolved = self._resolved_settings()
         return resolved.heat_protection_mode
 
+    @property
+    def evening_closure_control(self) -> EveningClosureControl:
+        """Get the current evening closure setting."""
+
+        resolved = self._resolved_settings()
+        return resolved.evening_closure
+
+    @property
+    def tilt_control(self) -> TiltControl:
+        """Get the current tilt angle control setting."""
+
+        resolved = self._resolved_settings()
+        return resolved.tilt_control
+
     #
     # is_locked
     #
@@ -239,6 +253,21 @@ class DataUpdateCoordinator(BaseCoordinator[CoordinatorData]):
             const.HeatProtectionMode,
             "heat protection mode",
         )
+
+    async def async_set_evening_closure_control(self, evening_closure_control: const.EveningClosureControl) -> None:
+        """Set the evening closure setting and persist to config (same setting as in the configuration wizard)."""
+
+        await self._async_set_runtime_enum_option(
+            ConfKeys.EVENING_CLOSURE,
+            evening_closure_control,
+            const.EveningClosureControl,
+            "evening closure",
+        )
+
+    async def async_set_tilt_control(self, tilt_control: const.TiltControl) -> None:
+        """Set the tilt angle control setting and persist to config (same setting as in the configuration wizard)."""
+
+        await self._async_set_runtime_enum_option(ConfKeys.TILT_CONTROL, tilt_control, const.TiltControl, "tilt control")
 
     async def _async_set_runtime_enum_option(
         self,

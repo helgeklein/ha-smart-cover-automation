@@ -95,6 +95,7 @@
                 "title": "Smart Cover Automation - Schritt 5 von 7",
                 "description": "Konfigurieren Sie die **Lamellenneigung** für Rollläden mit verstellbaren Lamellen (optional).\nGlobale Einstellungen gelten für alle neigungsfähigen Rollläden, sofern sie nicht pro Rollladen überschrieben werden.",
                 "data": {
+                    "tilt_control": "Lamellensteuerung:",
                     "tilt_mode_day": "Lamellenneigung (Tag):",
                     "tilt_mode_night": "Lamellenneigung (Nacht):",
                     "tilt_set_value_day": "Tag-Neigungswinkel (Festwert):",
@@ -108,6 +109,7 @@
                     "tilt_slat_overlap_ratio": "Lamellenüberlappungsverhältnis (d/L):"
                 },
                 "data_description": {
+                    "tilt_control": "Wann die Integration den Neigungswinkel der Lamellen ändern darf. Die übrigen Lamelleneinstellungen werden nur für die gewählten Tageszeiten angezeigt. Der Sperrmodus ist davon nicht betroffen.",
                     "tilt_mode_day": "Wie der Neigungswinkel der Lamellen tagsüber gesteuert werden soll.",
                     "tilt_mode_night": "Wie der Neigungswinkel der Lamellen nachts gesteuert werden soll (wird beim abendlichen Schließen angewendet).",
                     "tilt_set_value_day": "Fester Neigungswinkel für den Tagmodus. 0 % = vollständig geschlossen (vertikal, blockiert Licht), 100 % = vollständig geöffnet (horizontal, lässt Licht herein). Wird nur verwendet, wenn der Tag-Neigungsmodus auf Festwert eingestellt ist.",
@@ -182,7 +184,7 @@
                             "close_covers_after_sunset_latest_time": "Abendschließen: spätestens um:",
                             "close_covers_after_sunset_cover_list": "Rollläden:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Dauer der manuellen Übersteuerung ignorieren:",
-                            "close_covers_after_sunset_keep_closed": "Rollläden geschlossen halten:",
+                            "morning_opening": "Rollläden morgens öffnen:",
                             "morning_opening_mode": "Morgendliches Öffnen: Modus:",
                             "morning_opening_time": "Morgendliches Öffnen: Zeit:",
                             "morning_opening_earliest_enabled": "Morgendliches Öffnen: frühestens zu einer Uhrzeit:",
@@ -191,7 +193,7 @@
                             "morning_opening_latest_time": "Morgendliches Öffnen: spätestens um:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Wenn aktiviert, werden die Rollläden abends automatisch geschlossen.",
+                            "close_covers_after_sunset": "Aus: Die Rollläden werden abends nicht geschlossen. Einmal schließen: Die Rollläden werden abends geschlossen und können danach manuell geöffnet werden. Schließen und geschlossen halten: Ausgewählte Rollläden werden während der nächtlichen Abendschließphase erneut geschlossen, wenn sie wieder geöffnet werden. Die Dauer der manuellen Übersteuerung wird berücksichtigt. Der Sperrmodus hat Vorrang, daher werden Rollläden erst erneut geschlossen, nachdem der Sperrmodus deaktiviert wurde.",
                             "close_covers_after_sunset_mode": "Wählen Sie, ob das Abendschließen vor Sonnenuntergang, nach Sonnenuntergang, zu einer festen Uhrzeit oder über eine Entität erfolgt.",
                             "close_covers_after_sunset_delay": "Je nach gewähltem Modus: relative Verzögerung zum Sonnenuntergang oder feste Uhrzeit. Im externen Modus ignoriert.",
                             "close_covers_after_sunset_earliest_enabled": "Wenn aktiviert, schließen die Rollläden frühestens zur angegebenen Uhrzeit, auch wenn die aus dem Sonnenuntergang berechnete Zeit früher liegt. Gilt nur für die Modi vor und nach Sonnenuntergang. Ist auch die späteste Uhrzeit aktiviert, hat diese Vorrang.",
@@ -200,7 +202,7 @@
                             "close_covers_after_sunset_latest_time": "Späteste Uhrzeit für das Abendschließen. Mitternacht (00:00) bedeutet das Ende des Abends. Wird ignoriert, wenn die Begrenzung nicht aktiviert ist.",
                             "close_covers_after_sunset_cover_list": "Wählen Sie die Rollläden aus, die abends geschlossen werden sollen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wenn aktiviert, darf das Abendschließen ausgewählte Rollläden trotz aktiver Pause durch manuelle Übersteuerung bewegen.",
-                            "close_covers_after_sunset_keep_closed": "Wenn aktiviert, werden ausgewählte Rollläden während der nächtlichen Abendschließphase erneut geschlossen, wenn sie wieder geöffnet werden. Die Dauer der manuellen Übersteuerung wird berücksichtigt. Der Sperrmodus hat Vorrang, daher werden Rollläden erst erneut geschlossen, nachdem der Sperrmodus deaktiviert wurde.",
+                            "morning_opening": "Wenn aktiviert, werden die durch das Abendschließen geschlossenen Rollläden morgens wieder geöffnet. Wenn deaktiviert, bleiben sie geschlossen, bis sie manuell bewegt werden; auch der Hitzeschutz öffnet sie nicht teilweise.",
                             "morning_opening_mode": "Wählen Sie, ob das morgendliche Öffnen vor Sonnenaufgang, nach Sonnenaufgang, zu einer festen Uhrzeit oder über eine Entität erfolgt.",
                             "morning_opening_time": "Je nach gewähltem Modus: relative Verzögerung zum Sonnenaufgang oder feste Uhrzeit. Im externen Modus ignoriert.",
                             "morning_opening_earliest_enabled": "Wenn aktiviert, öffnen die Rollläden frühestens zur angegebenen Uhrzeit, auch wenn die aus dem Sonnenaufgang berechnete Zeit früher liegt. Gilt nur für die Modi vor und nach Sonnenaufgang. Ist auch die späteste Uhrzeit aktiviert, hat diese Vorrang.",
@@ -268,6 +270,23 @@
                     "hold_position": "Position halten",
                     "force_open": "Öffnen erzwingen und sperren",
                     "force_close": "Schließen erzwingen und sperren"
+                }
+            },
+            "evening_closure": {
+                "name": "Abendschließen",
+                "state": {
+                    "off": "Aus",
+                    "close_once": "Einmal schließen",
+                    "close_and_keep_closed": "Schließen und geschlossen halten"
+                }
+            },
+            "tilt_control": {
+                "name": "Lamellensteuerung",
+                "state": {
+                    "off": "Aus",
+                    "day_only": "Nur tagsüber",
+                    "night_only": "Nur nachts",
+                    "day_and_night": "Tag und Nacht"
                 }
             }
         },
@@ -374,6 +393,9 @@
             },
             "weather_sunny_external_control": {
                 "name": "Wetter: sonnig? (externe Steuerung)"
+            },
+            "morning_opening": {
+                "name": "Morgendliches Öffnen"
             }
         }
     },
@@ -524,6 +546,21 @@
                 "open_only": "Nur öffnen",
                 "close_only": "Nur schließen",
                 "open_and_close": "Öffnen und schließen"
+            }
+        },
+        "evening_closure": {
+            "options": {
+                "off": "Aus",
+                "close_once": "Einmal schließen",
+                "close_and_keep_closed": "Schließen und geschlossen halten"
+            }
+        },
+        "tilt_control": {
+            "options": {
+                "off": "Aus",
+                "day_only": "Nur tagsüber",
+                "night_only": "Nur nachts",
+                "day_and_night": "Tag und Nacht"
             }
         }
     }

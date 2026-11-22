@@ -49,6 +49,7 @@ from custom_components.smart_cover_automation.const import (
     SENSOR_KEY_TEMP_CURRENT_MIN,
     TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME,
     TIME_KEY_MORNING_OPENING_EXTERNAL_TIME,
+    EveningClosureControl,
     HeatProtectionMode,
     LockMode,
     ReopeningMode,
@@ -1087,7 +1088,7 @@ class TestMorningOpeningIntegrationFlow:
         entry = _create_config_entry(
             hass,
             extra_options={
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [TEST_COVER],

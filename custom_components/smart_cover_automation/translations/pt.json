@@ -95,6 +95,7 @@
                 "title": "Smart Cover Automation - Passo 5 de 7",
                 "description": "Configure o **controlo do ângulo de inclinação** para persianas com lâminas orientáveis (opcional).\nAs definições globais aplicam-se a todas as persianas com inclinação, salvo configuração individual.",
                 "data": {
+                    "tilt_control": "Controlo do ângulo de inclinação:",
                     "tilt_mode_day": "Controlo de inclinação (dia):",
                     "tilt_mode_night": "Controlo de inclinação (noite):",
                     "tilt_set_value_day": "Ângulo de inclinação diurno (valor fixo):",
@@ -108,6 +109,7 @@
                     "tilt_slat_overlap_ratio": "Rácio de sobreposição das lâminas (d/L):"
                 },
                 "data_description": {
+                    "tilt_control": "Quando a integração pode alterar o ângulo de inclinação das lâminas. As restantes definições de inclinação só são mostradas para os períodos do dia selecionados. O modo de bloqueio não é afetado.",
                     "tilt_mode_day": "Como controlar o ângulo de inclinação das lâminas durante o dia.",
                     "tilt_mode_night": "Como controlar o ângulo de inclinação das lâminas à noite (aplicado durante o fecho noturno).",
                     "tilt_set_value_day": "Ângulo de inclinação fixo para o modo diurno. 0 % = completamente fechado (vertical, bloqueia luz), 100 % = completamente aberto (horizontal, deixa entrar luz). Utilizado apenas quando o modo de inclinação diurna está definido como «Valor fixo».",
@@ -182,7 +184,7 @@
                             "close_covers_after_sunset_latest_time": "Fecho ao entardecer: hora máxima:",
                             "close_covers_after_sunset_cover_list": "Persianas:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar a duração da sobreposição manual:",
-                            "close_covers_after_sunset_keep_closed": "Manter as persianas fechadas:",
+                            "morning_opening": "Abrir persianas de manhã:",
                             "morning_opening_mode": "Abertura matinal: modo:",
                             "morning_opening_time": "Abertura matinal: hora:",
                             "morning_opening_earliest_enabled": "Abertura matinal: limitar a uma hora mínima:",
@@ -191,7 +193,7 @@
                             "morning_opening_latest_time": "Abertura matinal: hora máxima:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Quando ativada, as persianas serão fechadas automaticamente ao anoitecer.",
+                            "close_covers_after_sunset": "Desativado: as persianas não são fechadas ao anoitecer. Fechar uma vez: as persianas são fechadas ao anoitecer e podem depois ser abertas manualmente. Fechar e manter fechado: as persianas selecionadas voltam a fechar durante o período noturno de fecho ao entardecer se forem reabertas. A duração da sobreposição manual é respeitada. O modo de bloqueio tem prioridade, por isso as persianas só voltam a fechar depois de o modo de bloqueio ser desativado.",
                             "close_covers_after_sunset_mode": "Escolha se o fecho ao entardecer acontece antes do pôr do sol, depois do pôr do sol, a uma hora fixa ou é fornecido por uma entidade.",
                             "close_covers_after_sunset_delay": "Consoante o modo selecionado: atraso relativo em relação ao pôr do sol ou hora fixa do dia. Ignorado no modo externo.",
                             "close_covers_after_sunset_earliest_enabled": "Se ativado, as coberturas fecham não antes da hora mínima, mesmo que a hora calculada a partir do pôr do sol seja anterior. Aplica-se apenas aos modos antes e depois do pôr do sol. Se a hora máxima também estiver ativada, esta tem prioridade.",
@@ -200,7 +202,7 @@
                             "close_covers_after_sunset_latest_time": "Hora máxima do fecho ao entardecer. Meia-noite (00:00) significa o fim da noite. Ignorada se o limite não estiver ativado.",
                             "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas ao anoitecer.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando ativada, o fecho ao entardecer pode mover as persianas selecionadas mesmo que uma pausa por controlo manual ainda esteja ativa.",
-                            "close_covers_after_sunset_keep_closed": "Quando ativada, as persianas selecionadas voltam a fechar durante o período noturno de fecho ao entardecer se forem reabertas. A duração da sobreposição manual é respeitada. O modo de bloqueio tem prioridade, por isso as persianas só voltam a fechar depois de o modo de bloqueio ser desativado.",
+                            "morning_opening": "Quando ativada, as persianas fechadas pelo fecho ao entardecer voltam a abrir de manhã. Quando desativada, permanecem fechadas até serem movidas manualmente; a proteção contra o calor também não as abre parcialmente.",
                             "morning_opening_mode": "Escolha se a abertura matinal acontece antes do nascer do sol, depois do nascer do sol, a uma hora fixa ou é fornecida por uma entidade.",
                             "morning_opening_time": "Consoante o modo selecionado: atraso relativo em relação ao nascer do sol ou hora fixa do dia. Ignorado no modo externo.",
                             "morning_opening_earliest_enabled": "Se ativado, as coberturas abrem não antes da hora mínima, mesmo que a hora calculada a partir do nascer do sol seja anterior. Aplica-se apenas aos modos antes e depois do nascer do sol. Se a hora máxima também estiver ativada, esta tem prioridade.",
@@ -268,6 +270,23 @@
                     "hold_position": "Manter posição atual",
                     "force_open": "Forçar abertura e bloquear",
                     "force_close": "Forçar fecho e bloquear"
+                }
+            },
+            "evening_closure": {
+                "name": "Fecho ao entardecer",
+                "state": {
+                    "off": "Desativado",
+                    "close_once": "Fechar uma vez",
+                    "close_and_keep_closed": "Fechar e manter fechado"
+                }
+            },
+            "tilt_control": {
+                "name": "Controlo do ângulo de inclinação",
+                "state": {
+                    "off": "Desativado",
+                    "day_only": "Só de dia",
+                    "night_only": "Só de noite",
+                    "day_and_night": "Dia e noite"
                 }
             }
         },
@@ -374,6 +393,9 @@
             },
             "weather_sunny_external_control": {
                 "name": "Meteorologia: ensolarado? (controlo externo)"
+            },
+            "morning_opening": {
+                "name": "Abertura matinal"
             }
         }
     },
@@ -524,6 +546,21 @@
                 "open_only": "Abrir apenas",
                 "close_only": "Fechar apenas",
                 "open_and_close": "Abrir e fechar"
+            }
+        },
+        "evening_closure": {
+            "options": {
+                "off": "Desativado",
+                "close_once": "Fechar uma vez",
+                "close_and_keep_closed": "Fechar e manter fechado"
+            }
+        },
+        "tilt_control": {
+            "options": {
+                "off": "Desativado",
+                "day_only": "Só de dia",
+                "night_only": "Só de noite",
+                "day_and_night": "Dia e noite"
             }
         }
     }

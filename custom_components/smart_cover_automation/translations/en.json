@@ -95,6 +95,7 @@
                 "title": "Smart Cover Automation - Step 5 of 7",
                 "description": "Configure **tilt angle control** for covers with tiltable slats (optional).\nGlobal settings apply to all tilt-capable covers unless overridden per cover.",
                 "data": {
+                    "tilt_control": "Tilt angle control:",
                     "tilt_mode_day": "Tilt angle control (day):",
                     "tilt_mode_night": "Tilt angle control (night):",
                     "tilt_set_value_day": "Day tilt angle (set value):",
@@ -108,6 +109,7 @@
                     "tilt_slat_overlap_ratio": "Slat overlap ratio (d/L):"
                 },
                 "data_description": {
+                    "tilt_control": "When the integration may change the tilt angle of cover slats. The other tilt settings are only shown for the selected times of day. Lock mode is not affected.",
                     "tilt_mode_day": "How to control the tilt angle of cover slats during the day.",
                     "tilt_mode_night": "How to control the tilt angle of cover slats at night (applied during evening closure).",
                     "tilt_set_value_day": "Fixed tilt angle for day mode. 0% = fully closed (vertical, blocks light), 100% = fully open (horizontal, lets light in). Only used when day tilt mode is set to 'Set value'.",
@@ -182,7 +184,7 @@
                             "close_covers_after_sunset_latest_time": "Evening closure: latest time:",
                             "close_covers_after_sunset_cover_list": "Covers:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignore manual override duration:",
-                            "close_covers_after_sunset_keep_closed": "Keep covers closed:",
+                            "morning_opening": "Open covers in the morning:",
                             "morning_opening_mode": "Morning opening: mode:",
                             "morning_opening_time": "Morning opening: time:",
                             "morning_opening_earliest_enabled": "Morning opening: limit to an earliest time:",
@@ -191,7 +193,7 @@
                             "morning_opening_latest_time": "Morning opening: latest time:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "When enabled, covers will be closed automatically in the evening.",
+                            "close_covers_after_sunset": "Off: covers are not closed in the evening. Close once: covers are closed in the evening and may be opened manually afterward. Close and keep closed: selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.",
                             "close_covers_after_sunset_mode": "Choose whether evening closure happens before sunset, after sunset, uses an absolute time, or is supplied by an entity.",
                             "close_covers_after_sunset_delay": "Depending on the selected mode: relative delay from sunset or fixed time of day. Ignored in external mode.",
                             "close_covers_after_sunset_earliest_enabled": "When enabled, covers close no earlier than the earliest time, even if the time calculated from sunset is earlier. Only applies to the modes before and after sunset. If the latest time is also enabled, it takes precedence.",
@@ -200,7 +202,7 @@
                             "close_covers_after_sunset_latest_time": "Latest time of day for evening closure. Midnight (00:00) means the end of the evening. Ignored unless the limit is enabled.",
                             "close_covers_after_sunset_cover_list": "Select the covers that should be closed in the evening.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active.",
-                            "close_covers_after_sunset_keep_closed": "When enabled, selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.",
+                            "morning_opening": "When enabled, covers closed by evening closure are opened again in the morning. When disabled, they stay closed until moved manually; heat protection doesn't partially open them either.",
                             "morning_opening_mode": "Choose whether morning opening happens before sunrise, after sunrise, uses an absolute time, or is supplied by an entity.",
                             "morning_opening_time": "Depending on the selected mode: relative delay from sunrise or fixed time of day. Ignored in external mode.",
                             "morning_opening_earliest_enabled": "When enabled, covers open no earlier than the earliest time, even if the time calculated from sunrise is earlier. Only applies to the modes before and after sunrise. If the latest time is also enabled, it takes precedence.",
@@ -268,6 +270,23 @@
                     "hold_position": "Hold current position",
                     "force_open": "Force open and lock",
                     "force_close": "Force close and lock"
+                }
+            },
+            "evening_closure": {
+                "name": "Evening closure",
+                "state": {
+                    "off": "Off",
+                    "close_once": "Close once",
+                    "close_and_keep_closed": "Close and keep closed"
+                }
+            },
+            "tilt_control": {
+                "name": "Tilt angle control",
+                "state": {
+                    "off": "Off",
+                    "day_only": "Day only",
+                    "night_only": "Night only",
+                    "day_and_night": "Day and night"
                 }
             }
         },
@@ -374,6 +393,9 @@
             },
             "weather_sunny_external_control": {
                 "name": "Weather: sunny? (external control)"
+            },
+            "morning_opening": {
+                "name": "Morning opening"
             }
         }
     },
@@ -524,6 +546,21 @@
                 "open_only": "Open only",
                 "close_only": "Close only",
                 "open_and_close": "Open and close"
+            }
+        },
+        "evening_closure": {
+            "options": {
+                "off": "Off",
+                "close_once": "Close once",
+                "close_and_keep_closed": "Close and keep closed"
+            }
+        },
+        "tilt_control": {
+            "options": {
+                "off": "Off",
+                "day_only": "Day only",
+                "night_only": "Night only",
+                "day_and_night": "Day and night"
             }
         }
     }

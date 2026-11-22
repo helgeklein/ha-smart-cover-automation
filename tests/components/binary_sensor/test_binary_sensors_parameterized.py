@@ -31,6 +31,7 @@ from custom_components.smart_cover_automation.const import (
     BINARY_SENSOR_KEY_STATUS,
     BINARY_SENSOR_KEY_TEMP_HOT,
     BINARY_SENSOR_KEY_WEATHER_SUNNY,
+    EveningClosureControl,
 )
 from custom_components.smart_cover_automation.coordinator import DataUpdateCoordinator
 from custom_components.smart_cover_automation.data import CoordinatorData, IntegrationConfigEntry
@@ -68,8 +69,9 @@ BINARY_SENSOR_CONFIGS = [
         "type": "config_boolean",  # is_on = config value
         "config_key": "close_covers_after_sunset",
         "state_tests": [
-            {"name": "enabled", "config_value": True, "expected_is_on": True},
-            {"name": "disabled", "config_value": False, "expected_is_on": False},
+            {"name": "close_once", "config_value": EveningClosureControl.CLOSE_ONCE.value, "expected_is_on": True},
+            {"name": "close_and_keep_closed", "config_value": EveningClosureControl.CLOSE_AND_KEEP_CLOSED.value, "expected_is_on": True},
+            {"name": "off", "config_value": EveningClosureControl.OFF.value, "expected_is_on": False},
         ],
     },
     {

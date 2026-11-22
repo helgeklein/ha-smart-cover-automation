@@ -622,6 +622,10 @@ class CoverAutomation:
         if self.entity_id not in self.resolved.evening_closure_cover_list:
             return None
 
+        # Evening closure off (e.g., switched off at runtime via its select entity): neither close nor keep closed
+        if not self.resolved.evening_closure_enabled:
+            return None
+
         if self._has_missing_external_evening_closure_time(sensor_data):
             return None
 
@@ -632,6 +636,27 @@ class CoverAutomation:
             return MovementControlReason.EVENING_CLOSURE_HOLD
 
         return None
+
+    def _is_morning_opening_suppressed(self, current_pos: int) -> bool:
+        """Return whether reopening after evening closure is switched off for this cover.
+
+        When morning opening is off, a cover that evening closure has closed stays
+        closed: the automation does not reopen it. This applies only while the cover
+        is still at the position evening closure left it in. Once the user moves the
+        cover manually, normal automation resumes.
+        """
+
+        if self.resolved.morning_opening_enabled:
+            return False
+
+        if not self.resolved.evening_closure_enabled or self.entity_id not in self.resolved.evening_closure_cover_list:
+            return False
+
+        managed_state = self._cover_pos_history_mgr.get_automation_managed_state(self.entity_id)
+        if not isinstance(managed_state, AutomationManagedState) or managed_state.automation_mode != AutomationMode.EVENING_CLOSURE:
+            return False
+
+        return self._positions_match_within_delta(current_pos, managed_state.position)
 
     def _has_missing_external_evening_closure_time(self, sensor_data: SensorData) -> bool:
         """Return whether evening closure is externally controlled but has no valid time."""
@@ -1105,6 +1130,7 @@ class CoverAutomation:
         last_automation_closing_reason = self._cover_pos_history_mgr.get_closed_by_automation_reason(self.entity_id)
         delayed_reopen_action = self._cover_pos_history_mgr.get_delayed_reopen_action(self.entity_id)
         time_now = datetime.now(timezone.utc)
+        morning_opening_suppressed = self._is_morning_opening_suppressed(current_pos)
 
         if evening_closure_cause is not None:
             self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
@@ -1159,6 +1185,7 @@ class CoverAutomation:
                 )
                 automation_owned_more_closed_position = (
                     not sensor_data.pre_closing
+                    and not morning_opening_suppressed
                     and target_pre_closure_pos > current_pos
                     and self._is_current_position_automation_owned(current_pos)
                 )
@@ -1233,6 +1260,16 @@ class CoverAutomation:
                 self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
                 desired_pos = current_pos
                 desired_pos_friendly_name = "keeping current position because external morning opening has no valid time"
+                decision = MovementDecision(
+                    desired_position=desired_pos,
+                    direction=MovementDirection.HOLD,
+                    control_reason=None,
+                    lockout_protection_active=False,
+                )
+            elif morning_opening_suppressed:
+                self._cover_pos_history_mgr.clear_delayed_reopen_action(self.entity_id)
+                desired_pos = current_pos
+                desired_pos_friendly_name = "keeping current position because morning opening is switched off"
                 decision = MovementDecision(
                     desired_position=desired_pos,
                     direction=MovementDirection.HOLD,
@@ -1843,10 +1880,19 @@ class CoverAutomation:
             is_night: True for night/evening closure mode, False for daytime
 
         Returns:
-            Tilt mode string or None if tilt not supported
+            Tilt mode string or None if tilt not supported or tilt control is off for this time of day
         """
 
         if self._cover_supports_tilt is False:
+            return None
+
+        # Tilt angle control restricted: leave the slats alone (lock mode tilt is unaffected)
+        tilt_control = self.resolved.tilt_control
+        if (
+            tilt_control == const.TiltControl.OFF
+            or (is_night and tilt_control == const.TiltControl.DAY_ONLY)
+            or (not is_night and tilt_control == const.TiltControl.NIGHT_ONLY)
+        ):
             return None
 
         # Determine suffix and global default based on day/night

@@ -18,6 +18,7 @@ from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.switch import (
     CoverWeatherHotExternalControlSwitch,
     EnabledSwitch,
+    MorningOpeningSwitch,
     SimulationModeSwitch,
     VerboseLoggingSwitch,
     WeatherHotExternalControlSwitch,
@@ -47,8 +48,8 @@ async def test_switch_entity_properties(mock_coordinator_basic) -> None:
     # Setup the switch platform and capture all entities
     await async_setup_entry_switch(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
 
-    # Verify we have exactly 6 switch entities for the default single-cover config
-    assert len(captured) == 6
+    # Verify we have exactly 7 switch entities for the default single-cover config
+    assert len(captured) == 7
 
     # Find each switch type
     enabled_switch = next((entity for entity in captured if isinstance(entity, EnabledSwitch)), None)
@@ -73,3 +74,8 @@ async def test_switch_entity_properties(mock_coordinator_basic) -> None:
     assert weather_override_switch.unique_id == f"{entry.entry_id}_weather_sunny_external_control"
     assert weather_hot_switch.unique_id == f"{entry.entry_id}_weather_hot_external_control"
     assert cover_weather_hot_switch.unique_id == f"{entry.entry_id}_cover.test_cover_cover_weather_hot_external_control"
+
+    # Verify the morning opening switch
+    morning_opening_switch = next((entity for entity in captured if isinstance(entity, MorningOpeningSwitch)), None)
+    assert morning_opening_switch is not None
+    assert morning_opening_switch.unique_id == f"{entry.entry_id}_morning_opening"

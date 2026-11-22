@@ -95,6 +95,7 @@
                 "title": "Smart Cover Automation - Étape 5 sur 7",
                 "description": "Configurez le **contrôle de l'angle d'inclinaison** pour les volets à lamelles orientables (facultatif).\nLes paramètres globaux s'appliquent à tous les volets orientables, sauf s'ils sont remplacés par volet.",
                 "data": {
+                    "tilt_control": "Contrôle de l'angle d'inclinaison :",
                     "tilt_mode_day": "Contrôle de l'inclinaison (jour) :",
                     "tilt_mode_night": "Contrôle de l'inclinaison (nuit) :",
                     "tilt_set_value_day": "Angle d'inclinaison diurne (valeur fixe) :",
@@ -108,6 +109,7 @@
                     "tilt_slat_overlap_ratio": "Ratio de chevauchement des lamelles (d/L) :"
                 },
                 "data_description": {
+                    "tilt_control": "Quand l'intégration peut modifier l'angle d'inclinaison des lamelles. Les autres réglages d'inclinaison ne sont affichés que pour les moments de la journée sélectionnés. Le mode verrouillage n'est pas concerné.",
                     "tilt_mode_day": "Comment contrôler l'angle d'inclinaison des lamelles pendant la journée.",
                     "tilt_mode_night": "Comment contrôler l'angle d'inclinaison des lamelles la nuit (appliqué lors de la fermeture du soir).",
                     "tilt_set_value_day": "Angle d'inclinaison fixe pour le mode jour. 0 % = complètement fermé (vertical, bloque la lumière), 100 % = complètement ouvert (horizontal, laisse entrer la lumière). Utilisé uniquement lorsque le mode d'inclinaison diurne est réglé sur « Valeur fixe ».",
@@ -182,7 +184,7 @@
                             "close_covers_after_sunset_latest_time": "Fermeture du soir : heure maximale :",
                             "close_covers_after_sunset_cover_list": "Volets :",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorer la durée de la commande manuelle :",
-                            "close_covers_after_sunset_keep_closed": "Garder les volets fermés :",
+                            "morning_opening": "Ouvrir les volets le matin :",
                             "morning_opening_mode": "Ouverture matinale : mode :",
                             "morning_opening_time": "Ouverture matinale : heure :",
                             "morning_opening_earliest_enabled": "Ouverture matinale : limiter à une heure minimale :",
@@ -191,7 +193,7 @@
                             "morning_opening_latest_time": "Ouverture matinale : heure maximale :"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Lorsqu'elle est activée, les volets se fermeront automatiquement le soir.",
+                            "close_covers_after_sunset": "Désactivé : les volets ne sont pas fermés le soir. Fermer une fois : les volets sont fermés le soir et peuvent ensuite être ouverts manuellement. Fermer et garder fermé : les volets sélectionnés sont refermés pendant la période nocturne de fermeture du soir s'ils sont rouverts. La durée de la commande manuelle est respectée. Le mode verrouillage est prioritaire, donc les volets ne sont refermés qu'après sa désactivation.",
                             "close_covers_after_sunset_mode": "Choisissez si la fermeture du soir se fait avant le coucher du soleil, après le coucher du soleil, à heure fixe ou via une entité.",
                             "close_covers_after_sunset_delay": "Selon le mode choisi : délai relatif par rapport au coucher du soleil ou heure fixe. Ignoré en mode externe.",
                             "close_covers_after_sunset_earliest_enabled": "Si activé, les volets se ferment au plus tôt à l'heure minimale, même si l'heure calculée à partir du coucher du soleil est plus précoce. S'applique uniquement aux modes avant et après le coucher du soleil. Si l'heure maximale est également activée, elle est prioritaire.",
@@ -200,7 +202,7 @@
                             "close_covers_after_sunset_latest_time": "Heure maximale de la fermeture du soir. Minuit (00:00) correspond à la fin de la soirée. Ignorée si la limite n'est pas activée.",
                             "close_covers_after_sunset_cover_list": "Sélectionnez les volets qui doivent se fermer le soir.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Lorsqu'elle est activée, la fermeture du soir peut déplacer les volets sélectionnés même si une pause due à une commande manuelle est encore active.",
-                            "close_covers_after_sunset_keep_closed": "Lorsqu'elle est activée, les volets sélectionnés sont refermés pendant la période nocturne de fermeture du soir s'ils sont rouverts. La durée de la commande manuelle est respectée. Le mode verrouillage est prioritaire, donc les volets ne sont refermés qu'après sa désactivation.",
+                            "morning_opening": "Lorsqu'elle est activée, les volets fermés par la fermeture du soir sont rouverts le matin. Lorsqu'elle est désactivée, ils restent fermés jusqu'à ce qu'ils soient déplacés manuellement ; la protection contre la chaleur ne les ouvre pas non plus partiellement.",
                             "morning_opening_mode": "Choisissez si l'ouverture matinale se fait avant le lever du soleil, après le lever du soleil, à heure fixe ou via une entité.",
                             "morning_opening_time": "Selon le mode choisi : délai relatif par rapport au lever du soleil ou heure fixe. Ignoré en mode externe.",
                             "morning_opening_earliest_enabled": "Si activé, les volets s'ouvrent au plus tôt à l'heure minimale, même si l'heure calculée à partir du lever du soleil est plus précoce. S'applique uniquement aux modes avant et après le lever du soleil. Si l'heure maximale est également activée, elle est prioritaire.",
@@ -268,6 +270,23 @@
                     "hold_position": "Maintenir la position actuelle",
                     "force_open": "Forcer l'ouverture et verrouiller",
                     "force_close": "Forcer la fermeture et verrouiller"
+                }
+            },
+            "evening_closure": {
+                "name": "Fermeture du soir",
+                "state": {
+                    "off": "Désactivé",
+                    "close_once": "Fermer une fois",
+                    "close_and_keep_closed": "Fermer et garder fermé"
+                }
+            },
+            "tilt_control": {
+                "name": "Contrôle de l'angle d'inclinaison",
+                "state": {
+                    "off": "Désactivé",
+                    "day_only": "Jour uniquement",
+                    "night_only": "Nuit uniquement",
+                    "day_and_night": "Jour et nuit"
                 }
             }
         },
@@ -374,6 +393,9 @@
             },
             "weather_sunny_external_control": {
                 "name": "Météo : ensoleillé ? (contrôle externe)"
+            },
+            "morning_opening": {
+                "name": "Ouverture matinale"
             }
         }
     },
@@ -524,6 +546,21 @@
                 "open_only": "Ouverture uniquement",
                 "close_only": "Fermeture uniquement",
                 "open_and_close": "Ouvrir et fermer"
+            }
+        },
+        "evening_closure": {
+            "options": {
+                "off": "Désactivé",
+                "close_once": "Fermer une fois",
+                "close_and_keep_closed": "Fermer et garder fermé"
+            }
+        },
+        "tilt_control": {
+            "options": {
+                "off": "Désactivé",
+                "day_only": "Jour uniquement",
+                "night_only": "Nuit uniquement",
+                "day_and_night": "Jour et nuit"
             }
         }
     }

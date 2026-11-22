@@ -19,6 +19,7 @@ from homeassistant.util import dt as dt_util
 from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.automation_engine import AutomationEngine
 from custom_components.smart_cover_automation.config import ConfKeys, resolve
+from custom_components.smart_cover_automation.const import EveningClosureControl
 
 TARGET_DATE = date(2025, 6, 21)
 ASTRAL_PATH = "custom_components.smart_cover_automation.automation_engine.get_astral_event_date"
@@ -36,7 +37,7 @@ def _make_engine(mock_logger: MagicMock, options: dict[ConfKeys, Any]) -> Automa
     config: dict[str, Any] = {
         ConfKeys.COVERS.value: ["cover.test"],
         ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-        ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+        ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
         ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
     }
     config.update({key.value: value for key, value in options.items()})

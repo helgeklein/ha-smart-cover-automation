@@ -18,6 +18,64 @@ The entities in this section control how the integration works.
 
 **Enables** or disables the automation. This should be viewed as a on/off switch, a quick way to stop the integration altogether, one step short of deactivating it by Home Assistant's means.
 
+### Feature Controls
+
+The following entities change individual automation features at runtime. They are the same settings as in the configuration wizard: changing an entity changes the wizard setting and vice versa.
+
+#### Evening Closure
+
+- `Off` [default]: Covers are neither closed in the evening nor kept closed overnight.
+- `Close once`: Covers are closed in the evening. You can open them manually afterward.
+- `Close and keep closed`: Covers are closed in the evening. If they are reopened during the night, they are closed again. Manual override duration is respected.
+
+Configuration wizard: step 7, **Close covers in the evening**.
+
+#### Morning Opening
+
+A switch [default: on]. Switched off, covers closed by evening closure stay closed. Heat protection doesn't open them partially, either. Once you move such a cover manually, the automation controls it normally again.
+
+Configuration wizard: step 7, **Open covers in the morning**.
+
+#### Tilt Angle Control
+
+Defines when the integration changes the slats' tilt angle:
+
+- `Off`: Never.
+- `Day only`: During the day only. At night, the slats are left as they are.
+- `Night only`: At night (evening closure) only. During the day, the slats are left as they are.
+- `Day and night` [default]: During the day and at night.
+
+Lock mode is not affected.
+
+Configuration wizard: step 5, **Tilt angle control**.
+
+#### Notes
+
+- Heat protection and daytime control can be switched off via their respective modes: set **Heat protection** or **Daytime control mode** to `Off`.
+- The other settings of a feature, e.g., the evening closure time or the covers to close, are configured in the configuration wizard. The morning opening switch only has an effect if evening closure is on.
+- **Enabled** takes precedence: if it is off, all features are inactive.
+
+Use case: control features from your own automations, e.g., to close the covers in the evening during autumn and winter only. This example uses the [Season](https://www.home-assistant.io/integrations/season/) integration:
+
+{% raw %}
+```yaml
+alias: Evening closure only in autumn and winter
+triggers:
+  - trigger: state
+    entity_id: sensor.season
+  - trigger: homeassistant
+    event: start
+actions:
+  - action: select.select_option
+    target:
+      entity_id: select.smart_cover_automation_evening_closure
+    data:
+      option: "{{ 'close_and_keep_closed' if states('sensor.season') in ['autumn', 'winter'] else 'off' }}"
+```
+{% endraw %}
+
+Replace the entity IDs with the ones of your installation (Settings → Entities).
+
 ### Simulation Mode
 
 If **simulation mode** is enabled, the automation runs through all calculations without actually moving the covers.

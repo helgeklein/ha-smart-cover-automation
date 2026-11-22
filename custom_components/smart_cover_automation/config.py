@@ -33,11 +33,13 @@ from custom_components.smart_cover_automation.const import (
     BlockedTimeRangeMode,
     DaytimeMovementDirections,
     DaytimeStrategy,
+    EveningClosureControl,
     EveningClosureMode,
     HeatProtectionMode,
     LockMode,
     MorningOpeningMode,
     ReopeningMode,
+    TiltControl,
     TiltMode,
 )
 
@@ -77,7 +79,7 @@ class ConfKeys(StrEnum):
     AUTOMATION_DISABLED_TIME_RANGE_START = "automation_disabled_time_range_start"  # Start time for disabling the automation.
     AUTOMATION_DISABLED_TIME_RANGE_END = "automation_disabled_time_range_end"  # End time for disabling the automation.
     AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED = "automation_disabled_time_range_pre_close_enabled"  # Pre-close at blocked-time start when the next morning will require heat protection.
-    EVENING_CLOSURE_ENABLED = "close_covers_after_sunset"  # Evening closure: enabled.
+    EVENING_CLOSURE = "close_covers_after_sunset"  # Evening closure: off, close once, or close and keep closed overnight.
     EVENING_CLOSURE_MODE = "close_covers_after_sunset_mode"  # Evening closure: timing mode.
     EVENING_CLOSURE_TIME = "close_covers_after_sunset_delay"  # Evening closure: time value.
     EVENING_CLOSURE_COVER_LIST = "close_covers_after_sunset_cover_list"  # Evening closure: list of covers.
@@ -85,13 +87,13 @@ class ConfKeys(StrEnum):
     EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION = (
         "close_covers_after_sunset_ignore_manual_override_duration"  # Evening closure: ignore manual override duration.
     )
-    EVENING_CLOSURE_KEEP_CLOSED = "close_covers_after_sunset_keep_closed"  # Evening closure: keep covers closed overnight.
     EVENING_CLOSURE_EARLIEST_ENABLED = (
         "close_covers_after_sunset_earliest_enabled"  # Evening closure: lower bound for sunset-relative time.
     )
     EVENING_CLOSURE_EARLIEST_TIME = "close_covers_after_sunset_earliest_time"  # Evening closure: earliest time of day to close.
     EVENING_CLOSURE_LATEST_ENABLED = "close_covers_after_sunset_latest_enabled"  # Evening closure: cap sunset-relative time.
     EVENING_CLOSURE_LATEST_TIME = "close_covers_after_sunset_latest_time"  # Evening closure: latest time of day to close.
+    MORNING_OPENING_ENABLED = "morning_opening"  # Morning opening: reopen covers closed by evening closure.
     MORNING_OPENING_MODE = "morning_opening_mode"  # Morning opening: timing mode.
     MORNING_OPENING_TIME = "morning_opening_time"  # Morning opening: time value.
     MORNING_OPENING_EARLIEST_ENABLED = "morning_opening_earliest_enabled"  # Morning opening: lower bound for sunrise-relative time.
@@ -128,6 +130,7 @@ class ConfKeys(StrEnum):
     COVER_MOVEMENT_TO_TILT_DELAY = "cover_movement_to_tilt_delay"  # Delay in seconds between moving a cover and setting its tilt.
     TILT_VERTICAL_POSITION = "tilt_vertical_position"  # HA tilt position that corresponds to vertical slats in Auto mode.
     TILT_HORIZONTAL_POSITION = "tilt_horizontal_position"  # HA tilt position that corresponds to horizontal slats in Auto mode.
+    TILT_CONTROL = "tilt_control"  # When the tilt angle may be changed: never, day, night, or both.
     TILT_MODE_DAY = "tilt_mode_day"  # Global tilt mode during daytime.
     TILT_MODE_NIGHT = "tilt_mode_night"  # Global tilt mode at night / evening closure.
     TILT_SET_VALUE_DAY = "tilt_set_value_day"  # Fixed tilt angle (0-100) for day "set_value" mode.
@@ -271,17 +274,23 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_START: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_END: _ConfSpec(default=time(8, 0, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATION_DISABLED_TIME_RANGE_PRE_CLOSE_ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool),
-    ConfKeys.EVENING_CLOSURE_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
+    # Runtime configurable: also set by the evening closure select entity
+    ConfKeys.EVENING_CLOSURE: _ConfSpec(
+        default=EveningClosureControl.OFF,
+        converter=EveningClosureControl,
+        runtime_configurable=True,
+    ),
     ConfKeys.EVENING_CLOSURE_MODE: _ConfSpec(default=EveningClosureMode.AFTER_SUNSET, converter=EveningClosureMode),
     ConfKeys.EVENING_CLOSURE_TIME: _ConfSpec(default=time(0, 15, 0), converter=_Converters.to_time),
     ConfKeys.EVENING_CLOSURE_COVER_LIST: _ConfSpec(default=(), converter=_Converters.to_covers_tuple),
     ConfKeys.EVENING_CLOSURE_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION: _ConfSpec(default=True, converter=_Converters.to_bool),
-    ConfKeys.EVENING_CLOSURE_KEEP_CLOSED: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.EVENING_CLOSURE_EARLIEST_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.EVENING_CLOSURE_EARLIEST_TIME: _ConfSpec(default=time(18, 0, 0), converter=_Converters.to_time),
     ConfKeys.EVENING_CLOSURE_LATEST_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
     ConfKeys.EVENING_CLOSURE_LATEST_TIME: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
+    # Runtime configurable: also set by the morning opening switch entity
+    ConfKeys.MORNING_OPENING_ENABLED: _ConfSpec(default=True, converter=_Converters.to_bool, runtime_configurable=True),
     ConfKeys.MORNING_OPENING_MODE: _ConfSpec(
         default=MorningOpeningMode.FIXED_TIME,
         converter=_Converters.to_morning_opening_mode,
@@ -326,6 +335,8 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.TILT_VERTICAL_POSITION: _ConfSpec(default=0, converter=_Converters.to_int),
     ConfKeys.TILT_HORIZONTAL_POSITION: _ConfSpec(default=100, converter=_Converters.to_int),
+    # Runtime configurable: also set by the tilt angle control select entity
+    ConfKeys.TILT_CONTROL: _ConfSpec(default=TiltControl.DAY_AND_NIGHT, converter=TiltControl, runtime_configurable=True),
     ConfKeys.TILT_MODE_DAY: _ConfSpec(default=TiltMode.AUTO, converter=TiltMode),
     ConfKeys.TILT_MODE_NIGHT: _ConfSpec(default=TiltMode.CLOSED, converter=TiltMode),
     ConfKeys.TILT_SET_VALUE_DAY: _ConfSpec(default=50, converter=_Converters.to_int),
@@ -340,6 +351,7 @@ __all__ = [
     "ConfKeys",
     "CONF_SPECS",
     "ResolvedConfig",
+    "evening_closure_from_legacy_options",
     "get_runtime_configurable_keys",
     "is_runtime_configurable_key",
     "resolve_effective_blocked_time_range_bounds",
@@ -417,17 +429,17 @@ def is_runtime_configurable_key(key: str) -> bool:
 # Only entries whose field name differs from the .value need to be listed;
 # unlisted keys use their .value as the field name.
 _VALUE_TO_FIELD: dict[str, str] = {
-    "close_covers_after_sunset": "evening_closure_enabled",
+    "close_covers_after_sunset": "evening_closure",
     "close_covers_after_sunset_mode": "evening_closure_mode",
     "close_covers_after_sunset_delay": "evening_closure_time",
     "close_covers_after_sunset_cover_list": "evening_closure_cover_list",
     "close_covers_after_sunset_max_closure": "evening_closure_max_closure",
     "close_covers_after_sunset_ignore_manual_override_duration": "evening_closure_ignore_manual_override_duration",
-    "close_covers_after_sunset_keep_closed": "evening_closure_keep_closed",
     "close_covers_after_sunset_earliest_enabled": "evening_closure_earliest_enabled",
     "close_covers_after_sunset_earliest_time": "evening_closure_earliest_time",
     "close_covers_after_sunset_latest_enabled": "evening_closure_latest_enabled",
     "close_covers_after_sunset_latest_time": "evening_closure_latest_time",
+    "morning_opening": "morning_opening_enabled",
     "morning_opening_mode": "morning_opening_mode",
     "morning_opening_time": "morning_opening_time",
 }
@@ -452,17 +464,17 @@ class ResolvedConfig:
     automation_disabled_time_range_start: time
     automation_disabled_time_range_end: time
     automation_disabled_time_range_pre_close_enabled: bool
-    evening_closure_enabled: bool
+    evening_closure: EveningClosureControl
     evening_closure_mode: EveningClosureMode
     evening_closure_time: time
     evening_closure_cover_list: tuple[str, ...]
     evening_closure_max_closure: int
     evening_closure_ignore_manual_override_duration: bool
-    evening_closure_keep_closed: bool
     evening_closure_earliest_enabled: bool
     evening_closure_earliest_time: time
     evening_closure_latest_enabled: bool
     evening_closure_latest_time: time
+    morning_opening_enabled: bool
     morning_opening_mode: MorningOpeningMode
     morning_opening_time: time
     morning_opening_earliest_enabled: bool
@@ -493,6 +505,7 @@ class ResolvedConfig:
     cover_movement_to_tilt_delay: int
     tilt_vertical_position: int
     tilt_horizontal_position: int
+    tilt_control: TiltControl
     tilt_mode_day: TiltMode
     tilt_mode_night: TiltMode
     tilt_set_value_day: int
@@ -501,6 +514,18 @@ class ResolvedConfig:
     verbose_logging: bool
     weather_entity_id: str
 
+    @property
+    def evening_closure_enabled(self) -> bool:
+        """Whether evening closure is on (close once, or close and keep closed)."""
+
+        return self.evening_closure != EveningClosureControl.OFF
+
+    @property
+    def evening_closure_keep_closed(self) -> bool:
+        """Whether covers closed by evening closure are closed again overnight if reopened."""
+
+        return self.evening_closure == EveningClosureControl.CLOSE_AND_KEEP_CLOSED
+
     def get(self, key: ConfKeys) -> Any:
         # Generic access via mapping (field names may differ from ConfKeys values)
         return getattr(self, _field_name(key))
@@ -508,6 +533,21 @@ class ResolvedConfig:
     def as_enum_dict(self) -> dict[ConfKeys, Any]:
         # Build dict without hard-coded names
         return {k: getattr(self, _field_name(k)) for k in ConfKeys}
+
+
+def evening_closure_from_legacy_options(legacy_enabled: Any, legacy_keep_closed: Any) -> EveningClosureControl:
+    """Map the legacy evening closure options (config entry v2) to the evening closure setting.
+
+    Args:
+        legacy_enabled: Former on/off value of evening closure.
+        legacy_keep_closed: Former "keep covers closed" value; None if it was never set (default: on).
+    """
+
+    if not _Converters.to_bool(legacy_enabled):
+        return EveningClosureControl.OFF
+    if legacy_keep_closed is None or _Converters.to_bool(legacy_keep_closed):
+        return EveningClosureControl.CLOSE_AND_KEEP_CLOSED
+    return EveningClosureControl.CLOSE_ONCE
 
 
 def resolve_effective_blocked_time_range_bounds(

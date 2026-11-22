@@ -346,6 +346,7 @@ class AutomationEngine:
         global_settings = {
             "lock_mode": lock_mode,
             "heat_protection_mode": self.resolved.heat_protection_mode,
+            "tilt_control": self.resolved.tilt_control,
             "automatic_reopening_mode": self.resolved.automatic_reopening_mode,
             "daytime_strategy": self.resolved.daytime_strategy,
             "daytime_movement_directions": self.resolved.daytime_movement_directions,
@@ -367,10 +368,11 @@ class AutomationEngine:
                 blocked_time_range_end.strftime("%H:%M:%S") if blocked_time_range_end is not None else None
             ),
             "automation_disabled_time_range_pre_close_enabled": self.resolved.automation_disabled_time_range_pre_close_enabled,
-            "evening_closure_enabled": self.resolved.evening_closure_enabled,
+            "evening_closure": self.resolved.evening_closure,
             "evening_closure_mode": self.resolved.evening_closure_mode,
             "evening_closure_time": self.resolved.evening_closure_time.strftime("%H:%M:%S"),
             "evening_closure_ignore_manual_override_duration": self.resolved.evening_closure_ignore_manual_override_duration,
+            "morning_opening_enabled": self.resolved.morning_opening_enabled,
             "morning_opening_mode": self.resolved.morning_opening_mode,
             "morning_opening_time": self.resolved.morning_opening_time.strftime("%H:%M:%S"),
             "evening_closure_earliest_enabled": self.resolved.evening_closure_earliest_enabled,
