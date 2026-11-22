@@ -514,7 +514,7 @@ async def _async_register_lock_service(hass: HomeAssistant) -> None:
     Args:
         hass: Home Assistant instance
     """
-    import voluptuous as vol  # pyright: ignore[reportMissingImports]
+    import probatio as vol  # pyright: ignore[reportMissingImports]
     from homeassistant.helpers import config_validation as cv  # pyright: ignore[reportMissingImports]
     from homeassistant.helpers import service  # pyright: ignore[reportMissingImports]
 

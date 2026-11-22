@@ -8,8 +8,8 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import MagicMock
 
+import probatio as vol
 import pytest
-import voluptuous as vol
 from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.components.weather.const import WeatherEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES

@@ -1,3 +1,9 @@
+# Unreleased
+
+## Requirements
+
+- The integration now requires **Home Assistant 2026.11.2**.
+
 # v7.1
 
 ## Bugfixes

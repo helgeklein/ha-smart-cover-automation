@@ -1,5 +1,5 @@
 {
     "name": "Smart Cover Automation",
-    "homeassistant": "2026.4.1",
+    "homeassistant": "2026.11.2",
     "hacs": "2.0.5"
 }

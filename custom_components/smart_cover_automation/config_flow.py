@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-import voluptuous as vol  # pyright: ignore[reportMissingImports]
+import probatio as vol  # pyright: ignore[reportMissingImports]
 from homeassistant import config_entries  # pyright: ignore[reportMissingImports]
 from homeassistant.components.weather.const import WeatherEntityFeature  # pyright: ignore[reportMissingImports]
 from homeassistant.const import STATE_UNAVAILABLE, Platform, UnitOfTime  # pyright: ignore[reportMissingImports]
