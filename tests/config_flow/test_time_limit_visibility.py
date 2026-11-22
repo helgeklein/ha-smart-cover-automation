@@ -15,6 +15,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from aiohttp.web_exceptions import NotAppKeyWarning
 from homeassistant import data_entry_flow
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -258,6 +259,10 @@ class TestTimeLimitVisibilityRealHA:
         assert entry.options[ConfKeys.MORNING_OPENING_LATEST_TIME.value] == "07:15:00"
 
 
+# Home Assistant's own http component stores plain-string keys in the aiohttp app, which makes
+# aiohttp emit NotAppKeyWarning. In CI, tests/conftest.py turns all warnings into errors, which
+# would make the http setup fail. The warning is outside this integration's control.
+@pytest.mark.filterwarnings(f"ignore::{NotAppKeyWarning.__module__}.{NotAppKeyWarning.__name__}")
 class TestTimeLimitVisibilityHttpApi:
     """The options flow HTTP API (used by the frontend) serializes the visible conditions."""
 
