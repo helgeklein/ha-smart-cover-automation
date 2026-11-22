@@ -1323,7 +1323,7 @@ class TestOptionsFlowHelperMethods:
 
     def test_is_empty_value_with_undefined(self) -> None:
         """Test _is_empty_value returns True for vol.UNDEFINED."""
-        import voluptuous as vol
+        import probatio as vol
 
         from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
 

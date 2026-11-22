@@ -25,7 +25,7 @@ from homeassistant.components.cover import ATTR_CURRENT_POSITION, CoverEntityFea
 from homeassistant.components.weather.const import WeatherEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES, Platform
 from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import (
+from pytest_homeassistant.common import (
     MockConfigEntry as HAMockConfigEntry,
 )
 
@@ -41,10 +41,6 @@ from custom_components.smart_cover_automation.const import (
     DOMAIN,
     HA_WEATHER_COND_SUNNY,
 )
-
-# Enable pytest-homeassistant-custom-component plugin
-# This allows tests to use the real Home Assistant instance fixture
-pytest_plugins = "pytest_homeassistant_custom_component"
 
 
 def pytest_configure() -> None:

@@ -611,7 +611,7 @@ class TestSetLockServiceHandler:
             schema = mock_hass_with_spec.services.async_register.call_args_list[1][1]["schema"]
 
             # Verify schema requires lock_mode
-            import voluptuous as vol
+            import probatio as vol
 
             # Valid data should pass
             schema({"lock_mode": "unlocked"})

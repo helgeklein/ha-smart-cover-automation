@@ -176,21 +176,37 @@
                             "close_covers_after_sunset": "Zamykanie rolet wieczorem:",
                             "close_covers_after_sunset_mode": "Zamykanie wieczorne: tryb:",
                             "close_covers_after_sunset_delay": "Zamykanie wieczorne: godzina:",
+                            "close_covers_after_sunset_earliest_enabled": "Zamykanie wieczorne: ogranicz do najwcześniejszej godziny:",
+                            "close_covers_after_sunset_earliest_time": "Zamykanie wieczorne: najwcześniejsza godzina:",
+                            "close_covers_after_sunset_latest_enabled": "Zamykanie wieczorne: ogranicz do najpóźniejszej godziny:",
+                            "close_covers_after_sunset_latest_time": "Zamykanie wieczorne: najpóźniejsza godzina:",
                             "close_covers_after_sunset_cover_list": "Rolety:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignoruj czas ręcznego nadpisania:",
                             "close_covers_after_sunset_keep_closed": "Pozostaw rolety zamknięte:",
                             "morning_opening_mode": "Poranne otwieranie: tryb:",
-                            "morning_opening_time": "Poranne otwieranie: godzina:"
+                            "morning_opening_time": "Poranne otwieranie: godzina:",
+                            "morning_opening_earliest_enabled": "Poranne otwieranie: ogranicz do najwcześniejszej godziny:",
+                            "morning_opening_earliest_time": "Poranne otwieranie: najwcześniejsza godzina:",
+                            "morning_opening_latest_enabled": "Poranne otwieranie: ogranicz do najpóźniejszej godziny:",
+                            "morning_opening_latest_time": "Poranne otwieranie: najpóźniejsza godzina:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Po włączeniu rolety zostaną automatycznie zamknięte wieczorem.",
                             "close_covers_after_sunset_mode": "Wybierz, czy zamykanie wieczorne ma następować przed zachodem słońca, po zachodzie słońca, o stałej godzinie czy być dostarczane przez encję.",
                             "close_covers_after_sunset_delay": "W zależności od wybranego trybu: względne opóźnienie względem zachodu słońca lub stała godzina. Ignorowane w trybie zewnętrznym.",
+                            "close_covers_after_sunset_earliest_enabled": "Po włączeniu osłony zamykają się nie wcześniej niż o podanej godzinie, nawet jeśli czas obliczony na podstawie zachodu słońca jest wcześniejszy. Dotyczy tylko trybów przed i po zachodzie słońca. Jeśli włączona jest też najpóźniejsza godzina, ma ona pierwszeństwo.",
+                            "close_covers_after_sunset_earliest_time": "Najwcześniejsza godzina zamykania wieczornego. Ignorowana, jeśli ograniczenie nie jest włączone.",
+                            "close_covers_after_sunset_latest_enabled": "Po włączeniu osłony zamykają się najpóźniej o podanej godzinie, nawet jeśli czas obliczony na podstawie zachodu słońca jest późniejszy. Dotyczy tylko trybów przed i po zachodzie słońca.",
+                            "close_covers_after_sunset_latest_time": "Najpóźniejsza godzina zamykania wieczornego. Północ (00:00) oznacza koniec wieczoru. Ignorowana, jeśli ograniczenie nie jest włączone.",
                             "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Po włączeniu zamykanie wieczorne może poruszyć wybrane rolety, nawet jeśli nadal trwa pauza po ręcznym nadpisaniu.",
                             "close_covers_after_sunset_keep_closed": "Po włączeniu wybrane rolety zostaną ponownie zamknięte podczas nocnego okresu wieczornego zamykania, jeśli zostaną ponownie otwarte. Czas ręcznego nadpisania jest respektowany. Tryb blokady ma pierwszeństwo, więc rolety zostaną ponownie zamknięte dopiero po wyłączeniu trybu blokady.",
                             "morning_opening_mode": "Wybierz, czy poranne otwieranie ma następować przed wschodem słońca, po wschodzie słońca, o stałej godzinie czy być dostarczane przez encję.",
-                            "morning_opening_time": "W zależności od wybranego trybu: względne opóźnienie względem wschodu słońca lub stała godzina dnia. Ignorowane w trybie zewnętrznym."
+                            "morning_opening_time": "W zależności od wybranego trybu: względne opóźnienie względem wschodu słońca lub stała godzina dnia. Ignorowane w trybie zewnętrznym.",
+                            "morning_opening_earliest_enabled": "Po włączeniu osłony otwierają się nie wcześniej niż o podanej godzinie, nawet jeśli czas obliczony na podstawie wschodu słońca jest wcześniejszy. Dotyczy tylko trybów przed i po wschodzie słońca. Jeśli włączona jest też najpóźniejsza godzina, ma ona pierwszeństwo.",
+                            "morning_opening_earliest_time": "Najwcześniejsza godzina porannego otwierania. Ignorowana, jeśli ograniczenie nie jest włączone.",
+                            "morning_opening_latest_enabled": "Po włączeniu osłony otwierają się najpóźniej o podanej godzinie, nawet jeśli czas obliczony na podstawie wschodu słońca jest późniejszy. Dotyczy tylko trybów przed i po wschodzie słońca.",
+                            "morning_opening_latest_time": "Najpóźniejsza godzina porannego otwierania. Ignorowana, jeśli ograniczenie nie jest włączone."
                         }
                     }
                 }

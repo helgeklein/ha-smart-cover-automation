@@ -1152,12 +1152,27 @@ class CoverAutomation:
                 max_closure_limit = self._get_cover_closure_limit(get_max=True)
                 desired_pos = max(const.COVER_POS_FULLY_CLOSED, max_closure_limit)
                 target_pre_closure_pos = desired_pos
+                # Until the morning opening time, covers closed by evening closure must not be
+                # opened, not even partially to the heat protection position. Closing further is allowed.
+                morning_reopening_blocked = self.entity_id in self.resolved.evening_closure_cover_list and (
+                    self._is_opening_block_after_evening_closure_active(sensor_data)
+                )
                 automation_owned_more_closed_position = (
                     not sensor_data.pre_closing
                     and target_pre_closure_pos > current_pos
                     and self._is_current_position_automation_owned(current_pos)
                 )
-                if target_pre_closure_pos >= current_pos and not automation_owned_more_closed_position:
+                if automation_owned_more_closed_position and morning_reopening_blocked:
+                    desired_pos = current_pos
+                    desired_pos_friendly_name = "keeping current position because morning reopening is still blocked"
+                    decision = MovementDecision(
+                        desired_position=desired_pos,
+                        direction=MovementDirection.HOLD,
+                        # No heat protection reason: the cover stays owned by evening closure
+                        control_reason=None,
+                        lockout_protection_active=False,
+                    )
+                elif target_pre_closure_pos >= current_pos and not automation_owned_more_closed_position:
                     desired_pos = current_pos
                     if sensor_data.pre_closing and target_pre_closure_pos == current_pos:
                         desired_pos_friendly_name = "keeping current position because it is already at the pre-closure position"

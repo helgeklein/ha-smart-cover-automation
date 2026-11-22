@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from datetime import time
+from typing import Any, Iterable, Mapping
 
-import voluptuous as vol  # pyright: ignore[reportMissingImports]
-from homeassistant import config_entries  # pyright: ignore[reportMissingImports]
+import probatio as vol  # pyright: ignore[reportMissingImports]
+from homeassistant import config_entries, data_entry_flow  # pyright: ignore[reportMissingImports]
 from homeassistant.components.weather.const import WeatherEntityFeature  # pyright: ignore[reportMissingImports]
 from homeassistant.const import STATE_UNAVAILABLE, Platform, UnitOfTime  # pyright: ignore[reportMissingImports]
 from homeassistant.data_entry_flow import section  # pyright: ignore[reportMissingImports]
 from homeassistant.helpers import selector  # pyright: ignore[reportMissingImports]
+from homeassistant.helpers.field_visibility import ConditionOperator, FieldCondition  # pyright: ignore[reportMissingImports]
 
 from . import const
 from .config import CONF_SPECS, ConfKeys, ResolvedConfig, resolve
@@ -76,6 +78,59 @@ class FlowHelper:
         if suggested_value is not None:
             description["suggested_value"] = suggested_value
         return description
+
+    #
+    # _visible_if_in
+    #
+    @staticmethod
+    def _visible_if_in(field: ConfKeys, values: Iterable[str]) -> FieldCondition:
+        """Build a visibility condition: show a field only if another field has one of the given values.
+
+        Conditional visibility requires HA 2026.11+. The condition can only refer to a field in the
+        same form section.
+        """
+
+        return {"field": field.value, "operator": ConditionOperator.IN, "value": [str(value) for value in values]}
+
+    #
+    # _visible_if_enabled
+    #
+    @staticmethod
+    def _visible_if_enabled(field: ConfKeys) -> FieldCondition:
+        """Build a visibility condition: show a field only if a boolean field is switched on."""
+
+        return {"field": field.value, "value": True}
+
+    #
+    # _add_time_limit_fields
+    #
+    @staticmethod
+    def _add_time_limit_fields(
+        schema_dict: dict[vol.Marker, object],
+        *,
+        mode_condition: FieldCondition,
+        enabled_key: ConfKeys,
+        enabled_default: bool,
+        time_key: ConfKeys,
+        time_default: time,
+    ) -> None:
+        """Add an optional time limit (on/off switch plus time of day) to a section schema.
+
+        The switch is only shown if mode_condition matches. The time field is additionally only
+        shown while the switch is on. Hidden fields are left out of the submitted input, so their
+        stored values are kept.
+        """
+
+        schema_dict[data_entry_flow.Required(enabled_key.value, default=enabled_default, visible=mode_condition)] = (
+            selector.BooleanSelector()
+        )
+        schema_dict[
+            data_entry_flow.Required(
+                time_key.value,
+                default=time_default,
+                visible=[mode_condition, FlowHelper._visible_if_enabled(enabled_key)],
+            )
+        ] = selector.TimeSelector()
 
     #
     # validate_user_input_step_1
@@ -1084,6 +1139,28 @@ class FlowHelper:
             )
         ] = selector.TimeSelector()
 
+        # Evening closure: optional earliest/latest time of day, only shown in the sunset-relative modes
+        evening_sun_relative = FlowHelper._visible_if_in(
+            ConfKeys.EVENING_CLOSURE_MODE,
+            [const.EveningClosureMode.BEFORE_SUNSET, const.EveningClosureMode.AFTER_SUNSET],
+        )
+        FlowHelper._add_time_limit_fields(
+            evening_closure_schema_dict,
+            mode_condition=evening_sun_relative,
+            enabled_key=ConfKeys.EVENING_CLOSURE_EARLIEST_ENABLED,
+            enabled_default=resolved_settings.evening_closure_earliest_enabled,
+            time_key=ConfKeys.EVENING_CLOSURE_EARLIEST_TIME,
+            time_default=resolved_settings.evening_closure_earliest_time,
+        )
+        FlowHelper._add_time_limit_fields(
+            evening_closure_schema_dict,
+            mode_condition=evening_sun_relative,
+            enabled_key=ConfKeys.EVENING_CLOSURE_LATEST_ENABLED,
+            enabled_default=resolved_settings.evening_closure_latest_enabled,
+            time_key=ConfKeys.EVENING_CLOSURE_LATEST_TIME,
+            time_default=resolved_settings.evening_closure_latest_time,
+        )
+
         # Morning opening mode: relative to sunrise, fixed time, or external entity.
         morning_opening_mode_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.MorningOpeningMode]
         evening_closure_schema_dict[
@@ -1106,6 +1183,28 @@ class FlowHelper:
                 default=resolved_settings.morning_opening_time,
             )
         ] = selector.TimeSelector()
+
+        # Morning opening: optional earliest/latest time of day, only shown in the sunrise-relative modes
+        morning_sun_relative = FlowHelper._visible_if_in(
+            ConfKeys.MORNING_OPENING_MODE,
+            [const.MorningOpeningMode.BEFORE_SUNRISE, const.MorningOpeningMode.AFTER_SUNRISE],
+        )
+        FlowHelper._add_time_limit_fields(
+            evening_closure_schema_dict,
+            mode_condition=morning_sun_relative,
+            enabled_key=ConfKeys.MORNING_OPENING_EARLIEST_ENABLED,
+            enabled_default=resolved_settings.morning_opening_earliest_enabled,
+            time_key=ConfKeys.MORNING_OPENING_EARLIEST_TIME,
+            time_default=resolved_settings.morning_opening_earliest_time,
+        )
+        FlowHelper._add_time_limit_fields(
+            evening_closure_schema_dict,
+            mode_condition=morning_sun_relative,
+            enabled_key=ConfKeys.MORNING_OPENING_LATEST_ENABLED,
+            enabled_default=resolved_settings.morning_opening_latest_enabled,
+            time_key=ConfKeys.MORNING_OPENING_LATEST_TIME,
+            time_default=resolved_settings.morning_opening_latest_time,
+        )
 
         # Evening closure: cover list
         evening_closure_schema_dict[

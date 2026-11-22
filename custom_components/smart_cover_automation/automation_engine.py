@@ -373,6 +373,14 @@ class AutomationEngine:
             "evening_closure_ignore_manual_override_duration": self.resolved.evening_closure_ignore_manual_override_duration,
             "morning_opening_mode": self.resolved.morning_opening_mode,
             "morning_opening_time": self.resolved.morning_opening_time.strftime("%H:%M:%S"),
+            "evening_closure_earliest_enabled": self.resolved.evening_closure_earliest_enabled,
+            "evening_closure_earliest_time": self.resolved.evening_closure_earliest_time.strftime("%H:%M:%S"),
+            "evening_closure_latest_enabled": self.resolved.evening_closure_latest_enabled,
+            "evening_closure_latest_time": self.resolved.evening_closure_latest_time.strftime("%H:%M:%S"),
+            "morning_opening_earliest_enabled": self.resolved.morning_opening_earliest_enabled,
+            "morning_opening_earliest_time": self.resolved.morning_opening_earliest_time.strftime("%H:%M:%S"),
+            "morning_opening_latest_enabled": self.resolved.morning_opening_latest_enabled,
+            "morning_opening_latest_time": self.resolved.morning_opening_latest_time.strftime("%H:%M:%S"),
             "tilt_mode_day": self.resolved.tilt_mode_day,
             "tilt_mode_night": self.resolved.tilt_mode_night,
             "tilt_set_value_day": self.resolved.tilt_set_value_day,
@@ -972,18 +980,19 @@ class AutomationEngine:
     # _get_local_datetime_for_date
     #
     def _get_local_datetime_for_date(self, target_date: date, target_time: dt_time) -> datetime:
-        """Return a timezone-aware local datetime for one date/time pair."""
+        """Return the UTC instant of a local date/time pair.
 
-        now = dt_util.now()
-        return now.replace(
-            year=target_date.year,
-            month=target_date.month,
-            day=target_date.day,
-            hour=target_time.hour,
-            minute=target_time.minute,
-            second=target_time.second,
-            microsecond=0,
+        The local time is resolved with a stable policy so the result doesn't depend on the
+        current time: ambiguous times (DST rollback) resolve to their first occurrence
+        (fold=0). The result is returned in UTC so that comparisons with other aware
+        datetimes compare instants; comparing two datetimes of the same zone would compare
+        wall-clock times instead and ignore the DST fold.
+        """
+
+        local = datetime.combine(
+            target_date, target_time.replace(microsecond=0, tzinfo=None, fold=0), tzinfo=dt_util.get_default_time_zone()
         )
+        return dt_util.as_utc(local)
 
     def _get_valid_external_time(self, config_key: str) -> dt_time | None:
         """Return a validated external time value from configuration, if present."""
@@ -1033,17 +1042,51 @@ class AutomationEngine:
         delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
         delay = timedelta(seconds=delay_seconds)
         if mode == const.EveningClosureMode.BEFORE_SUNSET:
-            return sunset_time - delay
+            closing_datetime = sunset_time - delay
+        else:
+            closing_datetime = sunset_time + delay
 
-        return sunset_time + delay
+        earliest = None
+        if self.resolved.evening_closure_earliest_enabled:
+            earliest = self._get_local_datetime_for_date(target_date, self.resolved.evening_closure_earliest_time)
+        latest = None
+        if self.resolved.evening_closure_latest_enabled:
+            latest_time = self.resolved.evening_closure_latest_time
+            # Midnight (00:00) means the end of the evening, not the start of the sunset's date
+            latest_date = target_date + timedelta(days=1) if latest_time == dt_time.min else target_date
+            latest = self._get_local_datetime_for_date(latest_date, latest_time)
+
+        return self._limit_to_time_window(closing_datetime, earliest=earliest, latest=latest)
 
     #
-    # _get_evening_closure_time
+    # _limit_to_time_window
     #
-    def _get_evening_closure_time(self) -> datetime | None:
-        """Calculate today's evening closure time based on the configured mode."""
+    @staticmethod
+    def _limit_to_time_window(
+        value: datetime,
+        *,
+        earliest: datetime | None,
+        latest: datetime | None,
+    ) -> datetime:
+        """Limit a sun-relative datetime to an optional earliest and latest datetime.
 
-        return self._get_evening_closure_time_for_date(dt_util.now().date())
+        The latest time is applied last, so it takes precedence if the earliest
+        time is configured later than the latest time.
+
+        Args:
+            value: Calculated sun-relative datetime.
+            earliest: Earliest datetime, or None for no lower limit.
+            latest: Latest datetime, or None for no upper limit.
+
+        Returns:
+            The limited datetime.
+        """
+
+        if earliest is not None:
+            value = max(value, earliest)
+        if latest is not None:
+            value = min(value, latest)
+        return value
 
     #
     # _get_morning_opening_time_for_date
@@ -1072,9 +1115,18 @@ class AutomationEngine:
         delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
         delay = timedelta(seconds=delay_seconds)
         if mode == const.MorningOpeningMode.BEFORE_SUNRISE:
-            return max(sunrise_time - delay, self._get_local_datetime_for_date(target_date, dt_time.min))
+            opening_datetime = max(sunrise_time - delay, self._get_local_datetime_for_date(target_date, dt_time.min))
+        else:
+            opening_datetime = sunrise_time + delay
 
-        return sunrise_time + delay
+        earliest = None
+        if self.resolved.morning_opening_earliest_enabled:
+            earliest = self._get_local_datetime_for_date(target_date, self.resolved.morning_opening_earliest_time)
+        latest = None
+        if self.resolved.morning_opening_latest_enabled:
+            latest = self._get_local_datetime_for_date(target_date, self.resolved.morning_opening_latest_time)
+
+        return self._limit_to_time_window(opening_datetime, earliest=earliest, latest=latest)
 
     def _is_pre_sunrise_morning_opening_active(self) -> bool:
         """Return whether the configured morning opening time has passed before sunrise."""
@@ -1115,18 +1167,21 @@ class AutomationEngine:
         if not self.resolved.evening_closure_enabled:
             return False
 
-        # Get current time and evening closure time
+        # Get current time and the closing windows to check. Yesterday's window is included
+        # because a window starting shortly before midnight (or at midnight, see the latest
+        # evening time) ends after midnight: past midnight, "today" is already the next day.
         now = dt_util.now()
-        window_start = self._get_evening_closure_time()
-        if window_start is None:
-            return False
+        today = now.date()
+        window_duration = timedelta(minutes=const.SUNSET_CLOSING_WINDOW_MINUTES)
+        window_start: datetime | None = None
+        for target_date in (today, today - timedelta(days=1)):
+            candidate_start = self._get_evening_closure_time_for_date(target_date)
+            if candidate_start is not None and candidate_start <= now < candidate_start + window_duration:
+                window_start = candidate_start
+                break
 
-        window_end = window_start + timedelta(minutes=const.SUNSET_CLOSING_WINDOW_MINUTES)
-
-        # Check if we're within the closing window
-        in_window = window_start <= now < window_end
-
-        if in_window:
+        if window_start is not None:
+            window_end = window_start + window_duration
             window_start_local = dt_util.as_local(window_start).strftime("%H:%M:%S")
             window_end_local = dt_util.as_local(window_end).strftime("%H:%M:%S")
             self._logger.info(f"Evening closure: In active time window ({window_start_local} - {window_end_local})")

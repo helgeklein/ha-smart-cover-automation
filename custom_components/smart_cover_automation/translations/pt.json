@@ -176,21 +176,37 @@
                             "close_covers_after_sunset": "Fechar persianas ao anoitecer:",
                             "close_covers_after_sunset_mode": "Fecho ao entardecer: modo:",
                             "close_covers_after_sunset_delay": "Fecho ao entardecer: hora:",
+                            "close_covers_after_sunset_earliest_enabled": "Fecho ao entardecer: limitar a uma hora mínima:",
+                            "close_covers_after_sunset_earliest_time": "Fecho ao entardecer: hora mínima:",
+                            "close_covers_after_sunset_latest_enabled": "Fecho ao entardecer: limitar a uma hora máxima:",
+                            "close_covers_after_sunset_latest_time": "Fecho ao entardecer: hora máxima:",
                             "close_covers_after_sunset_cover_list": "Persianas:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar a duração da sobreposição manual:",
                             "close_covers_after_sunset_keep_closed": "Manter as persianas fechadas:",
                             "morning_opening_mode": "Abertura matinal: modo:",
-                            "morning_opening_time": "Abertura matinal: hora:"
+                            "morning_opening_time": "Abertura matinal: hora:",
+                            "morning_opening_earliest_enabled": "Abertura matinal: limitar a uma hora mínima:",
+                            "morning_opening_earliest_time": "Abertura matinal: hora mínima:",
+                            "morning_opening_latest_enabled": "Abertura matinal: limitar a uma hora máxima:",
+                            "morning_opening_latest_time": "Abertura matinal: hora máxima:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Quando ativada, as persianas serão fechadas automaticamente ao anoitecer.",
                             "close_covers_after_sunset_mode": "Escolha se o fecho ao entardecer acontece antes do pôr do sol, depois do pôr do sol, a uma hora fixa ou é fornecido por uma entidade.",
                             "close_covers_after_sunset_delay": "Consoante o modo selecionado: atraso relativo em relação ao pôr do sol ou hora fixa do dia. Ignorado no modo externo.",
+                            "close_covers_after_sunset_earliest_enabled": "Se ativado, as coberturas fecham não antes da hora mínima, mesmo que a hora calculada a partir do pôr do sol seja anterior. Aplica-se apenas aos modos antes e depois do pôr do sol. Se a hora máxima também estiver ativada, esta tem prioridade.",
+                            "close_covers_after_sunset_earliest_time": "Hora mínima do fecho ao entardecer. Ignorada se o limite não estiver ativado.",
+                            "close_covers_after_sunset_latest_enabled": "Se ativado, as coberturas fecham o mais tardar à hora máxima, mesmo que a hora calculada a partir do pôr do sol seja posterior. Aplica-se apenas aos modos antes e depois do pôr do sol.",
+                            "close_covers_after_sunset_latest_time": "Hora máxima do fecho ao entardecer. Meia-noite (00:00) significa o fim da noite. Ignorada se o limite não estiver ativado.",
                             "close_covers_after_sunset_cover_list": "Selecione as persianas que devem ser fechadas ao anoitecer.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando ativada, o fecho ao entardecer pode mover as persianas selecionadas mesmo que uma pausa por controlo manual ainda esteja ativa.",
                             "close_covers_after_sunset_keep_closed": "Quando ativada, as persianas selecionadas voltam a fechar durante o período noturno de fecho ao entardecer se forem reabertas. A duração da sobreposição manual é respeitada. O modo de bloqueio tem prioridade, por isso as persianas só voltam a fechar depois de o modo de bloqueio ser desativado.",
                             "morning_opening_mode": "Escolha se a abertura matinal acontece antes do nascer do sol, depois do nascer do sol, a uma hora fixa ou é fornecida por uma entidade.",
-                            "morning_opening_time": "Consoante o modo selecionado: atraso relativo em relação ao nascer do sol ou hora fixa do dia. Ignorado no modo externo."
+                            "morning_opening_time": "Consoante o modo selecionado: atraso relativo em relação ao nascer do sol ou hora fixa do dia. Ignorado no modo externo.",
+                            "morning_opening_earliest_enabled": "Se ativado, as coberturas abrem não antes da hora mínima, mesmo que a hora calculada a partir do nascer do sol seja anterior. Aplica-se apenas aos modos antes e depois do nascer do sol. Se a hora máxima também estiver ativada, esta tem prioridade.",
+                            "morning_opening_earliest_time": "Hora mínima da abertura matinal. Ignorada se o limite não estiver ativado.",
+                            "morning_opening_latest_enabled": "Se ativado, as coberturas abrem o mais tardar à hora máxima, mesmo que a hora calculada a partir do nascer do sol seja posterior. Aplica-se apenas aos modos antes e depois do nascer do sol.",
+                            "morning_opening_latest_time": "Hora máxima da abertura matinal. Ignorada se o limite não estiver ativado."
                         }
                     }
                 }

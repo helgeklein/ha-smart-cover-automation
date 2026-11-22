@@ -176,21 +176,37 @@
                             "close_covers_after_sunset": "Close covers in the evening:",
                             "close_covers_after_sunset_mode": "Evening closure: mode:",
                             "close_covers_after_sunset_delay": "Evening closure: time:",
+                            "close_covers_after_sunset_earliest_enabled": "Evening closure: limit to an earliest time:",
+                            "close_covers_after_sunset_earliest_time": "Evening closure: earliest time:",
+                            "close_covers_after_sunset_latest_enabled": "Evening closure: limit to a latest time:",
+                            "close_covers_after_sunset_latest_time": "Evening closure: latest time:",
                             "close_covers_after_sunset_cover_list": "Covers:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignore manual override duration:",
                             "close_covers_after_sunset_keep_closed": "Keep covers closed:",
                             "morning_opening_mode": "Morning opening: mode:",
-                            "morning_opening_time": "Morning opening: time:"
+                            "morning_opening_time": "Morning opening: time:",
+                            "morning_opening_earliest_enabled": "Morning opening: limit to an earliest time:",
+                            "morning_opening_earliest_time": "Morning opening: earliest time:",
+                            "morning_opening_latest_enabled": "Morning opening: limit to a latest time:",
+                            "morning_opening_latest_time": "Morning opening: latest time:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "When enabled, covers will be closed automatically in the evening.",
                             "close_covers_after_sunset_mode": "Choose whether evening closure happens before sunset, after sunset, uses an absolute time, or is supplied by an entity.",
                             "close_covers_after_sunset_delay": "Depending on the selected mode: relative delay from sunset or fixed time of day. Ignored in external mode.",
+                            "close_covers_after_sunset_earliest_enabled": "When enabled, covers close no earlier than the earliest time, even if the time calculated from sunset is earlier. Only applies to the modes before and after sunset. If the latest time is also enabled, it takes precedence.",
+                            "close_covers_after_sunset_earliest_time": "Earliest time of day for evening closure. Ignored unless the limit is enabled.",
+                            "close_covers_after_sunset_latest_enabled": "When enabled, covers close no later than the latest time, even if the time calculated from sunset is later. Only applies to the modes before and after sunset.",
+                            "close_covers_after_sunset_latest_time": "Latest time of day for evening closure. Midnight (00:00) means the end of the evening. Ignored unless the limit is enabled.",
                             "close_covers_after_sunset_cover_list": "Select the covers that should be closed in the evening.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "When enabled, the evening closure can move selected covers even if a manual override pause is still active.",
                             "close_covers_after_sunset_keep_closed": "When enabled, selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.",
                             "morning_opening_mode": "Choose whether morning opening happens before sunrise, after sunrise, uses an absolute time, or is supplied by an entity.",
-                            "morning_opening_time": "Depending on the selected mode: relative delay from sunrise or fixed time of day. Ignored in external mode."
+                            "morning_opening_time": "Depending on the selected mode: relative delay from sunrise or fixed time of day. Ignored in external mode.",
+                            "morning_opening_earliest_enabled": "When enabled, covers open no earlier than the earliest time, even if the time calculated from sunrise is earlier. Only applies to the modes before and after sunrise. If the latest time is also enabled, it takes precedence.",
+                            "morning_opening_earliest_time": "Earliest time of day for morning opening. Ignored unless the limit is enabled.",
+                            "morning_opening_latest_enabled": "When enabled, covers open no later than the latest time, even if the time calculated from sunrise is later. Only applies to the modes before and after sunrise.",
+                            "morning_opening_latest_time": "Latest time of day for morning opening. Ignored unless the limit is enabled."
                         }
                     }
                 }

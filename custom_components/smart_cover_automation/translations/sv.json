@@ -176,21 +176,37 @@
                             "close_covers_after_sunset": "Stäng persienner på kvällen:",
                             "close_covers_after_sunset_mode": "Kvällsstängning: läge:",
                             "close_covers_after_sunset_delay": "Kvällsstängning: tid:",
+                            "close_covers_after_sunset_earliest_enabled": "Kvällsstängning: begränsa till en tidigaste tid:",
+                            "close_covers_after_sunset_earliest_time": "Kvällsstängning: tidigaste tid:",
+                            "close_covers_after_sunset_latest_enabled": "Kvällsstängning: begränsa till en senaste tid:",
+                            "close_covers_after_sunset_latest_time": "Kvällsstängning: senaste tid:",
                             "close_covers_after_sunset_cover_list": "Persienner:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorera varaktigheten för manuell överstyrning:",
                             "close_covers_after_sunset_keep_closed": "Håll persienner stängda:",
                             "morning_opening_mode": "Morgonöppning: läge:",
-                            "morning_opening_time": "Morgonöppning: tid:"
+                            "morning_opening_time": "Morgonöppning: tid:",
+                            "morning_opening_earliest_enabled": "Morgonöppning: begränsa till en tidigaste tid:",
+                            "morning_opening_earliest_time": "Morgonöppning: tidigaste tid:",
+                            "morning_opening_latest_enabled": "Morgonöppning: begränsa till en senaste tid:",
+                            "morning_opening_latest_time": "Morgonöppning: senaste tid:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "När den är aktiverad stängs persiennerna automatiskt på kvällen.",
                             "close_covers_after_sunset_mode": "Välj om kvällsstängningen ska ske före solnedgången, efter solnedgången, vid en fast tidpunkt eller levereras av en entitet.",
                             "close_covers_after_sunset_delay": "Beroende på valt läge: relativ fördröjning i förhållande till solnedgången eller fast tidpunkt. Ignoreras i externt läge.",
+                            "close_covers_after_sunset_earliest_enabled": "När aktiverat stängs skydden tidigast vid den angivna tiden, även om tiden beräknad från solnedgången är tidigare. Gäller endast lägena före och efter solnedgång. Om även den senaste tiden är aktiverad har den företräde.",
+                            "close_covers_after_sunset_earliest_time": "Tidigaste tid för kvällsstängning. Ignoreras om begränsningen inte är aktiverad.",
+                            "close_covers_after_sunset_latest_enabled": "När aktiverat stängs skydden senast vid den angivna tiden, även om tiden beräknad från solnedgången är senare. Gäller endast lägena före och efter solnedgång.",
+                            "close_covers_after_sunset_latest_time": "Senaste tid för kvällsstängning. Midnatt (00:00) betyder slutet av kvällen. Ignoreras om begränsningen inte är aktiverad.",
                             "close_covers_after_sunset_cover_list": "Välj de persienner som ska stängas på kvällen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "När den är aktiverad får kvällsstängningen flytta valda persienner även om en paus från manuell överstyrning fortfarande är aktiv.",
                             "close_covers_after_sunset_keep_closed": "När funktionen är aktiverad stängs valda persienner igen under den nattliga kvällsstängningsperioden om de öppnas på nytt. Tiden för manuell överstyrning respekteras. Låsläget har företräde, så persiennerna stängs bara igen efter att låsläget har inaktiverats.",
                             "morning_opening_mode": "Välj om morgonöppningen ska ske före soluppgången, efter soluppgången, vid en fast tidpunkt eller levereras av en entitet.",
-                            "morning_opening_time": "Beroende på valt läge: relativ fördröjning i förhållande till soluppgången eller fast tidpunkt. Ignoreras i externt läge."
+                            "morning_opening_time": "Beroende på valt läge: relativ fördröjning i förhållande till soluppgången eller fast tidpunkt. Ignoreras i externt läge.",
+                            "morning_opening_earliest_enabled": "När aktiverat öppnas skydden tidigast vid den angivna tiden, även om tiden beräknad från soluppgången är tidigare. Gäller endast lägena före och efter soluppgång. Om även den senaste tiden är aktiverad har den företräde.",
+                            "morning_opening_earliest_time": "Tidigaste tid för morgonöppning. Ignoreras om begränsningen inte är aktiverad.",
+                            "morning_opening_latest_enabled": "När aktiverat öppnas skydden senast vid den angivna tiden, även om tiden beräknad från soluppgången är senare. Gäller endast lägena före och efter soluppgång.",
+                            "morning_opening_latest_time": "Senaste tid för morgonöppning. Ignoreras om begränsningen inte är aktiverad."
                         }
                     }
                 }

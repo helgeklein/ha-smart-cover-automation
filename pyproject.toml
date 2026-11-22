@@ -5,6 +5,9 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
+    # Let Home Assistant install its httpx alias before respx is imported (see pytest-homeassistant README)
+    "-p",
+    "no:respx",
     "--strict-markers",
     "--strict-config",
     "--cov=custom_components.smart_cover_automation",
