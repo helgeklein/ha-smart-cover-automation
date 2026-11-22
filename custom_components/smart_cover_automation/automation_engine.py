@@ -373,6 +373,14 @@ class AutomationEngine:
             "evening_closure_ignore_manual_override_duration": self.resolved.evening_closure_ignore_manual_override_duration,
             "morning_opening_mode": self.resolved.morning_opening_mode,
             "morning_opening_time": self.resolved.morning_opening_time.strftime("%H:%M:%S"),
+            "evening_closure_earliest_enabled": self.resolved.evening_closure_earliest_enabled,
+            "evening_closure_earliest_time": self.resolved.evening_closure_earliest_time.strftime("%H:%M:%S"),
+            "evening_closure_latest_enabled": self.resolved.evening_closure_latest_enabled,
+            "evening_closure_latest_time": self.resolved.evening_closure_latest_time.strftime("%H:%M:%S"),
+            "morning_opening_earliest_enabled": self.resolved.morning_opening_earliest_enabled,
+            "morning_opening_earliest_time": self.resolved.morning_opening_earliest_time.strftime("%H:%M:%S"),
+            "morning_opening_latest_enabled": self.resolved.morning_opening_latest_enabled,
+            "morning_opening_latest_time": self.resolved.morning_opening_latest_time.strftime("%H:%M:%S"),
             "tilt_mode_day": self.resolved.tilt_mode_day,
             "tilt_mode_night": self.resolved.tilt_mode_night,
             "tilt_set_value_day": self.resolved.tilt_set_value_day,
@@ -1033,9 +1041,16 @@ class AutomationEngine:
         delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
         delay = timedelta(seconds=delay_seconds)
         if mode == const.EveningClosureMode.BEFORE_SUNSET:
-            return sunset_time - delay
+            closing_datetime = sunset_time - delay
+        else:
+            closing_datetime = sunset_time + delay
 
-        return sunset_time + delay
+        return self._limit_to_time_window(
+            closing_datetime,
+            target_date,
+            earliest=self.resolved.evening_closure_earliest_time if self.resolved.evening_closure_earliest_enabled else None,
+            latest=self.resolved.evening_closure_latest_time if self.resolved.evening_closure_latest_enabled else None,
+        )
 
     #
     # _get_evening_closure_time
@@ -1044,6 +1059,38 @@ class AutomationEngine:
         """Calculate today's evening closure time based on the configured mode."""
 
         return self._get_evening_closure_time_for_date(dt_util.now().date())
+
+    #
+    # _limit_to_time_window
+    #
+    def _limit_to_time_window(
+        self,
+        value: datetime,
+        target_date: date,
+        *,
+        earliest: dt_time | None,
+        latest: dt_time | None,
+    ) -> datetime:
+        """Limit a sun-relative datetime to an optional earliest and latest time of day.
+
+        The latest time is applied last, so it takes precedence if the earliest
+        time is configured later than the latest time.
+
+        Args:
+            value: Calculated sun-relative datetime.
+            target_date: Local date the limits apply to.
+            earliest: Earliest time of day, or None for no lower limit.
+            latest: Latest time of day, or None for no upper limit.
+
+        Returns:
+            The limited datetime.
+        """
+
+        if earliest is not None:
+            value = max(value, self._get_local_datetime_for_date(target_date, earliest))
+        if latest is not None:
+            value = min(value, self._get_local_datetime_for_date(target_date, latest))
+        return value
 
     #
     # _get_morning_opening_time_for_date
@@ -1072,9 +1119,16 @@ class AutomationEngine:
         delay_seconds = delay_time.hour * 3600 + delay_time.minute * 60 + delay_time.second
         delay = timedelta(seconds=delay_seconds)
         if mode == const.MorningOpeningMode.BEFORE_SUNRISE:
-            return max(sunrise_time - delay, self._get_local_datetime_for_date(target_date, dt_time.min))
+            opening_datetime = max(sunrise_time - delay, self._get_local_datetime_for_date(target_date, dt_time.min))
+        else:
+            opening_datetime = sunrise_time + delay
 
-        return sunrise_time + delay
+        return self._limit_to_time_window(
+            opening_datetime,
+            target_date,
+            earliest=self.resolved.morning_opening_earliest_time if self.resolved.morning_opening_earliest_enabled else None,
+            latest=self.resolved.morning_opening_latest_time if self.resolved.morning_opening_latest_enabled else None,
+        )
 
     def _is_pre_sunrise_morning_opening_active(self) -> bool:
         """Return whether the configured morning opening time has passed before sunrise."""

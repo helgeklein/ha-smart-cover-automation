@@ -176,21 +176,37 @@
                             "close_covers_after_sunset": "Rollläden abends schließen:",
                             "close_covers_after_sunset_mode": "Abendschließen: Modus:",
                             "close_covers_after_sunset_delay": "Abendschließen: Zeit:",
+                            "close_covers_after_sunset_earliest_enabled": "Abendschließen: frühestens zu einer Uhrzeit:",
+                            "close_covers_after_sunset_earliest_time": "Abendschließen: frühestens um:",
+                            "close_covers_after_sunset_latest_enabled": "Abendschließen: spätestens zu einer Uhrzeit:",
+                            "close_covers_after_sunset_latest_time": "Abendschließen: spätestens um:",
                             "close_covers_after_sunset_cover_list": "Rollläden:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Dauer der manuellen Übersteuerung ignorieren:",
                             "close_covers_after_sunset_keep_closed": "Rollläden geschlossen halten:",
                             "morning_opening_mode": "Morgendliches Öffnen: Modus:",
-                            "morning_opening_time": "Morgendliches Öffnen: Zeit:"
+                            "morning_opening_time": "Morgendliches Öffnen: Zeit:",
+                            "morning_opening_earliest_enabled": "Morgendliches Öffnen: frühestens zu einer Uhrzeit:",
+                            "morning_opening_earliest_time": "Morgendliches Öffnen: frühestens um:",
+                            "morning_opening_latest_enabled": "Morgendliches Öffnen: spätestens zu einer Uhrzeit:",
+                            "morning_opening_latest_time": "Morgendliches Öffnen: spätestens um:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Wenn aktiviert, werden die Rollläden abends automatisch geschlossen.",
                             "close_covers_after_sunset_mode": "Wählen Sie, ob das Abendschließen vor Sonnenuntergang, nach Sonnenuntergang, zu einer festen Uhrzeit oder über eine Entität erfolgt.",
                             "close_covers_after_sunset_delay": "Je nach gewähltem Modus: relative Verzögerung zum Sonnenuntergang oder feste Uhrzeit. Im externen Modus ignoriert.",
+                            "close_covers_after_sunset_earliest_enabled": "Wenn aktiviert, schließen die Rollläden frühestens zur angegebenen Uhrzeit, auch wenn die aus dem Sonnenuntergang berechnete Zeit früher liegt. Gilt nur für die Modi vor und nach Sonnenuntergang. Ist auch die späteste Uhrzeit aktiviert, hat diese Vorrang.",
+                            "close_covers_after_sunset_earliest_time": "Früheste Uhrzeit für das Abendschließen. Wird ignoriert, wenn die Begrenzung nicht aktiviert ist.",
+                            "close_covers_after_sunset_latest_enabled": "Wenn aktiviert, schließen die Rollläden spätestens zur angegebenen Uhrzeit, auch wenn die aus dem Sonnenuntergang berechnete Zeit später liegt. Gilt nur für die Modi vor und nach Sonnenuntergang.",
+                            "close_covers_after_sunset_latest_time": "Späteste Uhrzeit für das Abendschließen. Muss vor Mitternacht liegen. Wird ignoriert, wenn die Begrenzung nicht aktiviert ist.",
                             "close_covers_after_sunset_cover_list": "Wählen Sie die Rollläden aus, die abends geschlossen werden sollen.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wenn aktiviert, darf das Abendschließen ausgewählte Rollläden trotz aktiver Pause durch manuelle Übersteuerung bewegen.",
                             "close_covers_after_sunset_keep_closed": "Wenn aktiviert, werden ausgewählte Rollläden während der nächtlichen Abendschließphase erneut geschlossen, wenn sie wieder geöffnet werden. Die Dauer der manuellen Übersteuerung wird berücksichtigt. Der Sperrmodus hat Vorrang, daher werden Rollläden erst erneut geschlossen, nachdem der Sperrmodus deaktiviert wurde.",
                             "morning_opening_mode": "Wählen Sie, ob das morgendliche Öffnen vor Sonnenaufgang, nach Sonnenaufgang, zu einer festen Uhrzeit oder über eine Entität erfolgt.",
-                            "morning_opening_time": "Je nach gewähltem Modus: relative Verzögerung zum Sonnenaufgang oder feste Uhrzeit. Im externen Modus ignoriert."
+                            "morning_opening_time": "Je nach gewähltem Modus: relative Verzögerung zum Sonnenaufgang oder feste Uhrzeit. Im externen Modus ignoriert.",
+                            "morning_opening_earliest_enabled": "Wenn aktiviert, öffnen die Rollläden frühestens zur angegebenen Uhrzeit, auch wenn die aus dem Sonnenaufgang berechnete Zeit früher liegt. Gilt nur für die Modi vor und nach Sonnenaufgang. Ist auch die späteste Uhrzeit aktiviert, hat diese Vorrang.",
+                            "morning_opening_earliest_time": "Früheste Uhrzeit für das morgendliche Öffnen. Wird ignoriert, wenn die Begrenzung nicht aktiviert ist.",
+                            "morning_opening_latest_enabled": "Wenn aktiviert, öffnen die Rollläden spätestens zur angegebenen Uhrzeit, auch wenn die aus dem Sonnenaufgang berechnete Zeit später liegt. Gilt nur für die Modi vor und nach Sonnenaufgang.",
+                            "morning_opening_latest_time": "Späteste Uhrzeit für das morgendliche Öffnen. Wird ignoriert, wenn die Begrenzung nicht aktiviert ist."
                         }
                     }
                 }

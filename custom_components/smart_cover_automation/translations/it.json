@@ -176,21 +176,37 @@
                             "close_covers_after_sunset": "Chiudere le tapparelle di sera:",
                             "close_covers_after_sunset_mode": "Chiusura serale: modalità:",
                             "close_covers_after_sunset_delay": "Chiusura serale: orario:",
+                            "close_covers_after_sunset_earliest_enabled": "Chiusura serale: limita a un orario minimo:",
+                            "close_covers_after_sunset_earliest_time": "Chiusura serale: orario minimo:",
+                            "close_covers_after_sunset_latest_enabled": "Chiusura serale: limita a un orario massimo:",
+                            "close_covers_after_sunset_latest_time": "Chiusura serale: orario massimo:",
                             "close_covers_after_sunset_cover_list": "Tapparelle:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignora la durata dell'override manuale:",
                             "close_covers_after_sunset_keep_closed": "Mantieni chiuse le tapparelle:",
                             "morning_opening_mode": "Apertura mattutina: modalità:",
-                            "morning_opening_time": "Apertura mattutina: ora:"
+                            "morning_opening_time": "Apertura mattutina: ora:",
+                            "morning_opening_earliest_enabled": "Apertura mattutina: limita a un orario minimo:",
+                            "morning_opening_earliest_time": "Apertura mattutina: orario minimo:",
+                            "morning_opening_latest_enabled": "Apertura mattutina: limita a un orario massimo:",
+                            "morning_opening_latest_time": "Apertura mattutina: orario massimo:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Quando attivata, le tapparelle verranno chiuse automaticamente di sera.",
                             "close_covers_after_sunset_mode": "Scegli se la chiusura serale avviene prima del tramonto, dopo il tramonto, a un orario fisso oppure tramite un'entità.",
                             "close_covers_after_sunset_delay": "A seconda della modalità scelta: ritardo relativo rispetto al tramonto oppure orario fisso. Ignorato in modalità esterna.",
+                            "close_covers_after_sunset_earliest_enabled": "Se attivato, le coperture si chiudono non prima dell'orario minimo, anche se l'orario calcolato dal tramonto è precedente. Si applica solo alle modalità prima e dopo il tramonto. Se è attivato anche l'orario massimo, questo ha la precedenza.",
+                            "close_covers_after_sunset_earliest_time": "Orario minimo per la chiusura serale. Ignorato se il limite non è attivato.",
+                            "close_covers_after_sunset_latest_enabled": "Se attivato, le coperture si chiudono al più tardi all'orario massimo, anche se l'orario calcolato dal tramonto è successivo. Si applica solo alle modalità prima e dopo il tramonto.",
+                            "close_covers_after_sunset_latest_time": "Orario massimo per la chiusura serale. Deve essere prima della mezzanotte. Ignorato se il limite non è attivato.",
                             "close_covers_after_sunset_cover_list": "Seleziona le tapparelle che devono essere chiuse di sera.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando attivata, la chiusura serale può muovere le tapparelle selezionate anche se è ancora attiva una pausa dovuta all'override manuale.",
                             "close_covers_after_sunset_keep_closed": "Quando attivata, le tapparelle selezionate vengono richiuse durante il periodo notturno di chiusura serale se vengono riaperte. La durata dell'override manuale viene rispettata. La modalità di blocco ha la precedenza, quindi le tapparelle vengono richiuse solo dopo che la modalità di blocco è stata disattivata.",
                             "morning_opening_mode": "Scegli se l'apertura mattutina avviene prima dell'alba, dopo l'alba, a un orario fisso oppure tramite un'entità.",
-                            "morning_opening_time": "A seconda della modalità scelta: ritardo relativo rispetto all'alba oppure orario fisso. Ignorato in modalità esterna."
+                            "morning_opening_time": "A seconda della modalità scelta: ritardo relativo rispetto all'alba oppure orario fisso. Ignorato in modalità esterna.",
+                            "morning_opening_earliest_enabled": "Se attivato, le coperture si aprono non prima dell'orario minimo, anche se l'orario calcolato dall'alba è precedente. Si applica solo alle modalità prima e dopo l'alba. Se è attivato anche l'orario massimo, questo ha la precedenza.",
+                            "morning_opening_earliest_time": "Orario minimo per l'apertura mattutina. Ignorato se il limite non è attivato.",
+                            "morning_opening_latest_enabled": "Se attivato, le coperture si aprono al più tardi all'orario massimo, anche se l'orario calcolato dall'alba è successivo. Si applica solo alle modalità prima e dopo l'alba.",
+                            "morning_opening_latest_time": "Orario massimo per l'apertura mattutina. Ignorato se il limite non è attivato."
                         }
                     }
                 }

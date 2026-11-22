@@ -86,8 +86,18 @@ class ConfKeys(StrEnum):
         "close_covers_after_sunset_ignore_manual_override_duration"  # Evening closure: ignore manual override duration.
     )
     EVENING_CLOSURE_KEEP_CLOSED = "close_covers_after_sunset_keep_closed"  # Evening closure: keep covers closed overnight.
+    EVENING_CLOSURE_EARLIEST_ENABLED = (
+        "close_covers_after_sunset_earliest_enabled"  # Evening closure: lower bound for sunset-relative time.
+    )
+    EVENING_CLOSURE_EARLIEST_TIME = "close_covers_after_sunset_earliest_time"  # Evening closure: earliest time of day to close.
+    EVENING_CLOSURE_LATEST_ENABLED = "close_covers_after_sunset_latest_enabled"  # Evening closure: cap sunset-relative time.
+    EVENING_CLOSURE_LATEST_TIME = "close_covers_after_sunset_latest_time"  # Evening closure: latest time of day to close.
     MORNING_OPENING_MODE = "morning_opening_mode"  # Morning opening: timing mode.
     MORNING_OPENING_TIME = "morning_opening_time"  # Morning opening: time value.
+    MORNING_OPENING_EARLIEST_ENABLED = "morning_opening_earliest_enabled"  # Morning opening: lower bound for sunrise-relative time.
+    MORNING_OPENING_EARLIEST_TIME = "morning_opening_earliest_time"  # Morning opening: earliest time of day to open.
+    MORNING_OPENING_LATEST_ENABLED = "morning_opening_latest_enabled"  # Morning opening: cap sunrise-relative time.
+    MORNING_OPENING_LATEST_TIME = "morning_opening_latest_time"  # Morning opening: latest time of day to open.
     AUTOMATIC_REOPENING_MODE = "automatic_reopening_mode"  # Automatic reopening behavior after automation-driven closures.
     DAYTIME_STRATEGY = "daytime_strategy"  # Position strategy for normal daytime automation.
     DAYTIME_MOVEMENT_DIRECTIONS = "daytime_movement_directions"  # Allowed directions for normal daytime automation.
@@ -268,11 +278,19 @@ CONF_SPECS: dict[ConfKeys, _ConfSpec[Any]] = {
     ConfKeys.EVENING_CLOSURE_MAX_CLOSURE: _ConfSpec(default=0, converter=_Converters.to_int, runtime_configurable=True),
     ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION: _ConfSpec(default=True, converter=_Converters.to_bool),
     ConfKeys.EVENING_CLOSURE_KEEP_CLOSED: _ConfSpec(default=True, converter=_Converters.to_bool),
+    ConfKeys.EVENING_CLOSURE_EARLIEST_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.EVENING_CLOSURE_EARLIEST_TIME: _ConfSpec(default=time(18, 0, 0), converter=_Converters.to_time),
+    ConfKeys.EVENING_CLOSURE_LATEST_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.EVENING_CLOSURE_LATEST_TIME: _ConfSpec(default=time(22, 0, 0), converter=_Converters.to_time),
     ConfKeys.MORNING_OPENING_MODE: _ConfSpec(
         default=MorningOpeningMode.FIXED_TIME,
         converter=_Converters.to_morning_opening_mode,
     ),
     ConfKeys.MORNING_OPENING_TIME: _ConfSpec(default=time(8, 0, 0), converter=_Converters.to_time),
+    ConfKeys.MORNING_OPENING_EARLIEST_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.MORNING_OPENING_EARLIEST_TIME: _ConfSpec(default=time(6, 0, 0), converter=_Converters.to_time),
+    ConfKeys.MORNING_OPENING_LATEST_ENABLED: _ConfSpec(default=False, converter=_Converters.to_bool),
+    ConfKeys.MORNING_OPENING_LATEST_TIME: _ConfSpec(default=time(7, 30, 0), converter=_Converters.to_time),
     ConfKeys.AUTOMATIC_REOPENING_MODE: _ConfSpec(
         default=ReopeningMode.PASSIVE,
         converter=ReopeningMode,
@@ -406,6 +424,10 @@ _VALUE_TO_FIELD: dict[str, str] = {
     "close_covers_after_sunset_max_closure": "evening_closure_max_closure",
     "close_covers_after_sunset_ignore_manual_override_duration": "evening_closure_ignore_manual_override_duration",
     "close_covers_after_sunset_keep_closed": "evening_closure_keep_closed",
+    "close_covers_after_sunset_earliest_enabled": "evening_closure_earliest_enabled",
+    "close_covers_after_sunset_earliest_time": "evening_closure_earliest_time",
+    "close_covers_after_sunset_latest_enabled": "evening_closure_latest_enabled",
+    "close_covers_after_sunset_latest_time": "evening_closure_latest_time",
     "morning_opening_mode": "morning_opening_mode",
     "morning_opening_time": "morning_opening_time",
 }
@@ -437,8 +459,16 @@ class ResolvedConfig:
     evening_closure_max_closure: int
     evening_closure_ignore_manual_override_duration: bool
     evening_closure_keep_closed: bool
+    evening_closure_earliest_enabled: bool
+    evening_closure_earliest_time: time
+    evening_closure_latest_enabled: bool
+    evening_closure_latest_time: time
     morning_opening_mode: MorningOpeningMode
     morning_opening_time: time
+    morning_opening_earliest_enabled: bool
+    morning_opening_earliest_time: time
+    morning_opening_latest_enabled: bool
+    morning_opening_latest_time: time
     automatic_reopening_mode: ReopeningMode
     daytime_strategy: DaytimeStrategy
     daytime_movement_directions: DaytimeMovementDirections

@@ -176,21 +176,37 @@
                             "close_covers_after_sunset": "Rolluiken 's avonds sluiten:",
                             "close_covers_after_sunset_mode": "Avondsluiting: modus:",
                             "close_covers_after_sunset_delay": "Avondsluiting: tijd:",
+                            "close_covers_after_sunset_earliest_enabled": "Avondsluiting: beperken tot een vroegste tijd:",
+                            "close_covers_after_sunset_earliest_time": "Avondsluiting: vroegste tijd:",
+                            "close_covers_after_sunset_latest_enabled": "Avondsluiting: beperken tot een uiterste tijd:",
+                            "close_covers_after_sunset_latest_time": "Avondsluiting: uiterste tijd:",
                             "close_covers_after_sunset_cover_list": "Rolluiken:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Duur van handmatige override negeren:",
                             "close_covers_after_sunset_keep_closed": "Rolluiken gesloten houden:",
                             "morning_opening_mode": "Ochtendopening: modus:",
-                            "morning_opening_time": "Ochtendopening: tijd:"
+                            "morning_opening_time": "Ochtendopening: tijd:",
+                            "morning_opening_earliest_enabled": "Ochtendopening: beperken tot een vroegste tijd:",
+                            "morning_opening_earliest_time": "Ochtendopening: vroegste tijd:",
+                            "morning_opening_latest_enabled": "Ochtendopening: beperken tot een uiterste tijd:",
+                            "morning_opening_latest_time": "Ochtendopening: uiterste tijd:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Wanneer ingeschakeld worden de rolluiken 's avonds automatisch gesloten.",
                             "close_covers_after_sunset_mode": "Kies of de avondsluiting vóór zonsondergang, na zonsondergang, op een vast tijdstip of via een entiteit plaatsvindt.",
                             "close_covers_after_sunset_delay": "Afhankelijk van de gekozen modus: relatieve vertraging ten opzichte van zonsondergang of vast tijdstip. Wordt genegeerd in de externe modus.",
+                            "close_covers_after_sunset_earliest_enabled": "Indien ingeschakeld, sluiten de bekledingen niet eerder dan de vroegste tijd, ook als de op basis van zonsondergang berekende tijd eerder is. Geldt alleen voor de modi voor en na zonsondergang. Als ook de uiterste tijd is ingeschakeld, heeft die voorrang.",
+                            "close_covers_after_sunset_earliest_time": "Vroegste tijd voor de avondsluiting. Wordt genegeerd als de beperking niet is ingeschakeld.",
+                            "close_covers_after_sunset_latest_enabled": "Indien ingeschakeld, sluiten de bekledingen uiterlijk op de uiterste tijd, ook als de op basis van zonsondergang berekende tijd later is. Geldt alleen voor de modi voor en na zonsondergang.",
+                            "close_covers_after_sunset_latest_time": "Uiterste tijd voor de avondsluiting. Moet voor middernacht liggen. Wordt genegeerd als de beperking niet is ingeschakeld.",
                             "close_covers_after_sunset_cover_list": "Selecteer de rolluiken die 's avonds moeten worden gesloten.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Wanneer ingeschakeld mag de avondsluiting geselecteerde rolluiken bewegen, ook als een pauze door handmatige override nog actief is.",
                             "close_covers_after_sunset_keep_closed": "Wanneer ingeschakeld worden geselecteerde rolluiken tijdens de nachtelijke avondsluitingsperiode opnieuw gesloten als ze weer worden geopend. De duur van handmatige override wordt gerespecteerd. Vergrendelingsmodus heeft voorrang, dus rolluiken worden pas opnieuw gesloten nadat de vergrendelingsmodus is uitgeschakeld.",
                             "morning_opening_mode": "Kies of de ochtendopening vóór zonsopgang, na zonsopgang, op een vast tijdstip of via een entiteit plaatsvindt.",
-                            "morning_opening_time": "Afhankelijk van de gekozen modus: relatieve vertraging ten opzichte van zonsopgang of vast tijdstip. Wordt genegeerd in de externe modus."
+                            "morning_opening_time": "Afhankelijk van de gekozen modus: relatieve vertraging ten opzichte van zonsopgang of vast tijdstip. Wordt genegeerd in de externe modus.",
+                            "morning_opening_earliest_enabled": "Indien ingeschakeld, openen de bekledingen niet eerder dan de vroegste tijd, ook als de op basis van zonsopkomst berekende tijd eerder is. Geldt alleen voor de modi voor en na zonsopkomst. Als ook de uiterste tijd is ingeschakeld, heeft die voorrang.",
+                            "morning_opening_earliest_time": "Vroegste tijd voor de ochtendopening. Wordt genegeerd als de beperking niet is ingeschakeld.",
+                            "morning_opening_latest_enabled": "Indien ingeschakeld, openen de bekledingen uiterlijk op de uiterste tijd, ook als de op basis van zonsopkomst berekende tijd later is. Geldt alleen voor de modi voor en na zonsopkomst.",
+                            "morning_opening_latest_time": "Uiterste tijd voor de ochtendopening. Wordt genegeerd als de beperking niet is ingeschakeld."
                         }
                     }
                 }

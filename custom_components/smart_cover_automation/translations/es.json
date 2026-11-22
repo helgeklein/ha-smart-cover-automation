@@ -176,21 +176,37 @@
                             "close_covers_after_sunset": "Cerrar persianas por la noche:",
                             "close_covers_after_sunset_mode": "Cierre al anochecer: modo:",
                             "close_covers_after_sunset_delay": "Cierre al anochecer: hora:",
+                            "close_covers_after_sunset_earliest_enabled": "Cierre al anochecer: limitar a una hora mínima:",
+                            "close_covers_after_sunset_earliest_time": "Cierre al anochecer: hora mínima:",
+                            "close_covers_after_sunset_latest_enabled": "Cierre al anochecer: limitar a una hora máxima:",
+                            "close_covers_after_sunset_latest_time": "Cierre al anochecer: hora máxima:",
                             "close_covers_after_sunset_cover_list": "Persianas:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar la duración de la anulación manual:",
                             "close_covers_after_sunset_keep_closed": "Mantener las persianas cerradas:",
                             "morning_opening_mode": "Apertura matutina: modo:",
-                            "morning_opening_time": "Apertura matutina: hora:"
+                            "morning_opening_time": "Apertura matutina: hora:",
+                            "morning_opening_earliest_enabled": "Apertura matutina: limitar a una hora mínima:",
+                            "morning_opening_earliest_time": "Apertura matutina: hora mínima:",
+                            "morning_opening_latest_enabled": "Apertura matutina: limitar a una hora máxima:",
+                            "morning_opening_latest_time": "Apertura matutina: hora máxima:"
                         },
                         "data_description": {
                             "close_covers_after_sunset": "Cuando está activada, las persianas se cerrarán automáticamente por la noche.",
                             "close_covers_after_sunset_mode": "Elija si el cierre al anochecer ocurre antes de la puesta de sol, después de la puesta de sol, usa una hora fija o lo proporciona una entidad.",
                             "close_covers_after_sunset_delay": "Según el modo seleccionado: retraso relativo respecto a la puesta de sol u hora fija del día. Se ignora en el modo externo.",
+                            "close_covers_after_sunset_earliest_enabled": "Si está activado, las cortinas se cierran como muy pronto a la hora mínima, aunque la hora calculada a partir de la puesta de sol sea anterior. Solo se aplica a los modos antes y después de la puesta de sol. Si la hora máxima también está activada, esta tiene prioridad.",
+                            "close_covers_after_sunset_earliest_time": "Hora mínima del día para el cierre al anochecer. Se ignora si el límite no está activado.",
+                            "close_covers_after_sunset_latest_enabled": "Si está activado, las cortinas se cierran como muy tarde a la hora máxima, aunque la hora calculada a partir de la puesta de sol sea posterior. Solo se aplica a los modos antes y después de la puesta de sol.",
+                            "close_covers_after_sunset_latest_time": "Hora máxima del día para el cierre al anochecer. Debe ser anterior a medianoche. Se ignora si el límite no está activado.",
                             "close_covers_after_sunset_cover_list": "Seleccione las persianas que deben cerrarse por la noche.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Cuando está activada, el cierre nocturno puede mover las persianas seleccionadas aunque siga activa una pausa por anulación manual.",
                             "close_covers_after_sunset_keep_closed": "Cuando está activada, las persianas seleccionadas se vuelven a cerrar durante el periodo nocturno de cierre al anochecer si se vuelven a abrir. Se respeta la duración de la anulación manual. El modo de bloqueo tiene prioridad, por lo que las persianas solo se vuelven a cerrar después de desactivar el modo de bloqueo.",
                             "morning_opening_mode": "Elija si la apertura matutina ocurre antes del amanecer, después del amanecer, usa una hora fija o la proporciona una entidad.",
-                            "morning_opening_time": "Según el modo seleccionado: retraso relativo respecto al amanecer o una hora fija del día. Se ignora en el modo externo."
+                            "morning_opening_time": "Según el modo seleccionado: retraso relativo respecto al amanecer o una hora fija del día. Se ignora en el modo externo.",
+                            "morning_opening_earliest_enabled": "Si está activado, las cortinas se abren como muy pronto a la hora mínima, aunque la hora calculada a partir del amanecer sea anterior. Solo se aplica a los modos antes y después del amanecer. Si la hora máxima también está activada, esta tiene prioridad.",
+                            "morning_opening_earliest_time": "Hora mínima del día para la apertura matutina. Se ignora si el límite no está activado.",
+                            "morning_opening_latest_enabled": "Si está activado, las cortinas se abren como muy tarde a la hora máxima, aunque la hora calculada a partir del amanecer sea posterior. Solo se aplica a los modos antes y después del amanecer.",
+                            "morning_opening_latest_time": "Hora máxima del día para la apertura matutina. Se ignora si el límite no está activado."
                         }
                     }
                 }

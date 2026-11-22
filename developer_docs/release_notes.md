@@ -4,6 +4,10 @@
 
 - The integration now requires **Home Assistant 2026.11.2**.
 
+## Earliest & Latest Time for Evening Closure & Morning Opening
+
+In the modes relative to sunset and sunrise, evening closure and morning opening can now be limited to an earliest and/or latest time of day, e.g., "open at sunrise, but not before 7:00 am and no later than 7:30 am". The limits are configured in the wizard and disabled by default. They are only shown when a mode relative to sunset or sunrise is selected. If they conflict, the latest time takes precedence.
+
 # v7.1
 
 ## Bugfixes

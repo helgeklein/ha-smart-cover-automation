@@ -230,6 +230,10 @@ The same covers become eligible to reopen in the morning if normal automation pe
     - This entity is fully managed, i.e., it's deleted again if the mode is changed away from `external`.
     - If this entity has no valid time, the integration cannot determine when to close the covers, so they stay open.
 - **Evening closure: time:** Depending on the selected mode: delay after sunset, or fixed time of day. This setting is ignored if `Evening closure: mode` is `external`.
+- **Evening closure: limit to an earliest time:** When enabled, covers close no earlier than `Evening closure: earliest time`, even if the time calculated from sunset is earlier. Only shown in the modes before and after sunset. Example: close 15 minutes after sunset, but not before 6:00 pm.
+- **Evening closure: earliest time:** Earliest time of day for evening closure. Only shown if the limit is enabled.
+- **Evening closure: limit to a latest time:** When enabled, covers close no later than `Evening closure: latest time`, even if the time calculated from sunset is later. Only shown in the modes before and after sunset. Example: close 15 minutes after sunset, but no later than 9:30 pm.
+- **Evening closure: latest time:** Latest time of day for evening closure. Must be before midnight. Only shown if the limit is enabled.
 
 **Morning opening settings:**
 
@@ -242,6 +246,12 @@ The same covers become eligible to reopen in the morning if normal automation pe
     - This entity is fully managed, i.e., it's deleted again if the mode is changed away from `external`.
     - If this entity has no valid time, the integration cannot determine when to reopen the covers, so they stay closed.
 - **Morning opening: time:** Depending on the selected mode: delay after sunrise, or fixed time of day. This setting is ignored if `Morning opening: mode` is `external`.
+- **Morning opening: limit to an earliest time:** When enabled, covers open no earlier than `Morning opening: earliest time`, even if the time calculated from sunrise is earlier. Only shown in the modes before and after sunrise. Example: open at sunrise, but not before 7:00 am. In summer, covers then stay closed until 7:00 am even if it's already light.
+- **Morning opening: earliest time:** Earliest time of day for morning opening. Only shown if the limit is enabled.
+- **Morning opening: limit to a latest time:** When enabled, covers open no later than `Morning opening: latest time`, even if the time calculated from sunrise is later. Only shown in the modes before and after sunrise. Example: open at sunrise, but no later than 7:30 am. In winter, covers then open at 7:30 am even if it's still dark.
+- **Morning opening: latest time:** Latest time of day for morning opening. Only shown if the limit is enabled.
+
+If both the earliest and the latest time are enabled, the calculated time is kept within that window. If the earliest time is later than the latest time, the latest time takes precedence.
 
 **Evening closing & morning opening settings:**
 
