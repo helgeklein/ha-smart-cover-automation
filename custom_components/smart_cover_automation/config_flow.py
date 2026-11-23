@@ -678,6 +678,25 @@ class FlowHelper:
 
         schema_dict: dict[vol.Marker, object] = {}
 
+        # Tilt angle control: when the integration may change the tilt angle at all.
+        # The other tilt fields are only shown for the times of day it allows.
+        tilt_control_options = [selector.SelectOptionDict(value=value.value, label=value.value) for value in const.TiltControl]
+        schema_dict[vol.Required(ConfKeys.TILT_CONTROL.value, default=resolved_settings.tilt_control)] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=tilt_control_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="tilt_control",
+            )
+        )
+        tilt_day_visible = FlowHelper._visible_if_in(ConfKeys.TILT_CONTROL, [const.TiltControl.DAY_ONLY, const.TiltControl.DAY_AND_NIGHT])
+        tilt_night_visible = FlowHelper._visible_if_in(
+            ConfKeys.TILT_CONTROL, [const.TiltControl.NIGHT_ONLY, const.TiltControl.DAY_AND_NIGHT]
+        )
+        tilt_any_visible = FlowHelper._visible_if_in(
+            ConfKeys.TILT_CONTROL,
+            [const.TiltControl.DAY_ONLY, const.TiltControl.NIGHT_ONLY, const.TiltControl.DAY_AND_NIGHT],
+        )
+
         # Day tilt modes: open, closed, manual, auto, set_value
         tilt_mode_day_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.TiltMode]
         tilt_mode_day_selector = selector.SelectSelector(
@@ -700,65 +719,80 @@ class FlowHelper:
             )
         )
 
-        schema_dict[vol.Required(ConfKeys.TILT_MODE_DAY.value, default=resolved_settings.tilt_mode_day)] = tilt_mode_day_selector
-        schema_dict[vol.Required(ConfKeys.TILT_MODE_NIGHT.value, default=resolved_settings.tilt_mode_night)] = tilt_mode_night_selector
+        schema_dict[
+            data_entry_flow.Required(ConfKeys.TILT_MODE_DAY.value, default=resolved_settings.tilt_mode_day, visible=tilt_day_visible)
+        ] = tilt_mode_day_selector
+        schema_dict[
+            data_entry_flow.Required(ConfKeys.TILT_MODE_NIGHT.value, default=resolved_settings.tilt_mode_night, visible=tilt_night_visible)
+        ] = tilt_mode_night_selector
 
         # Fixed tilt value for day "set_value" mode
-        schema_dict[vol.Required(ConfKeys.TILT_SET_VALUE_DAY.value, default=resolved_settings.tilt_set_value_day)] = (
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0,
-                    max=100,
-                    step=1,
-                    unit_of_measurement="%",
-                    mode=selector.NumberSelectorMode.BOX,
-                )
+        schema_dict[
+            data_entry_flow.Required(
+                ConfKeys.TILT_SET_VALUE_DAY.value, default=resolved_settings.tilt_set_value_day, visible=tilt_day_visible
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=100,
+                step=1,
+                unit_of_measurement="%",
+                mode=selector.NumberSelectorMode.BOX,
             )
         )
 
         # Fixed tilt value for night "set_value" mode
-        schema_dict[vol.Required(ConfKeys.TILT_SET_VALUE_NIGHT.value, default=resolved_settings.tilt_set_value_night)] = (
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0,
-                    max=100,
-                    step=1,
-                    unit_of_measurement="%",
-                    mode=selector.NumberSelectorMode.BOX,
-                )
+        schema_dict[
+            data_entry_flow.Required(
+                ConfKeys.TILT_SET_VALUE_NIGHT.value,
+                default=resolved_settings.tilt_set_value_night,
+                visible=tilt_night_visible,
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=100,
+                step=1,
+                unit_of_measurement="%",
+                mode=selector.NumberSelectorMode.BOX,
             )
         )
 
         # Minimum tilt change delta
-        schema_dict[vol.Required(ConfKeys.TILT_MIN_CHANGE_DELTA.value, default=resolved_settings.tilt_min_change_delta)] = (
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0,
-                    max=100,
-                    step=1,
-                    unit_of_measurement="%",
-                    mode=selector.NumberSelectorMode.BOX,
-                )
+        schema_dict[
+            data_entry_flow.Required(
+                ConfKeys.TILT_MIN_CHANGE_DELTA.value, default=resolved_settings.tilt_min_change_delta, visible=tilt_any_visible
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=100,
+                step=1,
+                unit_of_measurement="%",
+                mode=selector.NumberSelectorMode.BOX,
             )
         )
 
-        schema_dict[vol.Required(ConfKeys.TILT_DRIFT_TOLERANCE.value, default=resolved_settings.tilt_drift_tolerance)] = (
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0,
-                    max=100,
-                    step=1,
-                    unit_of_measurement="%",
-                    mode=selector.NumberSelectorMode.BOX,
-                )
+        schema_dict[
+            data_entry_flow.Required(
+                ConfKeys.TILT_DRIFT_TOLERANCE.value, default=resolved_settings.tilt_drift_tolerance, visible=tilt_any_visible
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=100,
+                step=1,
+                unit_of_measurement="%",
+                mode=selector.NumberSelectorMode.BOX,
             )
         )
 
         # Delay between opening tilt and reopening the cover in day auto mode
         schema_dict[
-            vol.Required(
+            data_entry_flow.Required(
                 ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value,
                 default=resolved_settings.tilt_open_to_cover_open_delay,
+                visible=tilt_any_visible,
             )
         ] = selector.NumberSelector(
             selector.NumberSelectorConfig(
@@ -771,9 +805,10 @@ class FlowHelper:
         )
 
         schema_dict[
-            vol.Required(
+            data_entry_flow.Required(
                 ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value,
                 default=resolved_settings.cover_movement_to_tilt_delay,
+                visible=tilt_any_visible,
             )
         ] = selector.NumberSelector(
             selector.NumberSelectorConfig(
@@ -785,39 +820,45 @@ class FlowHelper:
             )
         )
 
-        schema_dict[vol.Required(ConfKeys.TILT_VERTICAL_POSITION.value, default=resolved_settings.tilt_vertical_position)] = (
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0,
-                    max=100,
-                    step=1,
-                    unit_of_measurement="%",
-                    mode=selector.NumberSelectorMode.BOX,
-                )
+        schema_dict[
+            data_entry_flow.Required(
+                ConfKeys.TILT_VERTICAL_POSITION.value, default=resolved_settings.tilt_vertical_position, visible=tilt_any_visible
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=100,
+                step=1,
+                unit_of_measurement="%",
+                mode=selector.NumberSelectorMode.BOX,
             )
         )
 
-        schema_dict[vol.Required(ConfKeys.TILT_HORIZONTAL_POSITION.value, default=resolved_settings.tilt_horizontal_position)] = (
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0,
-                    max=100,
-                    step=1,
-                    unit_of_measurement="%",
-                    mode=selector.NumberSelectorMode.BOX,
-                )
+        schema_dict[
+            data_entry_flow.Required(
+                ConfKeys.TILT_HORIZONTAL_POSITION.value, default=resolved_settings.tilt_horizontal_position, visible=tilt_any_visible
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=100,
+                step=1,
+                unit_of_measurement="%",
+                mode=selector.NumberSelectorMode.BOX,
             )
         )
 
         # Slat overlap ratio (d/L) for Auto mode
-        schema_dict[vol.Required(ConfKeys.TILT_SLAT_OVERLAP_RATIO.value, default=resolved_settings.tilt_slat_overlap_ratio)] = (
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0.5,
-                    max=1.0,
-                    step=0.01,
-                    mode=selector.NumberSelectorMode.BOX,
-                )
+        schema_dict[
+            data_entry_flow.Required(
+                ConfKeys.TILT_SLAT_OVERLAP_RATIO.value, default=resolved_settings.tilt_slat_overlap_ratio, visible=tilt_any_visible
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0.5,
+                max=1.0,
+                step=0.01,
+                mode=selector.NumberSelectorMode.BOX,
             )
         )
 
@@ -849,7 +890,7 @@ class FlowHelper:
                     const.COVER_SFX_TILT_MODE_DAY,
                     cover_labels,
                 )
-                schema_dict[vol.Optional(const.STEP_5_SECTION_TILT_DAY)] = section(
+                schema_dict[data_entry_flow.Optional(const.STEP_5_SECTION_TILT_DAY, visible=tilt_day_visible)] = section(
                     vol.Schema(day_schema_dict),
                     {"collapsed": True},
                 )
@@ -870,7 +911,7 @@ class FlowHelper:
                     const.COVER_SFX_TILT_MODE_NIGHT,
                     cover_labels,
                 )
-                schema_dict[vol.Optional(const.STEP_5_SECTION_TILT_NIGHT)] = section(
+                schema_dict[data_entry_flow.Optional(const.STEP_5_SECTION_TILT_NIGHT, visible=tilt_night_visible)] = section(
                     vol.Schema(night_schema_dict),
                     {"collapsed": True},
                 )
@@ -1108,13 +1149,20 @@ class FlowHelper:
         #
         evening_closure_schema_dict: dict[vol.Marker, object] = {}
 
-        # Setting to enable/disable
+        # Evening closure behavior: off, close once, or close and keep closed overnight
+        evening_closure_options = [selector.SelectOptionDict(value=value.value, label=value.value) for value in const.EveningClosureControl]
         evening_closure_schema_dict[
             vol.Required(
-                ConfKeys.EVENING_CLOSURE_ENABLED.value,
-                default=resolved_settings.evening_closure_enabled,
+                ConfKeys.EVENING_CLOSURE.value,
+                default=resolved_settings.evening_closure,
             )
-        ] = selector.BooleanSelector()
+        ] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=evening_closure_options,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="evening_closure",
+            )
+        )
 
         # Evening closure mode: after_sunset or fixed_time
         evening_closure_mode_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.EveningClosureMode]
@@ -1161,12 +1209,22 @@ class FlowHelper:
             time_default=resolved_settings.evening_closure_latest_time,
         )
 
+        # Morning opening: on/off. Mode, time and time limits are only shown while it is on.
+        evening_closure_schema_dict[
+            vol.Required(
+                ConfKeys.MORNING_OPENING_ENABLED.value,
+                default=resolved_settings.morning_opening_enabled,
+            )
+        ] = selector.BooleanSelector()
+        morning_opening_on = FlowHelper._visible_if_enabled(ConfKeys.MORNING_OPENING_ENABLED)
+
         # Morning opening mode: relative to sunrise, fixed time, or external entity.
         morning_opening_mode_options = [selector.SelectOptionDict(value=mode.value, label=mode.value) for mode in const.MorningOpeningMode]
         evening_closure_schema_dict[
-            vol.Required(
+            data_entry_flow.Required(
                 ConfKeys.MORNING_OPENING_MODE.value,
                 default=resolved_settings.morning_opening_mode,
+                visible=morning_opening_on,
             )
         ] = selector.SelectSelector(
             selector.SelectSelectorConfig(
@@ -1178,13 +1236,15 @@ class FlowHelper:
 
         # Morning opening: delay after sunrise or absolute time of day.
         evening_closure_schema_dict[
-            vol.Required(
+            data_entry_flow.Required(
                 ConfKeys.MORNING_OPENING_TIME.value,
                 default=resolved_settings.morning_opening_time,
+                visible=morning_opening_on,
             )
         ] = selector.TimeSelector()
 
-        # Morning opening: optional earliest/latest time of day, only shown in the sunrise-relative modes
+        # Morning opening: optional earliest/latest time of day, only shown in the sunrise-relative modes.
+        # While morning opening is off, its mode field is hidden and counts as empty, so these are hidden, too.
         morning_sun_relative = FlowHelper._visible_if_in(
             ConfKeys.MORNING_OPENING_MODE,
             [const.MorningOpeningMode.BEFORE_SUNRISE, const.MorningOpeningMode.AFTER_SUNRISE],
@@ -1225,13 +1285,6 @@ class FlowHelper:
             vol.Required(
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value,
                 default=resolved_settings.evening_closure_ignore_manual_override_duration,
-            )
-        ] = selector.BooleanSelector()
-
-        evening_closure_schema_dict[
-            vol.Required(
-                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value,
-                default=resolved_settings.evening_closure_keep_closed,
             )
         ] = selector.BooleanSelector()
 
@@ -2147,21 +2200,29 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Step 5: Configure tilt angle control for covers with tiltable slats."""
         current_settings = self._current_settings()
 
-        # Store global tilt settings
-        self._config_data[ConfKeys.TILT_MODE_DAY.value] = user_input.get(ConfKeys.TILT_MODE_DAY.value, "auto")
-        self._config_data[ConfKeys.TILT_MODE_NIGHT.value] = user_input.get(ConfKeys.TILT_MODE_NIGHT.value, "closed")
-        self._config_data[ConfKeys.TILT_SET_VALUE_DAY.value] = int(user_input.get(ConfKeys.TILT_SET_VALUE_DAY.value, 50))
-        self._config_data[ConfKeys.TILT_SET_VALUE_NIGHT.value] = int(user_input.get(ConfKeys.TILT_SET_VALUE_NIGHT.value, 0))
-        self._config_data[ConfKeys.TILT_MIN_CHANGE_DELTA.value] = int(user_input.get(ConfKeys.TILT_MIN_CHANGE_DELTA.value, 5))
-        self._config_data[ConfKeys.TILT_DRIFT_TOLERANCE.value] = int(user_input.get(ConfKeys.TILT_DRIFT_TOLERANCE.value, 5))
-        self._config_data[ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value] = int(
-            user_input.get(ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value, 0)
-        )
-        self._config_data[ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value] = int(user_input.get(ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY.value, 0))
+        # Store global tilt settings. Fields hidden by the tilt angle control (conditional visibility)
+        # are absent from the input: keep their current values instead of resetting them.
+        resolved_current = resolve(current_settings)
+
+        def _input_or_current(key: ConfKeys) -> Any:
+            return user_input[key.value] if key.value in user_input else resolved_current.get(key)
+
+        self._config_data[ConfKeys.TILT_CONTROL.value] = str(_input_or_current(ConfKeys.TILT_CONTROL))
+        self._config_data[ConfKeys.TILT_MODE_DAY.value] = str(_input_or_current(ConfKeys.TILT_MODE_DAY))
+        self._config_data[ConfKeys.TILT_MODE_NIGHT.value] = str(_input_or_current(ConfKeys.TILT_MODE_NIGHT))
+        for int_key in (
+            ConfKeys.TILT_SET_VALUE_DAY,
+            ConfKeys.TILT_SET_VALUE_NIGHT,
+            ConfKeys.TILT_MIN_CHANGE_DELTA,
+            ConfKeys.TILT_DRIFT_TOLERANCE,
+            ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY,
+            ConfKeys.COVER_MOVEMENT_TO_TILT_DELAY,
+            ConfKeys.TILT_VERTICAL_POSITION,
+            ConfKeys.TILT_HORIZONTAL_POSITION,
+        ):
+            self._config_data[int_key.value] = int(_input_or_current(int_key))
         self._config_data[const.OPTION_KEY_TILT_DELAYS_IN_SECONDS] = True
-        self._config_data[ConfKeys.TILT_VERTICAL_POSITION.value] = int(user_input.get(ConfKeys.TILT_VERTICAL_POSITION.value, 0))
-        self._config_data[ConfKeys.TILT_HORIZONTAL_POSITION.value] = int(user_input.get(ConfKeys.TILT_HORIZONTAL_POSITION.value, 100))
-        self._config_data[ConfKeys.TILT_SLAT_OVERLAP_RATIO.value] = float(user_input.get(ConfKeys.TILT_SLAT_OVERLAP_RATIO.value, 0.9))
+        self._config_data[ConfKeys.TILT_SLAT_OVERLAP_RATIO.value] = float(_input_or_current(ConfKeys.TILT_SLAT_OVERLAP_RATIO))
 
         # Build per-cover tilt mode settings
         tilt_day_data = self._build_section_cover_settings(

@@ -95,6 +95,7 @@
                 "title": "Smart Cover Automation - Passo 5 di 7",
                 "description": "Configura il **controllo dell'angolo di inclinazione** per tapparelle con lamelle orientabili (opzionale).\nLe impostazioni globali si applicano a tutte le tapparelle con inclinazione, salvo override per singola tapparella.",
                 "data": {
+                    "tilt_control": "Controllo dell'angolo di inclinazione:",
                     "tilt_mode_day": "Controllo inclinazione (giorno):",
                     "tilt_mode_night": "Controllo inclinazione (notte):",
                     "tilt_set_value_day": "Angolo di inclinazione diurno (valore fisso):",
@@ -108,6 +109,7 @@
                     "tilt_slat_overlap_ratio": "Rapporto di sovrapposizione lamelle (d/L):"
                 },
                 "data_description": {
+                    "tilt_control": "Quando l'integrazione può modificare l'angolo di inclinazione delle lamelle. Le altre impostazioni di inclinazione vengono mostrate solo per i momenti della giornata selezionati. La modalità di blocco non è interessata.",
                     "tilt_mode_day": "Come controllare l'angolo di inclinazione delle lamelle durante il giorno.",
                     "tilt_mode_night": "Come controllare l'angolo di inclinazione delle lamelle di notte (applicato durante la chiusura serale).",
                     "tilt_set_value_day": "Angolo di inclinazione fisso per la modalità diurna. 0 % = completamente chiuso (verticale, blocca la luce), 100 % = completamente aperto (orizzontale, lascia entrare la luce). Utilizzato solo quando la modalità di inclinazione diurna è impostata su «Valore fisso».",
@@ -182,7 +184,7 @@
                             "close_covers_after_sunset_latest_time": "Chiusura serale: orario massimo:",
                             "close_covers_after_sunset_cover_list": "Tapparelle:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignora la durata dell'override manuale:",
-                            "close_covers_after_sunset_keep_closed": "Mantieni chiuse le tapparelle:",
+                            "morning_opening": "Aprire le tapparelle di mattina:",
                             "morning_opening_mode": "Apertura mattutina: modalità:",
                             "morning_opening_time": "Apertura mattutina: ora:",
                             "morning_opening_earliest_enabled": "Apertura mattutina: limita a un orario minimo:",
@@ -191,7 +193,7 @@
                             "morning_opening_latest_time": "Apertura mattutina: orario massimo:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Quando attivata, le tapparelle verranno chiuse automaticamente di sera.",
+                            "close_covers_after_sunset": "Disattivata: le tapparelle non vengono chiuse di sera. Chiudi una volta: le tapparelle vengono chiuse di sera e possono poi essere aperte manualmente. Chiudi e mantieni chiuso: le tapparelle selezionate vengono richiuse durante il periodo notturno di chiusura serale se vengono riaperte. La durata dell'override manuale viene rispettata. La modalità di blocco ha la precedenza, quindi le tapparelle vengono richiuse solo dopo che la modalità di blocco è stata disattivata.",
                             "close_covers_after_sunset_mode": "Scegli se la chiusura serale avviene prima del tramonto, dopo il tramonto, a un orario fisso oppure tramite un'entità.",
                             "close_covers_after_sunset_delay": "A seconda della modalità scelta: ritardo relativo rispetto al tramonto oppure orario fisso. Ignorato in modalità esterna.",
                             "close_covers_after_sunset_earliest_enabled": "Se attivato, le coperture si chiudono non prima dell'orario minimo, anche se l'orario calcolato dal tramonto è precedente. Si applica solo alle modalità prima e dopo il tramonto. Se è attivato anche l'orario massimo, questo ha la precedenza.",
@@ -200,7 +202,7 @@
                             "close_covers_after_sunset_latest_time": "Orario massimo per la chiusura serale. Mezzanotte (00:00) indica la fine della serata. Ignorato se il limite non è attivato.",
                             "close_covers_after_sunset_cover_list": "Seleziona le tapparelle che devono essere chiuse di sera.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Quando attivata, la chiusura serale può muovere le tapparelle selezionate anche se è ancora attiva una pausa dovuta all'override manuale.",
-                            "close_covers_after_sunset_keep_closed": "Quando attivata, le tapparelle selezionate vengono richiuse durante il periodo notturno di chiusura serale se vengono riaperte. La durata dell'override manuale viene rispettata. La modalità di blocco ha la precedenza, quindi le tapparelle vengono richiuse solo dopo che la modalità di blocco è stata disattivata.",
+                            "morning_opening": "Quando attivata, le tapparelle chiuse dalla chiusura serale vengono riaperte al mattino. Quando disattivata, restano chiuse finché non vengono spostate manualmente; nemmeno la protezione dal calore le apre parzialmente.",
                             "morning_opening_mode": "Scegli se l'apertura mattutina avviene prima dell'alba, dopo l'alba, a un orario fisso oppure tramite un'entità.",
                             "morning_opening_time": "A seconda della modalità scelta: ritardo relativo rispetto all'alba oppure orario fisso. Ignorato in modalità esterna.",
                             "morning_opening_earliest_enabled": "Se attivato, le coperture si aprono non prima dell'orario minimo, anche se l'orario calcolato dall'alba è precedente. Si applica solo alle modalità prima e dopo l'alba. Se è attivato anche l'orario massimo, questo ha la precedenza.",
@@ -268,6 +270,23 @@
                     "hold_position": "Mantieni la posizione attuale",
                     "force_open": "Forza apertura e blocca",
                     "force_close": "Forza chiusura e blocca"
+                }
+            },
+            "evening_closure": {
+                "name": "Chiusura serale",
+                "state": {
+                    "off": "Disattivata",
+                    "close_once": "Chiudi una volta",
+                    "close_and_keep_closed": "Chiudi e mantieni chiuso"
+                }
+            },
+            "tilt_control": {
+                "name": "Controllo dell'angolo di inclinazione",
+                "state": {
+                    "off": "Disattivata",
+                    "day_only": "Solo di giorno",
+                    "night_only": "Solo di notte",
+                    "day_and_night": "Giorno e notte"
                 }
             }
         },
@@ -374,6 +393,9 @@
             },
             "weather_sunny_external_control": {
                 "name": "Meteo: soleggiato? (controllo esterno)"
+            },
+            "morning_opening": {
+                "name": "Apertura mattutina"
             }
         }
     },
@@ -524,6 +546,21 @@
                 "open_only": "Solo apertura",
                 "close_only": "Solo chiusura",
                 "open_and_close": "Apri e chiudi"
+            }
+        },
+        "evening_closure": {
+            "options": {
+                "off": "Disattivata",
+                "close_once": "Chiudi una volta",
+                "close_and_keep_closed": "Chiudi e mantieni chiuso"
+            }
+        },
+        "tilt_control": {
+            "options": {
+                "off": "Disattivata",
+                "day_only": "Solo di giorno",
+                "night_only": "Solo di notte",
+                "day_and_night": "Giorno e notte"
             }
         }
     }

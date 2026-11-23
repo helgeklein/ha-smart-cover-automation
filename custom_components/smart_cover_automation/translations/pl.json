@@ -95,6 +95,7 @@
                 "title": "Smart Cover Automation - Krok 5 z 7",
                 "description": "Skonfiguruj **kontrolę kąta nachylenia** dla rolet z regulowanymi lamelami (opcjonalne).\nUstawienia globalne dotyczą wszystkich rolet z nachyleniem, chyba że zostaną nadpisane dla poszczególnych rolet.",
                 "data": {
+                    "tilt_control": "Sterowanie kątem nachylenia lamel:",
                     "tilt_mode_day": "Kontrola nachylenia (dzień):",
                     "tilt_mode_night": "Kontrola nachylenia (noc):",
                     "tilt_set_value_day": "Dzienny kąt nachylenia (wartość stała):",
@@ -108,6 +109,7 @@
                     "tilt_slat_overlap_ratio": "Współczynnik zakładki lameli (d/L):"
                 },
                 "data_description": {
+                    "tilt_control": "Kiedy integracja może zmieniać kąt nachylenia lamel. Pozostałe ustawienia nachylenia są wyświetlane tylko dla wybranych pór dnia. Tryb blokady nie jest objęty tym ustawieniem.",
                     "tilt_mode_day": "Jak kontrolować kąt nachylenia lameli w ciągu dnia.",
                     "tilt_mode_night": "Jak kontrolować kąt nachylenia lameli w nocy (stosowane podczas wieczornego zamykania).",
                     "tilt_set_value_day": "Stały kąt nachylenia dla trybu dziennego. 0 % = całkowicie zamknięte (pionowo, blokuje światło), 100 % = całkowicie otwarte (poziomo, wpuszcza światło). Używane tylko, gdy dzienny tryb nachylenia jest ustawiony na „Wartość stała”.",
@@ -182,7 +184,7 @@
                             "close_covers_after_sunset_latest_time": "Zamykanie wieczorne: najpóźniejsza godzina:",
                             "close_covers_after_sunset_cover_list": "Rolety:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignoruj czas ręcznego nadpisania:",
-                            "close_covers_after_sunset_keep_closed": "Pozostaw rolety zamknięte:",
+                            "morning_opening": "Otwieranie rolet rano:",
                             "morning_opening_mode": "Poranne otwieranie: tryb:",
                             "morning_opening_time": "Poranne otwieranie: godzina:",
                             "morning_opening_earliest_enabled": "Poranne otwieranie: ogranicz do najwcześniejszej godziny:",
@@ -191,7 +193,7 @@
                             "morning_opening_latest_time": "Poranne otwieranie: najpóźniejsza godzina:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Po włączeniu rolety zostaną automatycznie zamknięte wieczorem.",
+                            "close_covers_after_sunset": "Wyłączona: rolety nie są zamykane wieczorem. Zamknij raz: rolety są zamykane wieczorem i można je potem otworzyć ręcznie. Zamknij i utrzymuj zamknięte: wybrane rolety zostaną ponownie zamknięte podczas nocnego okresu wieczornego zamykania, jeśli zostaną ponownie otwarte. Czas ręcznego nadpisania jest respektowany. Tryb blokady ma pierwszeństwo, więc rolety zostaną ponownie zamknięte dopiero po wyłączeniu trybu blokady.",
                             "close_covers_after_sunset_mode": "Wybierz, czy zamykanie wieczorne ma następować przed zachodem słońca, po zachodzie słońca, o stałej godzinie czy być dostarczane przez encję.",
                             "close_covers_after_sunset_delay": "W zależności od wybranego trybu: względne opóźnienie względem zachodu słońca lub stała godzina. Ignorowane w trybie zewnętrznym.",
                             "close_covers_after_sunset_earliest_enabled": "Po włączeniu osłony zamykają się nie wcześniej niż o podanej godzinie, nawet jeśli czas obliczony na podstawie zachodu słońca jest wcześniejszy. Dotyczy tylko trybów przed i po zachodzie słońca. Jeśli włączona jest też najpóźniejsza godzina, ma ona pierwszeństwo.",
@@ -200,7 +202,7 @@
                             "close_covers_after_sunset_latest_time": "Najpóźniejsza godzina zamykania wieczornego. Północ (00:00) oznacza koniec wieczoru. Ignorowana, jeśli ograniczenie nie jest włączone.",
                             "close_covers_after_sunset_cover_list": "Wybierz rolety, które mają zostać zamknięte wieczorem.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Po włączeniu zamykanie wieczorne może poruszyć wybrane rolety, nawet jeśli nadal trwa pauza po ręcznym nadpisaniu.",
-                            "close_covers_after_sunset_keep_closed": "Po włączeniu wybrane rolety zostaną ponownie zamknięte podczas nocnego okresu wieczornego zamykania, jeśli zostaną ponownie otwarte. Czas ręcznego nadpisania jest respektowany. Tryb blokady ma pierwszeństwo, więc rolety zostaną ponownie zamknięte dopiero po wyłączeniu trybu blokady.",
+                            "morning_opening": "Po włączeniu rolety zamknięte przez zamykanie wieczorne są rano ponownie otwierane. Po wyłączeniu pozostają zamknięte, dopóki nie zostaną przesunięte ręcznie; ochrona przed upałem również ich częściowo nie otwiera.",
                             "morning_opening_mode": "Wybierz, czy poranne otwieranie ma następować przed wschodem słońca, po wschodzie słońca, o stałej godzinie czy być dostarczane przez encję.",
                             "morning_opening_time": "W zależności od wybranego trybu: względne opóźnienie względem wschodu słońca lub stała godzina dnia. Ignorowane w trybie zewnętrznym.",
                             "morning_opening_earliest_enabled": "Po włączeniu osłony otwierają się nie wcześniej niż o podanej godzinie, nawet jeśli czas obliczony na podstawie wschodu słońca jest wcześniejszy. Dotyczy tylko trybów przed i po wschodzie słońca. Jeśli włączona jest też najpóźniejsza godzina, ma ona pierwszeństwo.",
@@ -268,6 +270,23 @@
                     "hold_position": "Utrzymaj bieżącą pozycję",
                     "force_open": "Wymuś otwarcie i zablokuj",
                     "force_close": "Wymuś zamknięcie i zablokuj"
+                }
+            },
+            "evening_closure": {
+                "name": "Zamykanie wieczorne",
+                "state": {
+                    "off": "Wyłączona",
+                    "close_once": "Zamknij raz",
+                    "close_and_keep_closed": "Zamknij i utrzymuj zamknięte"
+                }
+            },
+            "tilt_control": {
+                "name": "Sterowanie kątem nachylenia lamel",
+                "state": {
+                    "off": "Wyłączona",
+                    "day_only": "Tylko w dzień",
+                    "night_only": "Tylko w nocy",
+                    "day_and_night": "Dzień i noc"
                 }
             }
         },
@@ -374,6 +393,9 @@
             },
             "weather_sunny_external_control": {
                 "name": "Pogoda: słonecznie? (sterowanie zewnętrzne)"
+            },
+            "morning_opening": {
+                "name": "Poranne otwieranie"
             }
         }
     },
@@ -524,6 +546,21 @@
                 "open_only": "Tylko otwieranie",
                 "close_only": "Tylko zamykanie",
                 "open_and_close": "Otwieranie i zamykanie"
+            }
+        },
+        "evening_closure": {
+            "options": {
+                "off": "Wyłączona",
+                "close_once": "Zamknij raz",
+                "close_and_keep_closed": "Zamknij i utrzymuj zamknięte"
+            }
+        },
+        "tilt_control": {
+            "options": {
+                "off": "Wyłączona",
+                "day_only": "Tylko w dzień",
+                "night_only": "Tylko w nocy",
+                "day_and_night": "Dzień i noc"
             }
         }
     }

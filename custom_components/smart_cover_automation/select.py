@@ -13,7 +13,13 @@ from homeassistant.components.select import SelectEntity, SelectEntityDescriptio
 from homeassistant.const import EntityCategory
 
 from . import const
-from .const import SELECT_KEY_AUTOMATIC_REOPENING_MODE, SELECT_KEY_HEAT_PROTECTION_MODE, SELECT_KEY_LOCK_MODE
+from .const import (
+    SELECT_KEY_AUTOMATIC_REOPENING_MODE,
+    SELECT_KEY_EVENING_CLOSURE,
+    SELECT_KEY_HEAT_PROTECTION_MODE,
+    SELECT_KEY_LOCK_MODE,
+    SELECT_KEY_TILT_CONTROL,
+)
 from .entity import IntegrationEntity
 from .log import Log
 
@@ -50,6 +56,8 @@ async def async_setup_entry(
         LockModeSelect(coordinator),
         AutomaticReopeningModeSelect(coordinator),
         HeatProtectionModeSelect(coordinator),
+        EveningClosureControlSelect(coordinator),
+        TiltControlSelect(coordinator),
     ]
 
     async_add_entities(entities)
@@ -194,4 +202,34 @@ class HeatProtectionModeSelect(EnumConfigSelect):
             coordinator_property="heat_protection_mode",
             coordinator_setter="async_set_heat_protection_mode",
             invalid_value_label="heat protection mode",
+        )
+
+
+class EveningClosureControlSelect(EnumConfigSelect):
+    """Select entity for the evening closure setting: off, close once, or close and keep closed."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(
+            coordinator,
+            key=SELECT_KEY_EVENING_CLOSURE,
+            icon="mdi:weather-sunset-down",
+            enum_type=const.EveningClosureControl,
+            coordinator_property="evening_closure_control",
+            coordinator_setter="async_set_evening_closure_control",
+            invalid_value_label="evening closure",
+        )
+
+
+class TiltControlSelect(EnumConfigSelect):
+    """Select entity for choosing when the integration may change the tilt angle."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(
+            coordinator,
+            key=SELECT_KEY_TILT_CONTROL,
+            icon="mdi:blinds-horizontal",
+            enum_type=const.TiltControl,
+            coordinator_property="tilt_control",
+            coordinator_setter="async_set_tilt_control",
+            invalid_value_label="tilt control",
         )

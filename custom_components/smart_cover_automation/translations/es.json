@@ -95,6 +95,7 @@
                 "title": "Smart Cover Automation - Paso 5 de 7",
                 "description": "Configure el **control del ángulo de inclinación** para persianas con lamas orientables (opcional).\nLos ajustes globales se aplican a todas las persianas con inclinación, salvo que se configuren individualmente.",
                 "data": {
+                    "tilt_control": "Control del ángulo de inclinación:",
                     "tilt_mode_day": "Control de inclinación (día):",
                     "tilt_mode_night": "Control de inclinación (noche):",
                     "tilt_set_value_day": "Ángulo de inclinación diurno (valor fijo):",
@@ -108,6 +109,7 @@
                     "tilt_slat_overlap_ratio": "Ratio de solapamiento de lamas (d/L):"
                 },
                 "data_description": {
+                    "tilt_control": "Cuándo puede la integración cambiar el ángulo de inclinación de las lamas. Los demás ajustes de inclinación solo se muestran para los momentos del día seleccionados. El modo de bloqueo no se ve afectado.",
                     "tilt_mode_day": "Cómo controlar el ángulo de inclinación de las lamas durante el día.",
                     "tilt_mode_night": "Cómo controlar el ángulo de inclinación de las lamas por la noche (se aplica durante el cierre vespertino).",
                     "tilt_set_value_day": "Ángulo de inclinación fijo para el modo diurno. 0 % = completamente cerrado (vertical, bloquea la luz), 100 % = completamente abierto (horizontal, deja entrar la luz). Solo se utiliza cuando el modo de inclinación diurna está configurado como «Valor fijo».",
@@ -182,7 +184,7 @@
                             "close_covers_after_sunset_latest_time": "Cierre al anochecer: hora máxima:",
                             "close_covers_after_sunset_cover_list": "Persianas:",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Ignorar la duración de la anulación manual:",
-                            "close_covers_after_sunset_keep_closed": "Mantener las persianas cerradas:",
+                            "morning_opening": "Abrir persianas por la mañana:",
                             "morning_opening_mode": "Apertura matutina: modo:",
                             "morning_opening_time": "Apertura matutina: hora:",
                             "morning_opening_earliest_enabled": "Apertura matutina: limitar a una hora mínima:",
@@ -191,7 +193,7 @@
                             "morning_opening_latest_time": "Apertura matutina: hora máxima:"
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "Cuando está activada, las persianas se cerrarán automáticamente por la noche.",
+                            "close_covers_after_sunset": "Desactivado: las persianas no se cierran por la noche. Cerrar una vez: las persianas se cierran por la noche y después se pueden abrir manualmente. Cerrar y mantener cerrado: las persianas seleccionadas se vuelven a cerrar durante el periodo nocturno de cierre al anochecer si se vuelven a abrir. Se respeta la duración de la anulación manual. El modo de bloqueo tiene prioridad, por lo que las persianas solo se vuelven a cerrar después de desactivar el modo de bloqueo.",
                             "close_covers_after_sunset_mode": "Elija si el cierre al anochecer ocurre antes de la puesta de sol, después de la puesta de sol, usa una hora fija o lo proporciona una entidad.",
                             "close_covers_after_sunset_delay": "Según el modo seleccionado: retraso relativo respecto a la puesta de sol u hora fija del día. Se ignora en el modo externo.",
                             "close_covers_after_sunset_earliest_enabled": "Si está activado, las cortinas se cierran como muy pronto a la hora mínima, aunque la hora calculada a partir de la puesta de sol sea anterior. Solo se aplica a los modos antes y después de la puesta de sol. Si la hora máxima también está activada, esta tiene prioridad.",
@@ -200,7 +202,7 @@
                             "close_covers_after_sunset_latest_time": "Hora máxima del día para el cierre al anochecer. Medianoche (00:00) significa el final de la noche. Se ignora si el límite no está activado.",
                             "close_covers_after_sunset_cover_list": "Seleccione las persianas que deben cerrarse por la noche.",
                             "close_covers_after_sunset_ignore_manual_override_duration": "Cuando está activada, el cierre nocturno puede mover las persianas seleccionadas aunque siga activa una pausa por anulación manual.",
-                            "close_covers_after_sunset_keep_closed": "Cuando está activada, las persianas seleccionadas se vuelven a cerrar durante el periodo nocturno de cierre al anochecer si se vuelven a abrir. Se respeta la duración de la anulación manual. El modo de bloqueo tiene prioridad, por lo que las persianas solo se vuelven a cerrar después de desactivar el modo de bloqueo.",
+                            "morning_opening": "Cuando está activada, las persianas cerradas por el cierre al anochecer se vuelven a abrir por la mañana. Cuando está desactivada, permanecen cerradas hasta que se muevan manualmente; la protección contra el calor tampoco las abre parcialmente.",
                             "morning_opening_mode": "Elija si la apertura matutina ocurre antes del amanecer, después del amanecer, usa una hora fija o la proporciona una entidad.",
                             "morning_opening_time": "Según el modo seleccionado: retraso relativo respecto al amanecer o una hora fija del día. Se ignora en el modo externo.",
                             "morning_opening_earliest_enabled": "Si está activado, las cortinas se abren como muy pronto a la hora mínima, aunque la hora calculada a partir del amanecer sea anterior. Solo se aplica a los modos antes y después del amanecer. Si la hora máxima también está activada, esta tiene prioridad.",
@@ -268,6 +270,23 @@
                     "hold_position": "Mantener posición actual",
                     "force_open": "Forzar apertura y bloquear",
                     "force_close": "Forzar cierre y bloquear"
+                }
+            },
+            "evening_closure": {
+                "name": "Cierre al anochecer",
+                "state": {
+                    "off": "Desactivado",
+                    "close_once": "Cerrar una vez",
+                    "close_and_keep_closed": "Cerrar y mantener cerrado"
+                }
+            },
+            "tilt_control": {
+                "name": "Control del ángulo de inclinación",
+                "state": {
+                    "off": "Desactivado",
+                    "day_only": "Solo de día",
+                    "night_only": "Solo de noche",
+                    "day_and_night": "Día y noche"
                 }
             }
         },
@@ -374,6 +393,9 @@
             },
             "weather_sunny_external_control": {
                 "name": "Clima: ¿soleado? (control externo)"
+            },
+            "morning_opening": {
+                "name": "Apertura matutina"
             }
         }
     },
@@ -524,6 +546,21 @@
                 "open_only": "Solo abrir",
                 "close_only": "Solo cerrar",
                 "open_and_close": "Abrir y cerrar"
+            }
+        },
+        "evening_closure": {
+            "options": {
+                "off": "Desactivado",
+                "close_once": "Cerrar una vez",
+                "close_and_keep_closed": "Cerrar y mantener cerrado"
+            }
+        },
+        "tilt_control": {
+            "options": {
+                "off": "Desactivado",
+                "day_only": "Solo de día",
+                "night_only": "Solo de noche",
+                "day_and_night": "Día y noche"
             }
         }
     }

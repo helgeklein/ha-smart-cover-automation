@@ -131,7 +131,18 @@ The global positions can be overridden per cover.
 
 ## Step 5: Tilt Angle Control (Optional)
 
-In this step of the configuration wizard, you can specify how the tilt angle of covers with adjustable slats is to be controlled. The following options are available:
+In this step of the configuration wizard, you can specify how the tilt angle of covers with adjustable slats is to be controlled.
+
+**Tilt angle control:** When the integration may change the tilt angle:
+
+- **Off:** Never. All other tilt settings are hidden.
+- **Day only:** During the day only. At night, the slats are left as they are. The night settings are hidden.
+- **Night only:** At night (evening closure) only. During the day, the slats are left as they are. The day settings are hidden.
+- **Day and night** [default]: During the day and at night.
+
+Lock mode is not affected. This setting can also be changed at runtime with the [Tilt angle control entity]({{ '/ui-configuration-entities/' | relative_url }}).
+
+The following tilt modes are available:
 
 - **Auto:** Block direct sunlight but allow seeing through as much as possible.
   - Only direct sunlight is blocked (cloudy conditions and the sun's position is taken into account).
@@ -237,6 +248,7 @@ The same covers become eligible to reopen in the morning if normal automation pe
 
 **Morning opening settings:**
 
+- **Open covers in the morning:** When switched off, covers closed by evening closure stay closed until they are moved manually. Heat protection doesn't open them partially, either. Default: on. The morning opening mode and time are only shown while this is on. This setting can also be changed at runtime with the [Morning opening entity]({{ '/ui-configuration-entities/' | relative_url }}).
 - **Morning opening: mode:** Specifies the earliest reopening time for the previously closed covers. Actual reopening only happens if normal automation permits (e.g., heat protection).
   - **Absolute time:** A fixed time of day.
   - **Before sunrise:** A specified time delta before sunrise.
@@ -255,10 +267,13 @@ If both the earliest and the latest time are enabled, the calculated time is kep
 
 **Evening closing & morning opening settings:**
 
-- **Close covers in the evening:** Enable or disable the evening closure function.
+- **Close covers in the evening:**
+  - **Off** [default]: Covers are neither closed in the evening nor kept closed overnight.
+  - **Close once:** Selected covers are closed in the evening. You can open them manually afterward.
+  - **Close and keep closed:** Selected covers are closed in the evening. If they are reopened during the overnight evening-closure period, they are closed again. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.
+  - This setting can also be changed at runtime with the [Evening closure entity]({{ '/ui-configuration-entities/' | relative_url }}).
 - **Covers:** Subset of covers to close after sunset.
 - **Ignore manual override duration:** When enabled, the evening closure can move selected covers even if a manual override pause is still active.
-- **Keep covers closed:** When enabled, selected covers are closed again during the overnight evening-closure period if they are reopened. Manual override duration is respected. Lock mode takes precedence, so covers are only re-closed after lock mode is disabled.
 
 ## Next Steps
 

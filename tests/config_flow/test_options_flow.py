@@ -19,6 +19,7 @@ from homeassistant.data_entry_flow import FlowResultType
 from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.config import CONF_SPECS, ConfKeys
 from custom_components.smart_cover_automation.config_flow import OptionsFlowHandler
+from custom_components.smart_cover_automation.const import EveningClosureControl
 
 from ..conftest import MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2, MOCK_WEATHER_ENTITY_ID
 
@@ -1672,6 +1673,7 @@ class TestOptionsFlowHelperMethods:
             ConfKeys.COVERS_MIN_CLOSURE.value: 100,  # Use default value from config.py
             ConfKeys.DAILY_MAX_TEMPERATURE_THRESHOLD.value: 23,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
+            ConfKeys.TILT_CONTROL.value: "day_and_night",
             ConfKeys.TILT_MODE_DAY.value: "auto",
             ConfKeys.TILT_MODE_NIGHT.value: "closed",
             ConfKeys.TILT_SET_VALUE_DAY.value: 50,
@@ -1891,7 +1893,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
 
         assert section_defaults[ConfKeys.MORNING_OPENING_MODE.value] == const.MorningOpeningMode.FIXED_TIME
         assert section_defaults[ConfKeys.MORNING_OPENING_TIME.value].isoformat() == "08:00:00"
-        assert section_defaults[ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value] is True
+        assert section_defaults[ConfKeys.EVENING_CLOSURE.value] == EveningClosureControl.OFF
+        assert section_defaults[ConfKeys.MORNING_OPENING_ENABLED.value] is True
 
     async def test_step_6_schema_includes_blocked_time_range_pre_close_toggle(self, mock_hass_with_covers: MagicMock) -> None:
         """Test that step 6 exposes the blocked-time pre-close toggle with the default enabled."""
@@ -2040,12 +2043,11 @@ class TestOptionsFlowStep6CloseAfterSunset:
         # Submit step 6 with close_after_sunset settings
         user_input = {
             const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "01:30:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True,
-                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True,
             }
         }
 
@@ -2056,12 +2058,11 @@ class TestOptionsFlowStep6CloseAfterSunset:
         saved_data = result_dict["data"]
 
         # Verify all settings are saved correctly
-        assert saved_data[ConfKeys.EVENING_CLOSURE_ENABLED.value] is True
+        assert saved_data[ConfKeys.EVENING_CLOSURE.value] == EveningClosureControl.CLOSE_AND_KEEP_CLOSED
         assert saved_data[ConfKeys.EVENING_CLOSURE_MODE.value] == "after_sunset"
         assert saved_data[ConfKeys.EVENING_CLOSURE_TIME.value] == "01:30:00"
         assert saved_data[ConfKeys.EVENING_CLOSURE_COVER_LIST.value] == [MOCK_COVER_ENTITY_ID]
         assert saved_data[ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value] is True
-        assert saved_data[ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value] is True
 
     #
     # test_step_6_saves_morning_opening_settings
@@ -2091,12 +2092,11 @@ class TestOptionsFlowStep6CloseAfterSunset:
 
         user_input = {
             const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True,
-                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True,
                 ConfKeys.MORNING_OPENING_MODE.value: "fixed_time",
                 ConfKeys.MORNING_OPENING_TIME.value: "08:30:00",
             }
@@ -2135,12 +2135,11 @@ class TestOptionsFlowStep6CloseAfterSunset:
 
         user_input = {
             const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
                 ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.BEFORE_SUNSET.value,
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True,
-                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True,
                 ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.BEFORE_SUNRISE.value,
                 ConfKeys.MORNING_OPENING_TIME.value: "00:20:00",
             }
@@ -2169,7 +2168,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
             ConfKeys.COVERS_MAX_CLOSURE.value: 100,
             ConfKeys.COVERS_MIN_CLOSURE.value: 0,
             ConfKeys.MANUAL_OVERRIDE_DURATION.value: {"hours": 0, "minutes": 30, "seconds": 0},
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,  # Previously enabled
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,  # Previously enabled
         }
         mock_entry = _create_mock_entry(data=existing_data)
         flow = OptionsFlowHandler(mock_entry)
@@ -2194,12 +2193,11 @@ class TestOptionsFlowStep6CloseAfterSunset:
         # Submit step 6 with close_after_sunset disabled
         user_input = {
             const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: False,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.OFF,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
-                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: False,
             }
         }
 
@@ -2210,7 +2208,7 @@ class TestOptionsFlowStep6CloseAfterSunset:
         saved_data = result_dict["data"]
 
         # Verify disabled state is saved
-        assert saved_data[ConfKeys.EVENING_CLOSURE_ENABLED.value] is False
+        assert saved_data[ConfKeys.EVENING_CLOSURE.value] == EveningClosureControl.OFF
 
     #
     # test_step_6_close_after_sunset_empty_cover_list
@@ -2251,12 +2249,11 @@ class TestOptionsFlowStep6CloseAfterSunset:
         # Submit step 6 with empty cover list
         user_input = {
             const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_ONCE,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [],  # Empty list
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
-                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: False,
             }
         }
 
@@ -2308,12 +2305,11 @@ class TestOptionsFlowStep6CloseAfterSunset:
         # Submit step 6 with zero delay
         user_input = {
             const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_ONCE,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "00:00:00",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
-                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: False,
             }
         }
 
@@ -2371,12 +2367,11 @@ class TestOptionsFlowStep6CloseAfterSunset:
         # Submit step 6 with multiple covers
         user_input = {
             const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_ONCE,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "02:00:30",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID, MOCK_COVER_ENTITY_ID_2],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: False,
-                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: False,
             }
         }
 
@@ -2433,12 +2428,11 @@ class TestOptionsFlowStep6CloseAfterSunset:
         # Submit step 6 with nested section data
         user_input = {
             const.STEP_7_SECTION_CLOSE_AFTER_SUNSET: {
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
                 ConfKeys.EVENING_CLOSURE_MODE.value: "after_sunset",
                 ConfKeys.EVENING_CLOSURE_TIME.value: "01:15:30",
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [MOCK_COVER_ENTITY_ID],
                 ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value: True,
-                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True,
             }
         }
 
@@ -2452,9 +2446,8 @@ class TestOptionsFlowStep6CloseAfterSunset:
         assert const.STEP_7_SECTION_CLOSE_AFTER_SUNSET not in saved_data
 
         # Verify all settings are at top level
-        assert ConfKeys.EVENING_CLOSURE_ENABLED.value in saved_data
+        assert ConfKeys.EVENING_CLOSURE.value in saved_data
         assert ConfKeys.EVENING_CLOSURE_MODE.value in saved_data
         assert ConfKeys.EVENING_CLOSURE_TIME.value in saved_data
         assert ConfKeys.EVENING_CLOSURE_COVER_LIST.value in saved_data
         assert ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value in saved_data
-        assert ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value in saved_data

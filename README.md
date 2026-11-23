@@ -10,6 +10,7 @@ A Home Assistant integration to automate the control of your smart home's window
 - **Easy to use**:
     - Simple to configure, transparent and reliable operation.
     - All settings are available from the UI, no need to edit YAML.
+    - Switch individual automations on or off at any time, e.g., evening closure only in autumn and winter.
 - **Sun heat protection:**
     - Close covers while the sun shines on a window to prevent the house from heating up.
     - Open covers when there's no direct sunlight to minimize dark cave feeling.

@@ -1,12 +1,13 @@
 """Parameterized tests for config-based switch entities.
 
 This module provides comprehensive parameterized tests for config-based boolean
-switch entities (EnabledSwitch and SimulationModeSwitch), eliminating code
-duplication while ensuring complete test coverage.
+switch entities (EnabledSwitch, SimulationModeSwitch, MorningOpeningSwitch),
+eliminating code duplication while ensuring complete test coverage.
 
 Switches tested:
 - EnabledSwitch (master automation enable/disable)
 - SimulationModeSwitch (simulation mode control)
+- MorningOpeningSwitch (morning opening after evening closure)
 
 Note: VerboseLoggingSwitch has unique behavior (checks HA logger) and is
 tested separately in test_switch_edge_cases.py
@@ -25,6 +26,7 @@ from custom_components.smart_cover_automation.config import ConfKeys
 from custom_components.smart_cover_automation.data import IntegrationConfigEntry
 from custom_components.smart_cover_automation.switch import (
     EnabledSwitch,
+    MorningOpeningSwitch,
     SimulationModeSwitch,
     async_setup_entry,
 )
@@ -49,7 +51,23 @@ SWITCH_CONFIGS = [
         "icon": "mdi:play-circle-outline",
         "description": "Simulation mode control switch",
     },
+    {
+        "switch_class": MorningOpeningSwitch,
+        "config_key": ConfKeys.MORNING_OPENING_ENABLED.value,
+        "unique_id": "smart_cover_automation_morning_opening",
+        "icon": "mdi:weather-sunset-up",
+        "description": "Morning opening switch",
+    },
 ]
+
+
+def _find_switch(captured: list[Entity], config: dict[str, Any]) -> Entity:
+    """Return the captured switch matching the config's class and config key."""
+    return next(
+        entity
+        for entity in captured
+        if isinstance(entity, config["switch_class"]) and entity.entity_description.key == config["config_key"]
+    )
 
 
 #
@@ -94,7 +112,7 @@ async def test_switch_turn_on_persists_option(mock_coordinator_basic: DataUpdate
     await async_setup_entry(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
 
     # Find the specific switch entity
-    switch: SwitchEntity = next(entity for entity in captured if isinstance(entity, config["switch_class"]))  # type: ignore[assignment]
+    switch: SwitchEntity = _find_switch(captured, config)  # type: ignore[assignment]
 
     # Execute the turn-on operation
     await switch.async_turn_on()
@@ -148,7 +166,7 @@ async def test_switch_turn_off_persists_option(mock_coordinator_basic: DataUpdat
     await async_setup_entry(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
 
     # Find the specific switch entity
-    switch: SwitchEntity = next(entity for entity in captured if isinstance(entity, config["switch_class"]))  # type: ignore[assignment]
+    switch: SwitchEntity = _find_switch(captured, config)  # type: ignore[assignment]
 
     # Execute the turn-off operation
     await switch.async_turn_off()
@@ -183,7 +201,7 @@ async def test_switch_unique_id(mock_coordinator_basic: DataUpdateCoordinator, c
     await async_setup_entry(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
 
     # Find the specific switch entity
-    switch = next(entity for entity in captured if isinstance(entity, config["switch_class"]))
+    switch = _find_switch(captured, config)
 
     # Verify unique ID
     assert switch.unique_id == f"{mock_coordinator_basic.config_entry.entry_id}_{config['config_key']}"
@@ -213,7 +231,7 @@ async def test_switch_entity_description(mock_coordinator_basic: DataUpdateCoord
     await async_setup_entry(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
 
     # Find the specific switch entity
-    switch = next(entity for entity in captured if isinstance(entity, config["switch_class"]))
+    switch = _find_switch(captured, config)
 
     # Verify entity description properties
     assert switch.entity_description.key == config["config_key"]
@@ -252,7 +270,7 @@ async def test_switch_is_on_reflects_config(
     await async_setup_entry(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
 
     # Find the specific switch entity
-    switch: SwitchEntity = next(entity for entity in captured if isinstance(entity, config["switch_class"]))  # type: ignore[assignment]
+    switch: SwitchEntity = _find_switch(captured, config)  # type: ignore[assignment]
 
     # Verify is_on reflects the initial state
     assert switch.is_on is initial_state
@@ -282,7 +300,7 @@ async def test_switch_availability(mock_coordinator_basic: DataUpdateCoordinator
     await async_setup_entry(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
 
     # Find the specific switch entity
-    switch: SwitchEntity = next(entity for entity in captured if isinstance(entity, config["switch_class"]))  # type: ignore[assignment]
+    switch: SwitchEntity = _find_switch(captured, config)  # type: ignore[assignment]
 
     # Test with coordinator available
     mock_coordinator_basic.last_update_success = True
@@ -317,7 +335,7 @@ async def test_switch_coordinator_integration(mock_coordinator_basic: DataUpdate
     await async_setup_entry(mock_coordinator_basic.hass, cast(IntegrationConfigEntry, entry), add_entities)
 
     # Find the specific switch entity
-    switch: SwitchEntity = next(entity for entity in captured if isinstance(entity, config["switch_class"]))  # type: ignore[assignment]
+    switch: SwitchEntity = _find_switch(captured, config)  # type: ignore[assignment]
 
     # Verify coordinator integration
     assert switch.coordinator is mock_coordinator_basic  # type: ignore[attr-defined]

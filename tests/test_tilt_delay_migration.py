@@ -15,7 +15,8 @@ async def test_migrate_legacy_entry_daytime_movement_directions_to_open_only() -
     hass = MagicMock()
     entry = MagicMock()
     entry.options = {}
-    entry.version = const.CONFIG_ENTRY_VERSION - 1
+    # Config entry schema v1: before daytime movement directions were introduced
+    entry.version = 1
 
     assert await async_migrate_entry(hass, entry)
 

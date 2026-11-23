@@ -319,7 +319,8 @@ class TestConfigFlow:
             title=INTEGRATION_NAME,
             data={},
             options={},
-            version=const.CONFIG_ENTRY_VERSION - 1,
+            # Config entry schema v1: before daytime movement directions were introduced
+            version=1,
         )
         entry.add_to_hass(hass)
 

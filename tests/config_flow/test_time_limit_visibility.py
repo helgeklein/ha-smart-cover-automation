@@ -163,14 +163,27 @@ class TestTimeLimitSchemaMarkers:
         assert time_marker.visible == [mode_condition, {"field": enabled_key.value, "value": True}]
 
     #
-    # test_mode_fields_are_always_visible
+    # test_evening_closure_mode_is_always_visible
     #
-    def test_mode_fields_are_always_visible(self) -> None:
-        """The mode selectors themselves are not conditional."""
+    def test_evening_closure_mode_is_always_visible(self) -> None:
+        """The evening closure mode selector itself is not conditional."""
 
         markers = _evening_section_markers()
-        for key in (ConfKeys.EVENING_CLOSURE_MODE, ConfKeys.MORNING_OPENING_MODE):
-            assert getattr(markers[key.value], "visible", None) is None
+        assert getattr(markers[ConfKeys.EVENING_CLOSURE_MODE.value], "visible", None) is None
+
+    #
+    # test_morning_opening_fields_depend_on_morning_opening_switch
+    #
+    @pytest.mark.parametrize("key", [ConfKeys.MORNING_OPENING_MODE, ConfKeys.MORNING_OPENING_TIME], ids=lambda k: k.value)
+    def test_morning_opening_fields_depend_on_morning_opening_switch(self, key: ConfKeys) -> None:
+        """Morning opening mode and time are only shown while morning opening is on.
+
+        The morning time limits depend on the (then hidden) mode, so they are hidden, too.
+        """
+
+        markers = _evening_section_markers()
+        assert getattr(markers[ConfKeys.MORNING_OPENING_ENABLED.value], "visible", None) is None
+        assert markers[key.value].visible == {"field": ConfKeys.MORNING_OPENING_ENABLED.value, "value": True}
 
 
 class TestTimeLimitVisibilityRealHA:
@@ -290,3 +303,39 @@ class TestTimeLimitVisibilityHttpApi:
             assert fields[time_key.value]["visible"] == [mode_condition, {"field": enabled_key.value, "value": True}]
 
         assert "visible" not in fields[ConfKeys.EVENING_CLOSURE_MODE.value]
+        assert fields[ConfKeys.MORNING_OPENING_MODE.value]["visible"] == {"field": ConfKeys.MORNING_OPENING_ENABLED.value, "value": True}
+
+
+class TestMorningOpeningVisibilityRealHA:
+    """Real HA flow manager: switching morning opening off hides and keeps its settings."""
+
+    #
+    # test_morning_opening_off_keeps_hidden_values
+    #
+    async def test_morning_opening_off_keeps_hidden_values(self, hass: HomeAssistant) -> None:
+        """With morning opening off, its mode, time and time limits keep their stored values."""
+
+        stored = {
+            ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.AFTER_SUNRISE.value,
+            ConfKeys.MORNING_OPENING_EARLIEST_ENABLED.value: True,
+            ConfKeys.MORNING_OPENING_EARLIEST_TIME.value: "06:45:00",
+        }
+        entry, result = await _open_step_7(hass, extra_options=stored)
+
+        await _submit_step_7(
+            hass,
+            result["flow_id"],
+            {
+                ConfKeys.EVENING_CLOSURE.value: const.EveningClosureControl.CLOSE_ONCE.value,
+                ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.FIXED_TIME.value,
+                ConfKeys.MORNING_OPENING_ENABLED.value: False,
+                # Hidden fields: the frontend wouldn't send them; HA must drop them if sent anyway
+                ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.FIXED_TIME.value,
+                ConfKeys.MORNING_OPENING_EARLIEST_ENABLED.value: False,
+            },
+        )
+
+        assert entry.options[ConfKeys.EVENING_CLOSURE.value] == const.EveningClosureControl.CLOSE_ONCE
+        assert entry.options[ConfKeys.MORNING_OPENING_ENABLED.value] is False
+        for key, value in stored.items():
+            assert entry.options[key] == value, key

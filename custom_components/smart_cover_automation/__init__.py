@@ -19,7 +19,7 @@ from homeassistant.helpers import entity_registry as er  # pyright: ignore[repor
 from homeassistant.loader import async_get_loaded_integration  # pyright: ignore[reportMissingImports]
 
 from . import const
-from .config import CONF_SPECS, ConfKeys, is_runtime_configurable_key
+from .config import CONF_SPECS, ConfKeys, evening_closure_from_legacy_options, is_runtime_configurable_key
 from .config_flow import OptionsFlowHandler
 from .const import (
     COVER_SFX_DAYTIME_EXTERNAL_POSITION,
@@ -97,16 +97,41 @@ async def async_migrate_entry(hass: HomeAssistant, entry: IntegrationConfigEntry
         return True
 
     updated_options = _get_entry_options_dict(entry)
-    updated_options.setdefault(
-        ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value,
-        const.DaytimeMovementDirections.OPEN_ONLY,
-    )
+
+    # v1 → v2: daytime movement directions were introduced; keep the previous behavior
+    if entry.version < 2:
+        updated_options.setdefault(
+            ConfKeys.DAYTIME_MOVEMENT_DIRECTIONS.value,
+            const.DaytimeMovementDirections.OPEN_ONLY,
+        )
+
+    # v2 → v3: the evening closure on/off switch and "keep covers closed" were merged into one setting
+    if entry.version < 3:
+        _migrate_evening_closure_options(updated_options)
+
     hass.config_entries.async_update_entry(
         entry,
         options=updated_options,
         version=const.CONFIG_ENTRY_VERSION,
     )
     return True
+
+
+#
+# _migrate_evening_closure_options
+#
+def _migrate_evening_closure_options(options: dict[str, Any]) -> None:
+    """Merge the legacy evening closure on/off and keep-closed options into the evening closure setting.
+
+    Modifies options in place. Entries that never configured evening closure keep using the default.
+    """
+
+    legacy_keep_closed = options.pop(const.LEGACY_OPTION_KEY_EVENING_CLOSURE_KEEP_CLOSED, None)
+    legacy_enabled = options.get(ConfKeys.EVENING_CLOSURE.value)
+    if legacy_enabled is None:
+        return
+
+    options[ConfKeys.EVENING_CLOSURE.value] = evening_closure_from_legacy_options(legacy_enabled, legacy_keep_closed)
 
 
 #

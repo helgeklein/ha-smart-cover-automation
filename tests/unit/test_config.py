@@ -49,6 +49,7 @@ from custom_components.smart_cover_automation.config import (
 from custom_components.smart_cover_automation.const import (
     BlockedTimeRangeMode,
     DaytimeMovementDirections,
+    EveningClosureControl,
     HeatProtectionMode,
     MorningOpeningMode,
     ReopeningMode,
@@ -329,14 +330,27 @@ class TestConfigurationResolution:
 
         assert rs.evening_closure_ignore_manual_override_duration is True
 
-    def test_resolve_evening_closure_keep_closed(self):
-        """Test resolving the evening closure keep-closed option."""
+    @pytest.mark.parametrize(
+        ("value", "expected_enabled", "expected_keep_closed"),
+        [
+            (EveningClosureControl.OFF, False, False),
+            (EveningClosureControl.CLOSE_ONCE, True, False),
+            (EveningClosureControl.CLOSE_AND_KEEP_CLOSED, True, True),
+        ],
+    )
+    def test_resolve_evening_closure_derived_flags(self, value, expected_enabled, expected_keep_closed):
+        """The evening closure setting determines the derived enabled and keep-closed flags."""
 
-        rs_default = resolve({})
-        rs_disabled = resolve({ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: False})
+        rs = resolve({ConfKeys.EVENING_CLOSURE.value: value})
 
-        assert rs_default.evening_closure_keep_closed is True
-        assert rs_disabled.evening_closure_keep_closed is False
+        assert rs.evening_closure == value
+        assert rs.evening_closure_enabled is expected_enabled
+        assert rs.evening_closure_keep_closed is expected_keep_closed
+
+    def test_resolve_evening_closure_default_is_off(self):
+        """Evening closure is off by default."""
+
+        assert resolve({}).evening_closure == EveningClosureControl.OFF
 
     def test_resolve_morning_opening_defaults_and_fixed_time(self):
         """Test morning opening defaults and fixed-time resolution."""
