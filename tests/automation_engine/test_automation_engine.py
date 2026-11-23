@@ -25,6 +25,7 @@ from custom_components.smart_cover_automation.automation_engine import (
     ScheduledTiltExecution,
 )
 from custom_components.smart_cover_automation.config import ConfKeys, resolve
+from custom_components.smart_cover_automation.const import EveningClosureControl
 from custom_components.smart_cover_automation.cover_automation import (
     CoverExecutionPlan,
     CoverState,
@@ -1185,7 +1186,7 @@ class TestTimeCalculationHelpers:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
             ConfKeys.EVENING_CLOSURE_TIME.value: "21:15:00",
         }
@@ -1212,7 +1213,7 @@ class TestTimeCalculationHelpers:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
         }
         resolved = resolve(config)
@@ -1237,7 +1238,7 @@ class TestTimeCalculationHelpers:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.BEFORE_SUNSET.value,
             ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
         }
@@ -1262,7 +1263,7 @@ class TestTimeCalculationHelpers:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
         }
         resolved = resolve(config)
@@ -1497,7 +1498,7 @@ class TestTimeCalculationHelpers:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.FIXED_TIME.value,
             ConfKeys.EVENING_CLOSURE_TIME.value: "20:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
@@ -1532,7 +1533,7 @@ class TestTimeCalculationHelpers:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.MORNING_OPENING_MODE.value: const.MorningOpeningMode.BEFORE_SUNRISE.value,
             ConfKeys.MORNING_OPENING_TIME.value: "00:20:00",
         }
@@ -2602,7 +2603,7 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: False,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.OFF,
         }
         resolved = resolve(config)
         engine = AutomationEngine(resolved=resolved, config=config, ha_interface=mock_ha_interface, logger=mock_logger)
@@ -2623,7 +2624,7 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
@@ -2654,7 +2655,7 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
@@ -2677,7 +2678,7 @@ class TestCheckSunsetClosing:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
             ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
@@ -2797,7 +2798,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.FIXED_TIME.value,
             ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
@@ -2840,7 +2841,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
             ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
@@ -2862,7 +2863,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
             ConfKeys.EVENING_CLOSURE_TIME.value: "11:17:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
@@ -2884,7 +2885,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: const.EveningClosureMode.EXTERNAL,
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
             const.TIME_KEY_EVENING_CLOSURE_EXTERNAL_TIME: "11:30:00",
@@ -2911,7 +2912,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
             ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
@@ -2935,7 +2936,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
             ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
@@ -2960,7 +2961,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
             ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
@@ -2994,7 +2995,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
             ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
@@ -3028,7 +3029,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_MODE.value: "fixed_time",
             ConfKeys.EVENING_CLOSURE_TIME.value: "21:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
@@ -3062,7 +3063,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
@@ -3094,7 +3095,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
@@ -3128,7 +3129,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_TIME.value: "00:00:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
@@ -3155,7 +3156,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }
@@ -3182,7 +3183,7 @@ class TestComputePostEveningClosure:
         config = {
             ConfKeys.COVERS.value: ["cover.test"],
             ConfKeys.WEATHER_ENTITY_ID.value: "weather.test",
-            ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+            ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
             ConfKeys.EVENING_CLOSURE_TIME.value: "00:15:00",
             ConfKeys.EVENING_CLOSURE_COVER_LIST.value: ["cover.test"],
         }

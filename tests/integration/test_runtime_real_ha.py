@@ -40,6 +40,7 @@ from custom_components.smart_cover_automation.const import (
     HA_SUN_ATTR_ELEVATION,
     HA_SUN_ENTITY_ID,
     UPDATE_INTERVAL,
+    EveningClosureControl,
     LockMode,
     ReopeningMode,
     TiltMode,
@@ -657,7 +658,7 @@ class TestRuntimeBehavior:
         entry = _create_config_entry(
             hass,
             extra_options={
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [TEST_COVER_1],
                 ConfKeys.AUTOMATIC_REOPENING_MODE.value: ReopeningMode.ACTIVE.value,
             },
@@ -714,7 +715,7 @@ class TestRuntimeBehavior:
         entry = _create_config_entry(
             hass,
             extra_options={
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [TEST_COVER_1],
                 ConfKeys.AUTOMATIC_REOPENING_MODE.value: ReopeningMode.ACTIVE.value,
             },
@@ -786,9 +787,8 @@ class TestRuntimeBehavior:
         entry = _create_config_entry(
             hass,
             extra_options={
-                ConfKeys.EVENING_CLOSURE_ENABLED.value: True,
+                ConfKeys.EVENING_CLOSURE.value: EveningClosureControl.CLOSE_AND_KEEP_CLOSED,
                 ConfKeys.EVENING_CLOSURE_COVER_LIST.value: [TEST_COVER_1],
-                ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value: True,
             },
         )
         with patch(

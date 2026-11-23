@@ -95,6 +95,7 @@
                 "title": "智能遮阳自动化 - 第 5 步，共 7 步",
                 "description": "为带有可调叶片的遮阳设备配置**叶片倾斜角度控制**（可选）。\n全局设置适用于所有支持倾斜的遮阳设备，除非单独配置。",
                 "data": {
+                    "tilt_control": "叶片倾角控制：",
                     "tilt_mode_day": "倾斜角度控制（白天）：",
                     "tilt_mode_night": "倾斜角度控制（夜晚）：",
                     "tilt_set_value_day": "白天倾斜角度（固定值）：",
@@ -108,6 +109,7 @@
                     "tilt_slat_overlap_ratio": "叶片重叠比 (d/L)："
                 },
                 "data_description": {
+                    "tilt_control": "集成何时可以更改叶片的倾斜角度。其他倾斜设置仅在所选时段显示。锁定模式不受影响。",
                     "tilt_mode_day": "如何在白天控制叶片的倾斜角度。",
                     "tilt_mode_night": "如何在夜晚控制叶片的倾斜角度（在傍晚关闭时应用）。",
                     "tilt_set_value_day": "白天模式的固定倾斜角度。0% = 完全关闭（垂直，阻挡光线），100% = 完全打开（水平，让光线进入）。仅在白天倾斜模式设置为“固定值”时使用。",
@@ -182,7 +184,7 @@
                             "close_covers_after_sunset_latest_time": "晚间关闭：最晚时间：",
                             "close_covers_after_sunset_cover_list": "遮阳设备：",
                             "close_covers_after_sunset_ignore_manual_override_duration": "忽略手动覆盖持续时间：",
-                            "close_covers_after_sunset_keep_closed": "保持遮阳设备关闭：",
+                            "morning_opening": "早晨打开遮阳设备：",
                             "morning_opening_mode": "晨间开启：模式：",
                             "morning_opening_time": "晨间开启：时间：",
                             "morning_opening_earliest_enabled": "晨间开启：限制最早时间：",
@@ -191,7 +193,7 @@
                             "morning_opening_latest_time": "晨间开启：最晚时间："
                         },
                         "data_description": {
-                            "close_covers_after_sunset": "启用后，遮阳设备将在晚间自动关闭。",
+                            "close_covers_after_sunset": "关闭：晚间不关闭遮阳设备。关闭一次：遮阳设备在晚间关闭，之后可以手动打开。关闭并保持关闭：所选遮阳设备如果在夜间晚间关闭时段内被重新打开，将会再次关闭。系统会遵守手动覆盖持续时间。锁定模式优先生效，因此只有在锁定模式被禁用后，遮阳设备才会再次关闭。",
                             "close_covers_after_sunset_mode": "选择晚间关闭是在日落前、日落后、固定时刻，还是由某个实体提供。",
                             "close_covers_after_sunset_delay": "根据所选模式：相对于日落的延迟时间或固定时刻。在外部模式下将被忽略。",
                             "close_covers_after_sunset_earliest_enabled": "启用后，即使根据日落计算出的时间更早，遮阳设备也不会早于设定时间关闭。仅适用于日落前和日落后模式。如果同时启用了最晚时间，则以最晚时间为准。",
@@ -200,7 +202,7 @@
                             "close_covers_after_sunset_latest_time": "晚间关闭的最晚时间。午夜 (00:00) 表示当晚结束。未启用限制时将被忽略。",
                             "close_covers_after_sunset_cover_list": "选择需要在晚间关闭的遮阳设备。",
                             "close_covers_after_sunset_ignore_manual_override_duration": "启用后，即使手动覆盖暂停仍然有效，晚间关闭仍可移动所选遮阳设备。",
-                            "close_covers_after_sunset_keep_closed": "启用后，所选遮阳设备如果在夜间晚间关闭时段内被重新打开，将会再次关闭。系统会遵守手动覆盖持续时间。锁定模式优先生效，因此只有在锁定模式被禁用后，遮阳设备才会再次关闭。",
+                            "morning_opening": "启用后，因晚间关闭而关闭的遮阳设备会在早晨重新打开。禁用后，它们会保持关闭，直到被手动移动；隔热保护也不会将其部分打开。",
                             "morning_opening_mode": "选择晨间开启是在日出前、日出后、固定时刻，还是由某个实体提供。",
                             "morning_opening_time": "根据所选模式：相对于日出的延迟时间或固定时刻。在外部模式下将被忽略。",
                             "morning_opening_earliest_enabled": "启用后，即使根据日出计算出的时间更早，遮阳设备也不会早于设定时间开启。仅适用于日出前和日出后模式。如果同时启用了最晚时间，则以最晚时间为准。",
@@ -268,6 +270,23 @@
                     "hold_position": "保持当前位置",
                     "force_open": "强制开启并锁定",
                     "force_close": "强制关闭并锁定"
+                }
+            },
+            "evening_closure": {
+                "name": "夜间关闭",
+                "state": {
+                    "off": "关闭",
+                    "close_once": "关闭一次",
+                    "close_and_keep_closed": "关闭并保持关闭"
+                }
+            },
+            "tilt_control": {
+                "name": "叶片倾角控制",
+                "state": {
+                    "off": "关闭",
+                    "day_only": "仅日间",
+                    "night_only": "仅夜间",
+                    "day_and_night": "日间和夜间"
                 }
             }
         },
@@ -374,6 +393,9 @@
             },
             "weather_sunny_external_control": {
                 "name": "天气：晴天？（外部控制）"
+            },
+            "morning_opening": {
+                "name": "晨间开启"
             }
         }
     },
@@ -524,6 +546,21 @@
                 "open_only": "仅开启",
                 "close_only": "仅关闭",
                 "open_and_close": "开启和关闭"
+            }
+        },
+        "evening_closure": {
+            "options": {
+                "off": "关闭",
+                "close_once": "关闭一次",
+                "close_and_keep_closed": "关闭并保持关闭"
+            }
+        },
+        "tilt_control": {
+            "options": {
+                "off": "关闭",
+                "day_only": "仅日间",
+                "night_only": "仅夜间",
+                "day_and_night": "日间和夜间"
             }
         }
     }

@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 LOGGER: Log
 
 # Config-entry schema version used to identify entries that need migration.
-CONFIG_ENTRY_VERSION: Final[int] = 2
+CONFIG_ENTRY_VERSION: Final[int] = 3
 
 
 #
@@ -219,6 +219,29 @@ class TiltMode(StrEnum):
     SET_VALUE = "set_value"  # Fixed user-specified tilt angle
 
 
+#
+# EveningClosureControl
+#
+class EveningClosureControl(StrEnum):
+    """Evening closure behavior (configuration wizard and select entity)."""
+
+    OFF = "off"  # No evening closure
+    CLOSE_ONCE = "close_once"  # Close once in the evening; covers may be reopened manually
+    CLOSE_AND_KEEP_CLOSED = "close_and_keep_closed"  # Close in the evening and re-close overnight if reopened
+
+
+#
+# TiltControl
+#
+class TiltControl(StrEnum):
+    """When the integration may change the tilt angle (configuration wizard and select entity)."""
+
+    OFF = "off"  # Never change the tilt angle
+    DAY_ONLY = "day_only"  # Change the tilt angle during the day only
+    NIGHT_ONLY = "night_only"  # Change the tilt angle at night (evening closure) only
+    DAY_AND_NIGHT = "day_and_night"  # Change the tilt angle during the day and at night
+
+
 # Service constants
 SERVICE_SET_LOCK: Final[str] = "set_lock"  # Service name for setting lock mode
 SERVICE_FIELD_LOCK_MODE: Final[str] = "lock_mode"  # Field name for lock mode parameter
@@ -281,6 +304,11 @@ SENSOR_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode sensor e
 SELECT_KEY_LOCK_MODE: Final[str] = "lock_mode"  # Key for the lock mode select entity
 SELECT_KEY_AUTOMATIC_REOPENING_MODE: Final[str] = "automatic_reopening_mode"  # Key for the automatic reopening mode select entity
 SELECT_KEY_HEAT_PROTECTION_MODE: Final[str] = "heat_protection_mode"  # Key for the heat protection mode select entity
+SELECT_KEY_EVENING_CLOSURE: Final[str] = "evening_closure"  # Key for the evening closure select entity
+SELECT_KEY_TILT_CONTROL: Final[str] = "tilt_control"  # Key for the tilt angle control select entity
+LEGACY_OPTION_KEY_EVENING_CLOSURE_KEEP_CLOSED: Final[str] = (
+    "close_covers_after_sunset_keep_closed"  # Legacy key, merged into the evening closure setting (config entry v3)
+)
 LEGACY_OPTION_KEY_TEMPERATURE_THRESHOLD: Final[str] = "temp_threshold"  # Legacy key for the old heat-protection max threshold option
 NUMBER_KEY_DAILY_MAX_TEMPERATURE_THRESHOLD: Final[str] = (
     "daily_max_temperature_threshold"  # Key for the daily max temperature threshold number entity

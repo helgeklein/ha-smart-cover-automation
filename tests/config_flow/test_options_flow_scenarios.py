@@ -95,6 +95,7 @@ class TestOptionsFlowScenarios:
             ConfKeys.TILT_MODE_NIGHT.value: "closed",
             ConfKeys.TILT_SET_VALUE_DAY.value: 50,
             ConfKeys.TILT_SET_VALUE_NIGHT.value: 0,
+            ConfKeys.TILT_CONTROL.value: "day_and_night",
             ConfKeys.TILT_MIN_CHANGE_DELTA.value: 5,
             ConfKeys.TILT_DRIFT_TOLERANCE.value: 5,
             ConfKeys.TILT_OPEN_TO_COVER_OPEN_DELAY.value: 0,

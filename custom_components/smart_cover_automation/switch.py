@@ -7,6 +7,7 @@ the automation behavior through the Home Assistant interface.
 The switches that appear in Home Assistant are:
 - Entity: switch.smart_cover_automation_enabled - Master automation enable/disable
 - Entity: switch.smart_cover_automation_simulation_mode - Simulation mode control
+- Entity: switch.smart_cover_automation_morning_opening - Morning opening on/off
 """
 
 from __future__ import annotations
@@ -61,6 +62,8 @@ async def async_setup_entry(
         SimulationModeSwitch(coordinator),
         # Verbose logging control switch
         VerboseLoggingSwitch(coordinator),
+        # Morning opening on/off switch
+        MorningOpeningSwitch(coordinator),
         # Weather sunny external control switch (disabled by default)
         WeatherSunnyExternalControlSwitch(coordinator),
         # Weather hot external control switch (disabled by default)
@@ -136,7 +139,8 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         This reflects changes made through the integration's options flow.
         """
         resolved = resolve_entry(self.coordinator.config_entry)
-        return bool(getattr(resolved, self._config_key.lower()))
+        # Use the key-to-field mapping: field names may differ from config keys
+        return bool(resolved.get(ConfKeys(self._config_key)))
 
     #
     # async_turn_on
@@ -182,6 +186,27 @@ class IntegrationSwitch(IntegrationEntity, SwitchEntity):  # pyright: ignore[rep
         # This will trigger the update listener (async_reload_entry) in __init__.py
         # which will compare configs and decide on refresh vs. reload
         self.coordinator.hass.config_entries.async_update_entry(entry, options=current_options)
+
+
+#
+# MorningOpeningSwitch
+#
+class MorningOpeningSwitch(IntegrationSwitch):
+    """Switch for turning morning opening after evening closure on or off.
+
+    Same setting as in the configuration wizard. When off, covers closed by
+    evening closure stay closed until moved manually.
+    """
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        """Set the switch properties."""
+        entity_description = SwitchEntityDescription(
+            key=ConfKeys.MORNING_OPENING_ENABLED.value,
+            translation_key=ConfKeys.MORNING_OPENING_ENABLED.value,
+            entity_category=EntityCategory.CONFIG,
+            icon="mdi:weather-sunset-up",
+        )
+        super().__init__(coordinator, entity_description, ConfKeys.MORNING_OPENING_ENABLED.value)
 
 
 #

@@ -14,6 +14,16 @@ In the modes relative to sunset and sunrise, evening closure and morning opening
 - Evening closure could be skipped if the closing time was shortly before midnight.
 - On the day of the DST rollback, times in the repeated hour (e.g., a morning opening time of 02:30) could shift by one hour.
 
+## Feature Controls
+
+Evening closure, morning opening and tilt angle control can now be changed at runtime by entities, e.g., from your own automations. The entities and the configuration wizard share the same settings: changing one changes the other.
+
+- **Evening closure** (select): `Off`, `Close once`, `Close and keep closed`. In the wizard, this replaces the two settings **Close covers in the evening** and **Keep covers closed**. Existing settings are migrated.
+- **Morning opening** (switch): on/off. Switched off, covers closed by evening closure stay closed. New in the wizard, too. The mode and time are only shown while it is on.
+- **Tilt angle control** (select): `Off`, `Day only`, `Night only`, `Day and night`. New in the wizard, too. The other tilt settings are only shown if they apply.
+
+The defaults match the previous behavior, so existing installations behave as before.
+
 # v7.1
 
 ## Bugfixes

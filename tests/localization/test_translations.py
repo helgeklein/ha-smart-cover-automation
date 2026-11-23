@@ -211,12 +211,12 @@ def test_translation_has_evening_closure_section_keys(language_code: str) -> Non
     section_data = section.get("data", {})
     section_descriptions = section.get("data_description", {})
     expected_fields = {
-        ConfKeys.EVENING_CLOSURE_ENABLED.value,
+        ConfKeys.EVENING_CLOSURE.value,
         ConfKeys.EVENING_CLOSURE_MODE.value,
         ConfKeys.EVENING_CLOSURE_TIME.value,
         ConfKeys.EVENING_CLOSURE_COVER_LIST.value,
         ConfKeys.EVENING_CLOSURE_IGNORE_MANUAL_OVERRIDE_DURATION.value,
-        ConfKeys.EVENING_CLOSURE_KEEP_CLOSED.value,
+        ConfKeys.MORNING_OPENING_ENABLED.value,
         ConfKeys.MORNING_OPENING_MODE.value,
         ConfKeys.MORNING_OPENING_TIME.value,
     }

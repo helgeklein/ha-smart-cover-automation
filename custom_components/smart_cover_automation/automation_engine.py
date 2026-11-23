@@ -346,6 +346,7 @@ class AutomationEngine:
         global_settings = {
             "lock_mode": lock_mode,
             "heat_protection_mode": self.resolved.heat_protection_mode,
+            "tilt_control": self.resolved.tilt_control,
             "automatic_reopening_mode": self.resolved.automatic_reopening_mode,
             "daytime_strategy": self.resolved.daytime_strategy,
             "daytime_movement_directions": self.resolved.daytime_movement_directions,
@@ -367,10 +368,11 @@ class AutomationEngine:
                 blocked_time_range_end.strftime("%H:%M:%S") if blocked_time_range_end is not None else None
             ),
             "automation_disabled_time_range_pre_close_enabled": self.resolved.automation_disabled_time_range_pre_close_enabled,
-            "evening_closure_enabled": self.resolved.evening_closure_enabled,
+            "evening_closure": self.resolved.evening_closure,
             "evening_closure_mode": self.resolved.evening_closure_mode,
             "evening_closure_time": self.resolved.evening_closure_time.strftime("%H:%M:%S"),
             "evening_closure_ignore_manual_override_duration": self.resolved.evening_closure_ignore_manual_override_duration,
+            "morning_opening_enabled": self.resolved.morning_opening_enabled,
             "morning_opening_mode": self.resolved.morning_opening_mode,
             "morning_opening_time": self.resolved.morning_opening_time.strftime("%H:%M:%S"),
             "evening_closure_earliest_enabled": self.resolved.evening_closure_earliest_enabled,
@@ -1128,6 +1130,22 @@ class AutomationEngine:
 
         return self._limit_to_time_window(opening_datetime, earliest=earliest, latest=latest)
 
+    def _get_overnight_block_end_for_date(self, target_date: date) -> datetime | None:
+        """Return when the overnight reopening block after evening closure ends on one local date.
+
+        Normally, this is the morning opening time. If morning opening is switched off and its
+        (hidden) settings yield no time, e.g., an external time that was never set, the block
+        ends at sunrise instead. Otherwise, covers released by a manual move would be blocked
+        until the next evening closure. Covers still at their evening closure position are not
+        affected: the switched-off morning opening keeps them closed.
+        """
+
+        morning_opening_time = self._get_morning_opening_time_for_date(target_date)
+        if morning_opening_time is None and not self.resolved.morning_opening_enabled:
+            return get_astral_event_date(self._ha_interface.hass, SUN_EVENT_SUNRISE, target_date)
+
+        return morning_opening_time
+
     def _is_pre_sunrise_morning_opening_active(self) -> bool:
         """Return whether the configured morning opening time has passed before sunrise."""
 
@@ -1163,8 +1181,11 @@ class AutomationEngine:
             True if covers should close now (first time in window), False otherwise
         """
 
-        # Check if feature is enabled
+        # Check if feature is enabled. Evening closure can be switched off at runtime (select
+        # entity) without a reload: reset the state so that a closure from before switching off
+        # cannot suppress a later closure after switching on again.
         if not self.resolved.evening_closure_enabled:
+            self._evening_covers_closed = False
             return False
 
         # Get current time and the closing windows to check. Yesterday's window is included
@@ -1227,7 +1248,7 @@ class AutomationEngine:
 
         # Carryover from last night's evening closure until today's morning opening.
         evening_closure_yesterday = self._get_evening_closure_time_for_date(today - timedelta(days=1))
-        morning_opening_today = self._get_morning_opening_time_for_date(today)
+        morning_opening_today = self._get_overnight_block_end_for_date(today)
         evening_closure_time = self._get_evening_closure_time_for_date(today)
         if evening_closure_time is not None and morning_opening_today is not None and morning_opening_today == evening_closure_time:
             self._logger.error(
