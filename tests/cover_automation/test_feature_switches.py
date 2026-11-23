@@ -8,9 +8,10 @@ production.
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from homeassistant.components.cover import CoverEntityFeature
 
 from custom_components.smart_cover_automation import const
 from custom_components.smart_cover_automation.config import ConfKeys, ResolvedConfig, resolve
@@ -19,6 +20,7 @@ from custom_components.smart_cover_automation.movement import (
     AutomationManagedState,
     AutomationMode,
     MovementControlReason,
+    MovementDecision,
     MovementDirection,
 )
 
@@ -163,6 +165,83 @@ class TestMorningOpeningSwitch:
 
         assert decision.direction == MovementDirection.HOLD
         assert decision.desired_position == 0
+
+    async def test_off_heat_protection_closing_further_keeps_evening_closure_ownership(self) -> None:
+        """Closing further for heat protection must not end the suppression of morning opening.
+
+        Otherwise, the heat protection ownership would let a later cool cycle reopen the cover.
+        """
+
+        evening_state = AutomationManagedState(position=30, automation_mode=AutomationMode.EVENING_CLOSURE)
+        automation = _make_automation(_make_resolved({ConfKeys.MORNING_OPENING_ENABLED: False}), managed_state=evening_state)
+        automation._ha_interface.set_cover_position = AsyncMock(return_value=20)
+        automation._ha_interface.add_logbook_entry = AsyncMock()
+        decision = MovementDecision(20, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False)
+
+        moved, actual_pos, _message = await automation._move_cover_if_needed(
+            current_pos=30, features=CoverEntityFeature.SET_POSITION, decision=decision
+        )
+
+        assert moved is True
+        assert actual_pos == 20
+        automation._cover_pos_history_mgr.set_automation_managed_state.assert_called_once_with(
+            COVER, AutomationManagedState(position=20, automation_mode=AutomationMode.EVENING_CLOSURE)
+        )
+
+    async def test_on_heat_protection_closing_further_takes_ownership(self) -> None:
+        """With morning opening on, closing further for heat protection hands the cover to heat protection (unchanged)."""
+
+        evening_state = AutomationManagedState(position=30, automation_mode=AutomationMode.EVENING_CLOSURE)
+        automation = _make_automation(_make_resolved(), managed_state=evening_state)
+        automation._ha_interface.set_cover_position = AsyncMock(return_value=20)
+        automation._ha_interface.add_logbook_entry = AsyncMock()
+        decision = MovementDecision(20, MovementDirection.CLOSING, MovementControlReason.HEAT_PROTECTION, False)
+
+        await automation._move_cover_if_needed(current_pos=30, features=CoverEntityFeature.SET_POSITION, decision=decision)
+
+        automation._cover_pos_history_mgr.set_automation_managed_state.assert_called_once_with(
+            COVER, AutomationManagedState(position=20, automation_mode=AutomationMode.HEAT_PROTECTION)
+        )
+
+    def test_off_cool_cycle_after_heat_protection_closing_keeps_cover_closed(self) -> None:
+        """The next cool cycle after closing further keeps the cover at the new evening closure position."""
+
+        automation = _make_automation(
+            _make_resolved({ConfKeys.MORNING_OPENING_ENABLED: False}),
+            managed_state=AutomationManagedState(position=20, automation_mode=AutomationMode.EVENING_CLOSURE),
+        )
+
+        decision = automation._calculate_movement_decision(
+            _sensor_data(temp_hot=False, weather_sunny=False), sun_hitting=False, current_pos=20
+        )
+
+        assert decision.direction == MovementDirection.HOLD
+        assert decision.desired_position == 20
+
+    def test_off_ignores_missing_external_morning_time(self) -> None:
+        """A missing external morning opening time is irrelevant while morning opening is off.
+
+        Otherwise, a cover released by a manual move could not resume normal daytime automation.
+        """
+
+        automation = _make_automation(
+            _make_resolved(
+                {
+                    ConfKeys.MORNING_OPENING_ENABLED: False,
+                    ConfKeys.MORNING_OPENING_MODE: const.MorningOpeningMode.EXTERNAL.value,
+                }
+            ),
+            managed_state=self._evening_closed_state(),
+        )
+
+        decision = automation._calculate_movement_decision(
+            _sensor_data(temp_hot=False, weather_sunny=False, has_valid_external_morning_opening_time=False),
+            sun_hitting=False,
+            current_pos=60,
+        )
+
+        assert decision.direction == MovementDirection.OPENING
+        assert decision.desired_position == const.COVER_POS_FULLY_OPEN
 
     def test_off_resumes_after_manual_move(self) -> None:
         """Once the user has moved the cover away from the closed position, normal automation resumes."""

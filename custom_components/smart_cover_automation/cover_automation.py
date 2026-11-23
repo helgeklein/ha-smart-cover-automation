@@ -669,10 +669,14 @@ class CoverAutomation:
         )
 
     def _has_missing_external_morning_opening_time(self, sensor_data: SensorData) -> bool:
-        """Return whether morning opening is externally controlled but has no valid time."""
+        """Return whether morning opening is externally controlled but has no valid time.
+
+        Irrelevant while morning opening is switched off: the morning opening time is not used then.
+        """
 
         return (
             self.resolved.evening_closure_enabled
+            and self.resolved.morning_opening_enabled
             and self.resolved.morning_opening_mode == const.MorningOpeningMode.EXTERNAL
             and self.entity_id in self.resolved.evening_closure_cover_list
             and not sensor_data.has_valid_external_morning_opening_time
@@ -1636,6 +1640,15 @@ class CoverAutomation:
                 self._clear_completed_reopen_ownership()
             return False, None, "Skipped minor adjustment"
 
+        # With morning opening off, heat protection may close an evening-closed cover further. The
+        # cover must stay owned by evening closure so that morning opening stays suppressed and a
+        # later cool cycle doesn't reopen it. Checked before moving, while the position still matches.
+        keeps_evening_closure_ownership = (
+            decision.direction == MovementDirection.CLOSING
+            and decision.control_reason == MovementControlReason.HEAT_PROTECTION
+            and self._is_morning_opening_suppressed(current_pos)
+        )
+
         # Movement needed
         try:
             # Move the cover
@@ -1645,18 +1658,22 @@ class CoverAutomation:
             recorded_tilt = None if actual_pos == const.COVER_POS_FULLY_OPEN else current_tilt
             self._record_automation_state(actual_pos, recorded_tilt, cover_moved=True)
 
-            if decision.control_reason == MovementControlReason.HEAT_PROTECTION and actual_pos != const.COVER_POS_FULLY_OPEN:
-                self._cover_pos_history_mgr.set_automation_managed_state(
-                    self.entity_id,
-                    AutomationManagedState(position=actual_pos, automation_mode=AutomationMode.HEAT_PROTECTION),
+            if keeps_evening_closure_ownership or (
+                decision.direction == MovementDirection.CLOSING
+                and decision.control_reason
+                in (
+                    MovementControlReason.EVENING_CLOSURE,
+                    MovementControlReason.EVENING_CLOSURE_HOLD,
                 )
-            elif decision.direction == MovementDirection.CLOSING and decision.control_reason in (
-                MovementControlReason.EVENING_CLOSURE,
-                MovementControlReason.EVENING_CLOSURE_HOLD,
             ):
                 self._cover_pos_history_mgr.set_automation_managed_state(
                     self.entity_id,
                     AutomationManagedState(position=actual_pos, automation_mode=AutomationMode.EVENING_CLOSURE),
+                )
+            elif decision.control_reason == MovementControlReason.HEAT_PROTECTION and actual_pos != const.COVER_POS_FULLY_OPEN:
+                self._cover_pos_history_mgr.set_automation_managed_state(
+                    self.entity_id,
+                    AutomationManagedState(position=actual_pos, automation_mode=AutomationMode.HEAT_PROTECTION),
                 )
             else:
                 self._cover_pos_history_mgr.clear_automation_managed_state(self.entity_id)
