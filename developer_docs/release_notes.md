@@ -4,25 +4,25 @@
 
 - The integration now requires **Home Assistant 2026.11.2**.
 
-## Earliest & Latest Time for Evening Closure & Morning Opening
+## Earliest & Latest Time for Evening Closure and Morning Opening
 
 In the modes relative to sunset and sunrise, evening closure and morning opening can now be limited to an earliest and/or latest time of day, e.g., "open at sunrise, but not before 7:00 am and no later than 7:30 am". The limits are configured in the wizard and disabled by default. They are only shown when a mode relative to sunset or sunrise is selected. If they conflict, the latest time takes precedence. A latest evening time of midnight (00:00) means the end of the evening.
 
-## Bugfixes
+## Control Evening Closure, Morning Opening, and Tilt Angle via Entities
 
-- Heat protection partially opened covers closed by evening closure before the morning opening time. These covers now stay closed until the morning opening time; heat protection can still close them further.
-- Evening closure could be skipped if the closing time was shortly before midnight.
-- On the day of the DST rollback, times in the repeated hour (e.g., a morning opening time of 02:30) could shift by one hour.
-
-## Feature Controls
-
-Evening closure, morning opening and tilt angle control can now be changed at runtime by entities, e.g., from your own automations. The entities and the configuration wizard share the same settings: changing one changes the other.
+The operation of evening closure, morning opening and tilt angle can now be changed at runtime by entities, e.g., from your own automations. The entities and the configuration wizard share the same settings: changing one changes the other.
 
 - **Evening closure** (select): `Off`, `Close once`, `Close and keep closed`. In the wizard, this replaces the two settings **Close covers in the evening** and **Keep covers closed**. Existing settings are migrated.
 - **Morning opening** (switch): on/off. Switched off, covers closed by evening closure stay closed. New in the wizard, too. The mode and time are only shown while it is on.
 - **Tilt angle control** (select): `Off`, `Day only`, `Night only`, `Day and night`. New in the wizard, too. The other tilt settings are only shown if they apply.
 
 The defaults match the previous behavior, so existing installations behave as before.
+
+## Bugfixes
+
+- Heat protection partially opened covers closed by evening closure before the morning opening time. These covers now stay closed until the morning opening time; heat protection can still close them further.
+- Evening closure could be skipped if the closing time was shortly before midnight.
+- On the day of the DST rollback, times in the repeated hour (e.g., a morning opening time of 02:30) could shift by one hour.
 
 # v7.1
 
