@@ -1,23 +1,40 @@
 #!/usr/bin/env bash
 
-# Exit immediately if a command exits with a non-zero status
-set -e
+set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-echo "Checking Home Assistant version metadata..."
-python3 scripts/check_ha_version_sync.py
+python=python3
+if [[ ${SMART_COVER_DEPS_BAKED:-} == 1 ]]; then
+    python=/usr/local/bin/python3
+fi
 
-# Install locked dependencies.
-echo "Installing locked Python dependencies..."
-python3 -m pip install --require-hashes -r requirements-lock.txt -r requirements-test-lock.txt --quiet
+echo "Checking Home Assistant version metadata..."
+"$python" scripts/check_ha_version_sync.py
+
+if [[ ${SMART_COVER_DEPS_BAKED:-} == 1 ]]; then
+    if [[ -z ${SMART_COVER_TEST_LOCK_CHECKSUMS:-} ]] ||
+        ! sha256sum --check --status "$SMART_COVER_TEST_LOCK_CHECKSUMS"; then
+        echo "Baked Python dependencies cannot be verified against the current lockfiles. Rebuild the dev container, then rerun ./scripts/test." >&2
+        exit 1
+    fi
+    echo "Using locked Python dependencies baked into the dev container."
+else
+    if ! "$python" -I -c 'import sys; sys.exit(sys.prefix == sys.base_prefix)'; then
+        echo "A Python virtual environment is required. Using the Python version in .python-version, run:" >&2
+        echo "  python3 -m venv .venv && source .venv/bin/activate && ./scripts/test" >&2
+        exit 1
+    fi
+    echo "Installing locked Python dependencies..."
+    PIP_REQUIRE_VIRTUALENV=1 "$python" -m pip install --require-hashes -r requirements-lock.txt -r requirements-test-lock.txt --quiet
+fi
 
 # Run static type checking
 echo "Running static type checking..."
-python3 -m mypy custom_components/smart_cover_automation/
+"$python" -m mypy custom_components/smart_cover_automation/
 
 # Run the tests
 echo "Running tests..."
-python3 -m pytest tests/ -v
+"$python" -m pytest tests/ -v
 
 echo "Test run completed!"

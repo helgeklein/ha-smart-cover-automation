@@ -11,6 +11,7 @@ __pycache__
 coverage.xml
 coverage.json
 .ruff_cache
+/.venv/
 
 # VS Code - exclude personal settings but include project settings
 .vscode/launch.json
