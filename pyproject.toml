@@ -23,6 +23,14 @@ markers = [
 ]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# Suppress deprecation warnings raised inside third-party dependencies that we cannot fix.
+# Each filter is scoped to the originating module so the same warnings from our own code still surface.
+filterwarnings = [
+    # aiohttp discourages subclassing web.Application; Home Assistant does so in its http component
+    "ignore:Inheritance class HomeAssistantApplication from web.Application is discouraged:DeprecationWarning:homeassistant\\.components\\.http\\.server",
+    # backoff still calls asyncio.iscoroutinefunction, deprecated since Python 3.14
+    "ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning:backoff\\._.*",
+]
 
 [tool.coverage.run]
 source = ["custom_components.smart_cover_automation"]
