@@ -1,4 +1,4 @@
-# Unreleased
+# v8.0
 
 ## Requirements
 
@@ -23,6 +23,10 @@ The defaults match the previous behavior, so existing installations behave as be
 - Heat protection partially opened covers closed by evening closure before the morning opening time. These covers now stay closed until the morning opening time; heat protection can still close them further.
 - Evening closure could be skipped if the closing time was shortly before midnight.
 - On the day of the DST rollback, times in the repeated hour (e.g., a morning opening time of 02:30) could shift by one hour.
+
+## Contributors
+
+Many thanks to @meiser79, who contributed most of the code in this release.
 
 # v7.1
 
